@@ -1,0 +1,226 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: >-
+  Identity Reuse Services for SIS
+Parameters:
+  Environment:
+    Description: The name of the environment to deploy to
+    Type: String
+    AllowedValues:
+      - dev
+      - build
+      - staging
+      - integration
+      - production
+    Default: dev
+  CodeSigningConfigArn:
+    Description: Asserts that lambdas are signed when deployed.
+    Type: String
+    Default: none
+  PermissionsBoundary:
+    Description: The ARN of the permissions boundary to apply when creating IAM roles
+    Type: String
+    Default: none
+  OwnerTagValue:
+    Description: Value for the Owner Tag
+    Type: String
+    Default: identity-spot@digital.cabinet-office.gov.uk
+  ProductTagValue:
+    Description: Value for the Product Tag
+    Type: String
+    Default: GOV.UK One Login
+  SourceTagValue:
+    Description: Value for the Source Tag
+    Type: String
+    Default: govuk-one-login/stored-identity-services/src/infra/template.yaml
+  SystemTagValue:
+    Description: Value for the System Tag
+    Type: String
+    Default: SIS
+  VpcStackName:
+    Description: The name of the stack that defines the VPC
+    Type: String
+    Default: vpc
+    AllowedPattern: ^[a-z0-9-]+$
+    ConstraintDescription: must be a valid organization ID, made of lowercase letters and numbers
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Architectures:
+      - arm64
+    Tracing: Active
+    AutoPublishAlias: live
+    CodeUri: ../handlers
+    Environment:
+      Variables:
+        AWS_LAMBDA_EXEC_WRAPPER: /opt/dynatrace
+        AWS_XRAY_CONTEXT_MISSING: IGNORE_ERROR
+        CLOUDWATCH_METRICS_NAMESPACE: !Ref SystemTagValue
+        DT_CONNECTION_AUTH_TOKEN: !Sub
+          - '{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_AUTH_TOKEN}}' #pragma: allowlist secret
+          - SecretArn: !FindInMap [ EnvConfig, !Ref Environment, dynatraceSecretArn ]
+        DT_CONNECTION_BASE_URL: !Sub
+          - '{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_BASE_URL}}' #pragma: allowlist secret
+          - SecretArn: !FindInMap [ EnvConfig, !Ref Environment, dynatraceSecretArn ]
+        DT_CLUSTER_ID: !Sub
+          - '{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CLUSTER_ID}}' #pragma: allowlist secret
+          - SecretArn: !FindInMap [ EnvConfig, !Ref Environment, dynatraceSecretArn ]
+        DT_LOG_COLLECTION_AUTH_TOKEN: !Sub
+          - '{{resolve:secretsmanager:${SecretArn}:SecretString:DT_LOG_COLLECTION_AUTH_TOKEN}}' #pragma: allowlist secret
+          - SecretArn: !FindInMap [ EnvConfig, !Ref Environment, dynatraceSecretArn ]
+        DT_TENANT: !Sub
+          - '{{resolve:secretsmanager:${SecretArn}:SecretString:DT_TENANT}}' #pragma: allowlist secret
+          - SecretArn: !FindInMap [ EnvConfig, !Ref Environment, dynatraceSecretArn ]
+        DT_LOGGING_NODEJS_FLAGS: Exporter=true,LambdaSensor=false
+        DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: true
+        DT_OPEN_TELEMETRY_ALLOW_EXPLICIT_PARENT: true
+        POWERTOOLS_LOG_LEVEL: !FindInMap [ EnvConfig, !Ref Environment, LambdaLogLevel ]
+        POWERTOOLS_SERVICE_NAME: !Ref AWS::StackName
+    VpcConfig:
+      SubnetIds:
+        - Fn::ImportValue: !Sub ${VpcStackName}-ProtectedSubnetIdA
+        - Fn::ImportValue: !Sub ${VpcStackName}-ProtectedSubnetIdB
+        - Fn::ImportValue: !Sub ${VpcStackName}-ProtectedSubnetIdC
+      SecurityGroupIds:
+        - Fn::ImportValue: !Sub ${VpcStackName}-AWSServicesEndpointSecurityGroupId
+    Layers:
+      - !Sub
+        - '{{resolve:secretsmanager:${SecretArn}:SecretString:NODEJS_LAYER}}' # pragma: allowlist secret
+        - SecretArn: !FindInMap [ EnvConfig, !Ref Environment, dynatraceSecretArn ]
+
+Conditions:
+  UsePermissionsBoundary: !Not [ !Equals [ !Ref PermissionsBoundary, 'none' ] ]
+  UseCodeSigning: !Not [ !Equals [ !Ref CodeSigningConfigArn, 'none' ] ]
+
+Mappings:
+  EnvConfig:
+    dev:
+      dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables #pragma: allowlist secret
+      LambdaLogLevel: DEBUG
+    build:
+      dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables #pragma: allowlist secret
+      LambdaLogLevel: DEBUG
+    staging:
+      dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables #pragma: allowlist secret
+      LambdaLogLevel: DEBUG
+    integration:
+      dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables #pragma: allowlist secret
+      LambdaLogLevel: INFO
+    production:
+      dynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables #pragma: allowlist secret
+      LambdaLogLevel: INFO
+
+Resources:
+  LambdaEnvironmentVariableEncryptionKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: "KMS key used to encrypt lambda environment variables"
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action:
+              - kms:*
+            Resource: "*"
+          - Effect: "Allow"
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - "kms:Decrypt"
+            Resource: "*"
+            Condition:
+              ArnLike:
+                "aws:SourceArn": !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:*"
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-LambdaEnvironmentVariableEncryptionKey"
+
+  LambdaEnvironmentVariableEncryptionKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub "alias/${AWS::StackName}-LambdaEnvironmentVariableEncryptionKey"
+      TargetKeyId: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
+
+  UiFunction:
+    # checkov:skip=CKV_AWS_115: Function is not configured for function-level concurrent execution Limit
+    # checkov:skip=CKV_AWS_116: DLQ is not appropriate for an Authorizer Lambda
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-UiFunction"
+      Description: "The User Interface for SIS"
+      Handler: frontend.handler # Replace with your actual handler path
+      CodeSigningConfigArn: !If [ UseCodeSigning, !Ref CodeSigningConfigArn, !Ref AWS::NoValue ]
+      MemorySize: 512 # Adjust memory as needed
+      Timeout: 30 # Adjust timeout as needed
+      Role: !GetAtt UiFunctionRole.Arn
+      KmsKeyArn: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
+      Events:
+        HttpApi:
+          Type: HttpApi
+          Properties:
+            Path: /
+            Method: get
+      Tags:
+        CheckovRulesToSkip: CKV_AWS_116.CKV_AWS_115
+        Product: !Ref ProductTagValue
+        System: !Ref SystemTagValue
+        Environment: !Ref Environment
+        Owner: !Ref OwnerTagValue
+        Source: !Ref SourceTagValue
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "es2022"
+        Sourcemap: false
+        EntryPoints:
+          - frontend.ts
+
+  UiFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-UiFunctionRole"
+      Description: !Sub "The role assumed by the ${AWS::StackName}-UiFunction"
+      PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL for your function
+    Value: !Sub 'https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/Prod'

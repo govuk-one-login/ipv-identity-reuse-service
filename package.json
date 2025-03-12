@@ -1,0 +1,38 @@
+{
+  "author": "GDS",
+  "bugs": {
+    "url": "https://github.com/govuk-one-login/ipv-identity-reuse-service/issues"
+  },
+  "dependencies": {
+    "fastify": "^5.2.1"
+  },
+  "description": "",
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.147",
+    "@types/node": "^22.13.10",
+    "esbuild": "^0.25.1",
+    "rimraf": "^6.0.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "homepage": "https://github.com/govuk-one-login/ipv-identity-reuse-service#readme",
+  "license": "MIT",
+  "main": "index.js",
+  "name": "ipv-identity-reuse-service",
+  "packageManager": "npm@11.2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/govuk-one-login/ipv-identity-reuse-service.git"
+  },
+  "scripts": {
+    "package": "rimraf .aws-sam && npm run package:sam",
+    "package:sam": "sam build -t src/infra/template.yaml",
+    "start": "node --import 'data:text/javascript,import { register } from \"node:module\"; import { pathToFileURL } from \"node:url\"; register(\"ts-node/esm\", pathToFileURL(\"./\"));' src/ui/app.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "type": "module",
+  "version": "1.0.0"
+}
