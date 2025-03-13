@@ -163,9 +163,9 @@ Resources:
     Properties:
       FunctionName: !Sub "${AWS::StackName}-UiFunction"
       Description: "The User Interface for SIS"
-      Handler: frontend.handler # Replace with your actual handler path
+      Handler: frontend.handler
       CodeSigningConfigArn: !If [ UseCodeSigning, !Ref CodeSigningConfigArn, !Ref AWS::NoValue ]
-      MemorySize: 512 # Adjust memory as needed
+      MemorySize: 1024 # Adjust memory as needed
       Timeout: 30 # Adjust timeout as needed
       Role: !GetAtt UiFunctionRole.Arn
       KmsKeyArn: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
@@ -173,8 +173,8 @@ Resources:
         HttpApi:
           Type: HttpApi
           Properties:
-            Path: /
-            Method: get
+            Path: /{proxy+}
+            Method: ANY
       Tags:
         CheckovRulesToSkip: CKV_AWS_116.CKV_AWS_115
         Product: !Ref ProductTagValue
@@ -190,11 +190,16 @@ Resources:
         Sourcemap: false
         EntryPoints:
           - frontend.ts
+        Format: esm
+        OutExtension:
+          - .js=.mjs
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
 
   UiFunctionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub "${AWS::StackName}-UiFunctionRole"
+#      RoleName: !Sub "${AWS::StackName}-UiFunctionRole"
       Description: !Sub "The role assumed by the ${AWS::StackName}-UiFunction"
       PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
       AssumeRolePolicyDocument:
@@ -223,4 +228,4 @@ Resources:
 Outputs:
   ApiEndpoint:
     Description: API Gateway endpoint URL for your function
-    Value: !Sub 'https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/Prod'
+    Value: !Sub 'https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com'
