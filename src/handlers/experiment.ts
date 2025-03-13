@@ -8,7 +8,8 @@ nunjucks.configure([
 const sampleTemplate = `
     {% extends "govuk/template.njk" %}
     {% block head %}
-      <link rel="stylesheet" href="{{ assetPath | default("/assets", true) }}/../stylesheets/govuk-frontend-5.9.0.min.css">
+      <link rel="stylesheet" href="{{ rootPath | default("", true) }}/govuk-frontend-5.9.0.min.css">
+      <base href="./v1" />
     {% endblock %}
     {% block content %}
     <h1 class="govuk-heading-xl">Hello world</h1>
@@ -16,9 +17,9 @@ const sampleTemplate = `
 
     {% block bodyEnd %}
     {# Run JavaScript at end of the <body>, to avoid blocking the initial render. #}
-    <script type="module" src="{{ assetPath | default("/assets", true) }}/javascripts/govuk-frontend-5.9.0.min.js"></script>
+    <script type="module" src="{{ rootPath | default("", true) }}/govuk-frontend-5.9.0.min.js"></script>
     <script type="module">
-        import { initAll } from '{{ assetPath | default("/assets", true) }}/javascripts/govuk-frontend-5.9.0.min.js'
+        import { initAll } from '{{ rootPath | default("", true) }}/govuk-frontend-5.9.0.min.js'
         initAll()
     </script>
     {% endblock %}
@@ -28,7 +29,10 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
     try {
         return {
             statusCode: 200,
-            body: nunjucks.renderString(sampleTemplate, { assetPath: "Stage/assets" }),
+            body: nunjucks.renderString(sampleTemplate, { 
+                assetPath: "v1/assets",
+                rootPath: "v1",
+            }),
             headers: {
                 "content-type": "text/html"
             }

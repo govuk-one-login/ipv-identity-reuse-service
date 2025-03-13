@@ -4,54 +4,33 @@ Transform:
 Description: >
   ipv-identity-reuse-service
 
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
     Timeout: 3
     Tracing: Active
-    # You can add LoggingConfig parameters such as the Logformat, Log Group, and SystemLogLevel or ApplicationLogLevel. Learn more here https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html#sam-function-loggingconfig.
     LoggingConfig:
       LogFormat: JSON
   Api:
     TracingEnabled: true
 
 Resources:
-  ExperimentLayer:
-    Type: AWS::Serverless::LayerVersion
-    Properties:
-      ContentUri: ./node_modules
-      CompatibleRuntimes:
-        - nodejs22.x
-
-  # ExperimentApi:
-  #   Type: AWS::Serverless::Api
-  #   Properties:
-  #     StageName: v1
-  #     MethodSettings:
-  #       - ResourcePath: /
-  #         HttpMethod: GET
-  #         CachingEnabled: false
-
   GovUKAssetsBucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub experimentgovassets-${AWS::StackName}
 
   ExperimentApi:
-    Type: AWS::ApiGateway::RestApi
-
-  AssetsFolder:
-    Type: AWS::ApiGateway::Resource
+    Type: AWS::Serverless::Api
+    # Type: AWS::ApiGateway::RestApi
     Properties:
-      RestApiId: !Ref ExperimentApi
-      ParentId: !GetAtt ExperimentApi.RootResourceId
-      PathPart: "{folder}"
-
+      StageName: v1
+      AlwaysDeploy: true
+    
   AssetsItem:
     Type: AWS::ApiGateway::Resource
     Properties:
       RestApiId: !Ref ExperimentApi
-      ParentId: !Ref AssetsFolder
+      ParentId: !GetAtt ExperimentApi.RootResourceId
       PathPart: "{item+}"
 
   AssetsMethod:
@@ -63,7 +42,6 @@ Resources:
       AuthorizationType: NONE
       RequestParameters:
         method.request.path.item: true
-        method.request.path.folder: true
       MethodResponses:
         - StatusCode: "200"
           ResponseParameters:
@@ -75,10 +53,9 @@ Resources:
         Type: AWS
         IntegrationHttpMethod: GET
         Credentials: !GetAtt AssetsResourceS3Role.Arn
-        Uri: !Sub arn:aws:apigateway:${AWS::Region}:s3:path/experimentgovassets-${AWS::StackName}/{folder}/{item}
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:s3:path/experimentgovassets-${AWS::StackName}/{item}
         PassthroughBehavior: WHEN_NO_MATCH
         RequestParameters:
-          integration.request.path.folder: method.request.path.folder
           integration.request.path.item: method.request.path.item
         IntegrationResponses:
         - StatusCode: "200"
@@ -87,7 +64,7 @@ Resources:
             'method.response.header.Content-Length': 'integration.response.header.Content-Length'
             'method.response.header.Content-Type': 'integration.response.header.Content-Type'
             'method.response.header.Cache-Control': "'public, max-age=10'"
-      
+
   AssetsResourceS3Role:
     Type: AWS::IAM::Role
     Properties:
@@ -103,6 +80,13 @@ Resources:
           Action:
           - sts:AssumeRole
       Path: "/"
+
+  ExperimentLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: ./node_modules
+      CompatibleRuntimes:
+        - nodejs22.x
 
   ExperimentFunction:
     Type: AWS::Serverless::Function
