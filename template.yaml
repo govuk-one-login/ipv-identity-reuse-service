@@ -1,0 +1,61 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 
+  - AWS::Serverless-2016-10-31
+Description: >
+  ipv-identity-reuse-service
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+    Tracing: Active
+    # You can add LoggingConfig parameters such as the Logformat, Log Group, and SystemLogLevel or ApplicationLogLevel. Learn more here https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html#sam-function-loggingconfig.
+    LoggingConfig:
+      LogFormat: JSON
+  Api:
+    TracingEnabled: true
+
+Resources:
+  ExperimentLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: ./node_modules
+      CompatibleRuntimes:
+        - nodejs22.x
+
+  ExperimentApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: v1
+      MethodSettings:
+        - ResourcePath: /
+          HttpMethod: GET
+          CachingEnabled: false
+
+  ExperimentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: "."
+      Handler: experiment.lambdaHandler
+      Runtime: nodejs22.x
+      Architectures:
+        - arm64
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /
+            Method: get
+            RestApiId: !Ref ExperimentApi
+      Layers:
+        - !Ref ExperimentLayer
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+          - src/handlers/experiment.ts
+        Target: es2022
+        Minify: true
+        Sourcemap: true
+        External:
+          - govuk-frontend

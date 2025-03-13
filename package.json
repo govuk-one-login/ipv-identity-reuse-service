@@ -1,0 +1,17 @@
+{
+  "name": "ipv-identity-reuse-service",
+  "version": "1.0.0",
+  "main": "app.js",
+  "license": "MIT",
+  "dependencies": {
+    "esbuild": "^0.14.14",
+    "nunjucks": "^3.2.4",
+    "govuk-frontend": "^5.9.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.92",
+    "@types/node": "^20.5.7",
+    "@types/nunjucks": "^3.2.6",
+    "typescript": "^4.8.4"
+  }
+}
