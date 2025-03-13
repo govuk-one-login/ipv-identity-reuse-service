@@ -23,14 +23,86 @@ Resources:
       CompatibleRuntimes:
         - nodejs22.x
 
-  ExperimentApi:
-    Type: AWS::Serverless::Api
+  # ExperimentApi:
+  #   Type: AWS::Serverless::Api
+  #   Properties:
+  #     StageName: v1
+  #     MethodSettings:
+  #       - ResourcePath: /
+  #         HttpMethod: GET
+  #         CachingEnabled: false
+
+  GovUKAssetsBucket:
+    Type: AWS::S3::Bucket
     Properties:
-      StageName: v1
-      MethodSettings:
-        - ResourcePath: /
-          HttpMethod: GET
-          CachingEnabled: false
+      BucketName: !Sub experimentgovassets-${AWS::StackName}
+
+  ExperimentApi:
+    Type: AWS::ApiGateway::RestApi
+
+  AssetsFolder:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ExperimentApi
+      ParentId: !GetAtt ExperimentApi.RootResourceId
+      PathPart: "{folder}"
+
+  AssetsItem:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ExperimentApi
+      ParentId: !Ref AssetsFolder
+      PathPart: "{item+}"
+
+  AssetsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ExperimentApi
+      ResourceId: !Ref AssetsItem
+      HttpMethod: GET
+      AuthorizationType: NONE
+      RequestParameters:
+        method.request.path.item: true
+        method.request.path.folder: true
+      MethodResponses:
+        - StatusCode: "200"
+          ResponseParameters:
+            'method.response.header.Timestamp': true
+            'method.response.header.Content-Length': true
+            'method.response.header.Content-Type': true
+            'method.response.header.Cache-Control': true
+      Integration:
+        Type: AWS
+        IntegrationHttpMethod: GET
+        Credentials: !GetAtt AssetsResourceS3Role.Arn
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:s3:path/experimentgovassets-${AWS::StackName}/{folder}/{item}
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestParameters:
+          integration.request.path.folder: method.request.path.folder
+          integration.request.path.item: method.request.path.item
+        IntegrationResponses:
+        - StatusCode: "200"
+          ResponseParameters:
+            'method.response.header.Timestamp': 'integration.response.header.Date'
+            'method.response.header.Content-Length': 'integration.response.header.Content-Length'
+            'method.response.header.Content-Type': 'integration.response.header.Content-Type'
+            'method.response.header.Cache-Control': "'public, max-age=10'"
+      
+  AssetsResourceS3Role:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - apigateway.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
 
   ExperimentFunction:
     Type: AWS::Serverless::Function
