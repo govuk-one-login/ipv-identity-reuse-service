@@ -113,5 +113,7 @@ Resources:
         Target: es2022
         Minify: true
         Sourcemap: true
+        Loader:
+          - .njk=file
         External:
           - govuk-frontend
