@@ -1,0 +1,256 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: Core components for the Identity Reuse Service
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues:
+      - local
+      - dev
+      - build
+      - staging
+      - integration
+      - production
+    Default: local
+
+  CodeSigningConfigArn:
+    Type: String
+    Description: The ARN of the Code Signing Config to use, provided by the deployment pipeline
+    Default: none
+
+  PermissionsBoundary:
+    Type: String
+    Description: The ARN of the permissions boundary to apply to any role created by the template
+    Default: none
+
+  VpcStackName:
+    Description: VPC Stack name
+    Type: String
+    Default: none
+
+  DynatraceNodeLayerArn:
+    Type: String
+    Description: The ARN of the OneAgent Node layer for Lambda Node functions
+    Default: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_289_2_20240322-044523_with_collector_nodejs:1"
+
+  LogGroupRetentionInDays:
+    Description: The number of days a log group should retain logs
+    Type: Number
+    MinValue: "1"
+    Default: "30"
+
+Mappings:
+  EnvironmentMap:
+    "013758878511": # di-id-reuse-core-dev
+      dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+    "688341086169": # di-id-reuse-core-build
+      dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+    "922902741880": # di-id-reuse-core-staging
+      dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+    "406416508755": # di-id-reuse-core-integration
+      dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+    "499563136613": # di-id-reuse-core-production
+      dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+    
+Conditions:
+  UseCodeSigning:
+    Fn::Not:
+      - Fn::Equals:
+          - !Ref CodeSigningConfigArn
+          - none
+
+  UsePermissionsBoundary:
+    Fn::Not:
+      - Fn::Equals:
+          - !Ref PermissionsBoundary
+          - none
+
+  DynaTraceEnabled:
+    Fn::Or:
+      - Fn::Equals: [ !Ref Environment, "dev" ]
+      - Fn::Equals: [ !Ref Environment, "build" ]
+      - Fn::Equals: [ !Ref Environment, "staging" ]
+      - Fn::Equals: [ !Ref Environment, "integration" ]
+      - Fn::Equals: [ !Ref Environment, "production" ]
+
+  UseCanaryDeploy:
+    Fn::Or:
+      - Fn::Equals: [ !Ref Environment, "integration" ]
+      - Fn::Equals: [ !Ref Environment, "production" ]
+
+  UseVpc:
+    Fn::Not:
+      - Fn::Equals: [ !Ref VpcStackName, "none" ] 
+
+Globals:
+  Function:
+    MemorySize: 1024
+    CodeUri: ./src/
+    Runtime: nodejs20.x
+    Environment:
+      Variables:
+        AWS_LAMBDA_EXEC_WRAPPER: !If [DynaTraceEnabled, "/opt/dynatrace", !Ref "AWS::NoValue"]
+        DT_CONNECTION_AUTH_TOKEN: !If
+          - DynaTraceEnabled
+          - !Sub
+            - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_AUTH_TOKEN}}"
+            - SecretArn: !FindInMap [ EnvironmentMap, !Ref AWS::AccountId, dynatraceSecretArn ]
+          - !Ref "AWS::NoValue"
+        DT_CONNECTION_BASE_URL: !If
+          - DynaTraceEnabled
+          - !Sub
+            - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_BASE_URL}}"
+            - SecretArn: !FindInMap [ EnvironmentMap, !Ref AWS::AccountId, dynatraceSecretArn ]
+          - !Ref "AWS::NoValue"
+        DT_CLUSTER_ID: !If
+          - DynaTraceEnabled
+          - !Sub
+            - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CLUSTER_ID}}"
+            - SecretArn: !FindInMap [ EnvironmentMap, !Ref AWS::AccountId, dynatraceSecretArn ]
+          - !Ref "AWS::NoValue"
+        DT_LOG_COLLECTION_AUTH_TOKEN: !If
+          - DynaTraceEnabled
+          - !Sub
+            - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_LOG_COLLECTION_AUTH_TOKEN}}"
+            - SecretArn: !FindInMap [ EnvironmentMap, !Ref AWS::AccountId, dynatraceSecretArn ]
+          - !Ref "AWS::NoValue"
+        DT_TENANT: !If
+          - DynaTraceEnabled
+          - !Sub
+            - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_TENANT}}"
+            - SecretArn: !FindInMap [ EnvironmentMap, !Ref AWS::AccountId, dynatraceSecretArn ]
+          - !Ref "AWS::NoValue"
+        DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: !If [DynaTraceEnabled, "true", !Ref "AWS::NoValue"]
+    CodeSigningConfigArn: !If
+      - UseCodeSigning
+      - !Ref CodeSigningConfigArn
+      - !Ref AWS::NoValue
+    PermissionsBoundary: !If
+      - UsePermissionsBoundary
+      - !Ref PermissionsBoundary
+      - !Ref AWS::NoValue
+    VpcConfig: !If
+      - UseVpc
+      - SecurityGroupIds:
+          - Fn::ImportValue: !Sub "${VpcStackName}-AWSServicesEndpointSecurityGroupId"
+        SubnetIds:
+          - Fn::ImportValue: !Sub "${VpcStackName}-PrivateSubnetIdA"
+          - Fn::ImportValue: !Sub "${VpcStackName}-PrivateSubnetIdB"
+      - !Ref "AWS::NoValue"
+    Tracing: Active
+    AutoPublishAlias: live
+    DeploymentPreference:
+      Type: !If
+          - UseCanaryDeploy
+          - !Ref CanaryDeploymentStrategy
+          - AllAtOnce
+      Role: !GetAtt CanaryDeployRole.Arn
+      # Alarms: !If
+      #     - UseCanaryDeploy
+      #     - - !Ref CanaryErrorAlarm
+      #     - - !Ref "AWS::NoValue"
+    Layers: !If
+      - DynaTraceEnabled
+      - - !Ref DynatraceNodeLayerArn
+      - !Ref AWS::NoValue
+
+Resources:
+  ExampleLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-ExampleLambda"
+      Description: Example Node.js handler
+      Handler: example-handler.handler
+      Role: !GetAtt ExampleLambdaRole.Arn
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+          - example-handler.ts
+        Sourcemap: true
+        Target: "es2020"
+      
+  ExampleLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+        
+  ExampleLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${ExampleLambda}"
+      RetentionInDays: !Ref LogGroupRetentionInDays
+      KmsKeyId: !GetAtt LoggingKmsKey.Arn
+
+  LoggingKmsKey:
+    Type: AWS::KMS::Key
+    Properties:
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action:
+              - kms:*
+            Resource: "*"
+          - Effect: Allow
+            Principal:
+              Service: !Sub "logs.${AWS::Region}.amazonaws.com"
+            Action:
+              - "kms:Encrypt*"
+              - "kms:Decrypt*"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:Describe*"
+            Resource: "*"
+            Condition:
+              ArnLike:
+                "kms:EncryptionContext:aws:logs:arn": !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+          - Effect: Allow
+            Principal:
+              Service: !Sub cloudwatch.amazonaws.com
+            Action: kms:*
+            Resource: '*'
+
+  CanaryDeploymentStrategy:
+    Condition: UseCanaryDeploy
+    Type: AWS::CodeDeploy::DeploymentConfig
+    Properties:
+      ComputePlatform: Lambda
+      TrafficRoutingConfig:
+        Type: TimeBasedLinear
+        TimeBasedLinear:
+          LinearInterval: 1
+          LinearPercentage: 20
+
+  CanaryDeployRole:
+    Type: AWS::IAM::Role
+    Condition: UseCanaryDeploy
+    Properties:
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codedeploy.eu-west-2.amazonaws.com
+            Action: "sts:AssumeRole"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSCodeDeployRoleForLambda"
