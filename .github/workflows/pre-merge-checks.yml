@@ -1,0 +1,92 @@
+name: Pre-merge checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build:
+    if: ${{ !github.event.pull_request.draft }}
+    uses: ./.github/workflows/build.yml
+    permissions:
+      contents: read
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # run-tests:
+  #   if: ${{ !github.event.pull_request.draft }}
+  #   uses: ./.github/workflows/test.yml
+  #   permissions:
+  #     contents: read
+  #   secrets:
+  #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # pre-commit:
+  #   name: pre-commit
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: read
+  #   steps:
+  #     - name: Pull repository
+  #       uses: actions/checkout@v4
+
+  #     - name: Run pre-commit
+  #       uses: govuk-one-login/github-actions/code-quality/run-pre-commit@5597473c825eb4db0c0f97529a419f0a09cd56f7
+  #       with:
+  #         all-files: true
+  #         pull-repository: true
+
+  # run-gitlint:
+  #   if: ${{ !github.event.pull_request.draft }}
+  #   name: Run Gitlint
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 5
+  #   permissions:
+  #     contents: read
+  #   steps:
+  #     - name: Pull repository
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 2
+
+  #     - name: Install gitlint
+  #       shell: bash
+  #       run: |
+  #         python -m pip install gitlint
+
+  #     - name: Run gitlint
+  #       shell: bash
+  #       run: |
+  #         # Lint everything from the base to the latest
+  #         gitlint --commits "${{ github.event.pull_request.base.sha }}..HEAD"
+
+  # preview:
+  #   if: ${{ !github.event.pull_request.draft && contains( github.event.pull_request.labels.*.name, 'deploy') }}
+  #   needs:
+  #     - run-tests
+  #     - build
+  #   uses: ./.github/workflows/deploy-to-aws.yaml
+  #   permissions:
+  #     id-token: write
+  #     contents: read
+  #   with:
+  #     environment: development
+  #   secrets:
+  #     aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
+  #     aws-s3-bucket: ${{ secrets.GHA_SAM_DEPLOYMENT_BUCKET }}
+
+  # preview-tests:
+  #   if: ${{ !github.event.pull_request.draft && contains( github.event.pull_request.labels.*.name, 'deploy') }}
+  #   needs: preview
+  #   uses: ./.github/workflows/deployment-tests.yml
+  #   permissions:
+  #     id-token: write
+  #     contents: read
+  #   with:
+  #     environment: development
+  #     stack-name: ${{ needs.preview.outputs.stack-name }}
+  #   secrets:
+  #     aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}

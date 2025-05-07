@@ -1,0 +1,35 @@
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: eu-west-2
+      SAM_CLI_TELEMETRY: "0"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Shallow clone.
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+
+      - name: Build SAM application
+        uses: govuk-one-login/github-actions/sam/build-application@1ef1d955b2fd248b51fc803f6b64ccac9f04cd84
+        with:
+          enable-beta-features: true
+          template: "template.yaml"
+          aws-region: "eu-west-2"
+          upload-artifact: true
+          artifact-name: built-code
+          sam-version: 1.136.0
