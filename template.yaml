@@ -86,7 +86,7 @@ Conditions:
 Globals:
   Function:
     MemorySize: 1024
-    CodeUri: ./src/
+    CodeUri: ./
     Runtime: nodejs20.x
     Environment:
       Variables:
@@ -167,7 +167,7 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         EntryPoints:
-          - example-handler.ts
+          - src/example-handler.ts
         Sourcemap: true
         Target: "es2020"
       
@@ -238,7 +238,6 @@ Resources:
 
   CanaryDeployRole:
     Type: AWS::IAM::Role
-    Condition: UseCanaryDeploy
     Properties:
       PermissionsBoundary: !If
         - UsePermissionsBoundary

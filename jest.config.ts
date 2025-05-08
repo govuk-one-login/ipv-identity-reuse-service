@@ -1,4 +1,4 @@
-import type { Config } from 'jest';
+import type { Config } from "jest";
 
 const config: Config = {
   transform: {
@@ -8,7 +8,7 @@ const config: Config = {
   collectCoverage: true,
   coverageDirectory: "coverage",
   coverageProvider: "v8",
-  reporters: ["default"]
+  reporters: ["default"],
 };
 
 export default config;
