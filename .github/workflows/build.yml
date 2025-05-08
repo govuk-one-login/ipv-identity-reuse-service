@@ -1,5 +1,16 @@
 on:
   workflow_call:
+    inputs:
+      artifact-name:
+        description: Build artifact to download and publish
+        default: built-code
+        required: false
+        type: string
+      aws-region:
+        description: AWS Region to deploy
+        default: eu-west-2
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -9,7 +20,7 @@ jobs:
     name: Build Application
     runs-on: ubuntu-latest
     env:
-      AWS_REGION: eu-west-2
+      AWS_REGION: ${{ inputs.aws-region }}
       SAM_CLI_TELEMETRY: "0"
 
     steps:
@@ -29,7 +40,7 @@ jobs:
         with:
           enable-beta-features: true
           template: "template.yaml"
-          aws-region: "eu-west-2"
+          aws-region: ${{ inputs.aws-region }}
           upload-artifact: true
-          artifact-name: built-code
+          artifact-name: ${{ inputs.artifact-name }}
           sam-version: 1.136.0

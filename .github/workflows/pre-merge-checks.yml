@@ -3,6 +3,7 @@ name: Pre-merge checks
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, labeled]
+
 permissions:
   contents: read
   id-token: write
@@ -11,6 +12,9 @@ jobs:
   build:
     if: ${{ !github.event.pull_request.draft }}
     uses: ./.github/workflows/build.yml
+    with:
+      artifact-name: built-code
+      aws-region: eu-west-2
     permissions:
       contents: read
 
