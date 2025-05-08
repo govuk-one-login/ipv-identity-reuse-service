@@ -1,23 +1,12 @@
 {
-  "name": "ipv-identity-reuse-service",
-  "version": "0.0.1",
-  "description": "Stored Identity Service (SIS)",
-  "type": "module",
-  "scripts": {
-    "test": "jest",
-    "lint": "eslint . --ext .ts",
-    "lint-fix": "eslint . --ext .ts --fix"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/govuk-one-login/ipv-identity-reuse-service.git"
-  },
   "author": "GOV.UK One Login",
-  "license": "MIT",
   "bugs": {
     "url": "https://github.com/govuk-one-login/ipv-identity-reuse-service/issues"
   },
-  "homepage": "https://github.com/govuk-one-login/ipv-identity-reuse-service#readme",
+  "dependencies": {
+    "esbuild": "0.25.4"
+  },
+  "description": "Stored Identity Service (SIS)",
   "devDependencies": {
     "@eslint/eslintrc": "3.3.1",
     "@eslint/js": "9.26.0",
@@ -35,7 +24,18 @@
     "ts-node": "10.9.2",
     "typescript": "5.8.3"
   },
-  "dependencies": {
-    "esbuild": "0.25.4"
-  }
+  "homepage": "https://github.com/govuk-one-login/ipv-identity-reuse-service#readme",
+  "license": "MIT",
+  "name": "ipv-identity-reuse-service",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/govuk-one-login/ipv-identity-reuse-service.git"
+  },
+  "scripts": {
+    "lint": "eslint . --ext .ts",
+    "lint-fix": "eslint . --ext .ts --fix",
+    "test": "jest"
+  },
+  "type": "module",
+  "version": "0.0.1"
 }
