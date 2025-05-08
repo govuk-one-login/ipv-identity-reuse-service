@@ -19,35 +19,44 @@ repos:
         exclude: (?:package-lock.json$)
         args: [ --autofix ]
 
-  # - repo: https://github.com/Lucas-C/pre-commit-hooks
-  #   rev: v1.5.5
-  #   hooks:
-  #     - id: remove-tabs
-  #     - id: remove-crlf
+  - repo: https://github.com/Lucas-C/pre-commit-hooks
+    rev: v1.5.5
+    hooks:
+      - id: remove-tabs
+      - id: remove-crlf
 
-  # - repo: https://github.com/Yelp/detect-secrets
-  #   rev: v1.5.0
-  #   hooks:
-  #     - id: detect-secrets
-  #       args: [ '--baseline', '.secrets.baseline' ]
-  #       exclude: 'package.json|yarn.lock|jest.config.js|src/commons/tests/test-constants.ts|src/.*/.*.test.ts|feature-tests/utils/vcs-types-array.ts'
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: [ '--baseline', '.secrets.baseline' ]
+        exclude: 'package.json|yarn.lock|jest.config.js|src/commons/tests/test-constants.ts|src/.*/.*.test.ts|feature-tests/utils/vcs-types-array.ts'
 
-  # - repo: https://github.com/bridgecrewio/checkov.git
-  #   rev: 3.2.382
-  #   hooks:
-  #     - id: checkov
-  #       args: [ --quiet ]
-  #       files: .*
+  - repo: https://github.com/bridgecrewio/checkov.git
+    rev: 3.2.416
+    hooks:
+      - id: checkov
+        args: [ --quiet ]
+        files: .*
 
-  # - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
-  #   rev: v9.21.0
-  #   hooks:
-  #     - id: commitlint
-  #       stages: [ commit-msg ]
-  #       args: [ '--verbose' ]
-  #       verbose: true  # print warnings
+  - repo: local
+    hooks:
+      - id: run-lint
+        name: Run lint
+        language: system
+        entry: bash -c 'npm install --dev && npm run lint "$@"' --
+        files: ".*\\.(js|ts)"
+        pass_filenames: false
 
-  # -   repo: https://github.com/jorisroovers/gitlint
-  #     rev:  v0.19.1
-  #     hooks:
-  #       -   id: gitlint
+  - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
+    rev: v9.22.0
+    hooks:
+      - id: commitlint
+        stages: [ commit-msg ]
+        args: [ '--verbose' ]
+        verbose: true  # print warnings
+
+  -   repo: https://github.com/jorisroovers/gitlint
+      rev:  v0.19.1
+      hooks:
+        -   id: gitlint

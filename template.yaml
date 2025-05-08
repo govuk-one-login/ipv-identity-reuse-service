@@ -42,16 +42,18 @@ Parameters:
 
 Mappings:
   EnvironmentMap:
-    "013758878511": # di-id-reuse-core-dev
+    "local":
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
-    "688341086169": # di-id-reuse-core-build
+    "dev":
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
-    "922902741880": # di-id-reuse-core-staging
+    "build":
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
-    "406416508755": # di-id-reuse-core-integration
+    "staging":
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
-    "499563136613": # di-id-reuse-core-production
+    "integration":
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+    "production":
+      dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables"
     
 Conditions:
   UseCodeSigning:
@@ -95,31 +97,31 @@ Globals:
           - DynaTraceEnabled
           - !Sub
             - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_AUTH_TOKEN}}"
-            - SecretArn: !FindInMap [ EnvironmentMap, !Ref AWS::AccountId, dynatraceSecretArn ]
+            - SecretArn: !FindInMap [ EnvironmentMap, !Ref Environment, dynatraceSecretArn ]
           - !Ref "AWS::NoValue"
         DT_CONNECTION_BASE_URL: !If
           - DynaTraceEnabled
           - !Sub
             - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_BASE_URL}}"
-            - SecretArn: !FindInMap [ EnvironmentMap, !Ref AWS::AccountId, dynatraceSecretArn ]
+            - SecretArn: !FindInMap [ EnvironmentMap, !Ref Environment, dynatraceSecretArn ]
           - !Ref "AWS::NoValue"
         DT_CLUSTER_ID: !If
           - DynaTraceEnabled
           - !Sub
             - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CLUSTER_ID}}"
-            - SecretArn: !FindInMap [ EnvironmentMap, !Ref AWS::AccountId, dynatraceSecretArn ]
+            - SecretArn: !FindInMap [ EnvironmentMap, !Ref Environment, dynatraceSecretArn ]
           - !Ref "AWS::NoValue"
         DT_LOG_COLLECTION_AUTH_TOKEN: !If
           - DynaTraceEnabled
           - !Sub
             - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_LOG_COLLECTION_AUTH_TOKEN}}"
-            - SecretArn: !FindInMap [ EnvironmentMap, !Ref AWS::AccountId, dynatraceSecretArn ]
+            - SecretArn: !FindInMap [ EnvironmentMap, !Ref Environment, dynatraceSecretArn ]
           - !Ref "AWS::NoValue"
         DT_TENANT: !If
           - DynaTraceEnabled
           - !Sub
             - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_TENANT}}"
-            - SecretArn: !FindInMap [ EnvironmentMap, !Ref AWS::AccountId, dynatraceSecretArn ]
+            - SecretArn: !FindInMap [ EnvironmentMap, !Ref Environment, dynatraceSecretArn ]
           - !Ref "AWS::NoValue"
         DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: !If [DynaTraceEnabled, "true", !Ref "AWS::NoValue"]
     CodeSigningConfigArn: !If
@@ -158,6 +160,9 @@ Globals:
 Resources:
   ExampleLambda:
     Type: AWS::Serverless::Function
+    # checkov:skip=CKV_AWS_115: We do not have enough data to allocate the concurrent execution allowance per function.
+    # checkov:skip=CKV_AWS_116: DLQs are not used for synchronous invocations.
+    # checkov:skip=CKV_AWS_173: Check encryption settings for Lambda environmental variable
     Properties:
       FunctionName: !Sub "${AWS::StackName}-ExampleLambda"
       Description: Example Node.js handler
@@ -172,6 +177,7 @@ Resources:
         Target: "es2020"
       
   ExampleLambdaRole:
+    # checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
     Type: AWS::IAM::Role
     Properties:
       PermissionsBoundary: !If
@@ -185,6 +191,18 @@ Resources:
             Principal:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
+      Policies:
+        - PolicyName: VpcConfiguration
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+            - Effect: Allow
+              Action:
+                - "ec2:CreateNetworkInterface"
+                - "ec2:DescribeNetworkInterfaces"
+                - "ec2:DeleteNetworkInterface"
+              Resource: "*"
+          
         
   ExampleLambdaLogGroup:
     Type: AWS::Logs::LogGroup
@@ -224,6 +242,13 @@ Resources:
               Service: !Sub cloudwatch.amazonaws.com
             Action: kms:*
             Resource: '*'
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-LoggingKmsKey"
+        - Key: Stack
+          Value: !Sub "${AWS::StackName}"
 
   CanaryDeploymentStrategy:
     Condition: UseCanaryDeploy
