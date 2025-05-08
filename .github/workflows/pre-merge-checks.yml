@@ -24,10 +24,24 @@ jobs:
     permissions:
       contents: read
     secrets:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      sonar-token: ${{ secrets.SONAR_TOKEN }}
 
   pre-commit:
     if: ${{ !github.event.pull_request.draft }}
     uses: ./.github/workflows/pre-commit.yml
     permissions:
       contents: read
+
+  preview:
+    if: ${{ !github.event.pull_request.draft }}
+    uses: ./.github/workflows/deploy-to-aws.yml
+    needs: 
+      - build
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      environment: development
+    secrets:
+      aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
+      aws-s3-bucket: ${{ secrets.GHA_SAM_DEPLOYMENT_BUCKET }}

@@ -39,7 +39,8 @@ jobs:
     with:
       artifact-name: built-code
       aws-region: eu-west-2
+      environment: development
     secrets:
-      GHA_AWS_ROLE_ARN: ${{ secrets.GHA_AWS_ROLE_ARN }}
-      GHA_SAM_DEPLOYMENT_BUCKET: ${{ secrets.GHA_SAM_DEPLOYMENT_BUCKET }}
-      SIGNING_PROFILE_NAME: ${{ secrets.SIGNING_PROFILE_NAME }}
+      aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
+      sam-s3-bucket:  ${{ secrets.ARTIFACT_BUCKET_NAME }}
+      signing-profile-name:  ${{ secrets.SIGNING_PROFILE_NAME }}
