@@ -32,6 +32,8 @@
     "url": "git+https://github.com/govuk-one-login/ipv-identity-reuse-service.git"
   },
   "scripts": {
+    "detect-secrets:audit": "detect-secrets audit --json .secrets.baseline",
+    "detect-secrets:scan": "detect-secrets scan --baseline .secrets.baseline",
     "lint": "eslint . --ext .ts",
     "lint-fix": "eslint . --ext .ts --fix",
     "test": "jest"
