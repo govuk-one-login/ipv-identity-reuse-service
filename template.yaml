@@ -70,7 +70,6 @@ Conditions:
 
   DynaTraceEnabled:
     Fn::Or:
-      - Fn::Equals: [ !Ref Environment, "dev" ]
       - Fn::Equals: [ !Ref Environment, "build" ]
       - Fn::Equals: [ !Ref Environment, "staging" ]
       - Fn::Equals: [ !Ref Environment, "integration" ]

@@ -1,0 +1,290 @@
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  GitHubOrg:
+    Type: String
+  RepositoryName:
+    Type: String
+  OIDCProviderArn:
+    Description: Arn for the GitHub OIDC Provider.
+    Default: ""
+    Type: String
+
+Conditions:
+  CreateOIDCProvider: !Equals
+    - !Ref OIDCProviderArn
+    - ""
+
+Resources:
+  Role:
+    Type: AWS::IAM::Role
+    # checkov:skip=CKV_AWS_109: "Ensure IAM policies does not allow permissions management without constraints"
+    # checkov:skip=CKV_AWS_111: "Ensure IAM policies does not allow write access without constraints"
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRoleWithWebIdentity
+            Principal:
+              Federated: !If
+                - CreateOIDCProvider
+                - !Ref GithubOidc
+                - !Ref OIDCProviderArn
+            Condition:
+              StringLike:
+                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrg}/${RepositoryName}:*
+      Policies:
+        - PolicyName: GitHubActions
+          PolicyDocument:
+            Version: "2012-10-17"
+            # checkov:skip=CKV_AWS_109: "Ensure IAM policies does not allow permissions management without constraints"
+            # checkov:skip=CKV_AWS_111: "Ensure IAM policies does not allow write access without constraints"
+            # Github OIDC needs to have these permissions in the Dev Environment to stand up our Preview stacks.
+            Statement:
+              - Effect: Allow
+                Resource: "*"
+                Action:
+                  - iam:GetRole
+                  - iam:TagRole
+                  - iam:PassRole
+                  - iam:CreateRole
+                  - iam:DeleteRole
+                  - iam:ListPolicies
+                  - iam:PutRolePolicy
+                  - iam:GetRolePolicy
+                  - iam:DeleteRolePolicy
+                  - iam:AttachRolePolicy
+                  - iam:DetachRolePolicy
+                  - iam:UpdateAssumeRolePolicy
+                  - cloudformation:DescribeStacks
+                  - lambda:CreateEventSourceMapping
+                  - lambda:GetEventSourceMapping
+                  - lambda:DeleteEventSourceMapping
+                  - ec2:DescribeSecurityGroups
+                  - ec2:DescribeSubnets
+                  - ec2:DescribeVpcs
+                  - ssm:DeleteParameter
+                  - s3:ListBucket
+
+              - Effect: Allow
+                Resource: arn:aws:s3:::github-actions-sam* # github-actions-sam-deploy-deploymentartifactsbucke-nqrrh0t3oddl
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                  - s3:DeleteObject
+
+              - Effect: Allow
+                Resource: arn:aws:s3:::github-actions-deployment*
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                  - s3:DeleteObject
+
+              - Effect: Allow
+                Resource:
+                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/*
+                  - !Sub arn:aws:cloudformation:${AWS::Region}:aws:transform/*
+                Action:
+                  - cloudformation:DeleteStack
+                  - cloudformation:GetTemplate
+                  - cloudformation:CreateChangeSet
+                  - cloudformation:ExecuteChangeSet
+                  - cloudformation:DescribeChangeSet
+                  - cloudformation:GetTemplateSummary
+                  - cloudformation:DescribeStackEvents
+
+              - Effect: Allow
+                Resource: [
+                  !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/local*"
+                ]
+                Action: ssm:GetParameters
+
+              - Effect: Allow
+                Resource: !Sub arn:aws:sqs:${AWS::Region}:*
+                Action:
+                  - sqs:TagQueue
+                  - sqs:ListQueues
+                  - sqs:UntagQueue
+                  - sqs:CreateQueue
+                  - sqs:DeleteQueue
+                  - sqs:GetQueueUrl
+                  - sqs:SendMessage
+                  - sqs:DeleteMessage
+                  - sqs:ReceiveMessage
+                  - sqs:AddPermission
+                  - sqs:ListQueueTags
+                  - sqs:RemovePermission
+                  - sqs:SetQueueAttributes
+                  - sqs:GetQueueAttributes
+                  - sqs:ListDeadLetterSourceQueues
+
+              - Effect: Allow
+                Resource: !Sub arn:aws:sns:${AWS::Region}:*
+                Action:
+                  - SNS:CreateTopic
+                  - SNS:DeleteTopic
+                  - SNS:GetTopicAttributes
+                  - SNS:Subscribe
+                  - SNS:ListSubscriptionsByTopic
+                  - SNS:TagResource
+                  - SNS:UntagResource
+
+              - Effect: Allow
+                Resource: !Sub arn:aws:lambda:${AWS::Region}:*
+                Action:
+                  - lambda:AddPermission
+                  - lambda:RemovePermission
+                  - lambda:ListTags
+                  - lambda:ListVersionsByFunction
+                  - lambda:GetFunction
+                  - lambda:CreateFunction
+                  - lambda:DeleteFunction
+                  - lambda:UpdateFunctionCode
+                  - lambda:PublishVersion
+                  - lambda:GetAlias
+                  - lambda:CreateAlias
+                  - lambda:UpdateAlias
+                  - lambda:DeleteAlias
+                  - lambda:InvokeFunction
+                  - lambda:GetProvisionedConcurrencyConfig
+                  - lambda:PutProvisionedConcurrencyConfig
+                  - lambda:DeleteProvisionedConcurrencyConfig
+                  - lambda:DeleteFunctionConcurrency
+                  - lambda:PutFunctionConcurrency
+                  - lambda:GetEventSourceMapping
+                  - lambda:ListEventSourceMappings
+                  - lambda:UpdateEventSourceMapping
+                  - lambda:UpdateFunctionConfiguration
+                  - lambda:TagResource
+                  - lambda:GetFunctionConfiguration
+
+              - Effect: Allow
+                Resource: "*"
+                Action:
+                  - secretsmanager:GetSecretValue
+
+              - Effect: Allow
+                Resource:
+                  - "*"
+                Action:
+                  - kms:DescribeKey
+                  - kms:DeleteAlias
+                  - kms:TagResource
+                  - kms:UntagResource
+                  - kms:ListResourceTags
+                  - kms:EnableKeyRotation
+                  - kms:ScheduleKeyDeletion
+                  - kms:PutKeyPolicy
+                  - kms:CreateKey
+
+              - Effect: Allow
+                Resource:
+                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
+                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/state-machine/*
+                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/states/*
+                Action:
+                  - logs:PutSubscriptionFilter
+                  - logs:CreateLogGroup
+                  - logs:ListTagsForResource
+                  - logs:TagResource
+
+              - Effect: Allow
+                Resource:
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group::log-stream:"
+                Action:
+                  - logs:DescribeLogGroups
+
+              - Effect: Allow
+                Resource:
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*:log-stream:"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/state-machine/*:log-stream:"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/states/*:log-stream:"
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:PutRetentionPolicy
+                  - logs:DeleteSubscriptionFilter
+                  - logs:DeleteLogGroup
+                  - logs:AssociateKmsKey
+                  - logs:DescribeMetricFilters
+                  - logs:PutMetricFilter
+                  - logs:DeleteMetricFilter
+                  - logs:DescribeSubscriptionFilters
+
+              - Effect: Allow
+                Resource:
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*
+                Action:
+                  - states:CreateStateMachine
+                  - states:DescribeStateMachine
+                  - states:UpdateStateMachine
+                  - states:DeleteStateMachine
+                  - states:TagResource
+                  - states:UntagResource
+                  - states:UpdateStateMachine
+                  - states:ListStateMachineVersions
+                  - states:CreateStateMachineAlias
+                  - states:DescribeStateMachineAlias
+                  - states:DeleteStateMachineAlias
+                  - states:UpdateStateMachineAlias
+                  - states:PublishStateMachineVersion
+                  - states:DeleteStateMachineVersion
+
+              - Effect: Allow
+                Resource:
+                  - !Sub arn:aws:codedeploy:${AWS::Region}:${AWS::AccountId}:*
+                Action:
+                  - codedeploy:CreateApplication
+                  - codedeploy:CreateDeployment
+                  - codedeploy:CreateDeploymentGroup
+                  - codedeploy:DeleteApplication
+                  - codedeploy:DeleteDeploymentGroup
+                  - codedeploy:GetApplication
+                  - codedeploy:GetDeployment
+                  - codedeploy:GetDeploymentConfig
+                  - codedeploy:GetDeploymentGroup
+                  - codedeploy:ListApplications
+                  - codedeploy:ListDeploymentGroup
+                  - codedeploy:ListTagsForResource
+                  - codedeploy:RegisterApplicationRevision
+                  - codedeploy:TagResource
+                  - codedeploy:UntagResource
+                  - codedeploy:UpdateApplication
+                  - codedeploy:UpdateDeployment
+                  - codedeploy:UpdateDeploymentGroup
+
+              - Effect: Allow
+                Resource:
+                  - !Sub arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:*
+                Action:
+                  - cloudwatch:PutMetricAlarm
+                  - cloudwatch:DeleteAlarms
+                  - cloudwatch:DescribeAlarms
+                  - cloudwatch:PutCompositeAlarm
+                  - cloudwatch:DeleteCompositeAlarm
+
+              - Effect: Allow
+                Resource: "*"
+                Action:
+                  - application-autoscaling:RegisterScalableTarget
+                  - application-autoscaling:DescribeScalableTargets
+                  - application-autoscaling:DeregisterScalableTarget
+                  - application-autoscaling:PutScalingPolicy
+                  - application-autoscaling:DescribeScalingPolicies
+                  - application-autoscaling:DescribeScalingActivities
+                  - application-autoscaling:DeleteScalingPolicy
+
+  GithubOidc:
+    Type: AWS::IAM::OIDCProvider
+    Condition: CreateOIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+      ThumbprintList:
+        - 6938fd4d98bab03faadb97b34396831e3780aea1
+
+Outputs:
+  Role:
+    Value: !GetAtt Role.Arn
