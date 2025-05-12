@@ -43,18 +43,24 @@ Parameters:
 Mappings:
   EnvironmentMap:
     "local":
+      txmaAccountId: "275907361037"
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
     "dev":
+      txmaAccountId: "275907361037"
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
     "build":
+      txmaAccountId: "779873699903"
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
     "staging":
+      txmaAccountId: "178023842775"
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
     "integration":
+      txmaAccountId: "729485541398"
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
     "production":
+      txmaAccountId: "451773080033"
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables"
-    
+
 Conditions:
   UseCodeSigning:
     Fn::Not:
@@ -75,9 +81,14 @@ Conditions:
       - Fn::Equals: [ !Ref Environment, "integration" ]
       - Fn::Equals: [ !Ref Environment, "production" ]
 
+  IsDev:
+    Fn::Or:
+      - Fn::Equals: [ !Ref Environment, "local" ]
+      - Fn::Equals: [ !Ref Environment, "dev" ]
+
   UseVpc:
     Fn::Not:
-      - Fn::Equals: [ !Ref VpcStackName, "none" ] 
+      - Fn::Equals: [ !Ref VpcStackName, "none" ]
 
 Globals:
   Function:
@@ -159,7 +170,7 @@ Resources:
           - src/example-handler.ts
         Sourcemap: true
         Target: "es2020"
-      
+
   ExampleLambdaRole:
     # checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
     Type: AWS::IAM::Role
@@ -186,8 +197,7 @@ Resources:
                 - "ec2:DescribeNetworkInterfaces"
                 - "ec2:DeleteNetworkInterface"
               Resource: "*"
-          
-        
+
   ExampleLambdaLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -233,3 +243,78 @@ Resources:
           Value: !Sub "${AWS::StackName}-LoggingKmsKey"
         - Key: Stack
           Value: !Sub "${AWS::StackName}"
+
+  AuditEventQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      KmsMasterKeyId: !Ref AuditEventQueueEncryptionKeyAlias
+      VisibilityTimeout: 70
+      MessageRetentionPeriod: 1209600
+      RedriveAllowPolicy:
+        redrivePermission: denyAll
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt AuditEventDeadLetterQueue.Arn
+        maxReceiveCount: 10
+
+  AuditEventDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      KmsMasterKeyId: !Ref AuditEventQueueEncryptionKeyAlias
+
+  AuditEventQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref AuditEventQueue
+      PolicyDocument:
+        Statement:
+          - Sid: "AllowReadByTxMAAccount"
+            Effect: Allow
+            Action:
+              - "sqs:ChangeMessageVisibility"
+              - "sqs:DeleteMessage"
+              - "sqs:GetQueueAttributes"
+              - "sqs:ReceiveMessage"
+            Resource: !GetAtt AuditEventQueue.Arn
+            Principal:
+              AWS: !FindInMap [ EnvironmentMap, !Ref Environment, txmaAccountId ]
+
+  AuditEventQueueEncryptionKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: Symmetric key used to encrypt audit messages at rest in SQS
+      EnableKeyRotation: true
+      KeySpec: SYMMETRIC_DEFAULT
+      KeyPolicy:
+        Version: 2012-10-17
+        Statement:
+          - Sid: Enable Root access
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action:
+              - "kms:*"
+            Resource: '*'
+          - Sid: Allow decryption of events by TxMA
+            Effect: Allow
+            Principal:
+              AWS: !FindInMap [ EnvironmentMap, !Ref Environment, txmaAccountId ]
+            Action:
+              - "kms:decrypt"
+            Resource: '*'
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-AuditEventQueueEncryptionKey"
+        - Key: Stack
+          Value: !Sub "${AWS::StackName}"
+
+  AuditEventQueueEncryptionKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !If
+        - IsDev
+        - !Sub "alias/${AWS::StackName}/auditEventQueueEncryptionKey"
+        - !Sub "alias/${Environment}/auditEventQueueEncryptionKey"
+      TargetKeyId: !Ref AuditEventQueueEncryptionKey
