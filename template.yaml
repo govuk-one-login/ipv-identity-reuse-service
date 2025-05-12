@@ -75,11 +75,6 @@ Conditions:
       - Fn::Equals: [ !Ref Environment, "integration" ]
       - Fn::Equals: [ !Ref Environment, "production" ]
 
-  UseCanaryDeploy:
-    Fn::Or:
-      - Fn::Equals: [ !Ref Environment, "integration" ]
-      - Fn::Equals: [ !Ref Environment, "production" ]
-
   UseVpc:
     Fn::Not:
       - Fn::Equals: [ !Ref VpcStackName, "none" ] 
@@ -141,16 +136,6 @@ Globals:
       - !Ref "AWS::NoValue"
     Tracing: Active
     AutoPublishAlias: live
-    DeploymentPreference:
-      Type: !If
-          - UseCanaryDeploy
-          - !Ref CanaryDeploymentStrategy
-          - AllAtOnce
-      Role: !GetAtt CanaryDeployRole.Arn
-      # Alarms: !If
-      #     - UseCanaryDeploy
-      #     - - !Ref CanaryErrorAlarm
-      #     - - !Ref "AWS::NoValue"
     Layers: !If
       - DynaTraceEnabled
       - - !Ref DynatraceNodeLayerArn
@@ -248,32 +233,3 @@ Resources:
           Value: !Sub "${AWS::StackName}-LoggingKmsKey"
         - Key: Stack
           Value: !Sub "${AWS::StackName}"
-
-  CanaryDeploymentStrategy:
-    Condition: UseCanaryDeploy
-    Type: AWS::CodeDeploy::DeploymentConfig
-    Properties:
-      ComputePlatform: Lambda
-      TrafficRoutingConfig:
-        Type: TimeBasedLinear
-        TimeBasedLinear:
-          LinearInterval: 1
-          LinearPercentage: 20
-
-  CanaryDeployRole:
-    Type: AWS::IAM::Role
-    Properties:
-      PermissionsBoundary: !If
-        - UsePermissionsBoundary
-        - !Ref PermissionsBoundary
-        - !Ref AWS::NoValue
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - codedeploy.eu-west-2.amazonaws.com
-            Action: "sts:AssumeRole"
-      ManagedPolicyArns:
-        - "arn:aws:iam::aws:policy/service-role/AWSCodeDeployRoleForLambda"
