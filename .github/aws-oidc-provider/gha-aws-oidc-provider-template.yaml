@@ -169,15 +169,16 @@ Resources:
                 Resource:
                   - "*"
                 Action:
-                  - kms:DescribeKey
+                  - kms:CreateAlias
+                  - kms:CreateKey
                   - kms:DeleteAlias
+                  - kms:DescribeKey
+                  - kms:EnableKeyRotation
+                  - kms:ListResourceTags
+                  - kms:PutKeyPolicy
+                  - kms:ScheduleKeyDeletion
                   - kms:TagResource
                   - kms:UntagResource
-                  - kms:ListResourceTags
-                  - kms:EnableKeyRotation
-                  - kms:ScheduleKeyDeletion
-                  - kms:PutKeyPolicy
-                  - kms:CreateKey
 
               - Effect: Allow
                 Resource:
