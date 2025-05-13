@@ -46,8 +46,7 @@ jobs:
   publish:
     uses: ./.github/workflows/publish.yml
     needs: 
-      - build
-      - run-tests
+      - preview-main
     permissions:
       contents: read
       id-token: write
