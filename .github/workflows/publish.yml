@@ -1,0 +1,61 @@
+on:
+  workflow_call:
+    inputs:
+      aws-region:
+        description: AWS Region to deploy
+        default: eu-west-2
+        required: false
+        type: string
+      artifact-name:
+        description: Build artifact to download and publish
+        default: built-code
+        required: false
+        type: string
+      environment:
+        description: Environment to deploy to
+        default: development
+        required: false
+        type: string
+    secrets:
+      aws-role-arn:
+        description: >
+          The Amazon Resource Name (ARN) of the role to assume. Use the provided credentials to assume an IAM role and
+          configure the Actions environment with the assumed role credentials rather than with the provided credentials.
+        required: true
+      sam-s3-bucket:
+        description: The name of the artifact S3 bucket
+        required: true
+      signing-profile-name:
+        description: The name of the Signing Profile. This should be unset in dev environments
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Get distribution artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: .aws-sam/build
+
+      - name: Assume AWS role
+        uses: aws-actions/configure-aws-credentials@v4.1.0
+        with:
+          role-to-assume: ${{ secrets.aws-role-arn }}
+          aws-region: ${{ inputs.aws-region }}
+
+      - name: Upload SAM application
+        uses: govuk-one-login/devplatform-upload-action@4aea54e8885223b8d92b23b3dbf3bf5ee7f44003 # pin@v3.9.4
+        with:
+          artifact-bucket-name: ${{ secrets.sam-s3-bucket }}
+          signing-profile-name: ${{ secrets.signing-profile-name }}
+          working-directory: .
+          template-file: .aws-sam/build/template.yaml

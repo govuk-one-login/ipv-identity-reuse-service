@@ -1,0 +1,61 @@
+name: Build and deploy with secure pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      artifact-name: built-code
+      aws-region: eu-west-2
+    permissions:
+      contents: read
+
+  run-tests:
+    uses: ./.github/workflows/test.yml
+    permissions:
+      contents: read
+    secrets:
+      sonar-token: ${{ secrets.SONAR_TOKEN }}
+
+  preview-main:
+    uses: ./.github/workflows/deploy-to-aws.yml
+    needs: 
+      - build
+      - run-tests
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      environment: development
+    secrets:
+      aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
+      aws-s3-bucket: ${{ secrets.GHA_SAM_DEPLOYMENT_BUCKET }}
+
+  publish:
+    uses: ./.github/workflows/publish.yml
+    needs: 
+      - build
+      - run-tests
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      artifact-name: built-code
+      aws-region: eu-west-2
+      environment: build
+    secrets:
+      aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
+      sam-s3-bucket:  ${{ secrets.ARTIFACT_SOURCE_BUCKET_NAME }}
+      signing-profile-name:  ${{ secrets.SIGNING_PROFILE_NAME }}

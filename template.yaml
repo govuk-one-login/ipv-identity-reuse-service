@@ -1,0 +1,320 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: Core components for the Identity Reuse Service
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues:
+      - local
+      - dev
+      - build
+      - staging
+      - integration
+      - production
+    Default: local
+
+  CodeSigningConfigArn:
+    Type: String
+    Description: The ARN of the Code Signing Config to use, provided by the deployment pipeline
+    Default: none
+
+  PermissionsBoundary:
+    Type: String
+    Description: The ARN of the permissions boundary to apply to any role created by the template
+    Default: none
+
+  VpcStackName:
+    Description: VPC Stack name
+    Type: String
+    Default: none
+
+  DynatraceNodeLayerArn:
+    Type: String
+    Description: The ARN of the OneAgent Node layer for Lambda Node functions
+    Default: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_289_2_20240322-044523_with_collector_nodejs:1"
+
+  LogGroupRetentionInDays:
+    Description: The number of days a log group should retain logs
+    Type: Number
+    MinValue: "1"
+    Default: "30"
+
+Mappings:
+  EnvironmentMap:
+    "local":
+      txmaAccountId: "275907361037"
+      dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+    "dev":
+      txmaAccountId: "275907361037"
+      dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+    "build":
+      txmaAccountId: "779873699903"
+      dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+    "staging":
+      txmaAccountId: "178023842775"
+      dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+    "integration":
+      txmaAccountId: "729485541398"
+      dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+    "production":
+      txmaAccountId: "451773080033"
+      dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables"
+
+Conditions:
+  UseCodeSigning:
+    Fn::Not:
+      - Fn::Equals:
+          - !Ref CodeSigningConfigArn
+          - none
+
+  UsePermissionsBoundary:
+    Fn::Not:
+      - Fn::Equals:
+          - !Ref PermissionsBoundary
+          - none
+
+  DynaTraceEnabled:
+    Fn::Or:
+      - Fn::Equals: [ !Ref Environment, "build" ]
+      - Fn::Equals: [ !Ref Environment, "staging" ]
+      - Fn::Equals: [ !Ref Environment, "integration" ]
+      - Fn::Equals: [ !Ref Environment, "production" ]
+
+  IsDev:
+    Fn::Or:
+      - Fn::Equals: [ !Ref Environment, "local" ]
+      - Fn::Equals: [ !Ref Environment, "dev" ]
+
+  UseVpc:
+    Fn::Not:
+      - Fn::Equals: [ !Ref VpcStackName, "none" ]
+
+Globals:
+  Function:
+    MemorySize: 1024
+    CodeUri: ./
+    Runtime: nodejs20.x
+    Environment:
+      Variables:
+        AWS_LAMBDA_EXEC_WRAPPER: !If [DynaTraceEnabled, "/opt/dynatrace", !Ref "AWS::NoValue"]
+        DT_CONNECTION_AUTH_TOKEN: !If
+          - DynaTraceEnabled
+          - !Sub
+            - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_AUTH_TOKEN}}"
+            - SecretArn: !FindInMap [ EnvironmentMap, !Ref Environment, dynatraceSecretArn ]
+          - !Ref "AWS::NoValue"
+        DT_CONNECTION_BASE_URL: !If
+          - DynaTraceEnabled
+          - !Sub
+            - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_BASE_URL}}"
+            - SecretArn: !FindInMap [ EnvironmentMap, !Ref Environment, dynatraceSecretArn ]
+          - !Ref "AWS::NoValue"
+        DT_CLUSTER_ID: !If
+          - DynaTraceEnabled
+          - !Sub
+            - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CLUSTER_ID}}"
+            - SecretArn: !FindInMap [ EnvironmentMap, !Ref Environment, dynatraceSecretArn ]
+          - !Ref "AWS::NoValue"
+        DT_LOG_COLLECTION_AUTH_TOKEN: !If
+          - DynaTraceEnabled
+          - !Sub
+            - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_LOG_COLLECTION_AUTH_TOKEN}}"
+            - SecretArn: !FindInMap [ EnvironmentMap, !Ref Environment, dynatraceSecretArn ]
+          - !Ref "AWS::NoValue"
+        DT_TENANT: !If
+          - DynaTraceEnabled
+          - !Sub
+            - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_TENANT}}"
+            - SecretArn: !FindInMap [ EnvironmentMap, !Ref Environment, dynatraceSecretArn ]
+          - !Ref "AWS::NoValue"
+        DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: !If [DynaTraceEnabled, "true", !Ref "AWS::NoValue"]
+    CodeSigningConfigArn: !If
+      - UseCodeSigning
+      - !Ref CodeSigningConfigArn
+      - !Ref AWS::NoValue
+    PermissionsBoundary: !If
+      - UsePermissionsBoundary
+      - !Ref PermissionsBoundary
+      - !Ref AWS::NoValue
+    VpcConfig: !If
+      - UseVpc
+      - SecurityGroupIds:
+          - Fn::ImportValue: !Sub "${VpcStackName}-AWSServicesEndpointSecurityGroupId"
+        SubnetIds:
+          - Fn::ImportValue: !Sub "${VpcStackName}-PrivateSubnetIdA"
+          - Fn::ImportValue: !Sub "${VpcStackName}-PrivateSubnetIdB"
+      - !Ref "AWS::NoValue"
+    Tracing: Active
+    AutoPublishAlias: live
+    Layers: !If
+      - DynaTraceEnabled
+      - - !Ref DynatraceNodeLayerArn
+      - !Ref AWS::NoValue
+
+Resources:
+  ExampleLambda:
+    Type: AWS::Serverless::Function
+    # checkov:skip=CKV_AWS_115: We do not have enough data to allocate the concurrent execution allowance per function.
+    # checkov:skip=CKV_AWS_116: DLQs are not used for synchronous invocations.
+    # checkov:skip=CKV_AWS_173: Check encryption settings for Lambda environmental variable
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-ExampleLambda"
+      Description: Example Node.js handler
+      Handler: example-handler.handler
+      Role: !GetAtt ExampleLambdaRole.Arn
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+          - src/example-handler.ts
+        Sourcemap: true
+        Target: "es2020"
+
+  ExampleLambdaRole:
+    # checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
+    Type: AWS::IAM::Role
+    Properties:
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: VpcConfiguration
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+            - Effect: Allow
+              Action:
+                - "ec2:CreateNetworkInterface"
+                - "ec2:DescribeNetworkInterfaces"
+                - "ec2:DeleteNetworkInterface"
+              Resource: "*"
+
+  ExampleLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${ExampleLambda}"
+      RetentionInDays: !Ref LogGroupRetentionInDays
+      KmsKeyId: !GetAtt LoggingKmsKey.Arn
+
+  LoggingKmsKey:
+    Type: AWS::KMS::Key
+    Properties:
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action:
+              - kms:*
+            Resource: "*"
+          - Effect: Allow
+            Principal:
+              Service: !Sub "logs.${AWS::Region}.amazonaws.com"
+            Action:
+              - "kms:Encrypt*"
+              - "kms:Decrypt*"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:Describe*"
+            Resource: "*"
+            Condition:
+              ArnLike:
+                "kms:EncryptionContext:aws:logs:arn": !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+          - Effect: Allow
+            Principal:
+              Service: !Sub cloudwatch.amazonaws.com
+            Action: kms:*
+            Resource: '*'
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-LoggingKmsKey"
+        - Key: Stack
+          Value: !Sub "${AWS::StackName}"
+
+  AuditEventQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      KmsMasterKeyId: !Ref AuditEventQueueEncryptionKeyAlias
+      VisibilityTimeout: 70
+      MessageRetentionPeriod: 1209600
+      RedriveAllowPolicy:
+        redrivePermission: denyAll
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt AuditEventDeadLetterQueue.Arn
+        maxReceiveCount: 10
+
+  AuditEventDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      KmsMasterKeyId: !Ref AuditEventQueueEncryptionKeyAlias
+
+  AuditEventQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref AuditEventQueue
+      PolicyDocument:
+        Statement:
+          - Sid: "AllowReadByTxMAAccount"
+            Effect: Allow
+            Action:
+              - "sqs:ChangeMessageVisibility"
+              - "sqs:DeleteMessage"
+              - "sqs:GetQueueAttributes"
+              - "sqs:ReceiveMessage"
+            Resource: !GetAtt AuditEventQueue.Arn
+            Principal:
+              AWS: !FindInMap [ EnvironmentMap, !Ref Environment, txmaAccountId ]
+
+  AuditEventQueueEncryptionKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: Symmetric key used to encrypt audit messages at rest in SQS
+      EnableKeyRotation: true
+      KeySpec: SYMMETRIC_DEFAULT
+      KeyPolicy:
+        Version: 2012-10-17
+        Statement:
+          - Sid: Enable Root access
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action:
+              - "kms:*"
+            Resource: '*'
+          - Sid: Allow decryption of events by TxMA
+            Effect: Allow
+            Principal:
+              AWS: !FindInMap [ EnvironmentMap, !Ref Environment, txmaAccountId ]
+            Action:
+              - "kms:decrypt"
+            Resource: '*'
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-AuditEventQueueEncryptionKey"
+        - Key: Stack
+          Value: !Sub "${AWS::StackName}"
+
+  AuditEventQueueEncryptionKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !If
+        - IsDev
+        - !Sub "alias/${AWS::StackName}/auditEventQueueEncryptionKey"
+        - !Sub "alias/${Environment}/auditEventQueueEncryptionKey"
+      TargetKeyId: !Ref AuditEventQueueEncryptionKey

@@ -1,0 +1,146 @@
+name: Deploy to AWS
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: GitHub Actions environment
+        required: true
+        type: string
+      stack-name:
+        description: >
+          The name of the stack to deploy. If this is not provided the stack name is generated from the branch name.
+        required: false
+        type: string
+      environment-name:
+        description: >
+          The name of the environment. If this is not provided it's taken from the branch name.
+        required: false
+        type: string
+      artifact-name:
+        description: Build artifact to download and deploy
+        default: built-code
+        required: false
+        type: string
+      aws-region:
+        description: AWS Region to deploy
+        default: eu-west-2
+        required: false
+        type: string
+    outputs:
+      stack-name:
+        description: The name of the deployed stack
+        value: ${{ jobs.deploy.outputs.stack-name }}
+    secrets:
+      aws-role-arn: 
+        required: true
+        description: >
+          The Amazon Resource Name (ARN) of the role to assume. Use the provided credentials to assume an IAM role and
+          configure the Actions environment with the assumed role credentials rather than with the provided credentials.
+      aws-s3-bucket:
+        description: The name of the SAM S3 bucket
+        required: false
+
+concurrency:
+  group: deploy-${{ inputs.stack-name }}
+  cancel-in-progress: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to AWS
+    runs-on: ubuntu-latest
+    environment: development
+    
+    outputs:
+      stack-name: ${{ steps.output-stack-name.outputs.STACK_NAME }}
+    
+      environment: ${{ inputs.environment }}
+
+    env:
+      AWS_REGION: ${{ inputs.aws-region }}
+      ENVIRONMENT_NAME_LENGTH: 24
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Get distribution artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: .aws-sam/build
+
+      - name: Assume AWS Role
+        uses: aws-actions/configure-aws-credentials@v4.1.0
+        with:
+          role-to-assume: ${{ secrets.aws-role-arn }}
+          aws-region: ${{ inputs.aws-region }}
+
+      - name: Set stack name
+        id: set-stack-name
+        if: inputs.stack-name == ''
+        uses: govuk-one-login/github-actions/beautify-branch-name@0eb1972f8c0d539b3ff4c24d78b3dba917343e7c
+        with:
+          set-env-var: STACK_NAME
+          prefix: preview
+          usage: Stack name
+          length-limit: 30
+
+      - name: Set environment name
+        id: set-environment-name
+        if: inputs.stack-name == ''
+        uses: govuk-one-login/github-actions/beautify-branch-name@0eb1972f8c0d539b3ff4c24d78b3dba917343e7c
+        with:
+          set-env-var: ENVIRONMENT_NAME
+          length-limit: ${{ env.ENVIRONMENT_NAME_LENGTH }}
+          prefix: preview
+          usage: Stack name
+
+      - name: Use supplied stack name
+        id: use-supplied-stack-name
+        if: inputs.stack-name != ''
+        shell: bash
+        env:
+          STACK_NAME: ${{ inputs.stack-name }}
+          ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+        run: |
+          echo "ENVIRONMENT_NAME=${ENVIRONMENT_NAME}" >> "$GITHUB_ENV"
+          echo "STACK_NAME=${STACK_NAME}" >> "$GITHUB_ENV"
+          echo "S3_PREFIX=${STACK_NAME}" >> "$GITHUB_ENV"
+
+      - name: Delete failed stack
+        uses: govuk-one-login/github-actions/sam/delete-stacks@0eb1972f8c0d539b3ff4c24d78b3dba917343e7c
+        with:
+          only-if-failed: true
+          stack-names: ${{ env.STACK_NAME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy SAM Application
+        timeout-minutes: 15
+        env:
+          S3_BUCKET: ${{ secrets.aws-s3-bucket }}
+        run: |
+          echo "$STACK_NAME"
+          echo "$S3_BUCKET"
+          sam deploy \
+            --stack-name "$STACK_NAME" \
+            --region "$AWS_REGION"  \
+            --s3-prefix "${S3_PREFIX:-preview}/$STACK_NAME" \
+            --s3-bucket "$S3_BUCKET" \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --tags DeploymentSource="GitHub Actions" StackType=Preview \
+            --parameter-overrides Environment="dev"
+
+      - name: Report deployment
+        run: echo "Deployed stack \`$STACK_NAME\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Output Stack Name
+        id: output-stack-name
+        run: echo "STACK_NAME=$STACK_NAME" >> "$GITHUB_OUTPUT"

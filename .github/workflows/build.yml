@@ -1,0 +1,46 @@
+on:
+  workflow_call:
+    inputs:
+      artifact-name:
+        description: Build artifact to download and publish
+        default: built-code
+        required: false
+        type: string
+      aws-region:
+        description: AWS Region to deploy
+        default: eu-west-2
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ inputs.aws-region }}
+      SAM_CLI_TELEMETRY: "0"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Shallow clone.
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+
+      - name: Build SAM application
+        uses: govuk-one-login/github-actions/sam/build-application@1ef1d955b2fd248b51fc803f6b64ccac9f04cd84
+        with:
+          enable-beta-features: true
+          template: "template.yaml"
+          aws-region: ${{ inputs.aws-region }}
+          upload-artifact: true
+          artifact-name: ${{ inputs.artifact-name }}
+          sam-version: 1.136.0

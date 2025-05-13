@@ -1,0 +1,47 @@
+name: Pre-merge checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build:
+    if: ${{ !github.event.pull_request.draft }}
+    uses: ./.github/workflows/build.yml
+    with:
+      artifact-name: built-code
+      aws-region: eu-west-2
+    permissions:
+      contents: read
+
+  run-tests:
+    if: ${{ !github.event.pull_request.draft }}
+    uses: ./.github/workflows/test.yml
+    permissions:
+      contents: read
+    secrets:
+      sonar-token: ${{ secrets.SONAR_TOKEN }}
+
+  pre-commit:
+    if: ${{ !github.event.pull_request.draft }}
+    uses: ./.github/workflows/pre-commit.yml
+    permissions:
+      contents: read
+
+  preview:
+    if: ${{ !github.event.pull_request.draft }}
+    uses: ./.github/workflows/deploy-to-aws.yml
+    needs: 
+      - build
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      environment: development
+    secrets:
+      aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
+      aws-s3-bucket: ${{ secrets.GHA_SAM_DEPLOYMENT_BUCKET }}
