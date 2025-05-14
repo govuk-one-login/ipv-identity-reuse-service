@@ -53,7 +53,6 @@ jobs:
     with:
       artifact-name: built-code
       aws-region: eu-west-2
-      environment: build
     secrets:
       aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
       sam-s3-bucket:  ${{ secrets.ARTIFACT_SOURCE_BUCKET_NAME }}
