@@ -101,6 +101,8 @@ Globals:
     MemorySize: 1024
     CodeUri: ./
     Runtime: nodejs20.x
+    Architectures:
+        - arm64
     Environment:
       Variables:
         AWS_LAMBDA_EXEC_WRAPPER: !If [DynaTraceEnabled, "/opt/dynatrace", !Ref "AWS::NoValue"]
@@ -211,24 +213,44 @@ Resources:
       RetentionInDays: !Ref LogGroupRetentionInDays
       KmsKeyId: !GetAtt LoggingKmsKey.Arn
 
+  StubAisProducerApi:
+    # checkov:skip=CKV_AWS_120: Ensure API Gateway caching is enabled
+    # checkov:skip=CKV_AWS_73: "Ensure API Gateway has X-Ray Tracing enabled
+    # checkov:skip=CKV_AWS_76: "Ensure API Gateway has Access Logging enabled"
+    Condition: IsDevBuildOrStaging
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: v1
+      AlwaysDeploy: true
+
   StubAisProducerLambda:
+    Condition: IsDevBuildOrStaging
     Type: AWS::Serverless::Function
     # checkov:skip=CKV_AWS_115: We do not have enough data to allocate the concurrent execution allowance per function.
     # checkov:skip=CKV_AWS_116: DLQs are not used for synchronous invocations.
     # checkov:skip=CKV_AWS_173: Check encryption settings for Lambda environmental variable
     Properties:
       FunctionName: !Sub "${AWS::StackName}-StubAisProducerLambda"
+      CodeUri: src/ais-producer-stub
       Handler: ais-producer-stub-handler.handler
       Role: !GetAtt StubAisProducerRole.Arn
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /
+            Method: get
+            RestApiId: !Ref StubAisProducerApi
     Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        EntryPoints:
-          - src/ais-producer-stub/ais-producer-stub-handler.ts
-        Sourcemap: true
-        Target: "es2020"
+      BuildMethod: makefile
+      # BuildProperties:
+      #   EntryPoints:
+      #     - src/ais-producer-stub/ais-producer-stub-handler.ts
+      #   Sourcemap: true
+      #   Target: "es2020"
 
   StubAisProducerRole:
+    Condition: IsDevBuildOrStaging
     # checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
     Type: AWS::IAM::Role
     Properties:
@@ -256,6 +278,7 @@ Resources:
               Resource: "*"
 
   StubAisProducerLogGroup:
+    Condition: IsDevBuildOrStaging
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/lambda/${StubAisProducerLambda}"
