@@ -1,6 +1,6 @@
 {% extends "govuk/template.njk" %}
 {% block head %}
-    <link rel="stylesheet" href="{{ rootPath | default("", true) }}/govuk-frontend-5.9.0.min.css">
+    <link rel="stylesheet" href="{{ rootPath | default("", true) }}/govuk-frontend-5.10.1.min.css">
     <base href="./v1" />
 {% endblock %}
 {% block content %}
@@ -9,9 +9,9 @@
 
 {% block bodyEnd %}
 {# Run JavaScript at end of the <body>, to avoid blocking the initial render. #}
-<script type="module" src="{{ rootPath | default("", true) }}/govuk-frontend-5.9.0.min.js"></script>
+<script type="module" src="{{ rootPath | default("", true) }}/govuk-frontend-5.10.1.min.js"></script>
 <script type="module">
-    import { initAll } from '{{ rootPath | default("", true) }}/govuk-frontend-5.9.0.min.js'
+    import { initAll } from '{{ rootPath | default("", true) }}/govuk-frontend-5.10.1.min.js'
     initAll()
 </script>
 {% endblock %}

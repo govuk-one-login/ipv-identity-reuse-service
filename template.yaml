@@ -238,7 +238,6 @@ Resources:
     # checkov:skip=CKV_AWS_173: Check encryption settings for Lambda environmental variable
     Properties:
       FunctionName: !Sub "${AWS::StackName}-StubAisProducerLambda"
-      CodeUri: src/ais-producer-stub
       Handler: ais-producer-stub-handler.handler
       Role: !GetAtt StubAisProducerRole.Arn
       Events:
@@ -301,6 +300,73 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${StubAisProducerLambda}"
       RetentionInDays: !Ref LogGroupRetentionInDays
       KmsKeyId: !GetAtt LoggingKmsKey.Arn
+
+  GovUKAssetsBucket:
+    # checkov:skip=CKV_AWS_18: "Ensure the S3 bucket has access logging enabled"
+    # checkov:skip=CKV_AWS_53: "Ensure S3 bucket has block public ACLs enabled"
+    # checkov:skip=CKV_AWS_54: "Ensure S3 bucket has block public policy enabled"
+    # checkov:skip=CKV_AWS_21: "Ensure the S3 bucket has versioning enabled"
+    # checkov:skip=CKV_AWS_55: "Ensure S3 bucket has ignore public ACLs enabled"
+    # checkov:skip=CKV_AWS_56: "Ensure S3 bucket has RestrictPublicBuckets enabled"
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub govuk-frontend-assets-${AWS::StackName}
+
+  AssetsItem:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref StubAisProducerApi
+      ParentId: !GetAtt StubAisProducerApi.RootResourceId
+      PathPart: "{item+}"
+
+  AssetsMethod:
+    # checkov:skip=CKV_AWS_59: "Ensure there is no open access to back-end resources through API"
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref StubAisProducerApi
+      ResourceId: !Ref AssetsItem
+      HttpMethod: GET
+      AuthorizationType: NONE
+      RequestParameters:
+        method.request.path.item: true
+      MethodResponses:
+        - StatusCode: "200"
+          ResponseParameters:
+            'method.response.header.Timestamp': true
+            'method.response.header.Content-Length': true
+            'method.response.header.Content-Type': true
+            'method.response.header.Cache-Control': true
+      Integration: 
+        Type: AWS
+        IntegrationHttpMethod: GET
+        Credentials: !GetAtt AssetsResourceS3Role.Arn
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:s3:path/govuk-frontend-assets-${AWS::StackName}/{item}
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestParameters:
+          integration.request.path.item: method.request.path.item
+        IntegrationResponses:
+        - StatusCode: "200"
+          ResponseParameters:
+            'method.response.header.Timestamp': 'integration.response.header.Date'
+            'method.response.header.Content-Length': 'integration.response.header.Content-Length'
+            'method.response.header.Content-Type': 'integration.response.header.Content-Type'
+            'method.response.header.Cache-Control': "'public, max-age=10'"
+
+  AssetsResourceS3Role:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - apigateway.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
 
   LoggingKmsKey:
     Type: AWS::KMS::Key

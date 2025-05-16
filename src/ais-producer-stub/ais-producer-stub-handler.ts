@@ -10,8 +10,8 @@ const sampleTemplateContents = fs.readFileSync(sampleTemplate, "utf8");
 export const handler = async (): Promise<APIGatewayProxyResult> => ({
   statusCode: 200,
   body: nunjucks.renderString(sampleTemplateContents, {
-    assetPath: "v1/assets",
-    rootPath: "v1",
+    assetPath: "assets",
+    rootPath: ".",
   }),
   headers: {
     "content-type": "text/html",
