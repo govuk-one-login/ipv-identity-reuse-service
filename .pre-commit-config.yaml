@@ -33,7 +33,7 @@ repos:
         exclude: 'package.json|yarn.lock|jest.config.js|src/commons/tests/test-constants.ts|src/.*/.*.test.ts|feature-tests/utils/vcs-types-array.ts'
 
   - repo: https://github.com/bridgecrewio/checkov.git
-    rev: 3.2.416
+    rev: 3.2.424
     hooks:
       - id: checkov
         args: [ --quiet ]

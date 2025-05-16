@@ -155,12 +155,19 @@ Globals:
       - !Ref "AWS::NoValue"
     Tracing: Active
     AutoPublishAlias: live
-    Layers: !If
-      - DynaTraceEnabled
-      - - !Ref DynatraceNodeLayerArn
-      - !Ref AWS::NoValue
+    # Layers: !If
+    #   - DynaTraceEnabled
+    #   - - !Ref DynatraceNodeLayerArn
+    #   - !Ref AWS::NoValue
 
 Resources:
+  GovUKFrontEndLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: ./lambda-layers
+    Metadata:
+      BuildMethod: makefile
+
   ExampleLambda:
     Type: AWS::Serverless::Function
     # checkov:skip=CKV_AWS_115: We do not have enough data to allocate the concurrent execution allowance per function.
@@ -241,13 +248,23 @@ Resources:
             Path: /
             Method: get
             RestApiId: !Ref StubAisProducerApi
+      Layers: 
+        - !If
+          - DynaTraceEnabled
+          - - !Ref DynatraceNodeLayerArn
+          - !Ref AWS::NoValue
+        - !Ref GovUKFrontEndLayer
     Metadata:
-      BuildMethod: makefile
-      # BuildProperties:
-      #   EntryPoints:
-      #     - src/ais-producer-stub/ais-producer-stub-handler.ts
-      #   Sourcemap: true
-      #   Target: "es2020"
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+          - src/ais-producer-stub/ais-producer-stub-handler.ts
+        Sourcemap: true
+        Target: "es2020"
+        Loader:
+          - .njk=file
+        External:
+          - govuk-frontend
 
   StubAisProducerRole:
     Condition: IsDevBuildOrStaging
