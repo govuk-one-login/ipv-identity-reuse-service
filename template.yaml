@@ -86,6 +86,12 @@ Conditions:
       - Fn::Equals: [ !Ref Environment, "local" ]
       - Fn::Equals: [ !Ref Environment, "dev" ]
 
+  IsDevBuildOrStaging:
+    Fn::Or:
+      - Condition: IsDev
+      - Fn::Equals: [ !Ref Environment, "build" ]
+      - Fn::Equals: [ !Ref Environment, "staging" ]
+
   UseVpc:
     Fn::Not:
       - Fn::Equals: [ !Ref VpcStackName, "none" ]
@@ -202,6 +208,57 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/lambda/${ExampleLambda}"
+      RetentionInDays: !Ref LogGroupRetentionInDays
+      KmsKeyId: !GetAtt LoggingKmsKey.Arn
+
+  StubAisProducerLambda:
+    Type: AWS::Serverless::Function
+    # checkov:skip=CKV_AWS_115: We do not have enough data to allocate the concurrent execution allowance per function.
+    # checkov:skip=CKV_AWS_116: DLQs are not used for synchronous invocations.
+    # checkov:skip=CKV_AWS_173: Check encryption settings for Lambda environmental variable
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-StubAisProducerLambda"
+      Handler: ais-producer-stub-handler.handler
+      Role: !GetAtt StubAisProducerRole.Arn
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+          - src/ais-producer-stub/ais-producer-stub-handler.ts
+        Sourcemap: true
+        Target: "es2020"
+
+  StubAisProducerRole:
+    # checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
+    Type: AWS::IAM::Role
+    Properties:
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: VpcConfiguration
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+            - Effect: Allow
+              Action:
+                - "ec2:CreateNetworkInterface"
+                - "ec2:DescribeNetworkInterfaces"
+                - "ec2:DeleteNetworkInterface"
+              Resource: "*"
+
+  StubAisProducerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${StubAisProducerLambda}"
       RetentionInDays: !Ref LogGroupRetentionInDays
       KmsKeyId: !GetAtt LoggingKmsKey.Arn
 
