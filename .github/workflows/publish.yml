@@ -53,7 +53,7 @@ jobs:
           aws-region: ${{ inputs.aws-region }}
 
       - name: Upload SAM application
-        uses: govuk-one-login/devplatform-upload-action@4aea54e8885223b8d92b23b3dbf3bf5ee7f44003 # pin@v3.9.4
+        uses: govuk-one-login/devplatform-upload-action@720ddb75fba8951db5a648ebb416eb233f1b6bc9 # pin@v3.9.4
         with:
           artifact-bucket-name: ${{ secrets.sam-s3-bucket }}
           signing-profile-name: ${{ secrets.signing-profile-name }}
