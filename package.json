@@ -8,6 +8,7 @@
   },
   "description": "Identity Reuse Service",
   "devDependencies": {
+    "@cucumber/cucumber": "^11.3.0",
     "@eslint/eslintrc": "3.3.1",
     "@eslint/js": "9.28.0",
     "@types/jest": "29.5.14",
@@ -23,6 +24,7 @@
     "prettier": "3.5.3",
     "ts-jest": "29.4.0",
     "ts-node": "10.9.2",
+    "tslib": "2.8.1",
     "typescript": "5.8.3"
   },
   "homepage": "https://github.com/govuk-one-login/ipv-identity-reuse-service#readme",
@@ -37,7 +39,8 @@
     "detect-secrets:scan": "detect-secrets scan --baseline .secrets.baseline",
     "lint": "eslint . --ext .ts",
     "lint-fix": "eslint . --ext .ts --fix",
-    "test": "jest"
+    "test": "jest",
+    "test:cucumber": "cucumber-js"
   },
   "type": "module",
   "version": "0.0.1"

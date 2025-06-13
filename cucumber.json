@@ -1,0 +1,16 @@
+{
+  "default": {
+    "formatOptions": {
+      "snippetInterface": "synchronous"
+    },
+    "import": [
+      "tests/cucumber-js/**/*.step.ts"
+    ],
+    "paths": [
+      "tests/**/example.feature"
+    ],
+    "requireModule": [
+      "ts-node/esm"
+    ]
+  }
+}
