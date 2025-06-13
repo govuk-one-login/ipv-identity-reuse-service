@@ -11,10 +11,11 @@ The service is written using Typescript.
 ## Pre-requisites
 
 You should ensure that your machine has the following installed:
-* Node.js 22.x
-* Git
-* AWS CLI
-* AWS SAM CLI
+
+- Node.js 22.x
+- Git
+- AWS CLI
+- AWS SAM CLI
 
 ## Installing
 
@@ -30,6 +31,12 @@ You can run the unit tests using the following command:
 
 ```bash
 npm run test
+```
+
+You can run the acceptance tests using the following command:
+
+```bash
+npm run test:acceptance
 ```
 
 ## Linting
