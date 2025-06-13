@@ -8,6 +8,7 @@
   },
   "description": "Identity Reuse Service",
   "devDependencies": {
+    "@cucumber/cucumber": "11.3.0",
     "@eslint/eslintrc": "3.3.1",
     "@eslint/js": "9.28.0",
     "@types/jest": "29.5.14",
@@ -36,7 +37,9 @@
     "detect-secrets:scan": "detect-secrets scan --baseline .secrets.baseline",
     "lint": "eslint . --ext .ts",
     "lint-fix": "eslint . --ext .ts --fix",
-    "test": "jest"
+    "test": "jest",
+    "test:acceptance": "cucumber-js",
+    "test:unit": "test"
   },
   "type": "module",
   "version": "0.0.1"

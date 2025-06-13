@@ -1,0 +1,16 @@
+{
+  "default": {
+    "formatOptions": {
+      "snippetInterface": "synchronous"
+    },
+    "import": [
+      "tests/acceptance/**/*.step.ts"
+    ],
+    "paths": [
+      "tests/acceptance/features/**/*.feature"
+    ],
+    "requireModule": [
+      "ts-node/esm"
+    ]
+  }
+}
