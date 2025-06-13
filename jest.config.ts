@@ -4,6 +4,7 @@ const config: Config = {
   transform: {
     "^.+\\.ts?$": "ts-jest",
   },
+  testMatch: ["**/jest-cucumber/**/*.steps.ts"],
   clearMocks: true,
   collectCoverage: true,
   coverageDirectory: "coverage",
