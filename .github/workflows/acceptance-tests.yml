@@ -1,0 +1,59 @@
+name: Run acceptance tests
+
+on:
+  workflow_call:
+    inputs:
+      stack-name:
+        type: string
+        description: The name of the deployed stack
+        required: true
+      aws-region:
+        description: AWS Region to deploy
+        default: eu-west-2
+        required: false
+        type: string
+      environment:
+        description: GitHub Actions environment
+        required: true
+        type: string
+    secrets:
+      aws-role-arn:
+        required: true
+        description: >
+          The Amazon Resource Name (ARN) of the role to assume. Use the provided credentials to assume an IAM role and
+          configure the Actions environment with the assumed role credentials rather than with the provided credentials.
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  acceptance-tests:
+    name: Run acceptance tests
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Shallow clone.
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+
+      - name: Run acceptance tests
+        run: npm ci
+
+      - name: Assume AWS role
+        uses: aws-actions/configure-aws-credentials@v4.2.1
+        with:
+          role-to-assume: ${{ secrets.aws-role-arn }}
+          aws-region: ${{ inputs.aws-region }}
+
+      - name: Run acceptance tests
+        env:
+          SAM_STACK_NAME: ${{ inputs.stack-name }}
+        run: npm run test:acceptance

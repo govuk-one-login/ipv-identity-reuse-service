@@ -32,7 +32,7 @@ on:
         description: The name of the deployed stack
         value: ${{ jobs.deploy.outputs.stack-name }}
     secrets:
-      aws-role-arn: 
+      aws-role-arn:
         required: true
         description: >
           The Amazon Resource Name (ARN) of the role to assume. Use the provided credentials to assume an IAM role and
@@ -53,12 +53,10 @@ jobs:
   deploy:
     name: Deploy to AWS
     runs-on: ubuntu-latest
-    environment: development
-    
+    environment: ${{ inputs.environment }}
+
     outputs:
       stack-name: ${{ steps.output-stack-name.outputs.STACK_NAME }}
-    
-      environment: ${{ inputs.environment }}
 
     env:
       AWS_REGION: ${{ inputs.aws-region }}

@@ -33,10 +33,10 @@ You can run the unit tests using the following command:
 npm run test
 ```
 
-You can run the acceptance tests using the following command:
+You can run the acceptance tests using the following command (replacing the value of `<stack-name>`):
 
 ```bash
-npm run test:acceptance
+SAM_STACK_NAME=<stack-name> npm run test:acceptance
 ```
 
 ## Linting
