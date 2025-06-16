@@ -57,6 +57,7 @@ Resources:
                   - iam:DetachRolePolicy
                   - iam:UpdateAssumeRolePolicy
                   - cloudformation:DescribeStacks
+                  - cloudformation:DescribeStackResource
                   - lambda:CreateEventSourceMapping
                   - lambda:GetEventSourceMapping
                   - lambda:DeleteEventSourceMapping
@@ -96,9 +97,7 @@ Resources:
                   - cloudformation:DescribeStackEvents
 
               - Effect: Allow
-                Resource: [
-                  !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/local*"
-                ]
+                Resource: [!Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/local*"]
                 Action: ssm:GetParameters
 
               - Effect: Allow
@@ -289,3 +288,4 @@ Resources:
 Outputs:
   Role:
     Value: !GetAtt Role.Arn
+

@@ -3,10 +3,6 @@ name: Deploy to AWS
 on:
   workflow_call:
     inputs:
-      environment:
-        description: GitHub Actions environment
-        required: true
-        type: string
       stack-name:
         description: >
           The name of the stack to deploy. If this is not provided the stack name is generated from the branch name.
@@ -53,7 +49,7 @@ jobs:
   deploy:
     name: Deploy to AWS
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
+    environment: development
 
     outputs:
       stack-name: ${{ steps.output-stack-name.outputs.STACK_NAME }}
