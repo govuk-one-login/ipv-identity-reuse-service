@@ -3,10 +3,6 @@ name: Deploy to AWS
 on:
   workflow_call:
     inputs:
-      environment:
-        description: GitHub Actions environment
-        required: true
-        type: string
       stack-name:
         description: >
           The name of the stack to deploy. If this is not provided the stack name is generated from the branch name.
@@ -32,7 +28,7 @@ on:
         description: The name of the deployed stack
         value: ${{ jobs.deploy.outputs.stack-name }}
     secrets:
-      aws-role-arn: 
+      aws-role-arn:
         required: true
         description: >
           The Amazon Resource Name (ARN) of the role to assume. Use the provided credentials to assume an IAM role and
@@ -54,11 +50,9 @@ jobs:
     name: Deploy to AWS
     runs-on: ubuntu-latest
     environment: development
-    
+
     outputs:
       stack-name: ${{ steps.output-stack-name.outputs.STACK_NAME }}
-    
-      environment: ${{ inputs.environment }}
 
     env:
       AWS_REGION: ${{ inputs.aws-region }}

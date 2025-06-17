@@ -1,0 +1,19 @@
+{
+  "default": {
+    "format": [
+      "@cucumber/pretty-formatter"
+    ],
+    "formatOptions": {
+      "snippetInterface": "synchronous"
+    },
+    "paths": [
+      "tests/acceptance/features/**/*.feature"
+    ],
+    "require": [
+      "tests/acceptance/**/*.ts"
+    ],
+    "requireModule": [
+      "ts-node/register"
+    ]
+  }
+}

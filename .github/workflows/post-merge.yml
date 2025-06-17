@@ -31,22 +31,32 @@ jobs:
 
   preview-main:
     uses: ./.github/workflows/deploy-to-aws.yml
-    needs: 
+    needs:
       - build
       - run-tests
     permissions:
       id-token: write
       contents: read
-    with:
-      environment: development
     secrets:
       aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
       aws-s3-bucket: ${{ secrets.GHA_SAM_DEPLOYMENT_BUCKET }}
 
+  acceptance-test:
+    uses: ./.github/workflows/acceptance-tests.yml
+    needs:
+      - preview-main
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      stack-name: ${{ needs.preview-main.outputs.stack-name }}
+    secrets:
+      aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
+
   publish:
     uses: ./.github/workflows/publish.yml
-    needs: 
-      - preview-main
+    needs:
+      - acceptance-test
     permissions:
       contents: read
       id-token: write
@@ -55,5 +65,5 @@ jobs:
       aws-region: eu-west-2
     secrets:
       aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
-      sam-s3-bucket:  ${{ secrets.GHA_SAM_DEPLOYMENT_BUCKET }}
-      signing-profile-name:  ${{ secrets.SIGNING_PROFILE_NAME }}
+      sam-s3-bucket: ${{ secrets.GHA_SAM_DEPLOYMENT_BUCKET }}
+      signing-profile-name: ${{ secrets.SIGNING_PROFILE_NAME }}
