@@ -40,6 +40,22 @@ Parameters:
     MinValue: "1"
     Default: "30"
 
+  LambdaDeploymentPreference:
+    Description: "Specifies the configuration to enable gradual Lambda deployments."
+    Type: String
+    Default: "AllAtOnce"
+    AllowedValues:
+      - AllAtOnce
+      - Canary10Percent5Minutes
+      - Canary10Percent10Minutes
+      - Canary10Percent15Minutes
+      - Canary10Percent30Minutes
+      - Linear10PercentEvery10Minutes
+      - Linear10PercentEvery1Minute
+      - Linear10PercentEvery2Minutes
+      - Linear10PercentEvery3Minutes
+      - LambdaCanary50Percent5Minutes
+
 Mappings:
   EnvironmentMap:
     "local":
@@ -151,6 +167,10 @@ Globals:
       - DynaTraceEnabled
       - - !Ref DynatraceNodeLayerArn
       - !Ref AWS::NoValue
+    DeploymentPreference:
+      Type: !Ref LambdaDeploymentPreference
+      Role: !GetAtt CodeDeployServiceRole.Arn
+
 
 Resources:
   ExampleLambda:
@@ -197,6 +217,22 @@ Resources:
                 - "ec2:DescribeNetworkInterfaces"
                 - "ec2:DeleteNetworkInterface"
               Resource: "*"
+
+  CodeDeployServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - codedeploy.amazonaws.com
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRoleForLambda
+      PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
 
   ExampleLambdaLogGroup:
     Type: AWS::Logs::LogGroup
