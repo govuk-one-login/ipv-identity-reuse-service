@@ -42,7 +42,6 @@
 - [ ]  Any related platform changes have been merged and have been applied in the target environment(s)
 - [ ]  This change will deploy with zero downtime (consider the blue/green nature of our deployments)
 - [ ]  Any Sonarcloud issues are addressed or dismissed with a valid reason
-- [ ]  This change does not result in additions or changes to the SPOT response, unless specifically authorised by the story
 - [ ]  Any exceptions to any of the above statements are documented in the description and agreed with the reviewer
 
 ### Checklist for reviewers
