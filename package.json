@@ -14,7 +14,7 @@
     "@cucumber/pretty-formatter": "1.0.1",
     "@eslint/eslintrc": "3.3.1",
     "@eslint/js": "9.29.0",
-    "@types/jest": "29.5.14",
+    "@types/jest": "30.0.0",
     "@typescript-eslint/eslint-plugin": "8.34.0",
     "@typescript-eslint/parser": "8.34.0",
     "eslint": "9.29.0",
