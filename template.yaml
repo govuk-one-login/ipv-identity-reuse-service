@@ -61,21 +61,33 @@ Mappings:
     "local":
       txmaAccountId: "275907361037"
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+      messageQueueArn: "unused"
+      messageQueueKeyArn: "unused"
     "dev":
       txmaAccountId: "275907361037"
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+      messageQueueArn: "unused"
+      messageQueueKeyArn: "unused"
     "build":
       txmaAccountId: "779873699903"
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+      messageQueueArn: "unused"
+      messageQueueKeyArn: "unused"
     "staging":
       txmaAccountId: "178023842775"
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+      messageQueueArn: "arn:aws:sqs:eu-west-2:178023842775:self-staging-EC-SQS-Output-Queue-identityreuse"
+      messageQueueKeyArn: "arn:aws:kms:eu-west-2:178023842775:key/325458a5-de28-4c28-aaf0-678ebefb35ac"
     "integration":
       txmaAccountId: "729485541398"
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+      messageQueueArn: "arn:aws:sqs:eu-west-2:729485541398:self-integration-EC-SQS-Output-Queue-identityreuse"
+      messageQueueKeyArn: "arn:aws:kms:eu-west-2:729485541398:key/c199c69c-7ce7-4a82-b5a7-b344c7ac04f5"
     "production":
       txmaAccountId: "451773080033"
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables"
+      messageQueueArn: "arn:aws:sqs:eu-west-2:451773080033:self-production-EC-SQS-Output-Queue-identityreuse"
+      messageQueueKeyArn: "arn:aws:kms:eu-west-2:451773080033:key/5b5d3a8e-cf70-49ca-bec8-b3a2e61ce770"
 
 Conditions:
   UseCodeSigning:
@@ -102,10 +114,16 @@ Conditions:
       - Fn::Equals: [ !Ref Environment, "local" ]
       - Fn::Equals: [ !Ref Environment, "dev" ]
 
+  IsDevOrBuild:
+    Fn::Or:
+      - Fn::Equals: [ !Ref Environment, "local" ]
+      - Fn::Equals: [ !Ref Environment, "dev" ]
+      - Fn::Equals: [ !Ref Environment, "build" ]
+
   UseVpc:
     Fn::Not:
       - Fn::Equals: [ !Ref VpcStackName, "none" ]
-
+     
 Globals:
   Function:
     MemorySize: 1024
@@ -191,6 +209,24 @@ Resources:
         Sourcemap: true
         Target: "es2020"
 
+  MessageProcessorLambda:
+    Type: AWS::Serverless::Function
+    # checkov:skip=CKV_AWS_115: We do not have enough data to allocate the concurrent execution allowance per function.
+    # checkov:skip=CKV_AWS_116: DLQs are not used for synchronous invocations.
+    # checkov:skip=CKV_AWS_173: Check encryption settings for Lambda environmental variable
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-MessageProcessorLambda"
+      Description: Logs passed in VCs
+      Handler: message-processor.handler
+      Role: !GetAtt MessAgeProcessorLambdaTriggerRole.Arn
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+          - src/message-processor/message-processor.ts
+        Sourcemap: true
+        Target: "es2020"
+
   ExampleLambdaRole:
     # checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
     Type: AWS::IAM::Role
@@ -234,10 +270,51 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRoleForLambda
       PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
 
+  MessAgeProcessorLambdaTriggerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: message-processor-trigger-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaSQSPermissions
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                Resource: !If 
+                  - IsDevOrBuild
+                  - !GetAtt StubQueue.Arn
+                  - !FindInMap [ EnvironmentMap, !Ref Environment, messageQueueArn ]
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                  - kms:GenerateDataKey
+                Resource: !If 
+                  - IsDevOrBuild
+                  - !GetAtt StubQueueKey.Arn
+                  - !FindInMap [ EnvironmentMap, !Ref Environment, messageQueueKeyArn ]
+
   ExampleLambdaLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/lambda/${ExampleLambda}"
+      RetentionInDays: !Ref LogGroupRetentionInDays
+      KmsKeyId: !GetAtt LoggingKmsKey.Arn
+
+  MessageProcessorLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${MessageProcessorLambda}"
       RetentionInDays: !Ref LogGroupRetentionInDays
       KmsKeyId: !GetAtt LoggingKmsKey.Arn
 
@@ -279,6 +356,21 @@ Resources:
           Value: !Sub "${AWS::StackName}-LoggingKmsKey"
         - Key: Stack
           Value: !Sub "${AWS::StackName}"
+
+  StubQueueKey:
+    Type: AWS::KMS::Key
+    Condition: IsDevOrBuild
+    Properties:
+      Description: KMS key for encrypting SQS messages 
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action: kms:*
+            Resource: "*"
 
   AuditEventQueue:
     Type: AWS::SQS::Queue
@@ -354,3 +446,21 @@ Resources:
         - !Sub "alias/${AWS::StackName}/auditEventQueueEncryptionKey"
         - !Sub "alias/${Environment}/auditEventQueueEncryptionKey"
       TargetKeyId: !Ref AuditEventQueueEncryptionKey
+
+  StubQueue:
+    Type: AWS::SQS::Queue
+    Condition: IsDevOrBuild
+    Properties:
+      QueueName: stub-queue
+      KmsMasterKeyId: !Ref StubQueueKey
+
+  MessAgeProcessorLambdaTrigger:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      BatchSize: 1
+      EventSourceArn: !If 
+        - IsDevOrBuild
+        - !GetAtt StubQueue.Arn
+        - !FindInMap [ EnvironmentMap, !Ref Environment, messageQueueArn ]
+      FunctionName: !GetAtt MessageProcessorLambda.Arn
+      Enabled: true
