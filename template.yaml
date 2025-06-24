@@ -123,7 +123,7 @@ Conditions:
   UseVpc:
     Fn::Not:
       - Fn::Equals: [ !Ref VpcStackName, "none" ]
-     
+
 Globals:
   Function:
     MemorySize: 1024
@@ -451,7 +451,7 @@ Resources:
     Type: AWS::SQS::Queue
     Condition: IsDevOrBuild
     Properties:
-      QueueName: stub-queue
+      QueueName: !Sub "${AWS::StackName}-stub-queue"
       KmsMasterKeyId: !Ref StubQueueKey
 
   MessAgeProcessorLambdaTrigger:
