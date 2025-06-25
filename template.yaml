@@ -218,7 +218,7 @@ Resources:
       FunctionName: !Sub "${AWS::StackName}-MessageProcessorLambda"
       Description: Logs passed in VCs
       Handler: message-processor.handler
-      Role: !GetAtt MessAgeProcessorLambdaTriggerRole.Arn
+      Role: !GetAtt MessageProcessorLambdaTriggerRole.Arn
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -270,7 +270,7 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRoleForLambda
       PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
 
-  MessAgeProcessorLambdaTriggerRole:
+  MessageProcessorLambdaTriggerRole:
     Type: AWS::IAM::Role
     Properties:
       RoleName: message-processor-trigger-role
@@ -281,6 +281,8 @@ Resources:
             Principal:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
       Policies:
         - PolicyName: LambdaSQSPermissions
           PolicyDocument:
