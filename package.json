@@ -6,6 +6,7 @@
   "dependencies": {
     "@aws-lambda-powertools/logger": "2.19.0",
     "@aws-lambda-powertools/metrics": "2.19.0",
+    "@types/aws-lambda": "8.10.150",
     "esbuild": "0.25.4"
   },
   "description": "Identity Reuse Service",
