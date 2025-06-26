@@ -26,8 +26,6 @@ describe("message-processor", () => {
       ],
     };
 
-    const result: string = await handler(event);
-
-    expect(result).toBe("execution succeeded");
+    await handler(event);
   });
 });

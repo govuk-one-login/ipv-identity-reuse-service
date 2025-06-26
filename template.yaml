@@ -219,6 +219,10 @@ Resources:
       Description: Logs passed in VCs
       Handler: message-processor.handler
       Role: !GetAtt MessageProcessorLambdaTriggerRole.Arn
+      Environment:
+        Variables:
+          POWERTOOLS_METRICS_NAMESPACE: !If [ IsDev, !Sub "${AWS::StackName}-TXMAMessageProcessor", "TXMAMessageProcessor" ]
+          POWERTOOLS_SERVICE_NAME: "MessagesReceived"
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -273,7 +277,7 @@ Resources:
   MessageProcessorLambdaTriggerRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: message-processor-trigger-role
+      RoleName: !Sub "${AWS::StackName}-MessageProcessorLambdaTriggerRole"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -456,7 +460,7 @@ Resources:
       QueueName: !Sub "${AWS::StackName}-stub-queue"
       KmsMasterKeyId: !Ref StubQueueKey
 
-  MessAgeProcessorLambdaTrigger:
+  MessageProcessorLambdaTrigger:
     Type: AWS::Lambda::EventSourceMapping
     Properties:
       BatchSize: 1
