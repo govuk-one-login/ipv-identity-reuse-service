@@ -4,7 +4,7 @@ version = 0.1
 resolve_s3 = true
 region = "eu-west-2"
 confirm_changeset = true
-capabilities = "CAPABILITY_IAM"
+capabilities = "CAPABILITY_NAMED_IAM"
 disable_rollback = true
 parameter_overrides = "VpcStackName=\"vpc\" LogGroupRetentionInDays=\"30\""
 image_repositories = []
