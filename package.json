@@ -4,15 +4,15 @@
     "url": "https://github.com/govuk-one-login/ipv-identity-reuse-service/issues"
   },
   "dependencies": {
-    "@aws-lambda-powertools/logger": "2.19.0",
-    "@aws-lambda-powertools/metrics": "2.19.0",
+    "@aws-lambda-powertools/logger": "2.22.0",
+    "@aws-lambda-powertools/metrics": "2.22.0",
     "@types/aws-lambda": "8.10.150",
     "esbuild": "0.25.4"
   },
   "description": "Identity Reuse Service",
   "devDependencies": {
-    "@aws-sdk/client-cloudformation": "3.835.0",
-    "@aws-sdk/client-lambda": "3.835.0",
+    "@aws-sdk/client-cloudformation": "3.840.0",
+    "@aws-sdk/client-lambda": "3.840.0",
     "@cucumber/cucumber": "11.3.0",
     "@cucumber/pretty-formatter": "1.0.1",
     "@eslint/eslintrc": "3.3.1",
