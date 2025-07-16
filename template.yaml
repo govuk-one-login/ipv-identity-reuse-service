@@ -474,3 +474,22 @@ Resources:
         - !FindInMap [ EnvironmentMap, !Ref Environment, messageQueueArn ]
       FunctionName: !GetAtt MessageProcessorLambda.Arn
       Enabled: true
+
+  AuditEventDeadLetterQueueAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: "Triggers when any message is in the DLQ"
+      Namespace: "AWS/SQS"
+      MetricName: "ApproximateNumberOfMessagesVisible"
+      Dimensions:
+        - Name: QueueName
+          Value: !Ref AuditEventDeadLetterQueue
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !ImportValue alerting-integration-AlertNotificationTopicArn
+      TreatMissingData: notBreaching
+
