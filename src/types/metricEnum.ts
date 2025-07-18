@@ -1,4 +1,4 @@
-export const MetricEnum = {
+export const MetricName = {
   /**
    * The count of messages received by the service
    */
@@ -7,6 +7,10 @@ export const MetricEnum = {
    * The count of identities invalidated
    */
   IdentityInvalidatedOnIntervention: "IdentityInvalidatedOnIntervention",
+  /**
+   * The requested identity does not exist
+   */
+  IdentityDoesNotExist: "IdentityDoesNotExist",
 } as const;
 
 export const MetricDimension = {

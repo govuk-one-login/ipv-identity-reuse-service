@@ -11,7 +11,7 @@ import {
 } from "@aws-sdk/client-appconfigdata";
 import { Uint8ArrayBlobAdapter } from "@smithy/util-stream";
 import { Configuration } from "../types/configuration";
-import { MetricDimension, MetricEnum } from "../types/metricEnum";
+import { MetricDimension, MetricName } from "../types/metricEnum";
 import { TxmaMessage } from "../types/txmaMessage";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
 
@@ -62,7 +62,7 @@ describe("message-processor", () => {
     // eslint-disable-next-line no-console
     expect(console.log).toHaveEmittedMetricWith(
       expect.objectContaining({
-        Metrics: [{ Name: MetricEnum.MessagesReceived, Unit: MetricUnit.Count }],
+        Metrics: [{ Name: MetricName.MessagesReceived, Unit: MetricUnit.Count }],
         Namespace: process.env.POWERTOOLS_METRICS_NAMESPACE,
       })
     );
@@ -76,7 +76,7 @@ describe("message-processor", () => {
     // eslint-disable-next-line no-console
     expect(console.log).not.toHaveEmittedMetricWith(
       expect.objectContaining({
-        Metrics: [{ Name: MetricEnum.MessagesReceived, Unit: MetricUnit.Count }],
+        Metrics: [{ Name: MetricName.MessagesReceived, Unit: MetricUnit.Count }],
         Namespace: process.env.POWERTOOLS_METRICS_NAMESPACE,
       })
     );
@@ -95,7 +95,7 @@ describe("message-processor", () => {
       // eslint-disable-next-line no-console
       expect(console.log).not.toHaveEmittedMetricWith(
         expect.objectContaining({
-          Metrics: [{ Name: MetricEnum.MessagesReceived, Unit: MetricUnit.Count }],
+          Metrics: [{ Name: MetricName.MessagesReceived, Unit: MetricUnit.Count }],
           Namespace: process.env.POWERTOOLS_METRICS_NAMESPACE,
         })
       );
@@ -141,7 +141,7 @@ describe("message-processor", () => {
       expect.objectContaining({
         service: process.env.POWERTOOLS_SERVICE_NAME,
         [MetricDimension.InterventionCode]: "01",
-        [MetricEnum.IdentityInvalidatedOnIntervention]: 1,
+        [MetricName.IdentityInvalidatedOnIntervention]: 1,
       })
     );
     // eslint-disable-next-line no-console
@@ -149,7 +149,7 @@ describe("message-processor", () => {
       expect.objectContaining({
         service: process.env.POWERTOOLS_SERVICE_NAME,
         [MetricDimension.InterventionCode]: "12",
-        [MetricEnum.IdentityInvalidatedOnIntervention]: 1,
+        [MetricName.IdentityInvalidatedOnIntervention]: 1,
       })
     );
     // eslint-disable-next-line no-console
@@ -157,7 +157,7 @@ describe("message-processor", () => {
       expect.objectContaining({
         service: process.env.POWERTOOLS_SERVICE_NAME,
         [MetricDimension.InterventionCode]: "23",
-        [MetricEnum.IdentityInvalidatedOnIntervention]: 1,
+        [MetricName.IdentityInvalidatedOnIntervention]: 1,
       })
     );
     // eslint-disable-next-line no-console
@@ -165,22 +165,91 @@ describe("message-processor", () => {
       expect.objectContaining({
         service: process.env.POWERTOOLS_SERVICE_NAME,
         [MetricDimension.InterventionCode]: "34",
-        [MetricEnum.IdentityInvalidatedOnIntervention]: 1,
+        [MetricName.IdentityInvalidatedOnIntervention]: 1,
       })
     );
     // eslint-disable-next-line no-console
     expect(console.log).toHaveEmittedEMFWith(
       expect.objectContaining({
         service: process.env.POWERTOOLS_SERVICE_NAME,
-        [MetricEnum.MessagesReceived]: 4,
+        [MetricName.MessagesReceived]: 4,
       })
     );
     // eslint-disable-next-line no-console
     expect(console.log).toHaveEmittedMetricWith(
       expect.objectContaining({
-        Metrics: [{ Name: MetricEnum.MessagesReceived, Unit: MetricUnit.Count }],
+        Metrics: [{ Name: MetricName.MessagesReceived, Unit: MetricUnit.Count }],
         Namespace: process.env.POWERTOOLS_METRICS_NAMESPACE,
       })
     );
+  });
+
+  it("should record if the identity does not exist", async () => {
+    const mockFetch = jest.spyOn(global, "fetch").mockResolvedValue({
+      ok: false,
+      status: 404,
+      json: () => ({ message: "Identity does not exist" }),
+    } as never as Response);
+
+    const sqsEvent = createTestSQSEvent<TxmaMessage>({
+      user_id: "jane.smith-12345",
+      timestamp: "1752755454558",
+      intervention_code: "12",
+    });
+
+    await expect(handler(sqsEvent)).resolves.toBeUndefined();
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+
+    // eslint-disable-next-line no-console
+    expect(console.log).not.toHaveEmittedEMFWith(
+      expect.objectContaining({
+        service: process.env.POWERTOOLS_SERVICE_NAME,
+        [MetricDimension.InterventionCode]: "12",
+        [MetricName.IdentityInvalidatedOnIntervention]: 1,
+      })
+    );
+    // eslint-disable-next-line no-console
+    expect(console.log).toHaveEmittedEMFWith(
+      expect.objectContaining({
+        service: process.env.POWERTOOLS_SERVICE_NAME,
+        [MetricName.IdentityDoesNotExist]: 1,
+      })
+    );
+    // eslint-disable-next-line no-console
+    expect(console.log).toHaveEmittedEMFWith(
+      expect.objectContaining({
+        service: process.env.POWERTOOLS_SERVICE_NAME,
+        [MetricName.MessagesReceived]: 1,
+      })
+    );
+    // eslint-disable-next-line no-console
+    expect(console.log).toHaveEmittedMetricWith(
+      expect.objectContaining({
+        Metrics: [
+          { Name: MetricName.MessagesReceived, Unit: MetricUnit.Count },
+          { Name: MetricName.IdentityDoesNotExist, Unit: "Count" },
+        ],
+        Namespace: process.env.POWERTOOLS_METRICS_NAMESPACE,
+      })
+    );
+  });
+
+  it("should throw an error on identity service error", async () => {
+    const mockFetch = jest.spyOn(global, "fetch").mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: () => ({ message: "Internal server error" }),
+    } as never as Response);
+
+    const sqsEvent = createTestSQSEvent<TxmaMessage>({
+      user_id: "jane.smith-12345",
+      timestamp: "1752755454558",
+      intervention_code: "12",
+    });
+
+    await expect(handler(sqsEvent)).rejects.toThrow("Call to invalidation endpoint failed");
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 });

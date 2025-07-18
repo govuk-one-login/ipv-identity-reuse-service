@@ -91,6 +91,11 @@ Parameters:
     Type: String
     Default: reuse-identity-shared
 
+  MainCloudWatchMetricNamespace:
+    Description: The name of the metric namespace
+    Type: String
+    Default: IdentityReuseService
+
 Mappings:
   EnvironmentMap:
     "local":
@@ -258,7 +263,11 @@ Resources:
         EntryPoints:
           - src/message-processor/message-processor.ts
         Sourcemap: true
-        Target: "es2020"
+        Target: "es2024"
+        Format: esm
+        OutExtension:
+          - .js=.mjs
+        MainFields: module,main
 
   MessageProcessorLambdaTriggerRole:
     Type: AWS::IAM::Role
@@ -335,9 +344,19 @@ Resources:
   MessageProcessorLambdaLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${MessageProcessorLambda}"
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-MessageProcessorLambda"
       RetentionInDays: !Ref LogGroupRetentionInDays
       KmsKeyId: !GetAtt LoggingKmsKey.Arn
+
+  MessageProcessorLambdaErrorMetric:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      FilterPattern: '{ $.level = "ERROR"}'
+      LogGroupName: !Ref MessageProcessorLambdaLogGroup
+      MetricTransformations:
+        - MetricName: !Sub "${MessageProcessorLambda}-LambdaError"
+          MetricNamespace: !Ref MainCloudWatchMetricNamespace
+          MetricValue: "1"
 
   LoggingKmsKey:
     Type: AWS::KMS::Key
