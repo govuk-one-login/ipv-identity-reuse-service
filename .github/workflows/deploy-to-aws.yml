@@ -83,7 +83,7 @@ jobs:
           set-env-var: STACK_NAME
           prefix: preview
           usage: Stack name
-          length-limit: 30
+          length-limit: 20
 
       - name: Set environment name
         id: set-environment-name

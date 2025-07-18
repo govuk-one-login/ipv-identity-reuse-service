@@ -40,6 +40,8 @@ jobs:
     permissions:
       id-token: write
       contents: read
+    with:
+      stack-name: preview-pr-${{ github.event.pull_request.number }}
     secrets:
       aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
       aws-s3-bucket: ${{ secrets.GHA_SAM_DEPLOYMENT_BUCKET }}
