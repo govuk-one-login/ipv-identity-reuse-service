@@ -1,12 +1,14 @@
 import { Metrics, MetricUnit } from "@aws-lambda-powertools/metrics";
 import { SQSEvent, SQSRecord } from "aws-lambda";
 
-import { MetricDimension, MetricEnum } from "../types/metricEnum";
+import { MetricDimension, MetricName } from "../types/metricEnum";
 import { isTxmaMessage, TxmaMessage } from "../types/txmaMessage";
 
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { getConfiguration, type Configuration } from "../types/configuration";
 import { getString } from "../types/stringutils";
+import logger from "../utils/logger";
+import { isErrorResponse } from "../types/endpoint";
 
 const metrics = new Metrics();
 
@@ -18,36 +20,60 @@ export const handler = async (event: SQSEvent): Promise<void> => {
   const records = parseSQSRecords(event.Records);
   const apiKey: string | undefined = await getServiceApiKey();
 
-  metrics.addMetric(MetricEnum.MessagesReceived, MetricUnit.Count, records.length);
+  metrics.addMetric(MetricName.MessagesReceived, MetricUnit.Count, records.length);
 
   const config = await getConfiguration();
-  for (const record of records) {
-    if (!isInterventionRecord(record, config)) {
-      continue;
+
+  try {
+    for (const record of records) {
+      if (!isInterventionRecord(record, config)) {
+        continue;
+      }
+
+      await invalidateUser(record.user_id, record.intervention_code, config.evcsApiUrl, apiKey);
     }
-
-    await invalidateUser(record.user_id, config.evcsApiUrl, apiKey);
-
-    const invalidateMetric = metrics.singleMetric();
-    invalidateMetric.addDimension(MetricDimension.InterventionCode, record.intervention_code);
-    invalidateMetric.addMetric(MetricEnum.IdentityInvalidatedOnIntervention, MetricUnit.Count, 1);
+  } finally {
+    metrics.publishStoredMetrics();
   }
-
-  metrics.publishStoredMetrics();
 };
 
 /**
  * Invalid the given user id
  * @param userId The user id to invalidate
  */
-const invalidateUser = async (userId: string, baseUrl: string, apiKey?: string) => {
-  await fetch(`${baseUrl}/identity/invalidate`, {
-    method: "POST",
-    body: JSON.stringify({ user_id: userId }),
-    headers: {
-      ...(apiKey && { "x-api-key": apiKey }),
-    },
-  });
+const invalidateUser = async (userId: string, interventionCode: string, baseUrl: string, apiKey?: string) => {
+  try {
+    const response = await fetch(`${baseUrl}/identity/invalidate`, {
+      method: "POST",
+      body: JSON.stringify({ userId: userId }),
+      headers: {
+        ...(apiKey && { "x-api-key": apiKey }),
+      },
+    });
+
+    if (!response.ok) {
+      const responseBody = await response.json();
+      if (isErrorResponse(responseBody) && response.status === 404) {
+        metrics.addMetric(MetricName.IdentityDoesNotExist, MetricUnit.Count, 1);
+      } else {
+        logger.error("Error calling service to invalid user", {
+          cause: response.statusText,
+          status: response.status,
+          body: responseBody,
+        });
+        throw new Error("Call to invalidation endpoint failed");
+      }
+    } else {
+      const invalidateMetric = metrics.singleMetric();
+      invalidateMetric.addDimension(MetricDimension.InterventionCode, interventionCode);
+      invalidateMetric.addMetric(MetricName.IdentityInvalidatedOnIntervention, MetricUnit.Count, 1);
+    }
+  } catch (e) {
+    if (e instanceof TypeError) {
+      logger.error("Error calling service to invalid user", { cause: e.cause, message: e.message });
+    }
+    throw e;
+  }
 };
 
 /**
