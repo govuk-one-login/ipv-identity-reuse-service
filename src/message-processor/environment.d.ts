@@ -7,6 +7,7 @@ declare global {
       EVCS_API_KEY_SECRET_ARN: string;
       POWERTOOLS_METRICS_NAMESPACE: string;
       POWERTOOLS_SERVICE_NAME: string;
+      SQS_AUDIT_EVENT_QUEUE_URL: string;
     }
   }
 }

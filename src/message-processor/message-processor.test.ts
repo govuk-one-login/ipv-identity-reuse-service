@@ -1,6 +1,6 @@
 import { SQSEvent, SQSRecord } from "aws-lambda";
 import { handler } from "./message-processor";
-import { mockClient } from "aws-sdk-client-mock";
+import { AwsStub, mockClient } from "aws-sdk-client-mock";
 import { SecretsManagerClient, GetSecretValueCommand, GetSecretValueResponse } from "@aws-sdk/client-secrets-manager";
 import {
   AppConfigDataClient,
@@ -14,6 +14,14 @@ import { Configuration } from "../types/configuration";
 import { MetricDimension, MetricName } from "../types/metricEnum";
 import { TxmaMessage } from "../types/txmaMessage";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
+import {
+  SendMessageCommand,
+  SQSClient,
+  SQSClientResolvedConfig,
+  ServiceInputTypes,
+  ServiceOutputTypes,
+} from "@aws-sdk/client-sqs";
+import "aws-sdk-client-mock-jest";
 
 const createTestSQSEvent = <T extends object>(...events: T[]): SQSEvent => ({
   Records: events.map((event) => ({ body: JSON.stringify(event) }) as never as SQSRecord),
@@ -31,6 +39,8 @@ const VALID_TXMA_MESSAGE: TxmaMessage = Object.freeze({
 });
 
 describe("message-processor", () => {
+  let sqsClientMock: AwsStub<ServiceInputTypes, ServiceOutputTypes, SQSClientResolvedConfig>;
+
   beforeAll(() => {
     const secretsManagerMock = mockClient(SecretsManagerClient);
     secretsManagerMock.on(GetSecretValueCommand).resolves({
@@ -49,10 +59,14 @@ describe("message-processor", () => {
         $metadata: {},
         Configuration: Uint8ArrayBlobAdapter.fromString(JSON.stringify(DEFAULT_CONFIGURATION)),
       } satisfies GetLatestConfigurationCommandOutput);
+
+    sqsClientMock = mockClient(SQSClient);
+    sqsClientMock.on(SendMessageCommand).resolves({});
   });
 
   afterEach(() => {
     jest.resetAllMocks();
+    sqsClientMock.reset();
   });
 
   it("should accept an array of empty records", async () => {
@@ -66,6 +80,7 @@ describe("message-processor", () => {
         Namespace: process.env.POWERTOOLS_METRICS_NAMESPACE,
       })
     );
+    expect(sqsClientMock).not.toHaveReceivedCommand(SendMessageCommand);
   });
 
   it("should reject records without a body", async () => {
@@ -80,6 +95,7 @@ describe("message-processor", () => {
         Namespace: process.env.POWERTOOLS_METRICS_NAMESPACE,
       })
     );
+    expect(sqsClientMock).not.toHaveReceivedCommand(SendMessageCommand);
   });
 
   it.each(["user_id", "timestamp", "intervention_code"] as Array<keyof TxmaMessage>)(
@@ -99,6 +115,7 @@ describe("message-processor", () => {
           Namespace: process.env.POWERTOOLS_METRICS_NAMESPACE,
         })
       );
+      expect(sqsClientMock).not.toHaveReceivedCommand(SendMessageCommand);
     }
   );
 
@@ -182,6 +199,7 @@ describe("message-processor", () => {
         Namespace: process.env.POWERTOOLS_METRICS_NAMESPACE,
       })
     );
+    expect(sqsClientMock).toHaveReceivedCommandTimes(SendMessageCommand, 2);
   });
 
   it("should record if the identity does not exist", async () => {
@@ -233,6 +251,7 @@ describe("message-processor", () => {
         Namespace: process.env.POWERTOOLS_METRICS_NAMESPACE,
       })
     );
+    expect(sqsClientMock).not.toHaveReceivedCommand(SendMessageCommand);
   });
 
   it("should throw an error on identity service error", async () => {
@@ -251,5 +270,6 @@ describe("message-processor", () => {
     await expect(handler(sqsEvent)).rejects.toThrow("Call to invalidation endpoint failed");
 
     expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(sqsClientMock).not.toHaveReceivedCommand(SendMessageCommand);
   });
 });

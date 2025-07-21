@@ -7,8 +7,9 @@ import { isTxmaMessage, TxmaMessage } from "../types/txmaMessage";
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { getConfiguration, type Configuration } from "../types/configuration";
 import { getString } from "../types/stringutils";
-import logger from "../utils/logger";
+import logger from "../services/logger";
 import { isErrorResponse } from "../types/endpoint";
+import { auditIdentityRecordInvalidated } from "../services/audit";
 
 const metrics = new Metrics();
 
@@ -67,6 +68,8 @@ const invalidateUser = async (userId: string, interventionCode: string, baseUrl:
       const invalidateMetric = metrics.singleMetric();
       invalidateMetric.addDimension(MetricDimension.InterventionCode, interventionCode);
       invalidateMetric.addMetric(MetricName.IdentityInvalidatedOnIntervention, MetricUnit.Count, 1);
+
+      await auditIdentityRecordInvalidated(userId, interventionCode);
     }
   } catch (e) {
     if (e instanceof TypeError) {
