@@ -264,10 +264,6 @@ Resources:
           - src/message-processor/message-processor.ts
         Sourcemap: true
         Target: "es2024"
-        Format: esm
-        OutExtension:
-          - .js=.mjs
-        MainFields: module,main
 
   MessageProcessorLambdaTriggerRole:
     Type: AWS::IAM::Role
