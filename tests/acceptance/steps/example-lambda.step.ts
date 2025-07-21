@@ -1,7 +1,7 @@
 import { Given, When, Then, Before } from "@cucumber/cucumber";
 import { type InvokeCommandOutput } from "@aws-sdk/client-lambda";
 import assert from "node:assert";
-import { LambdaTestClient } from "./utils/lambda-test-client";
+import { LambdaTestClient } from "./utils/lambda-test-client.js";
 
 interface TestWorld {
   lambdaTest: LambdaTestClient;
@@ -27,11 +27,12 @@ When<TestWorld>("I call the Lambda", async function () {
     throw new Error("Lambda Physical Id is not defined");
   }
 
-  this.lambdaResponse = await this.lambdaTest.callLambda(this.lambdaPhysicalId);
+  this.lambdaResponse = await this.lambdaTest.callLambda(this.lambdaPhysicalId, '{"Records":[]}');
 });
 
-Then<TestWorld>("it will return the string {string}", function (expected: string) {
+Then<TestWorld>("it will return null", function () {
   assert.equal(this.lambdaResponse?.StatusCode, 200);
-  assert.ok(this.lambdaResponse?.Payload);
-  assert.equal(Buffer.from(this.lambdaResponse.Payload).toString(), expected);
+  assert.equal(new TextDecoder().decode(this.lambdaResponse?.Payload), "null");
 });
+
+export {};
