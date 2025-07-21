@@ -251,6 +251,7 @@ Resources:
           ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
           APP_CONFIG_NAME: !Ref ApplicationConfigName
           APP_CONFIG_APPLICATION: !Ref ApplicationName
+          SQS_AUDIT_EVENT_QUEUE_URL: !Ref AuditEventQueue
       Tags:
         Product: !Ref ProductTagValue
         System: !Ref SystemTagValue
@@ -558,4 +559,3 @@ Resources:
       AlarmActions:
         - !ImportValue alerting-integration-AlertNotificationTopicArn
       TreatMissingData: notBreaching
-

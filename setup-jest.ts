@@ -11,6 +11,7 @@ process.env.ENVIRONMENT = "dev";
 process.env.EVCS_API_KEY_SECRET_ARN = "arn:aws:secretsmanager:eu-west-2:000000000000:secret:SecretName-g58d2h"; //#pragma: allowlist secret
 process.env.POWERTOOLS_DEV = "true";
 process.env.POWERTOOLS_METRICS_DISABLED = "false";
+process.env.SQS_AUDIT_EVENT_QUEUE_URL = "https://api.example.com";
 
 // Setup up spys on console
 jest.spyOn(console, "log");

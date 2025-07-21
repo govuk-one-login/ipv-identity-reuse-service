@@ -14,6 +14,7 @@ import { Configuration } from "../types/configuration";
 import { MetricDimension, MetricName } from "../types/metricEnum";
 import { TxmaMessage } from "../types/txmaMessage";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
+import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
 
 const createTestSQSEvent = <T extends object>(...events: T[]): SQSEvent => ({
   Records: events.map((event) => ({ body: JSON.stringify(event) }) as never as SQSRecord),
@@ -49,6 +50,9 @@ describe("message-processor", () => {
         $metadata: {},
         Configuration: Uint8ArrayBlobAdapter.fromString(JSON.stringify(DEFAULT_CONFIGURATION)),
       } satisfies GetLatestConfigurationCommandOutput);
+
+    const sqsClientMock = mockClient(SQSClient);
+    sqsClientMock.on(SendMessageCommand).resolves({});
   });
 
   afterEach(() => {
