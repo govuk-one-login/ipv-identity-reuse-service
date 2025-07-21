@@ -51,6 +51,5 @@
     "test:acceptance": "cucumber-js",
     "test:unit": "test"
   },
-  "type": "module",
   "version": "0.0.1"
 }
