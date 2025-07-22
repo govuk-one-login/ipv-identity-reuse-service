@@ -14,6 +14,36 @@ Parameters:
       - production
     Default: local
 
+  ApplicationName:
+    Description: The name of the application
+    Type: String
+    Default: id-reuse-service
+
+  ApplicationConfigName:
+    Description: The name of the applications configuration
+    Type: String
+    Default: id-reuse-config
+
+  OwnerTagValue:
+    Description: Value for the Owner Tag
+    Type: String
+    Default: trust_and_reuse@digital.cabinet-office.gov.uk
+
+  ProductTagValue:
+    Description: Value for the Product Tag
+    Type: String
+    Default: GOV.UK One Login
+
+  SourceTagValue:
+    Description: Value for the Source Tag
+    Type: String
+    Default: govuk-one-login/ipv-identity-reuse-service/template.yaml
+
+  SystemTagValue:
+    Description: Value for the System Tag
+    Type: String
+    Default: Re-use identity service
+
   CodeSigningConfigArn:
     Type: String
     Description: The ARN of the Code Signing Config to use, provided by the deployment pipeline
@@ -55,6 +85,16 @@ Parameters:
       - Linear10PercentEvery2Minutes
       - Linear10PercentEvery3Minutes
       - LambdaCanary50Percent5Minutes
+
+  SharedStackName:
+    Description: The name of the Identity Reuse Service Shared Stack
+    Type: String
+    Default: reuse-identity-shared
+
+  MainCloudWatchMetricNamespace:
+    Description: The name of the metric namespace
+    Type: String
+    Default: IdentityReuseService
 
 Mappings:
   EnvironmentMap:
@@ -104,25 +144,25 @@ Conditions:
 
   DynaTraceEnabled:
     Fn::Or:
-      - Fn::Equals: [ !Ref Environment, "build" ]
-      - Fn::Equals: [ !Ref Environment, "staging" ]
-      - Fn::Equals: [ !Ref Environment, "integration" ]
-      - Fn::Equals: [ !Ref Environment, "production" ]
+      - Fn::Equals: [!Ref Environment, "build"]
+      - Fn::Equals: [!Ref Environment, "staging"]
+      - Fn::Equals: [!Ref Environment, "integration"]
+      - Fn::Equals: [!Ref Environment, "production"]
 
   IsDev:
     Fn::Or:
-      - Fn::Equals: [ !Ref Environment, "local" ]
-      - Fn::Equals: [ !Ref Environment, "dev" ]
+      - Fn::Equals: [!Ref Environment, "local"]
+      - Fn::Equals: [!Ref Environment, "dev"]
 
   IsDevOrBuild:
     Fn::Or:
-      - Fn::Equals: [ !Ref Environment, "local" ]
-      - Fn::Equals: [ !Ref Environment, "dev" ]
-      - Fn::Equals: [ !Ref Environment, "build" ]
+      - Fn::Equals: [!Ref Environment, "local"]
+      - Fn::Equals: [!Ref Environment, "dev"]
+      - Fn::Equals: [!Ref Environment, "build"]
 
   UseVpc:
     Fn::Not:
-      - Fn::Equals: [ !Ref VpcStackName, "none" ]
+      - Fn::Equals: [!Ref VpcStackName, "none"]
 
 Globals:
   Function:
@@ -136,31 +176,31 @@ Globals:
           - DynaTraceEnabled
           - !Sub
             - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_AUTH_TOKEN}}"
-            - SecretArn: !FindInMap [ EnvironmentMap, !Ref Environment, dynatraceSecretArn ]
+            - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, dynatraceSecretArn]
           - !Ref "AWS::NoValue"
         DT_CONNECTION_BASE_URL: !If
           - DynaTraceEnabled
           - !Sub
             - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_BASE_URL}}"
-            - SecretArn: !FindInMap [ EnvironmentMap, !Ref Environment, dynatraceSecretArn ]
+            - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, dynatraceSecretArn]
           - !Ref "AWS::NoValue"
         DT_CLUSTER_ID: !If
           - DynaTraceEnabled
           - !Sub
             - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CLUSTER_ID}}"
-            - SecretArn: !FindInMap [ EnvironmentMap, !Ref Environment, dynatraceSecretArn ]
+            - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, dynatraceSecretArn]
           - !Ref "AWS::NoValue"
         DT_LOG_COLLECTION_AUTH_TOKEN: !If
           - DynaTraceEnabled
           - !Sub
             - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_LOG_COLLECTION_AUTH_TOKEN}}"
-            - SecretArn: !FindInMap [ EnvironmentMap, !Ref Environment, dynatraceSecretArn ]
+            - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, dynatraceSecretArn]
           - !Ref "AWS::NoValue"
         DT_TENANT: !If
           - DynaTraceEnabled
           - !Sub
             - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_TENANT}}"
-            - SecretArn: !FindInMap [ EnvironmentMap, !Ref Environment, dynatraceSecretArn ]
+            - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, dynatraceSecretArn]
           - !Ref "AWS::NoValue"
         DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: !If [DynaTraceEnabled, "true", !Ref "AWS::NoValue"]
     CodeSigningConfigArn: !If
@@ -189,26 +229,7 @@ Globals:
       Type: !Ref LambdaDeploymentPreference
       Role: !GetAtt CodeDeployServiceRole.Arn
 
-
 Resources:
-  ExampleLambda:
-    Type: AWS::Serverless::Function
-    # checkov:skip=CKV_AWS_115: We do not have enough data to allocate the concurrent execution allowance per function.
-    # checkov:skip=CKV_AWS_116: DLQs are not used for synchronous invocations.
-    # checkov:skip=CKV_AWS_173: Check encryption settings for Lambda environmental variable
-    Properties:
-      FunctionName: !Sub "${AWS::StackName}-ExampleLambda"
-      Description: Example Node.js handler
-      Handler: example-handler.handler
-      Role: !GetAtt ExampleLambdaRole.Arn
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        EntryPoints:
-          - src/example-handler.ts
-        Sourcemap: true
-        Target: "es2020"
-
   MessageProcessorLambda:
     Type: AWS::Serverless::Function
     # checkov:skip=CKV_AWS_115: We do not have enough data to allocate the concurrent execution allowance per function.
@@ -221,58 +242,28 @@ Resources:
       Role: !GetAtt MessageProcessorLambdaTriggerRole.Arn
       Environment:
         Variables:
-          POWERTOOLS_METRICS_NAMESPACE: !If [ IsDev, !Sub "${AWS::StackName}-TXMAMessageProcessor", "TXMAMessageProcessor" ]
+          POWERTOOLS_METRICS_NAMESPACE:
+            !If [IsDev, !Sub "${AWS::StackName}-TXMAMessageProcessor", "TXMAMessageProcessor"]
           POWERTOOLS_SERVICE_NAME: "MessagesReceived"
+          EVCS_API_KEY_SECRET_ARN:
+            Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
+          ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
+          APP_CONFIG_NAME: !Ref ApplicationConfigName
+          APP_CONFIG_APPLICATION: !Ref ApplicationName
+      Tags:
+        Product: !Ref ProductTagValue
+        System: !Ref SystemTagValue
+        Environment: !Ref Environment
+        Owner: !Ref OwnerTagValue
+        Source: !Ref SourceTagValue
+        Name: !Sub "${AWS::StackName}-SecretsManagerEncryptionKey"
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
         EntryPoints:
           - src/message-processor/message-processor.ts
         Sourcemap: true
-        Target: "es2020"
-
-  ExampleLambdaRole:
-    # checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
-    Type: AWS::IAM::Role
-    Properties:
-      PermissionsBoundary: !If
-        - UsePermissionsBoundary
-        - !Ref PermissionsBoundary
-        - !Ref AWS::NoValue
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: VpcConfiguration
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-            - Effect: Allow
-              Action:
-                - "ec2:CreateNetworkInterface"
-                - "ec2:DescribeNetworkInterfaces"
-                - "ec2:DeleteNetworkInterface"
-              Resource: "*"
-
-  CodeDeployServiceRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Action:
-              - sts:AssumeRole
-            Effect: Allow
-            Principal:
-              Service:
-                - codedeploy.amazonaws.com
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRoleForLambda
-      PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
+        Target: "es2024"
 
   MessageProcessorLambdaTriggerRole:
     Type: AWS::IAM::Role
@@ -283,7 +274,7 @@ Resources:
         - !Ref PermissionsBoundary
         - !Ref AWS::NoValue
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
@@ -291,42 +282,77 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
-      Policies:
-        - PolicyName: LambdaSQSPermissions
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - sqs:ReceiveMessage
-                  - sqs:DeleteMessage
-                  - sqs:GetQueueAttributes
-                Resource: !If 
-                  - IsDevOrBuild
-                  - !GetAtt StubQueue.Arn
-                  - !FindInMap [ EnvironmentMap, !Ref Environment, messageQueueArn ]
-              - Effect: Allow
-                Action:
-                  - kms:Decrypt
-                  - kms:GenerateDataKey
-                Resource: !If 
-                  - IsDevOrBuild
-                  - !GetAtt StubQueueKey.Arn
-                  - !FindInMap [ EnvironmentMap, !Ref Environment, messageQueueKeyArn ]
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-MessageProcessorLambdaTriggerRole"
 
-  ExampleLambdaLogGroup:
-    Type: AWS::Logs::LogGroup
+  MessageProcessorLambdaTriggerPolicy:
+    Type: AWS::IAM::Policy
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${ExampleLambda}"
-      RetentionInDays: !Ref LogGroupRetentionInDays
-      KmsKeyId: !GetAtt LoggingKmsKey.Arn
+      PolicyName: !Sub "${AWS::StackName}-MessageProcessorLambdaTriggerPolicy"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - sqs:ReceiveMessage
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+            Resource: !If
+              - IsDevOrBuild
+              - !GetAtt StubQueue.Arn
+              - !FindInMap [EnvironmentMap, !Ref Environment, messageQueueArn]
+          - Effect: Allow
+            Action:
+              - kms:Decrypt
+              - kms:GenerateDataKey
+            Resource: !If
+              - IsDevOrBuild
+              - !GetAtt StubQueueKey.Arn
+              - !FindInMap [EnvironmentMap, !Ref Environment, messageQueueKeyArn]
+          - Effect: Allow
+            Action:
+              - "secretsmanager:GetSecretValue" #pragma: allowlist secret
+            Resource:
+              - Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
+          - Effect: Allow
+            Action:
+              - "kms:*"
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - "appconfig:StartConfigurationSession"
+              - "appconfig:GetLatestConfiguration"
+            Resource: "*"
+      Roles:
+        - !Ref MessageProcessorLambdaTriggerRole
 
   MessageProcessorLambdaLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${MessageProcessorLambda}"
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-MessageProcessorLambda"
       RetentionInDays: !Ref LogGroupRetentionInDays
       KmsKeyId: !GetAtt LoggingKmsKey.Arn
+
+  MessageProcessorLambdaErrorMetric:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      FilterPattern: '{ $.level = "ERROR"}'
+      LogGroupName: !Ref MessageProcessorLambdaLogGroup
+      MetricTransformations:
+        - MetricName: !Sub "${MessageProcessorLambda}-LambdaError"
+          MetricNamespace: !Ref MainCloudWatchMetricNamespace
+          MetricValue: "1"
 
   LoggingKmsKey:
     Type: AWS::KMS::Key
@@ -358,23 +384,58 @@ Resources:
             Principal:
               Service: !Sub cloudwatch.amazonaws.com
             Action: kms:*
-            Resource: '*'
+            Resource: "*"
       Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
         - Key: Environment
           Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
         - Key: Name
           Value: !Sub "${AWS::StackName}-LoggingKmsKey"
-        - Key: Stack
-          Value: !Sub "${AWS::StackName}"
+
+  CodeDeployServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - codedeploy.amazonaws.com
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRoleForLambda
+      PermissionsBoundary: !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-CodeDeployServiceRole"
 
   StubQueueKey:
     Type: AWS::KMS::Key
     Condition: IsDevOrBuild
     Properties:
-      Description: KMS key for encrypting SQS messages 
+      Description: KMS key for encrypting SQS messages
       EnableKeyRotation: true
       KeyPolicy:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
@@ -415,7 +476,7 @@ Resources:
               - "sqs:ReceiveMessage"
             Resource: !GetAtt AuditEventQueue.Arn
             Principal:
-              AWS: !FindInMap [ EnvironmentMap, !Ref Environment, txmaAccountId ]
+              AWS: !FindInMap [EnvironmentMap, !Ref Environment, txmaAccountId]
 
   AuditEventQueueEncryptionKey:
     Type: AWS::KMS::Key
@@ -432,14 +493,14 @@ Resources:
               AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
             Action:
               - "kms:*"
-            Resource: '*'
+            Resource: "*"
           - Sid: Allow decryption of events by TxMA
             Effect: Allow
             Principal:
-              AWS: !FindInMap [ EnvironmentMap, !Ref Environment, txmaAccountId ]
+              AWS: !FindInMap [EnvironmentMap, !Ref Environment, txmaAccountId]
             Action:
               - "kms:decrypt"
-            Resource: '*'
+            Resource: "*"
       Tags:
         - Key: Environment
           Value: !Ref Environment
@@ -468,10 +529,10 @@ Resources:
     Type: AWS::Lambda::EventSourceMapping
     Properties:
       BatchSize: 1
-      EventSourceArn: !If 
+      EventSourceArn: !If
         - IsDevOrBuild
         - !GetAtt StubQueue.Arn
-        - !FindInMap [ EnvironmentMap, !Ref Environment, messageQueueArn ]
+        - !FindInMap [EnvironmentMap, !Ref Environment, messageQueueArn]
       FunctionName: !GetAtt MessageProcessorLambda.Arn
       Enabled: true
 
@@ -492,4 +553,3 @@ Resources:
       AlarmActions:
         - !ImportValue alerting-integration-AlertNotificationTopicArn
       TreatMissingData: notBreaching
-
