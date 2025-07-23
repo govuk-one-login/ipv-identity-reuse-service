@@ -26,7 +26,7 @@ const DEFAULT_CONFIGURATION: Configuration = Object.freeze({
 
 const VALID_TXMA_MESSAGE: TxmaMessage = Object.freeze({
   user_id: "test-user-id",
-  timestamp: String(Date.now()),
+  timestamp: Math.floor(Date.now() / 1000),
   intervention_code: "12",
 });
 
@@ -112,22 +112,22 @@ describe("message-processor", () => {
     const sqsEvent = createTestSQSEvent<TxmaMessage>(
       {
         user_id: "bob.smith-12345",
-        timestamp: "1752755394232",
+        timestamp: 1752755394,
         intervention_code: "01",
       },
       {
         user_id: "jane.smith-12345",
-        timestamp: "1752755454558",
+        timestamp: 1752755454,
         intervention_code: "12",
       },
       {
         user_id: "cyril.jones-12345",
-        timestamp: "1752755496130",
+        timestamp: 1752755496,
         intervention_code: "23",
       },
       {
         user_id: "helen.jones-12345",
-        timestamp: "1752755496130",
+        timestamp: 1752755496,
         intervention_code: "34",
       }
     );
@@ -193,7 +193,7 @@ describe("message-processor", () => {
 
     const sqsEvent = createTestSQSEvent<TxmaMessage>({
       user_id: "jane.smith-12345",
-      timestamp: "1752755454558",
+      timestamp: 1752755454,
       intervention_code: "12",
     });
 
@@ -244,7 +244,7 @@ describe("message-processor", () => {
 
     const sqsEvent = createTestSQSEvent<TxmaMessage>({
       user_id: "jane.smith-12345",
-      timestamp: "1752755454558",
+      timestamp: 1752755454,
       intervention_code: "12",
     });
 
