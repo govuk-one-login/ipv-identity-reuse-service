@@ -10,7 +10,7 @@ export type TxmaMessage = {
   /**
    * Records the time and date of when the event occurred.
    */
-  timestamp: string;
+  timestamp: number;
   /**
    * The code of the type of intervention that was applied to the account
    */
@@ -30,8 +30,8 @@ const isStringWithLength = (value: unknown): value is string => typeof value ===
  * @param request - The TXMA message
  * @returns true if this is a TXMA message and casts it to a TxmaMessage object
  */
-export const isTxmaMessage = (request: Record<string, string>): request is TxmaMessage =>
+export const isTxmaMessage = (request: Record<string, string | number>): request is TxmaMessage =>
   request &&
   isStringWithLength(request.user_id) &&
-  isStringWithLength(request.timestamp) &&
+  typeof request.timestamp === "number" &&
   isStringWithLength(request.intervention_code);
