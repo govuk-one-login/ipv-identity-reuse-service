@@ -251,6 +251,7 @@ Resources:
           ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
           APP_CONFIG_NAME: !Ref ApplicationConfigName
           APP_CONFIG_APPLICATION: !Ref ApplicationName
+          SQS_AUDIT_EVENT_QUEUE_URL: !Ref AuditEventQueue
       Tags:
         Product: !Ref ProductTagValue
         System: !Ref SystemTagValue
@@ -313,6 +314,10 @@ Resources:
               - IsDevOrBuild
               - !GetAtt StubQueue.Arn
               - !FindInMap [EnvironmentMap, !Ref Environment, messageQueueArn]
+          - Effect: Allow
+            Action:
+              - sqs:SendMessage
+            Resource: !GetAtt AuditEventQueue.Arn
           - Effect: Allow
             Action:
               - kms:Decrypt
