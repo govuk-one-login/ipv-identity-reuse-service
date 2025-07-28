@@ -154,6 +154,8 @@ Conditions:
       - Fn::Equals: [!Ref Environment, "local"]
       - Fn::Equals: [!Ref Environment, "dev"]
 
+  IsNotDev: !Not [!Condition IsDev]
+
   IsDevOrBuild:
     Fn::Or:
       - Fn::Equals: [!Ref Environment, "local"]
@@ -349,6 +351,14 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-MessageProcessorLambda"
       RetentionInDays: !Ref LogGroupRetentionInDays
       KmsKeyId: !GetAtt LoggingKmsKey.Arn
+
+  MessageProcessorLambdaLogGroupSubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: IsNotDev
+    Properties:
+      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
+      FilterPattern: "{$._aws.CloudWatchMetrics NOT EXISTS}"
+      LogGroupName: !Ref MessageProcessorLambdaLogGroup
 
   MessageProcessorLambdaErrorMetric:
     Type: AWS::Logs::MetricFilter
