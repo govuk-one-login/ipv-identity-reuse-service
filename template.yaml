@@ -356,7 +356,7 @@ Resources:
     Type: AWS::Logs::SubscriptionFilter
     Condition: IsNotDev
     Properties:
-      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython"
+      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
       FilterPattern: "{$._aws.CloudWatchMetrics NOT EXISTS}"
       LogGroupName: !Ref MessageProcessorLambdaLogGroup
 
