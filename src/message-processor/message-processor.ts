@@ -13,10 +13,6 @@ import { auditIdentityRecordInvalidated } from "../services/audit";
 
 const metrics = new Metrics();
 
-/**
- * AWS Lambda handler
- * @param event Simple Queue Service event
- */
 export const handler = async (event: SQSEvent): Promise<void> => {
   const records = parseSQSRecords(event.Records);
   const apiKey: string | undefined = await getServiceApiKey();
@@ -38,13 +34,6 @@ export const handler = async (event: SQSEvent): Promise<void> => {
   }
 };
 
-/**
- * Invalid the given user id
- * @param userId - The user id to invalidate
- * @param interventionCode - The intervention code which is invalidating the user
- * @param baseUrl - The base URL of the service to call
- * @param apiKey - The API Key of the service to call
- */
 const invalidateUser = async (userId: string, interventionCode: string, baseUrl: string, apiKey?: string) => {
   try {
     const response = await fetch(`${baseUrl}/identity/invalidate`, {
@@ -82,20 +71,9 @@ const invalidateUser = async (userId: string, interventionCode: string, baseUrl:
   }
 };
 
-/**
- * Get the service API key from secrets manager. This will cache the result for
- * the default period. The secret is undefined an Error is thrown.
- * @returns The service API key or undefined if not present
- */
 const getServiceApiKey = async (): Promise<string | undefined> =>
   getString(await getSecret(process.env.EVCS_API_KEY_SECRET_ARN));
 
-/**
- * Parses each of the SQS Records and returns each of the TXMA messages. If any
- * of the messages is not a valid TXMA message an error is thrown.
- * @param records - SQS records to transform
- * @returns Array of TXMA messages
- */
 const parseSQSRecords = (records: SQSRecord[]): TxmaMessage[] =>
   records.map((record, index) => {
     if (!record?.body) {
@@ -110,11 +88,5 @@ const parseSQSRecords = (records: SQSRecord[]): TxmaMessage[] =>
     throw new Error(`SQS record ${index} does not have required fields`);
   });
 
-/**
- * Test whether the given TXMA message contains an intervention code
- * @param message - The TXMA message to test
- * @param configuration - Application configuration
- * @returns true if the message contains an intervention code
- */
 const isInterventionRecord = (message: TxmaMessage, configuration: Configuration) =>
   configuration.interventionCodesToInvalidate.some((code) => message.intervention_code === code);
