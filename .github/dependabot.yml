@@ -26,6 +26,7 @@ updates:
           - "@typescript-eslint/*"
           - "ts-jest"
           - "jest"
+          - "@cucumber/*"
       build-dependencies:
         patterns:
           - "@babel/*"
