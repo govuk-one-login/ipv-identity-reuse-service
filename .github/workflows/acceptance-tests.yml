@@ -44,7 +44,7 @@ jobs:
         run: npm ci
 
       - name: Assume AWS role
-        uses: aws-actions/configure-aws-credentials@v4.3.0
+        uses: aws-actions/configure-aws-credentials@v4.3.1
         with:
           role-to-assume: ${{ secrets.aws-role-arn }}
           aws-region: ${{ inputs.aws-region }}
