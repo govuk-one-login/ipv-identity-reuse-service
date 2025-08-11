@@ -64,7 +64,7 @@ jobs:
 
     steps:
       - name: Get distribution artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: ${{ inputs.artifact-name }}
           path: .aws-sam/build
