@@ -12,7 +12,7 @@ jobs:
       contents: read
     steps:
       - name: Pull repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Run pre-commit
         uses: govuk-one-login/github-actions/code-quality/run-pre-commit@5597473c825eb4db0c0f97529a419f0a09cd56f7
