@@ -6,7 +6,7 @@ info:
   version: "1.0.0"
 paths:
   /user-identity:
-    get:
+    post:
       summary: "Retrieve the user’s stored identity record"
       description: >
         Returns the signed Stored Identity JWT and associated metadata  
@@ -16,8 +16,13 @@ paths:
         - bearerAuth: []
       tags:
         - Stored Identity
-      parameters:
-        - $ref: "#/components/parameters/vtr"
+      requestBody:
+        description: User Input containing Vtr and govuk signin ID.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/userIdentityInput"
       responses:
         '200':
           description: "Stored identity record returned"
@@ -51,17 +56,26 @@ paths:
                 $ref: "#/components/schemas/oauthError"
 components:
   schemas:
-    vtr:
+    userIdentityInput:
       description: |-
-        The Level of Confidence that has been attained by the VC bundle.
-        This is used to determine the type of SI that should be checked for the GPG45 Profile.
-      type: string
-      example: P2
-      enum:
-        - P1
-        - P2
-        - P3
-        - P4
+        The input parameters passed into the request .
+      type: object
+      properties:
+        vtr:
+          type: array
+          items:
+            type: string
+            enum:
+              - P1
+              - P2
+              - P3
+              - P4
+        govukSigninJourneyId:
+          type: string
+          description: "Unique journey identifier"
+      required:
+        - vtr
+        - govukSigninJourneyId
     storedIdentityResponse:
       type: object
       properties:
@@ -88,6 +102,8 @@ components:
         - isValid
         - expired
         - vot
+        - kidValid
+        - signatureValid
     userIdentityDataType:
       type: object
       properties:
@@ -172,16 +188,5 @@ components:
       type: http
       scheme: bearer
 
-  parameters:
-    vtr:
-      name: vtr
-      in: path
-      required: true
-      schema:
-        type: array
-        items:
-          $ref: "#/components/schemas/vtr"
-      style: form
-      explode: false
 
 
