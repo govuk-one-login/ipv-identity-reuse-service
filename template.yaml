@@ -62,7 +62,7 @@ Parameters:
   DynatraceNodeLayerArn:
     Type: String
     Description: The ARN of the OneAgent Node layer for Lambda Node functions
-    Default: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_289_2_20240322-044523_with_collector_nodejs:1"
+    Default: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_313_2_20250404-043044_with_collector_nodejs:1"
 
   LogGroupRetentionInDays:
     Description: The number of days a log group should retain logs
