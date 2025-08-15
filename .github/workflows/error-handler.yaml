@@ -1,0 +1,39 @@
+name: error-handler
+
+on:
+  workflow_run:
+    workflows:
+      - acceptance-tests
+      - build
+      - deploy-to-aws
+      - post-merge
+      - publish
+      - test
+    types:
+      - completed
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  on-failure:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    steps:
+      - name: Notify on failure
+        id: slack
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          webhook-type: incoming-webhook
+          webhook: ${{ secrets.ERROR_SLACK_WEBHOOK }}
+          payload: |
+            {
+              "channel_id": "${{ secrets.ERROR_SLACK_WEBHOOK_CHANNEL_ID }}",
+              "github_repo": "${{ github.repository }}",
+              "message": "Github Workflow ${{ github.event.workflow.name }} triggered by ${{ github.event.workflow_run.triggering_actor.login }} has failed.",
+              "logs": "${{ github.event.workflow_run.html_url }}",
+              "level": "ERROR",
+              "workflow_name": "${{ github.event.workflow.name }}"
+            }
