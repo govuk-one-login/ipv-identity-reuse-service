@@ -1,4 +1,4 @@
-name: Build and deploy with secure pipeline
+name: post-merge
 
 on:
   push:

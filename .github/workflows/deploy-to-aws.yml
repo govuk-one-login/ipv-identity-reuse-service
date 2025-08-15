@@ -1,4 +1,4 @@
-name: Deploy to AWS
+name: deploy-to-aws
 
 on:
   workflow_call:
