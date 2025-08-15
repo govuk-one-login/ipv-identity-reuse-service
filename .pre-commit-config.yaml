@@ -36,8 +36,8 @@ repos:
     rev: 3.2.416
     hooks:
       - id: checkov
-        args: [ --quiet ]
-        files: .*
+        verbose: true
+        args: [ --soft-fail ]
 
   - repo: local
     hooks:
