@@ -232,6 +232,177 @@ Globals:
       Role: !GetAtt CodeDeployServiceRole.Arn
 
 Resources:
+  ################################
+  # GET USER IDENTITY FEATURE  #
+  ################################
+  UserIdentityFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-UserIdentityFunction"
+      Description: "A lambda function that queues SIS data for processing"
+      DeploymentPreference:
+        Type: !If
+          - CanariesEnabled
+          - !Ref LambdaDeploymentPreference
+          - AllAtOnce
+        Role: !GetAtt CodeDeployServiceRole.Arn
+      Timeout: 10
+      Handler: user-identity-handler.handler
+      MemorySize: 128
+      Role: !GetAtt UserIdentityFunctionRole.Arn
+      KmsKeyArn: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
+      Environment:
+        Variables:
+          METRIC_SERVICE_NAME: "UserIdentityFunction"
+      CodeSigningConfigArn: !If
+        - UseCodeSigning
+        - !Ref CodeSigningConfigArn
+        - !Ref AWS::NoValue
+      Tags:
+        Product: !Ref ProductTagValue
+        System: !Ref SystemTagValue
+        Environment: !Ref Environment
+        Owner: !Ref OwnerTagValue
+        Source: !Ref SourceTagValue
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        Sourcemap: false
+        EntryPoints:
+          - user-identity-handler.ts
+        Format: esm
+        Platform: node
+        OutExtension:
+          - .js=.mjs
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
+
+  UserIdentityFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-UserIdentityFunctionRole"
+      Description: !Sub "The role assumed by ${AWS::StackName}-UserIdentityFunction"
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+
+  RegionalGatewayUserIdentityFunctionResourcePolicy:
+    Condition: IsDevEnvironment
+    DependsOn: StoredIdentityInvalidatorFunctionAliaslive
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Join
+        - ':'
+        - - 'function'
+          - !Select [ 6, !Split [ ':', !GetAtt UserIdentityFunction.Arn ] ]
+          - 'live'
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub "arn:aws:apigateway:${AWS::Region}::/restapis/${RestApi}/${ApiStageName}"
+
+  PrivateGatewayUserIdentityFunctionResourcePolicy:
+    DependsOn: UserIdentityFunctionAliaslive
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Join
+        - ':'
+        - - 'function'
+          - !Select [ 6, !Split [ ':', !GetAtt UserIdentityFunction.Arn ] ]
+          - 'live'
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn:
+        !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PrivateRestApi}/${ApiStageName}/PUT/*"
+
+  UserIdentityRestApiRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-UserIdentityRestApiRole"
+      Description: !Sub "Update VCs Function related permissions for the ${AWS::StackName}-RestApi Gateway IAM role"
+      PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+
+  UserIdentityRestApiPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-UserIdentityRestApiPolicy"
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "lambda:InvokeFunction"
+            Resource:
+              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-UserIdentityFunction:*"
+      Roles:
+        - !Ref UserIdentityRestApiRole
+
+  UserIdentityFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${UserIdentityFunction}"
+      RetentionInDays: 30
+      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "/aws/lambda/${UserIdentityFunction}"
+
+
   MessageProcessorLambda:
     Type: AWS::Serverless::Function
     # checkov:skip=CKV_AWS_115: We do not have enough data to allocate the concurrent execution allowance per function.
