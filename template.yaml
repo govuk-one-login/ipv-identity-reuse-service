@@ -232,6 +232,9 @@ Globals:
       Role: !GetAtt CodeDeployServiceRole.Arn
 
 Resources:
+  ######################################
+  # MessageProcessorLambda
+  ######################################
   MessageProcessorLambda:
     Type: AWS::Serverless::Function
     # checkov:skip=CKV_AWS_115: We do not have enough data to allocate the concurrent execution allowance per function.
@@ -360,13 +363,145 @@ Resources:
       FilterPattern: "{$._aws.CloudWatchMetrics NOT EXISTS}"
       LogGroupName: !Ref MessageProcessorLambdaLogGroup
 
-  MessageProcessorLambdaErrorMetric:
+  ######################################
+  # Get Identity Handler
+  ######################################
+  GetIdentityHandler:
+    Type: AWS::Serverless::Function
+    # checkov:skip=CKV_AWS_115: We do not have enough data to allocate the concurrent execution allowance per function.
+    # checkov:skip=CKV_AWS_116: DLQs are not used for synchronous invocations.
+    # checkov:skip=CKV_AWS_173: Check encryption settings for Lambda environmental variable
+    DependsOn: GetIdentityHandlerTriggerPolicy
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-GetIdentityHandler"
+      Description: Logs passed in VCs
+      Handler: get-identity-handler.handler
+      Role: !GetAtt GetIdentityHandlerTriggerRole.Arn
+      Timeout: 30
+      Environment:
+        Variables:
+          POWERTOOLS_METRICS_NAMESPACE:
+            !If [IsDev, !Sub "${AWS::StackName}-TXMAMessageProcessor", "TXMAMessageProcessor"]
+          POWERTOOLS_SERVICE_NAME: "MessagesReceived"
+          EVCS_API_KEY_SECRET_ARN:
+            Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
+          ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
+          APP_CONFIG_NAME: !Ref ApplicationConfigName
+          APP_CONFIG_APPLICATION: !Ref ApplicationName
+          SQS_AUDIT_EVENT_QUEUE_URL: !Ref AuditEventQueue
+      Tags:
+        Product: !Ref ProductTagValue
+        System: !Ref SystemTagValue
+        Environment: !Ref Environment
+        Owner: !Ref OwnerTagValue
+        Source: !Ref SourceTagValue
+        Name: !Sub "${AWS::StackName}-SecretsManagerEncryptionKey"
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+          - src/get-identity-handler/get-identity-handler.ts
+        Sourcemap: true
+        Target: "es2024"
+
+  GetIdentityHandlerTriggerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-GetIdentityHandlerTriggerRole"
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-GetIdentityHandlerTriggerRole"
+
+  GetIdentityHandlerTriggerPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-GetIdentityHandlerTriggerPolicy"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - sqs:ReceiveMessage
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+            Resource: !If
+              - IsDevOrBuild
+              - !GetAtt StubQueue.Arn
+              - !FindInMap [EnvironmentMap, !Ref Environment, messageQueueArn]
+          - Effect: Allow
+            Action:
+              - sqs:SendMessage
+            Resource: !GetAtt AuditEventQueue.Arn
+          - Effect: Allow
+            Action:
+              - kms:Decrypt
+              - kms:GenerateDataKey
+            Resource: !If
+              - IsDevOrBuild
+              - !GetAtt StubQueueKey.Arn
+              - !FindInMap [EnvironmentMap, !Ref Environment, messageQueueKeyArn]
+          - Effect: Allow
+            Action:
+              - "secretsmanager:GetSecretValue" #pragma: allowlist secret
+            Resource:
+              - Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
+          - Effect: Allow
+            Action:
+              - "kms:*"
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - "appconfig:StartConfigurationSession"
+              - "appconfig:GetLatestConfiguration"
+            Resource: "*"
+      Roles:
+        - !Ref GetIdentityHandlerTriggerRole
+
+  GetIdentityHandlerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-GetIdentityHandler"
+      RetentionInDays: !Ref LogGroupRetentionInDays
+      KmsKeyId: !GetAtt LoggingKmsKey.Arn
+
+  GetIdentityHandlerLogGroupSubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: IsNotDev
+    Properties:
+      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
+      FilterPattern: "{$._aws.CloudWatchMetrics NOT EXISTS}"
+      LogGroupName: !Ref GetIdentityHandlerLogGroup
+
+  GetIdentityHandlerErrorMetric:
     Type: AWS::Logs::MetricFilter
     Properties:
       FilterPattern: '{ $.level = "ERROR"}'
-      LogGroupName: !Ref MessageProcessorLambdaLogGroup
+      LogGroupName: !Ref GetIdentityHandlerLogGroup
       MetricTransformations:
-        - MetricName: !Sub "${MessageProcessorLambda}-LambdaError"
+        - MetricName: !Sub "${GetIdentityHandler}-LambdaError"
           MetricNamespace: !Ref MainCloudWatchMetricNamespace
           MetricValue: "1"
 

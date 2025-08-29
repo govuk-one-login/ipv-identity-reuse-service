@@ -4,12 +4,11 @@ import { SQSEvent, SQSRecord } from "aws-lambda";
 import { MetricDimension, MetricName } from "../types/metricEnum";
 import { isTxmaMessage, TxmaMessage } from "../types/txmaMessage";
 
-import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
-import { getConfiguration, type Configuration } from "../types/configuration";
-import { getString } from "../types/stringutils";
+import { getConfiguration, type Configuration } from "../services/configuration";
 import logger from "../services/logger";
 import { isErrorResponse } from "../types/endpoint";
 import { auditIdentityRecordInvalidated } from "../services/audit";
+import { getServiceApiKey } from "../services/configuration";
 
 const metrics = new Metrics();
 
@@ -70,9 +69,6 @@ const invalidateUser = async (userId: string, interventionCode: string, baseUrl:
     throw e;
   }
 };
-
-const getServiceApiKey = async (): Promise<string | undefined> =>
-  getString(await getSecret(process.env.EVCS_API_KEY_SECRET_ARN));
 
 const parseSQSRecords = (records: SQSRecord[]): TxmaMessage[] =>
   records.map((record, index) => {

@@ -10,7 +10,7 @@ import {
   GetLatestConfigurationCommandOutput,
 } from "@aws-sdk/client-appconfigdata";
 import { Uint8ArrayBlobAdapter } from "@smithy/util-stream";
-import { Configuration } from "../types/configuration";
+import { Configuration } from "../services/configuration";
 import { MetricDimension, MetricName } from "../types/metricEnum";
 import { TxmaMessage } from "../types/txmaMessage";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
