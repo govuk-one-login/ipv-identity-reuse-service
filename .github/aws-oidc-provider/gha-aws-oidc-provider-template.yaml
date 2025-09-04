@@ -66,6 +66,14 @@ Resources:
                   - ec2:DescribeVpcs
                   - ssm:DeleteParameter
                   - s3:ListBucket
+                  - apigateway:GET
+                  - apigateway:PUT
+                  - apigateway:POST
+                  - apigateway:PATCH
+                  - apigateway:DELETE
+                  - apigateway:UpdateRestApiPolicy
+                  - ssm:*
+                  - dynamodb:*
 
               - Effect: Allow
                 Resource: arn:aws:s3:::github-actions-sam* # github-actions-sam-deploy-deploymentartifactsbucke-nqrrh0t3oddl
@@ -163,6 +171,14 @@ Resources:
                 Resource: "*"
                 Action:
                   - secretsmanager:GetSecretValue
+                  - secretsmanager:GetRandomPassword # pragma: allowlist secret
+                  - secretsmanager:CreateSecret # pragma: allowlist secret
+                  - secretsmanager:TagResource # pragma: allowlist secret
+                  - secretsmanager:DeleteSecret # pragma: allowlist secret
+                  - secretsmanager:UpdateSecret # pragma: allowlist secret
+                  - secretsmanager:ResourcePolicy # pragma: allowlist secret
+                  - secretsmanager:DeleteResourcePolicy # pragma: allowlist secret
+                  - secretsmanager:PutResourcePolicy # pragma: allowlist secret
 
               - Effect: Allow
                 Resource:
@@ -178,12 +194,19 @@ Resources:
                   - kms:ScheduleKeyDeletion
                   - kms:TagResource
                   - kms:UntagResource
+                  - kms:Encrypt
+                  - kms:Decrypt
+                  - kms:ReEncrypt*
+                  - kms:GenerateDataKey*
+                  - kms:CreateGrant
+                  - kms:RevokeGrant
 
               - Effect: Allow
                 Resource:
                   - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
                   - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/state-machine/*
                   - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/states/*
+                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/apigateway/*
                 Action:
                   - logs:PutSubscriptionFilter
                   - logs:CreateLogGroup
@@ -201,6 +224,7 @@ Resources:
                   - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*:log-stream:"
                   - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/state-machine/*:log-stream:"
                   - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/states/*:log-stream:"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/apigateway/*:log-stream:"
                 Action:
                   - logs:CreateLogGroup
                   - logs:PutRetentionPolicy
