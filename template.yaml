@@ -206,9 +206,6 @@ Conditions:
 
   IsNotDev: !Not [!Condition IsDev]
 
-  IsStaging: !Equals [!Ref Environment, 'staging']
-
-  IsNotStaging: !Not [ Condition: IsStaging ]
   CanariesEnabled: !Equals
     - !FindInMap [ EnvironmentMap, !Ref Environment, UseCanary ]
     - true
@@ -502,7 +499,7 @@ Resources:
           Value: !Sub "/aws/apigateway/${PrivateRestApi}/${ApiStageName}"
 
   PrivateAPIAccessLogGroupCSLS:
-    Condition: IsNotStaging
+    Condition: IsNotDev
     Type: AWS::Logs::SubscriptionFilter
     Properties:
       DestinationArn: !Ref CSLSSubscriptionEndpointArn
@@ -810,13 +807,6 @@ Resources:
         - Key: Name
           Value: !Sub "/aws/apigateway/${RestApi}/${ApiStageName}"
 
-  APIGatewayAccessLogGroupCSLS:
-    Type: AWS::Logs::SubscriptionFilter
-    Condition: IsDev
-    Properties:
-      DestinationArn: !Ref CSLSSubscriptionEndpointArn
-      LogGroupName: !Ref APIGatewayAccessLogGroup
-      FilterPattern: ""
   ########################
   # IPV Core Usage Plans #
   ########################
