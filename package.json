@@ -13,7 +13,7 @@
     "@types/aws-lambda": "8.10.150",
     "esbuild": "0.25.4",
     "superagent": "^10.2.3",
-    "supertest": "7.1.1"
+    "supertest": "7.1.3"
   },
   "description": "Identity Reuse Service",
   "devDependencies": {

@@ -40,11 +40,10 @@ Given("I send a POST request with input value", async function (this: WorldDefin
     .set("Content-Type", "application/json")
     .set("Accept", "*/*");
 });
-Given("I send a POST request with input value and malformed data", async function (this: WorldDefinition) {
+Given("I send a POST request with malformed data", async function (this: WorldDefinition) {
   this.userIdentityPOSTResponse = await request(EndPoints.BASE_URL as string)
     .post(EndPoints.PATH_USER_IDENTITY)
-    .send("uuioi")
-    .set("Accept", "*/*");
+    .send("adada");
 });
 Then("I should receive a success response", async function () {
   assert.equal(this.userIdentityPOSTResponse.statusCode, 200);
