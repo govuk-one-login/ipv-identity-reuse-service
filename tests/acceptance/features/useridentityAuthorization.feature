@@ -7,7 +7,7 @@ Feature: UserIdentity Post
 
 
     Scenario: POST Request to UserIdentity endpoint returns Internal Server error
-        Given I send a POST request with input value and malformed data
+        Given I send a POST request with malformed data
         Then I should receive a Internal Server error
 
    
