@@ -115,11 +115,9 @@ Mappings:
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
       messageQueueArn: "unused"
       messageQueueKeyArn: "unused"
-      ApiRateLimit: 5         # allowed requests per second - if updating this value review lambda concurrency values below
-      ApiBurstLimit: 5        # requests the API can handle concurrently - if updating this value review lambda concurrency values below
-      IPVCoreVPCID: vpc-093ac0375aa3f291d # ID Reuse Core Dev VPC ID
-      OneLoginHomeVPCID: vpc-093ac0375aa3f291d # ID Reuse Core Dev VPC ID
-      SISVPCID: vpc-0c028bfd4437c049b # ID Reuse Core Dev VPC ID
+      ApiRateLimit: 5         # allowed requests per second
+      ApiBurstLimit: 5        # requests the API can handle concurrently
+      IPVCoreVPCID: vpc-093ac0375aa3f291d # ID Reuse Service VPC ID
       UniqueVPCEndpointIDs: none
       UseCanary: false
     "dev":
@@ -127,11 +125,9 @@ Mappings:
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
       messageQueueArn: "unused"
       messageQueueKeyArn: "unused"
-      ApiRateLimit: 5         # allowed requests per second - if updating this value review lambda concurrency values below
-      ApiBurstLimit: 5        # requests the API can handle concurrently - if updating this value review lambda concurrency values below
-      IPVCoreVPCID: vpc-093ac0375aa3f291d # ID Reuse Core Dev VPC ID
-      OneLoginHomeVPCID: vpc-093ac0375aa3f291d # ID Reuse Core Dev VPC ID
-      SISVPCID: vpc-0c028bfd4437c049b # ID Reuse Core Dev VPC ID
+      ApiRateLimit: 5         # allowed requests per second
+      ApiBurstLimit: 5        # requests the API can handle concurrently
+      IPVCoreVPCID: vpc-093ac0375aa3f291d # ID Reuse Service VPC ID
       UniqueVPCEndpointIDs: none
       UseCanary: false
     "build":
@@ -139,11 +135,9 @@ Mappings:
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
       messageQueueArn: "unused"
       messageQueueKeyArn: "unused"
-      ApiRateLimit: 5        # allowed requests per second - if updating this value review lambda concurrency values below
-      ApiBurstLimit: 5       # requests the API can handle concurrently - if updating this value review lambda concurrency values below
-      IPVCoreVPCID: vpc-08d7c4b3c5e2a0d9a # IPV Build VPC ID
-      OneLoginHomeVPCID: vpc-0ae068c236590b989 # ID Reuse Build VPC ID
-      SISVPCID: vpc-054d1a988bb4c11ab # Stored Identity Service VPC ID
+      ApiRateLimit: 5        # allowed requests per second
+      ApiBurstLimit: 5       # requests the API can handle concurrently
+      IPVCoreVPCID: vpc-08d7c4b3c5e2a0d9a # ID Reuse Service Build VPC ID
       UniqueVPCEndpointIDs: vpce-0edf9e66222007102 # IPV Build VPCE ID
       UseCanary: false
     "staging":
@@ -151,11 +145,9 @@ Mappings:
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
       messageQueueArn: "arn:aws:sqs:eu-west-2:178023842775:self-staging-EC-SQS-Output-Queue-identityreuse"
       messageQueueKeyArn: "arn:aws:kms:eu-west-2:178023842775:key/325458a5-de28-4c28-aaf0-678ebefb35ac"
-      ApiRateLimit: 5         # allowed requests per second - if updating this value review lambda concurrency values below
-      ApiBurstLimit: 5        # requests the API can handle concurrently - if updating this value review lambda concurrency values below
-      IPVCoreVPCID: vpc-039e664a2b3abb03e # IPV Staging VPC ID
-      OneLoginHomeVPCID: vpc-02e4eb3b0cffc08b0 # Performance Testing VPC ID
-      SISVPCID: vpc-01928e926a0ac9d24 # Stored Identity Service VPC ID
+      ApiRateLimit: 5         # allowed requests per second
+      ApiBurstLimit: 5        # requests the API can handle concurrently
+      IPVCoreVPCID: vpc-039e664a2b3abb03e # ID Reuse Service Staging VPC ID
       UniqueVPCEndpointIDs: vpce-0cc0de10742b83b8a # IPV Staging VPCE ID
       UseCanary: true
     "integration":
@@ -163,9 +155,7 @@ Mappings:
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
       messageQueueArn: "arn:aws:sqs:eu-west-2:729485541398:self-integration-EC-SQS-Output-Queue-identityreuse"
       messageQueueKeyArn: "arn:aws:kms:eu-west-2:729485541398:key/c199c69c-7ce7-4a82-b5a7-b344c7ac04f5"
-      IPVCoreVPCID: vpc-0a9e773e1f32b6697 # IPV Integration VPC ID
-      OneLoginHomeVPCID: vpc-048c9133a5998efe7 # One Login Home Integration VPC ID
-      SISVPCID: vpc-087601de9ade28782 # Stored Identity Service VPC ID
+      IPVCoreVPCID: vpc-0a9e773e1f32b6697 # ID Reuse Service Integration VPC ID
       UniqueVPCEndpointIDs: vpce-0f47068fdf9ad0c3d # IPV Int VPCE ID
       UseCanary: true
     "production":
@@ -173,10 +163,8 @@ Mappings:
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables"
       messageQueueArn: "arn:aws:sqs:eu-west-2:451773080033:self-production-EC-SQS-Output-Queue-identityreuse"
       messageQueueKeyArn: "arn:aws:kms:eu-west-2:451773080033:key/5b5d3a8e-cf70-49ca-bec8-b3a2e61ce770"
-      IPVCoreVPCID: vpc-0274d75007239691f # IPV Production VPC ID
-      OneLoginHomeVPCID: vpc-0c94e753d20410154 # One Login Home Production VPC ID
-      SISVPCID: vpc-085558ae82c3b2849 # Stored Identity Service VPC ID
-      UniqueVPCEndpointIDs: vpce-0e40247a557c2169e # IPV Prod VPCE ID
+      IPVCoreVPCID: vpc-0274d75007239691f # IPV Reuse Seruice Production VPC ID
+      UniqueVPCEndpointIDs: vpce-0e40247a557c2169e # IPV Reuse Seruice Prod VPCE ID
       UseCanary: true
 
 Conditions:
@@ -416,7 +404,6 @@ Resources:
         ResourcePolicy:
           IntrinsicVpcWhitelist:
             - !FindInMap [ EnvironmentMap, !Ref Environment, IPVCoreVPCID ]
-            - !FindInMap [ EnvironmentMap, !Ref Environment, SISVPCID ]
       AccessLogSetting:
         Format: >-
           {
@@ -816,7 +803,7 @@ Resources:
     DependsOn:
       - RestApiStage # This resource is created as part of the RestApi resource
     Properties:
-      UsagePlanName: "IPV Core"
+      UsagePlanName: !Sub "${AWS::StackName}-IPV Core"
       Description: "Usage plan to limit and throttle call made by IPV Core"
       ApiStages:
         - ApiId: !Ref RestApi
@@ -901,22 +888,6 @@ Resources:
               ArnLike:
                 aws:SourceArn:
                   - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${AWS::StackName}/Config/*"
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action:
-              - "kms:Decrypt"
-            Resource: "*"
-            Condition: !If
-              - IsDev
-              - ArnLike:
-                  aws:SourceArn:
-                    - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:*-EncryptDataFunction"
-                    - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:*-DecryptDataFunction"
-              - ArnEquals:
-                  aws:SourceArn:
-                    - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${MainStackName}-EncryptDataFunction"
-                    - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${MainStackName}-DecryptDataFunction"
 
   SecretsManagerEncryptionKeyAlias:
     Type: AWS::KMS::Alias
@@ -967,7 +938,7 @@ Resources:
     DependsOn:
       - PrivateRestApiStage # This resource is created as part of the PrivateRestApi resource
     Properties:
-      UsagePlanName: "IPV Core"
+      UsagePlanName: !Sub "${AWS::StackName}-IPV Core"
       Description: "Usage plan to limit and throttle call made by IPV Core"
       ApiStages:
         - ApiId: !Ref PrivateRestApi
