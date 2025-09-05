@@ -50,6 +50,4 @@ jobs:
           aws-region: ${{ inputs.aws-region }}
 
       - name: Run acceptance tests
-        env:
-          SAM_STACK_NAME: ${{ inputs.stack-name }}
-        run: npm run test:acceptance
+        run: ./run-acceptance-tests.sh --stack-name ${{ inputs.stack-name }}
