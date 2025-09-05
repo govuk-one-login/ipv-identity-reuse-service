@@ -36,7 +36,7 @@ Given("I send a POST request with input value", async function (this: WorldDefin
     .post(EndPoints.PATH_USER_IDENTITY)
     .send(JSON.stringify(userIdentityInput))
     .set("x-api-key", await getApiKey())
-    .set("Authorization", "Bearer" + " " + "fwffasdasw")
+    .set("Authorization", "Bearer" + " " + "a-dummy-access-token")
     .set("Content-Type", "application/json")
     .set("Accept", "*/*");
 });
@@ -48,8 +48,8 @@ Given("I send a POST request with malformed data", async function (this: WorldDe
 Then("I should receive a success response", async function () {
   assert.equal(this.userIdentityPOSTResponse.statusCode, 200);
 });
-Then("I should receive a Internal Server error", async function () {
-  assert.equal(this.userIdentityPOSTResponse.status, 500);
+Then("I should receive a Bad Request", async function () {
+  assert.equal(this.userIdentityPOSTResponse.status, 400);
 });
 
 When<TestWorld>("I call the Lambda", async function () {

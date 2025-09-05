@@ -6,8 +6,8 @@ Feature: UserIdentity Post
         Then I should receive a success response    
 
 
-    Scenario: POST Request to UserIdentity endpoint returns Internal Server error
+    Scenario: POST Request to UserIdentity endpoint returns Bad Request
         Given I send a POST request with malformed data
-        Then I should receive a Internal Server error
+        Then I should receive a Bad Request
 
    
