@@ -74,8 +74,8 @@ if $RUN_WITH_DOCKER; then
     -e AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY:?}" \
     -e AWS_SESSION_TOKEN="${AWS_SESSION_TOKEN:?}" \
     -e AWS_SECURITY_TOKEN="${AWS_SECURITY_TOKEN}" \
-    -e CFN_CIMITApiGatewayEndpoint="${CFN_RegionalApiEndpoint:?}" \
-    -e CFN_CIMITApiGatewayEndpoint="${CFN_PrivateApiEndpoint:?}" \
+    -e CFN_RegionalApiEndpoint="${CFN_RegionalApiEndpoint:?}" \
+    -e CFN_PrivateApiEndpoint="${CFN_PrivateApiEndpoint:?}" \
     acceptance-test-runner \
     /bin/bash -c "npm i && npm run test:acceptance -- --format html:test-reports/acceptance.html"
 else
