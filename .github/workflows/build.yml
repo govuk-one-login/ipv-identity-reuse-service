@@ -46,3 +46,6 @@ jobs:
           upload-artifact: true
           artifact-name: ${{ inputs.artifact-name }}
           sam-version: 1.136.0
+          additional-artifact-paths: |
+            .aws-sam/build/
+            openAPI/
