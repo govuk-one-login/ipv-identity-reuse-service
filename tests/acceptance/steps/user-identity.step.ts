@@ -43,13 +43,13 @@ Given("I send a POST request with input value", async function (this: WorldDefin
 Given("I send a POST request with malformed data", async function (this: WorldDefinition) {
   this.userIdentityPOSTResponse = await request(EndPoints.BASE_URL as string)
     .post(EndPoints.PATH_USER_IDENTITY)
-    .send("adada");
+    .send("@");
 });
 Then("I should receive a success response", async function () {
   assert.equal(this.userIdentityPOSTResponse.statusCode, 200);
 });
 Then("I should receive a Internal Server error", async function () {
-  assert.equal(this.userIdentityPOSTResponse.status, 502);
+  assert.equal(this.userIdentityPOSTResponse.status, 500);
 });
 
 When<TestWorld>("I call the Lambda", async function () {
