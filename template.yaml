@@ -155,6 +155,8 @@ Mappings:
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
       messageQueueArn: "arn:aws:sqs:eu-west-2:729485541398:self-integration-EC-SQS-Output-Queue-identityreuse"
       messageQueueKeyArn: "arn:aws:kms:eu-west-2:729485541398:key/c199c69c-7ce7-4a82-b5a7-b344c7ac04f5"
+      ApiRateLimit: 2000        # allowed requests per second
+      ApiBurstLimit: 2000        # requests the API can handle concurrently
       IPVCoreVPCID: vpc-0a9e773e1f32b6697 # ID Reuse Service Integration VPC ID
       UniqueVPCEndpointIDs: vpce-0f47068fdf9ad0c3d # IPV Int VPCE ID
       UseCanary: true
@@ -163,6 +165,8 @@ Mappings:
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables"
       messageQueueArn: "arn:aws:sqs:eu-west-2:451773080033:self-production-EC-SQS-Output-Queue-identityreuse"
       messageQueueKeyArn: "arn:aws:kms:eu-west-2:451773080033:key/5b5d3a8e-cf70-49ca-bec8-b3a2e61ce770"
+      ApiRateLimit: 2000         # allowed requests per second
+      ApiBurstLimit: 2000        # requests the API can handle concurrently
       IPVCoreVPCID: vpc-0274d75007239691f # IPV Reuse Seruice Production VPC ID
       UniqueVPCEndpointIDs: vpce-0e40247a557c2169e # IPV Reuse Seruice Prod VPCE ID
       UseCanary: true
