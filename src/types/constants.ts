@@ -1,0 +1,14 @@
+export const HTTP_MESSAGE_INVALID_REQUEST = "Invalid Request";
+
+export enum HttpCodesEnum {
+  OK = 200,
+  CREATED = 201,
+  ACCEPTED = 202,
+  UPDATED = 204,
+  BAD_REQUEST = 400,
+  UNAUTHORIZED = 401,
+  NOT_FOUND = 404,
+  CONFLICT = 409,
+  CONTENT_TOO_LARGE = 413,
+  INTERNAL_SERVER_ERROR = 500,
+}

@@ -13,7 +13,14 @@ Parameters:
       - integration
       - production
     Default: local
-
+  ApiStageName:
+    Description: The stage name of the API
+    Type: String
+    Default: v1
+  CSLSSubscriptionEndpointArn:
+    Type: String
+    Description: CSLS Subscription endpoint
+    Default: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
   ApplicationName:
     Description: The name of the application
     Type: String
@@ -96,6 +103,11 @@ Parameters:
     Type: String
     Default: IdentityReuseService
 
+  MainStackName:
+    Description: The name of the Main VC Storage stack
+    Type: String
+    Default: identity-reuse-service-main
+
 Mappings:
   EnvironmentMap:
     "local":
@@ -103,31 +115,57 @@ Mappings:
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
       messageQueueArn: "unused"
       messageQueueKeyArn: "unused"
+      ApiRateLimit: 5         # allowed requests per second
+      ApiBurstLimit: 5        # requests the API can handle concurrently
+      IPVCoreVPCID: vpc-093ac0375aa3f291d # ID Reuse Service VPC ID
+      UniqueVPCEndpointIDs: none
+      UseCanary: false
     "dev":
       txmaAccountId: "275907361037"
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
       messageQueueArn: "unused"
       messageQueueKeyArn: "unused"
+      ApiRateLimit: 5         # allowed requests per second
+      ApiBurstLimit: 5        # requests the API can handle concurrently
+      IPVCoreVPCID: vpc-093ac0375aa3f291d # ID Reuse Service VPC ID
+      UniqueVPCEndpointIDs: none
+      UseCanary: false
     "build":
       txmaAccountId: "779873699903"
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
       messageQueueArn: "unused"
       messageQueueKeyArn: "unused"
+      ApiRateLimit: 5        # allowed requests per second
+      ApiBurstLimit: 5       # requests the API can handle concurrently
+      IPVCoreVPCID: vpc-08d7c4b3c5e2a0d9a # ID Reuse Service Build VPC ID
+      UniqueVPCEndpointIDs: vpce-0edf9e66222007102 # IPV Build VPCE ID
+      UseCanary: false
     "staging":
       txmaAccountId: "178023842775"
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
       messageQueueArn: "arn:aws:sqs:eu-west-2:178023842775:self-staging-EC-SQS-Output-Queue-identityreuse"
       messageQueueKeyArn: "arn:aws:kms:eu-west-2:178023842775:key/325458a5-de28-4c28-aaf0-678ebefb35ac"
+      ApiRateLimit: 5         # allowed requests per second
+      ApiBurstLimit: 5        # requests the API can handle concurrently
+      IPVCoreVPCID: vpc-039e664a2b3abb03e # ID Reuse Service Staging VPC ID
+      UniqueVPCEndpointIDs: vpce-0cc0de10742b83b8a # IPV Staging VPCE ID
+      UseCanary: true
     "integration":
       txmaAccountId: "729485541398"
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
       messageQueueArn: "arn:aws:sqs:eu-west-2:729485541398:self-integration-EC-SQS-Output-Queue-identityreuse"
       messageQueueKeyArn: "arn:aws:kms:eu-west-2:729485541398:key/c199c69c-7ce7-4a82-b5a7-b344c7ac04f5"
+      IPVCoreVPCID: vpc-0a9e773e1f32b6697 # ID Reuse Service Integration VPC ID
+      UniqueVPCEndpointIDs: vpce-0f47068fdf9ad0c3d # IPV Int VPCE ID
+      UseCanary: true
     "production":
       txmaAccountId: "451773080033"
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables"
       messageQueueArn: "arn:aws:sqs:eu-west-2:451773080033:self-production-EC-SQS-Output-Queue-identityreuse"
       messageQueueKeyArn: "arn:aws:kms:eu-west-2:451773080033:key/5b5d3a8e-cf70-49ca-bec8-b3a2e61ce770"
+      IPVCoreVPCID: vpc-0274d75007239691f # IPV Reuse Seruice Production VPC ID
+      UniqueVPCEndpointIDs: vpce-0e40247a557c2169e # IPV Reuse Seruice Prod VPCE ID
+      UseCanary: true
 
 Conditions:
   UseCodeSigning:
@@ -156,12 +194,14 @@ Conditions:
 
   IsNotDev: !Not [!Condition IsDev]
 
+  CanariesEnabled: !Equals
+    - !FindInMap [ EnvironmentMap, !Ref Environment, UseCanary ]
+    - true
   IsDevOrBuild:
     Fn::Or:
       - Fn::Equals: [!Ref Environment, "local"]
       - Fn::Equals: [!Ref Environment, "dev"]
       - Fn::Equals: [!Ref Environment, "build"]
-
   UseVpc:
     Fn::Not:
       - Fn::Equals: [!Ref VpcStackName, "none"]
@@ -232,6 +272,306 @@ Globals:
       Role: !GetAtt CodeDeployServiceRole.Arn
 
 Resources:
+  ################################
+  # POST USER IDENTITY FEATURE  #
+  ################################
+  UserIdentityFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-UserIdentityFunction"
+      Description: "A lambda function that queues SIS data for processing"
+      DeploymentPreference:
+        Type: !If
+          - CanariesEnabled
+          - !Ref LambdaDeploymentPreference
+          - AllAtOnce
+        Role: !GetAtt CodeDeployServiceRole.Arn
+      Timeout: 10
+      Handler: user-identity-handler.handler
+      MemorySize: 128
+      Role: !GetAtt UserIdentityFunctionRole.Arn
+      KmsKeyArn: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
+      Environment:
+        Variables:
+          METRIC_SERVICE_NAME: "UserIdentityFunction"
+      CodeSigningConfigArn: !If
+        - UseCodeSigning
+        - !Ref CodeSigningConfigArn
+        - !Ref AWS::NoValue
+      Tags:
+        Product: !Ref ProductTagValue
+        System: !Ref SystemTagValue
+        Environment: !Ref Environment
+        Owner: !Ref OwnerTagValue
+        Source: !Ref SourceTagValue
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        Sourcemap: false
+        EntryPoints:
+          - src/handlers/user-identity-handler.ts
+        Format: esm
+        Platform: node
+        OutExtension:
+          - .js=.mjs
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
+
+  UserIdentityFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-UserIdentityFunctionRole"
+      Description: !Sub "The role assumed by ${AWS::StackName}-UserIdentityFunction"
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+
+  RegionalGatewayUserIdentityFunctionResourcePolicy:
+    Condition: IsDev
+    DependsOn: UserIdentityFunctionAliaslive
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Join
+        - ':'
+        - - 'function'
+          - !Select [ 6, !Split [ ':', !GetAtt UserIdentityFunction.Arn ] ]
+          - 'live'
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub "arn:aws:apigateway:${AWS::Region}::/restapis/${RestApi}/${ApiStageName}"
+
+  PrivateGatewayUserIdentityFunctionResourcePolicy:
+    DependsOn: UserIdentityFunctionAliaslive
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Join
+        - ':'
+        - - 'function'
+          - !Select [ 6, !Split [ ':', !GetAtt UserIdentityFunction.Arn ] ]
+          - 'live'
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn:
+        !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PrivateRestApi}/${ApiStageName}/POST/*"
+
+  PrivateRestApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      # checkov:skip=CKV_AWS_120: API Gateway caching not enabled
+      Name: !Sub "${AWS::StackName}-PrivateRestApi"
+      AlwaysDeploy: true
+      OpenApiVersion: 3.0.3
+      PropagateTags: true
+      DefinitionBody:
+        openapi: "3.0.3" # workaround to get `sam validate` to work
+        paths: # workaround to get `sam validate` to work
+          /never-created:
+            options: { } # workaround to get `sam validate` to work
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: "openAPI/api.yaml"
+      Description: "Private REST API that provides method to interact with post user identity"
+      StageName: !Ref ApiStageName
+      Auth:
+        ResourcePolicy:
+          IntrinsicVpcWhitelist:
+            - !FindInMap [ EnvironmentMap, !Ref Environment, IPVCoreVPCID ]
+      AccessLogSetting:
+        Format: >-
+          {
+          "requestId": "$context.requestId",
+          "requestTime": "$context.requestTime",
+          "requestTimeEpoch": "$context.requestTimeEpoch",
+          "httpMethod": "$context.httpMethod",
+          "domainName": "$context.domainName",
+          "path": "$context.path",
+          "routeKey": "$context.routeKey",
+          "protocol": "$context.protocol",
+          "status": "$context.status",
+          "responseLength": "$context.responseLength",
+          "responseLatency": "$context.responseLatency",
+          "authorizerLatency": "$context.authorizer.latency",
+          "integrationStatus": "$context.integrationStatus",
+          "integrationLatency": "$context.integrationLatency",
+          "integrationErrorMessage": "$context.integrationErrorMessage",
+          "errorMessage": "$context.error.message",
+          "errorResponseType": "$context.error.responseType",
+          "validationErrorString": "$context.error.validationErrorString",
+          "xrayTraceId": "$context.xrayTraceId",
+          "apiKeyId": "$context.identity.apiKeyId"
+          }
+        DestinationArn: !GetAtt PrivateAPIGatewayAccessLogGroup.Arn
+      CacheClusterEnabled: false
+      TracingEnabled: true
+      MethodSettings:
+        - MetricsEnabled: true
+          ResourcePath: /*
+          HttpMethod: "*"
+      EndpointConfiguration:
+        Type: PRIVATE
+        VpcEndpointIds: !If
+          - IsDev
+          - [ ]
+          - !Split [ ",",  !FindInMap [ EnvironmentMap, !Ref Environment, UniqueVPCEndpointIDs ] ]
+      Tags:
+        CheckovRulesToSkip: CKV_AWS_120
+        Product: !Ref ProductTagValue
+        System: !Ref SystemTagValue
+        Environment: !Ref Environment
+        Owner: !Ref OwnerTagValue
+        Source: !Ref SourceTagValue
+        FMSRegionalPolicy: false
+        CustomPolicy: idprivateapi
+
+  PrivateRestApiIDSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: PrivateRestApi ID
+      Name: !Sub /${AWS::StackName}/PrivateRestAPI/ID
+      Type: String
+      Value: !Ref PrivateRestApi
+      Tags:
+        Environment: !Ref Environment
+        Product: !Ref ProductTagValue
+        System: !Ref SystemTagValue
+        Owner: !Ref OwnerTagValue
+        Source: !Ref SourceTagValue
+
+  PrivateAPIGatewayAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/apigateway/${PrivateRestApi}/${ApiStageName}"
+      RetentionInDays: 30
+      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "/aws/apigateway/${PrivateRestApi}/${ApiStageName}"
+
+  PrivateAPIAccessLogGroupCSLS:
+    Condition: IsNotDev
+    Type: AWS::Logs::SubscriptionFilter
+    Properties:
+      DestinationArn: !Ref CSLSSubscriptionEndpointArn
+      LogGroupName: !Ref PrivateAPIGatewayAccessLogGroup
+      FilterPattern: ""
+
+  PrivateAPIAccessLogGroupNameSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: The ARN of the PrivateAPIAccessLogGroup
+      Name: !Sub /${AWS::StackName}/PrivateRestAPI/Access/LogGroup/Name
+      Type: String
+      Value: !If
+        - IsDev
+        - !Sub /aws/apigateway/${RestApi}/${ApiStageName}
+        - !Sub /aws/apigateway/${PrivateRestApi}/${ApiStageName}
+      Tags:
+        Environment: !Ref Environment
+        Product: !Ref ProductTagValue
+        System: !Ref SystemTagValue
+        Owner: !Ref OwnerTagValue
+        Source: !Ref SourceTagValue
+
+  UserIdentityRestApiRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-UserIdentityRestApiRole"
+      Description: !Sub "Update User identity Function related permissions for the ${AWS::StackName}-RestApi Gateway IAM role"
+      PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+
+  UserIdentityRestApiPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-UserIdentityRestApiPolicy"
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "lambda:InvokeFunction"
+            Resource:
+              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-UserIdentityFunction:*"
+      Roles:
+        - !Ref UserIdentityRestApiRole
+
+  UserIdentityFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${UserIdentityFunction}"
+      RetentionInDays: 30
+      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "/aws/lambda/${UserIdentityFunction}"
+  
+
   MessageProcessorLambda:
     Type: AWS::Serverless::Function
     # checkov:skip=CKV_AWS_115: We do not have enough data to allocate the concurrent execution allowance per function.
@@ -369,6 +709,326 @@ Resources:
         - MetricName: !Sub "${MessageProcessorLambda}-LambdaError"
           MetricNamespace: !Ref MainCloudWatchMetricNamespace
           MetricValue: "1"
+
+  
+  #######
+  # API #
+  #######
+  RestApi:
+    Condition: IsDev
+    Type: AWS::Serverless::Api
+    Properties:
+      # checkov:skip=CKV_AWS_120: API Gateway caching not enabled
+      Name: !Sub "${AWS::StackName}-RestApi"
+      AlwaysDeploy: true
+      OpenApiVersion: 3.0.3
+      DefinitionBody:
+        openapi: "3.0.3" # workaround to get `sam validate` to work
+        paths: # workaround to get `sam validate` to work
+          /never-created:
+            options: { } # workaround to get `sam validate` to work
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: "openAPI/api.yaml"
+      Description: "Regional REST API that provides method to interact with the UserIdentity function"
+      StageName: !Ref ApiStageName
+      AccessLogSetting:
+        Format: >-
+          {
+          "requestId": "$context.requestId",
+          "requestTime": "$context.requestTime",
+          "requestTimeEpoch": "$context.requestTimeEpoch",
+          "httpMethod": "$context.httpMethod",
+          "domainName": "$context.domainName",
+          "path": "$context.path",
+          "routeKey": "$context.routeKey",
+          "protocol": "$context.protocol",
+          "status": "$context.status",
+          "responseLength": "$context.responseLength",
+          "responseLatency": "$context.responseLatency",
+          "authorizerLatency": "$context.authorizer.latency",
+          "integrationStatus": "$context.integrationStatus",
+          "integrationLatency": "$context.integrationLatency",
+          "integrationErrorMessage": "$context.integrationErrorMessage",
+          "errorMessage": "$context.error.message",
+          "errorResponseType": "$context.error.responseType",
+          "validationErrorString": "$context.error.validationErrorString",
+          "xrayTraceId": "$context.xrayTraceId",
+          "apiKeyId": "$context.identity.apiKeyId"
+          }
+        DestinationArn: !GetAtt APIGatewayAccessLogGroup.Arn
+      CacheClusterEnabled: false
+      TracingEnabled: true
+      EndpointConfiguration:
+        Type: REGIONAL
+      DisableExecuteApiEndpoint: false
+      Tags:
+        CheckovRulesToSkip: CKV_AWS_120
+        Product: !Ref ProductTagValue
+        System: !Ref SystemTagValue
+        Environment: !Ref Environment
+        Owner: !Ref OwnerTagValue
+        Source: !Ref SourceTagValue
+        FMSRegionalPolicy: false
+        CustomPolicy: true
+
+  APIGatewayAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: IsDev
+    Properties:
+      LogGroupName: !Sub "/aws/apigateway/${RestApi}/${ApiStageName}"
+      RetentionInDays: 30
+      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "/aws/apigateway/${RestApi}/${ApiStageName}"
+
+  ########################
+  # IPV Core Usage Plans #
+  ########################
+  IpvCoreApiUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    Condition: IsDev
+    DependsOn:
+      - RestApiStage # This resource is created as part of the RestApi resource
+    Properties:
+      UsagePlanName: !Sub "${AWS::StackName}-IPV Core"
+      Description: "Usage plan to limit and throttle call made by IPV Core"
+      ApiStages:
+        - ApiId: !Ref RestApi
+          Stage: !Ref ApiStageName
+          Throttle:
+            "/user-identity/POST":
+              RateLimit: !FindInMap [EnvironmentMap, !Ref Environment, ApiRateLimit]
+              BurstLimit: !FindInMap [EnvironmentMap, !Ref Environment, ApiBurstLimit]
+
+      Throttle:
+        RateLimit: !FindInMap [ EnvironmentMap, !Ref Environment, ApiRateLimit ]
+        BurstLimit: !FindInMap [ EnvironmentMap, !Ref Environment, ApiBurstLimit ]
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-IpvCoreApiUsagePlan"
+
+  IpvCoreApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    Condition: IsDev
+    DependsOn:
+      - RestApiStage # This resource is created as part of the RestApi resource
+    Properties:
+      Description: !Sub >-
+        API Key for IPV Core.
+        N.B. Does not auto-update if secret (/${AWS::StackName}/Config/API/Key/IPVCore) has changed!
+      Enabled: true
+      StageKeys:
+        - RestApiId: !Ref RestApi
+          StageName: !Ref ApiStageName
+      # WARNING - does not get updated if IPVCoreApiKeySecret is updated - manual step in console
+      # see https://repost.aws/knowledge-center/cloudformation-stack-update-secrets
+      Value: !Sub "{{resolve:secretsmanager:${IPVCoreApiKeySecret}}}"
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-IpvCoreApiKey"
+
+  SecretsManagerEncryptionKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS key for encrypting secrets stored in Secrets Manager
+      Enabled: true
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action:
+              - kms:*
+            Resource: "*"
+          - Effect: Allow
+            Principal:
+              Service: secretsmanager.amazonaws.com
+            Action:
+              - "kms:Decrypt"
+              - "kms:ReEncryptTo"
+              - "kms:GenerateDataKey"
+              - "kms:DescribeKey"
+            Resource: "*"
+            Condition:
+              ArnLike:
+                aws:SourceArn:
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${AWS::StackName}/Config/*"
+
+  SecretsManagerEncryptionKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub "alias/${AWS::StackName}-SecretsManagerEncryptionKey"
+      TargetKeyId: !GetAtt SecretsManagerEncryptionKey.Arn
+
+  IPVCoreApiKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub "/${AWS::StackName}/Config/API/Key/IPVCore"
+      Description: >-
+        Autogenerated API key for the IPV Core usage.
+        N.B. Manually update IpvCoreApiKey's value upon change, does not auto-update!
+      GenerateSecretString:
+        ExcludeLowercase: false
+        ExcludeNumbers: false
+        ExcludePunctuation: true        # avoids handling escaped chars
+        ExcludeUppercase: false
+        IncludeSpace: false             # avoids handling escaped chars
+        RequireEachIncludedType: true
+        PasswordLength: 128
+      KmsKeyId: !GetAtt SecretsManagerEncryptionKey.Arn
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-IPVCoreApiKeySecret"
+
+  IpvCoreUsagePlanApiKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Condition: IsDev
+    Properties:
+      KeyId: !Ref IpvCoreApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref IpvCoreApiUsagePlan
+
+  IpvCorePrivateApiUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn:
+      - PrivateRestApiStage # This resource is created as part of the PrivateRestApi resource
+    Properties:
+      UsagePlanName: !Sub "${AWS::StackName}-IPV Core"
+      Description: "Usage plan to limit and throttle call made by IPV Core"
+      ApiStages:
+        - ApiId: !Ref PrivateRestApi
+          Stage: !Ref ApiStageName
+          Throttle:
+            "/user-identity/POST":
+              RateLimit: !FindInMap [ EnvironmentMap, !Ref Environment, ApiRateLimit ]
+              BurstLimit: !FindInMap [ EnvironmentMap, !Ref Environment, ApiBurstLimit ]
+      Throttle:
+        RateLimit: !FindInMap [ EnvironmentMap, !Ref Environment, ApiRateLimit ]
+        BurstLimit: !FindInMap [ EnvironmentMap, !Ref Environment, ApiBurstLimit ]
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-IpvCorePrivateApiUsagePlan"
+
+  IpvCorePrivateApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    DependsOn:
+      - PrivateRestApiStage # This resource is created as part of the PrivateRestApi resource
+    Properties:
+      Description: !Sub >-
+        API Key for IPV Core.
+        N.B. Does not auto-update if secret (/${AWS::StackName}/Config/PrivateAPI/Key/IPVCore) has changed!
+      Enabled: true
+      StageKeys:
+        - RestApiId: !Ref PrivateRestApi
+          StageName: !Ref ApiStageName
+      # WARNING - does not get updated if IPVCorePrivateApiKeySecret is updated - manual step in console
+      # see https://repost.aws/knowledge-center/cloudformation-stack-update-secrets
+      Value: !Sub "{{resolve:secretsmanager:${IpvCorePrivateApiKeySecret}}}"
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-IpvCorePrivateApiKey"
+
+  IpvCorePrivateApiKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub "/${AWS::StackName}/Config/PrivateAPI/Key/IPVCore"
+      Description: >-
+        Autogenerated API key for the IPV Core usage.
+        N.B. Manually update IpvCorePrivateApiKey's value upon change, does not auto-update!
+      GenerateSecretString:
+        ExcludeLowercase: false
+        ExcludeNumbers: false
+        ExcludePunctuation: true        # avoids handling escaped chars
+        ExcludeUppercase: false
+        IncludeSpace: false             # avoids handling escaped chars
+        RequireEachIncludedType: true
+        PasswordLength: 128
+      KmsKeyId: !GetAtt SecretsManagerEncryptionKey.Arn
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-IpvCorePrivateApiKeySecret"
+
+  IpvCoreUsagePlanPrivateApiKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref IpvCorePrivateApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref IpvCorePrivateApiUsagePlan
 
   LoggingKmsKey:
     Type: AWS::KMS::Key
@@ -569,3 +1229,105 @@ Resources:
       AlarmActions:
         - !ImportValue alerting-integration-AlertNotificationTopicArn
       TreatMissingData: notBreaching
+
+  ########
+  # KEYS #
+  #######
+
+  CloudWatchEncryptionKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: AWS KMS key for encrypting CloudWatch logs
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: "kms:*"
+            Resource: "*"
+          - Effect: Allow
+            Principal:
+              Service: !Sub "logs.${AWS::Region}.amazonaws.com"
+            Action:
+              - "kms:Encrypt*"
+              - "kms:Decrypt*"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:Describe*"
+            Resource: "*"
+            Condition:
+              ArnLike:
+                "kms:EncryptionContext:aws:logs:arn": !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-CloudWatchEncryptionKey"
+
+  CloudWatchEncryptionKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub "alias/${AWS::StackName}-CloudWatchEncryptionKey"
+      TargetKeyId: !GetAtt CloudWatchEncryptionKey.Arn
+
+  LambdaEnvironmentVariableEncryptionKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: "KMS key used to encrypt lambda environment variables"
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action:
+              - kms:*
+            Resource: "*"
+          - Effect: "Allow"
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - "kms:Decrypt"
+            Resource: "*"
+            Condition:
+              ArnLike:
+                "aws:SourceArn": !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:*"
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-LambdaEnvironmentVariableEncryptionKey"
+
+  LambdaEnvironmentVariableEncryptionKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub "alias/${AWS::StackName}-LambdaEnvironmentVariableEncryptionKey"
+      TargetKeyId: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
+Outputs:
+  RegionalApiEndpoint:
+    Condition: IsDev
+    Description: "Regional API Gateway endpoint URL for VC Storage methods"
+    Value: !Sub "https://${RestApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"
+
+  PrivateApiEndpoint:
+    Description: "Private API Gateway endpoint URL for VC Storage methods"
+    Value: !Sub "https://${PrivateRestApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"
