@@ -1,5 +1,3 @@
-export const HTTP_MESSAGE_INVALID_REQUEST = "Invalid Request";
-
 export enum HttpCodesEnum {
   OK = 200,
   CREATED = 201,
