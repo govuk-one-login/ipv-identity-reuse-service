@@ -11,4 +11,5 @@ export enum HttpCodesEnum {
   CONFLICT = 409,
   CONTENT_TOO_LARGE = 413,
   INTERNAL_SERVER_ERROR = 500,
+  FORBIDDEN = 403,
 }

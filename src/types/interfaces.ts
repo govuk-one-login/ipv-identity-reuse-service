@@ -9,10 +9,27 @@ export interface UserIdentityDataType {
   vtm: string[];
 }
 export interface StoredIdentityResponse {
-  userIdentityDataType: UserIdentityDataType;
+  content: UserIdentityDataType;
   isValid: boolean;
-  kidValid: boolean;
-  signatureValid: boolean;
   expired: boolean;
   vot: string;
+  kidValid: boolean;
+  signatureValid: boolean;
 }
+
+export interface Metadata {
+  [key: string]: unknown;
+}
+
+export interface JWTIncludingStateAndMetadata {
+  state: string;
+  vc: string;
+  metadata: Metadata | null | string;
+  signature?: string;
+}
+
+export type EvcsStoredIdentityResponse = {
+  si: JWTIncludingStateAndMetadata;
+  vcs: JWTIncludingStateAndMetadata[];
+  afterKey?: string;
+};
