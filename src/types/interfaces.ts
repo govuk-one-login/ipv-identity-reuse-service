@@ -33,3 +33,8 @@ export type EvcsStoredIdentityResponse = {
   vcs: JWTIncludingStateAndMetadata[];
   afterKey?: string;
 };
+
+export interface VerifiableCredential {
+  iss: string;
+  nbf: number;
+}
