@@ -1,3 +1,9 @@
+import {
+  IdentityCheckCredentialJWTClass,
+  RiskAssessmentCredentialJWTClass,
+  SecurityCheckCredentialJWTClass,
+} from "@govuk-one-login/data-vocab/credentials";
+
 export interface UserIdentityInput {
   govukSigninJourneyId: string;
   vtr: string[];
@@ -34,7 +40,7 @@ export type EvcsStoredIdentityResponse = {
   afterKey?: string;
 };
 
-export interface VerifiableCredential {
-  iss: string;
-  nbf: number;
-}
+export type VerifiableCredentialJWT =
+  | IdentityCheckCredentialJWTClass
+  | RiskAssessmentCredentialJWTClass
+  | SecurityCheckCredentialJWTClass;
