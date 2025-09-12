@@ -298,6 +298,8 @@ Resources:
       Environment:
         Variables:
           METRIC_SERVICE_NAME: "UserIdentityFunction"
+          EVCS_API_KEY_SECRET_ARN:
+            Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
       CodeSigningConfigArn: !If
         - UseCodeSigning
         - !Ref CodeSigningConfigArn
