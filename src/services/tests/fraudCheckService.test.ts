@@ -31,7 +31,7 @@ describe("hasFraudCheckExpired", () => {
       ];
 
       fakeSystemTime(new Date(mockSystemDate));
-      const fraudCheckExpired = hasFraudCheckExpired("fraudCRI", vcBundle, validityPeriodHours);
+      const fraudCheckExpired = hasFraudCheckExpired(["fraudCRI"], vcBundle, validityPeriodHours);
       expect(fraudCheckExpired).toEqual(expiryResult);
     }
   );
@@ -41,17 +41,17 @@ describe("hasFraudCheckExpired", () => {
       createIdentityCheckCredentialJWT("2025-08-25T15:35:58.000Z", "passportCRI", mockSuccessfulEvidence),
     ];
     fakeSystemTime(new Date("2025-09-10T15:35:58.000Z"));
-    const fraudCheckExpired = hasFraudCheckExpired("fraudCRI", vcBundle, 4320);
+    const fraudCheckExpired = hasFraudCheckExpired(["fraudCRI"], vcBundle, 4320);
     expect(fraudCheckExpired).toEqual(true);
   });
 
   it("should use fraud credential with latest nbf if multiple exist in a bundle", () => {
     const vcBundle = [createValidFraudVC("2025-01-25T15:35:58.000Z"), createValidFraudVC("2025-07-26T15:35:58.000Z")];
     fakeSystemTime(new Date("2025-08-24T15:35:58.000Z"));
-    const fraudCheckExpired = hasFraudCheckExpired("fraudCRI", vcBundle, 4320);
+    const fraudCheckExpired = hasFraudCheckExpired(["fraudCRI"], vcBundle, 4320);
     expect(fraudCheckExpired).toEqual(false);
 
-    const fraudCheckExpiredReversed = hasFraudCheckExpired("fraudCRI", vcBundle.reverse(), 4320);
+    const fraudCheckExpiredReversed = hasFraudCheckExpired(["fraudCRI"], vcBundle.reverse(), 4320);
     expect(fraudCheckExpiredReversed).toEqual(false);
   });
 
@@ -62,7 +62,7 @@ describe("hasFraudCheckExpired", () => {
       createSecurityCheckCredentialJWT(),
       createRiskAssessmentCredentialJWT(),
     ];
-    const fraudCheckExpired = hasFraudCheckExpired("fraudCRI", vcBundle, 4320);
+    const fraudCheckExpired = hasFraudCheckExpired(["fraudCRI"], vcBundle, 4320);
     expect(fraudCheckExpired).toEqual(false);
   });
 
@@ -73,7 +73,7 @@ describe("hasFraudCheckExpired", () => {
       createSecurityCheckCredentialJWT(),
       createRiskAssessmentCredentialJWT(),
     ];
-    const fraudCheckExpired = hasFraudCheckExpired("fraudCRI", vcBundle, 4320);
+    const fraudCheckExpired = hasFraudCheckExpired(["fraudCRI"], vcBundle, 4320);
     expect(fraudCheckExpired).toEqual(true);
   });
 });

@@ -3,12 +3,12 @@ import { FraudCheckType, IdentityCheckCredentialJWTClass } from "@govuk-one-logi
 import { VerifiableCredentialJWT } from "../types/interfaces";
 
 export const hasFraudCheckExpired = (
-  fraudIssuer: string,
+  fraudIssuers: string[],
   vcBundle: VerifiableCredentialJWT[],
   validityPeriodHours: number
 ): boolean => {
   const fraudVc = vcBundle
-    .filter((vc) => vc.iss == fraudIssuer && vc.nbf != undefined)
+    .filter((vc) => vc.iss !== undefined && fraudIssuers.includes(vc.iss) && vc.nbf !== undefined)
     .sort((vc1, vc2) => {
       return vc1.nbf! - vc2.nbf!;
     })

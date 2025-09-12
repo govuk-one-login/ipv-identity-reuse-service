@@ -4,6 +4,8 @@ import { getString } from "./stringutils";
 export type Configuration = {
   evcsApiUrl: string;
   interventionCodesToInvalidate: string[];
+  fraudIssuer: string[];
+  fraudValidityPeriod: number;
 };
 
 export const getConfiguration = async (): Promise<Configuration> => {
