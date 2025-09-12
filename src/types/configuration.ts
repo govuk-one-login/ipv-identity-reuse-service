@@ -4,6 +4,8 @@ import { getString } from "./stringutils";
 export type Configuration = {
   evcsApiUrl: string;
   interventionCodesToInvalidate: string[];
+  fraudIssuer: string;
+  fraudValidityPeriod: {levelOfConfidence:string, value:number}[];
 };
 
 export const getConfiguration = async (): Promise<Configuration> => {
@@ -19,3 +21,7 @@ export const getConfiguration = async (): Promise<Configuration> => {
 
   return JSON.parse(stringResult);
 };
+
+export const getFraudValidityPeriod = (config :Configuration, levelOfConfidence:string):number | undefined  => {
+  return config.fraudValidityPeriod.filter(fraudConfig => fraudConfig.levelOfConfidence === levelOfConfidence).map(validityPeriod => validityPeriod.value).pop();
+}
