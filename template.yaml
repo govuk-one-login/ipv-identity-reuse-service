@@ -300,6 +300,12 @@ Resources:
           METRIC_SERVICE_NAME: "UserIdentityFunction"
           EVCS_API_KEY_SECRET_ARN:
             Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
+          POWERTOOLS_METRICS_NAMESPACE:
+            !If [ IsDev, !Sub "${AWS::StackName}-UserIdentityFunction", "UserIdentityFunction" ]
+          POWERTOOLS_SERVICE_NAME: "UserIdentityFunction"
+          ENVIRONMENT: !If [ IsDev, "dev", !Ref Environment ]
+          APP_CONFIG_NAME: !Ref ApplicationConfigName
+          APP_CONFIG_APPLICATION: !Ref ApplicationName
       CodeSigningConfigArn: !If
         - UseCodeSigning
         - !Ref CodeSigningConfigArn
@@ -357,6 +363,31 @@ Resources:
           Value: !Ref OwnerTagValue
         - Key: Source
           Value: !Ref SourceTagValue
+
+  UserIdentityFunctionPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-UserIdentityFunctionPolicy"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - kms:Decrypt
+              - kms:GenerateDataKey
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - "secretsmanager:GetSecretValue" #pragma: allowlist secret
+            Resource:
+              - Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
+          - Effect: Allow
+            Action:
+              - "appconfig:StartConfigurationSession"
+              - "appconfig:GetLatestConfiguration"
+            Resource: "*"
+      Roles:
+        - !Ref UserIdentityFunctionRole
 
   RegionalGatewayUserIdentityFunctionResourcePolicy:
     Condition: IsDev
