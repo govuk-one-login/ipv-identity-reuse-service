@@ -1,15 +1,21 @@
 Feature: UserIdentity Post
 
-
      Scenario: Happy Path - POST Request to UserIdentity endpoint returns a Success Response
-        Given I send a POST request with input value
-        Then I should receive a success response    
+          Given a valid bearer token
+          When I send a POST request
+          Then the status code should be 200
+          Then The stored identity should be returned
 
+    Scenario: Malformed bearer token yields 401 response
+          Given a bad bearer token
+          When I send a POST request
+          Then the status code should be 401
 
-    Scenario: POST Request to UserIdentity endpoint returns Bad Request
-        Given I send a POST request with malformed data
-        Then I should receive a Bad Request
+    Scenario: Absent bearer token yields 401 response
+          When I send a POST request
+          Then the status code should be 401
 
-   Scenario: POST Request to UserIdentity endpoint returns Unauthorized
-        Given I send a POST request without authorization header
-        Then I should receive Unauthorized
+    Scenario: Non present user data yields 404 response
+          Given a absentee bearer token
+          When I send a POST request
+          Then the status code should be 404
