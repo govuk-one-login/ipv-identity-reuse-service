@@ -44,6 +44,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      packages: read
     with:
       stack-name: preview-pr-${{ github.event.pull_request.number }}
     secrets:
@@ -58,6 +59,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      packages: read
     with:
       stack-name: ${{ needs.preview.outputs.stack-name }}
     secrets:
