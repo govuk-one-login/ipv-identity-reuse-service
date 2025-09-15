@@ -7,6 +7,7 @@ on:
 permissions:
   contents: read
   id-token: write
+  packages: read
 
 jobs:
   build:
@@ -17,12 +18,14 @@ jobs:
       aws-region: eu-west-2
     permissions:
       contents: read
+      packages: read
 
   run-tests:
     if: ${{ !github.event.pull_request.draft }}
     uses: ./.github/workflows/test.yml
     permissions:
       contents: read
+      packages: read
     secrets:
       sonar-token: ${{ secrets.SONAR_TOKEN }}
 
@@ -31,6 +34,7 @@ jobs:
     uses: ./.github/workflows/pre-commit.yml
     permissions:
       contents: read
+      packages: read
 
   preview:
     if: ${{ !github.event.pull_request.draft && contains( github.event.pull_request.labels.*.name, 'deploy')}}

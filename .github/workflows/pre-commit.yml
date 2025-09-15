@@ -5,6 +5,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
   pre-commit:
@@ -12,12 +13,24 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      packages: read
     steps:
       - name: Pull repository
         uses: actions/checkout@v5
+
+      - name: Setup node
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+          registry-url: "https://npm.pkg.github.com/"
+          scope: "@govuk-one-login"
+          always-auth: true
 
       - name: Run pre-commit
         uses: govuk-one-login/github-actions/code-quality/run-pre-commit@5597473c825eb4db0c0f97529a419f0a09cd56f7
         with:
           all-files: true
           pull-repository: true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

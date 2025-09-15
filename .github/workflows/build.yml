@@ -16,6 +16,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
   build:
@@ -36,9 +37,14 @@ jobs:
         with:
           node-version-file: ".nvmrc"
           cache: npm
+          registry-url: "https://npm.pkg.github.com/"
+          scope: "@govuk-one-login"
+          always-auth: true
 
       - name: Build SAM application
         uses: govuk-one-login/github-actions/sam/build-application@1ef1d955b2fd248b51fc803f6b64ccac9f04cd84
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           enable-beta-features: true
           template: "template.yaml"
