@@ -1,20 +1,22 @@
 import { decodeJwt, JWTPayload } from "jose";
 
 import logger from "../commons/logger";
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
 import { HttpCodesEnum } from "../types/constants";
 import { getConfiguration, getServiceApiKey } from "../types/configuration";
 import { EvcsStoredIdentityResponse, StoredIdentityResponse, UserIdentityDataType } from "../types/interfaces";
 
-const AUTH_ERROR_RESPONSE = {
-  statusCode: HttpCodesEnum.UNAUTHORIZED,
-  body: JSON.stringify({ error: "invalid_token", error_description: "Bearer token is missing or invalid" }),
-};
+interface ErrorResponse {
+  error: string;
+  error_description: string;
+}
 
-export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  logger.debug("Received message", { event: event.body });
+export const handler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
+  logger.addContext(context);
+
   if (!event?.headers?.Authorization) {
-    return AUTH_ERROR_RESPONSE;
+    logger.error("Authorisation header was not included in request");
+    return createErrorResponse(HttpCodesEnum.UNAUTHORIZED);
   }
 
   const configuration = await getConfiguration();
@@ -24,10 +26,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     try {
       getJwtBody(event.headers.Authorization.split(" ").at(1) || ""); // Validate bearer token
     } catch {
-      return {
-        statusCode: HttpCodesEnum.UNAUTHORIZED,
-        body: JSON.stringify({ error: "invalid_token", error_description: "Bearer token is missing or invalid" }),
-      };
+      logger.error("Error whilst decoding Bearer token body");
+      return createErrorResponse(HttpCodesEnum.UNAUTHORIZED);
     }
 
     const result = await fetch(`${configuration.evcsApiUrl}/identity`, {
@@ -39,7 +39,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     });
 
     if (!result.ok) {
-      return { statusCode: result.status, body: JSON.stringify(renderError(result)) };
+      logger.error("Error received from EVCS service", { status: result.status });
+      return createErrorResponse(result.status);
     }
 
     const storedIdentity: EvcsStoredIdentityResponse = await result.json();
@@ -56,27 +57,23 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     return { statusCode: HttpCodesEnum.OK, body: JSON.stringify(response) };
   } catch (error) {
     logger.error("Error retrieving user identity", { error });
-    return {
-      statusCode: HttpCodesEnum.INTERNAL_SERVER_ERROR,
-      body: JSON.stringify({ error: "server_error", error_description: "Unable to retrieve data" }),
-    };
+    return createErrorResponse(HttpCodesEnum.INTERNAL_SERVER_ERROR);
   }
 };
 
 const getJwtBody = <T extends JWTPayload = JWTPayload>(token: string): T => {
   try {
-    const payload = decodeJwt(token) as T;
-    return payload;
+    return decodeJwt(token) as T;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     throw new Error(`Invalid JWT: ${msg}`);
   }
 };
 
-function renderError(result: Response) {
+const createErrorResponse = (errorCode: HttpCodesEnum): APIGatewayProxyResult => {
   let error;
   let error_description;
-  switch (result.status) {
+  switch (errorCode) {
     case HttpCodesEnum.NOT_FOUND:
       error = "not_found";
       error_description = "No Stored identity exists for this user.";
@@ -93,5 +90,8 @@ function renderError(result: Response) {
       error = "server_error";
       error_description = "Unable to retrieve data";
   }
-  return { error, error_description };
-}
+  return {
+    statusCode: errorCode,
+    body: JSON.stringify({ error, error_description } as ErrorResponse),
+  };
+};
