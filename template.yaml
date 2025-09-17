@@ -1382,13 +1382,6 @@ Outputs:
       - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${AWS::StackName}/Config/API/Key/IPVCore"
       - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret://${AWS::StackName}/Config/PrivateAPI/Key/IPVCore"
 
-  EvcsApiKeySecretArn:
-    # checkov:skip=W6001: Used for testing
-    Condition: IsDevOrBuild
-    Description: ARN for the EVCS API Key secret. Used for testing.
-    Value:
-      Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
-
   AppConfigName:
     Condition: IsDevOrBuild
     Description: App Config name - used for testing.
