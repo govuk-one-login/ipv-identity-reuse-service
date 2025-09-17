@@ -21,7 +21,15 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
   const serviceApiKey = await getServiceApiKey();
 
   try {
-    getJwtBody(event.headers.Authorization.split(" ").at(1) || ""); // Validate bearer token
+    try {
+      getJwtBody(event.headers.Authorization.split(" ").at(1) || ""); // Validate bearer token
+    } catch {
+      return {
+        statusCode: HttpCodesEnum.UNAUTHORIZED,
+        body: JSON.stringify({ error: "invalid_token", error_description: "Bearer token is missing or invalid" }),
+      };
+    }
+
     const result = await fetch(`${configuration.evcsApiUrl}/identity`, {
       method: "GET",
       headers: {
@@ -47,10 +55,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     };
     return { statusCode: HttpCodesEnum.OK, body: JSON.stringify(response) };
   } catch (error) {
-    if (error instanceof Error && error.message.startsWith("Invalid JWT")) {
-      return AUTH_ERROR_RESPONSE;
-    }
-
+    logger.error("Error retrieving user identity", { error });
     return {
       statusCode: HttpCodesEnum.INTERNAL_SERVER_ERROR,
       body: JSON.stringify({ error: "server_error", error_description: "Unable to retrieve data" }),

@@ -1,81 +1,75 @@
-import { Given, When, Then, Before } from "@cucumber/cucumber";
-import { type InvokeCommandOutput } from "@aws-sdk/client-lambda";
-import assert from "node:assert";
-import { StoredIdentityResponse } from "../../../src/types/interfaces";
-import request from "supertest";
-import { LambdaTestClient } from "./utils/lambda-test-client";
-import EndPoints from "./utils/endpoints";
-import { getApiKey } from "./utils/get-api-key";
+import { Given, When, Then } from "@cucumber/cucumber";
+import { sisPostUserIdentity } from "./utils/sisApi";
 import { getBearerToken } from "./utils/get-bearer-token";
-interface TestWorld {
-  lambdaTest: LambdaTestClient;
-  lambdaPhysicalId?: string;
-  lambdaResponse?: InvokeCommandOutput;
-}
+import assert from "assert";
+import { WorldDefinition } from "./base-verbs.step";
+import { evcsPostIdentity } from "./utils/evcsApi";
+import { JWTHeaderParameters, JWTPayload } from "jose";
+import { getDefaultStoredIdentityHeader, sign } from "./utils/jwtUtils";
 
-Before<TestWorld>(function () {
-  const stackName = process.env.SAM_STACK_NAME;
-  if (typeof stackName != "string" || stackName.length === 0) {
-    throw new Error("Environment variable SAM_STACK_NAME not defined");
+Given<WorldDefinition>("I have a user without a stored identity", async function () {
+  this.bearerToken = await getBearerToken(this.userId);
+});
+
+Given<WorldDefinition>(
+  "I have a user with a Stored Identity and {int} credentials",
+  async function (/*credentials: number*/) {
+    const header: JWTHeaderParameters = getDefaultStoredIdentityHeader();
+    const payload: JWTPayload = {
+      sub: this.userId,
+      iss: "http://api.example.com",
+      vot: "P1",
+    };
+    const jwt = sign(header, payload);
+
+    const result = await evcsPostIdentity(
+      this,
+      this.userId,
+      {
+        vot: "P1",
+        jwt,
+      },
+      this.bearerToken || ""
+    );
+
+    assert.equal(result.status, 202);
+
+    this.bearerToken = await getBearerToken(this.userId);
   }
+);
 
-  this.lambdaTest = new LambdaTestClient(stackName);
-});
-type WorldDefinition = {
-  bearerToken: string;
-  userIdentityPOSTResponse: import("superagent/lib/node/response.js");
-  userIdentityGETResponse: import("superagent/lib/node/response.js");
-};
-
-Given<TestWorld>("I have the Lambda with resource name {string}", async function (lambdaName: string) {
-  this.lambdaPhysicalId = await this.lambdaTest.getPhysicalResourceId(lambdaName);
+When<WorldDefinition>("I make a request for the users identity", async function () {
+  this.userIdentityPostResponse = await sisPostUserIdentity({}, this.bearerToken);
 });
 
-Given("I send a POST request", async function (this: WorldDefinition) {
-  this.userIdentityPOSTResponse = await request(EndPoints.BASE_URL as string)
-    .post(EndPoints.PATH_USER_IDENTITY)
-    .set("x-api-key", await getApiKey())
-    .set("authorization", this.bearerToken)
-    .set("Content-Type", "application/json")
-    .set("Accept", "*/*");
+When<WorldDefinition>("I make a request for the users identity with invalid Authorization header", async function () {
+  this.userIdentityPostResponse = await sisPostUserIdentity({}, "Blah blah");
 });
 
-Given(/a (.*) bearer token/, async function (this: WorldDefinition, status: string) {
-  let token: string;
-
-  switch (status) {
-    case "valid":
-      token = await getBearerToken("TEST_USER");
-      break;
-    case "bad":
-      token = "Bearer a.bad.jwt";
-      break;
-    case "absentee":
-      token = await getBearerToken("NO_USER");
-      break;
-    default:
-      throw new Error("Unsupported token type.");
-  }
-
-  this.bearerToken = token;
+When<WorldDefinition>("I make a request for the users identity without Authorization header", async function () {
+  this.userIdentityPostResponse = await sisPostUserIdentity(this);
 });
 
-Then("the status code should be {int}", async function (statusCode: number) {
-  assert.equal(this.userIdentityPOSTResponse.statusCode, statusCode);
+Then<WorldDefinition>("the status code should be {int}", function (statusCode: number) {
+  assert.ok(this.userIdentityPostResponse);
+  assert.equal(this.userIdentityPostResponse.statusCode, statusCode);
 });
 
-Then("The stored identity should be returned", function (this: WorldDefinition) {
-  JSON.parse(this.userIdentityPOSTResponse.body) satisfies StoredIdentityResponse;
+Then<WorldDefinition>("the stored identity should be returned", function () {
+  assert.deepEqual(this.userIdentityPostResponse?.body, {
+    content: {
+      sub: this.userId,
+      iss: "http://api.example.com",
+      vot: "P1",
+    },
+    vot: "P1",
+    isValid: true,
+    expired: false,
+    kidValid: true,
+    signatureValid: true,
+  });
 });
 
-When<TestWorld>("I call the Lambda", async function () {
-  if (!this.lambdaPhysicalId) {
-    throw new Error("Lambda Physical Id is not defined");
-  }
-  this.lambdaResponse = await this.lambdaTest.callLambda(this.lambdaPhysicalId, '{"Records":[]}');
-});
-
-Then<TestWorld>("it will return null", function () {
-  assert.equal(this.lambdaResponse?.StatusCode, 200);
-  assert.equal(new TextDecoder().decode(this.lambdaResponse?.Payload), "null");
+Then<WorldDefinition>("the stored credentials should be returned", function () {
+  // TODO: To be implemented in SPT-1629
 });
