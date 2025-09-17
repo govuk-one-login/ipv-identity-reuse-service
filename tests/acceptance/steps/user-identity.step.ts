@@ -13,7 +13,8 @@ Given<WorldDefinition>("I have a user without a stored identity", async function
 
 Given<WorldDefinition>(
   "I have a user with a Stored Identity and {int} credentials",
-  async function (/*credentials: number*/) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async function (credentials: number) {
     const header: JWTHeaderParameters = getDefaultStoredIdentityHeader();
     const payload: JWTPayload = {
       sub: this.userId,
@@ -53,6 +54,16 @@ When<WorldDefinition>("I make a request for the users identity without Authoriza
 Then<WorldDefinition>("the status code should be {int}", function (statusCode: number) {
   assert.ok(this.userIdentityPostResponse);
   assert.equal(this.userIdentityPostResponse.statusCode, statusCode);
+});
+
+Then<WorldDefinition>("the error should be {string}", function (error: string) {
+  assert.ok(this.userIdentityPostResponse);
+  assert.equal(this.userIdentityPostResponse.body.error, error);
+});
+
+Then<WorldDefinition>("the error description should be {string}", function (errorDescription: string) {
+  assert.ok(this.userIdentityPostResponse);
+  assert.equal(this.userIdentityPostResponse.body.error_description, errorDescription);
 });
 
 Then<WorldDefinition>("the stored identity should be returned", function () {
