@@ -58,10 +58,6 @@ if [ -z "$SAM_STACK_NAME" ]; then
   exit 1
 fi
 
-echo "Setting environment variables..."
-./export-stack-outputs.sh --stack-name "$SAM_STACK_NAME"
-eval "$(./export-stack-outputs.sh --stack-name "$SAM_STACK_NAME")"
-
 if $RUN_WITH_DOCKER; then
   docker build -t acceptance-test-runner -f tests/acceptance/Dockerfile .
 

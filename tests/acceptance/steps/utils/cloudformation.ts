@@ -77,7 +77,9 @@ export const getCloudFormationOutput = async (logicalResourceId: CloudFormationO
   return output.OutputValue;
 };
 
-export const getCloudFormationResourceSecretValue = async (logicalResourceId: CloudFormationOutputsType) => {
+export const getCloudFormationResourceSecretValue = async (
+  logicalResourceId: CloudFormationOutputsType
+): Promise<string> => {
   const secretPath = await getCloudFormationOutput(logicalResourceId);
 
   const secretValue = getString(await getSecret(secretPath));
