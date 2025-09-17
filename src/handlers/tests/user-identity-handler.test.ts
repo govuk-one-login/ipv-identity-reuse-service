@@ -135,7 +135,7 @@ describe("user-identity-handler tests", () => {
     const result = handler(newEvent as APIGatewayProxyEvent, {} as Context);
     await expect(result).resolves.toEqual({
       statusCode: HttpCodesEnum.NOT_FOUND,
-      body: JSON.stringify({ error: "not_found", error_description: "No Stored identity exists for this user." }),
+      body: JSON.stringify({ error: "not_found", error_description: "No Stored identity exists for this user" }),
     });
   });
 });
