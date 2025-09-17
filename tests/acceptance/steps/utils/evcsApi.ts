@@ -2,12 +2,17 @@ import { AttributeValue } from "aws-lambda";
 import request from "supertest";
 import type { Response } from "superagent";
 import type { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
-import { CloudFormationClient, DescribeStacksCommand } from "@aws-sdk/client-cloudformation";
-import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { getAppConfig } from "@aws-lambda-powertools/parameters/appconfig";
 import { getString } from "../../../../src/types/stringutils";
 import { Configuration } from "../../../../src/types/configuration";
 import { WorldDefinition } from "../base-verbs.step";
+import {
+  CloudFormationOutputs,
+  getCloudFormationExport,
+  getCloudFormationOutput,
+  getCloudFormationParameter,
+} from "./cloudformation";
+import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 
 export const EvcsEndpoints = {
   BaseUrl:
@@ -28,64 +33,25 @@ export interface StoredIdentityObjectDetails {
   metadata?: Record<string, AttributeValue>;
 }
 
-const CloudFormationOutputs = {
-  ApiEndpoint: "ApiEndpoint",
-  ApiKeyPath: "ApiKeyPath", // pragma: allowlist secret
-  AppConfigApplication: "AppConfigApplication",
-  AppConfigEnvironment: "AppConfigEnvironment",
-  AppConfigName: "AppConfigName",
-  EvcsApiKeySecretArn: "EvcsApiKeySecretArn", // pragma: allowlist secret
-} as const;
+export const getEvcsApiKey = async (): Promise<string> => {
+  const sharedStackName = await getCloudFormationParameter("SharedStackName");
+  const evcsApiKeySecretArn = await getCloudFormationExport(`${sharedStackName}-EVCSApiKeySecret`);
 
-type LogicalResourceType = keyof typeof CloudFormationOutputs;
+  const evcsApiKeySecret = getString(await getSecret(evcsApiKeySecretArn));
 
-const cachedCloudFormationResources: Map<LogicalResourceType, string> = new Map();
-
-export const getCloudFormationResource = async (logicalResourceId: LogicalResourceType): Promise<string> => {
-  if (cachedCloudFormationResources.has(logicalResourceId)) {
-    return cachedCloudFormationResources.get(logicalResourceId) as string;
+  if (!evcsApiKeySecret) {
+    throw new Error("Unable to get EVCSApiKeySecret");
   }
 
-  const client = new CloudFormationClient();
-
-  const response = await client.send(
-    new DescribeStacksCommand({
-      StackName: process.env.SAM_STACK_NAME,
-    })
-  );
-
-  const output = response.Stacks?.flatMap((stack) =>
-    stack.Outputs?.filter((output) => output.OutputKey === logicalResourceId)
-  ).shift();
-
-  if (output?.OutputValue) {
-    cachedCloudFormationResources.set(logicalResourceId, output.OutputValue);
-    return output.OutputValue;
-  }
-
-  throw new Error(`Output ${logicalResourceId} not found in ${process.env.SAM_STACK_NAME}`);
+  return evcsApiKeySecret;
 };
-
-const getCloudFormationResourceSecretValue = async (logicalResourceId: LogicalResourceType) => {
-  const secretPath = await getCloudFormationResource(logicalResourceId);
-
-  const secretValue = getString(await getSecret(secretPath));
-
-  if (!secretValue) {
-    throw new Error(`${CloudFormationOutputs.EvcsApiKeySecretArn} returned invalid result`);
-  }
-  return secretValue;
-};
-
-export const getEvcsApiKey = async (): Promise<string> =>
-  getCloudFormationResourceSecretValue(CloudFormationOutputs.EvcsApiKeySecretArn);
 
 export const getEvcsApiEndpoint = async (): Promise<string> => {
-  const environment = await getCloudFormationResource(CloudFormationOutputs.AppConfigEnvironment);
+  const environment = await getCloudFormationOutput(CloudFormationOutputs.AppConfigEnvironment);
 
-  const result = await getAppConfig(await getCloudFormationResource(CloudFormationOutputs.AppConfigName), {
+  const result = await getAppConfig(await getCloudFormationOutput(CloudFormationOutputs.AppConfigName), {
     environment: environment === "local" ? "dev" : environment,
-    application: await getCloudFormationResource(CloudFormationOutputs.AppConfigApplication),
+    application: await getCloudFormationOutput(CloudFormationOutputs.AppConfigApplication),
   });
 
   if (!result) {
