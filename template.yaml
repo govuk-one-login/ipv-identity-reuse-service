@@ -311,6 +311,7 @@ Resources:
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
+        UseNpmCi: True
         Minify: true
         Target: es2022
         Sourcemap: false
@@ -608,6 +609,7 @@ Resources:
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
+        UseNpmCi: True
         EntryPoints:
           - src/message-processor/message-processor.ts
         Sourcemap: true
