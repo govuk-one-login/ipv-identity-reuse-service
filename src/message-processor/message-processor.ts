@@ -6,7 +6,7 @@ import { isTxmaMessage, TxmaMessage } from "../types/txmaMessage";
 
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { getConfiguration, type Configuration } from "../types/configuration";
-import { getString } from "../types/stringutils";
+import { getString, isStringWithLength } from "../types/stringutils";
 import logger from "../services/logger";
 import { isErrorResponse } from "../types/endpoint";
 import { auditIdentityRecordInvalidated } from "../services/audit";
@@ -27,7 +27,7 @@ export const handler = async (event: SQSEvent): Promise<void> => {
         continue;
       }
 
-      await invalidateUser(record.user_id, record.intervention_code, config.evcsApiUrl, apiKey);
+      await invalidateUser(record.user_id, record.intervention_code!, config.evcsApiUrl, apiKey);
     }
   } finally {
     metrics.publishStoredMetrics();
@@ -89,4 +89,5 @@ const parseSQSRecords = (records: SQSRecord[]): TxmaMessage[] =>
   });
 
 const isInterventionRecord = (message: TxmaMessage, configuration: Configuration) =>
+  isStringWithLength(message.intervention_code) &&
   configuration.interventionCodesToInvalidate.some((code) => message.intervention_code === code);

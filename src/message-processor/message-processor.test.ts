@@ -88,7 +88,7 @@ describe("message-processor", () => {
     );
   });
 
-  it.each(["user_id", "timestamp", "intervention_code"] as Array<keyof TxmaMessage>)(
+  it.each(["user_id", "timestamp"] as Array<keyof TxmaMessage>)(
     "should reject records which does not have the %s field",
     async (field) => {
       const testMessage: Partial<TxmaMessage> = { ...VALID_TXMA_MESSAGE };
@@ -135,6 +135,10 @@ describe("message-processor", () => {
         user_id: "helen.jones-12345",
         timestamp: 1752755496,
         intervention_code: "34",
+      },
+      {
+        user_id: "helen.jones-12345",
+        timestamp: 1752755496,
       }
     );
 
@@ -178,7 +182,7 @@ describe("message-processor", () => {
     expect(console.log).toHaveEmittedEMFWith(
       expect.objectContaining({
         service: process.env.POWERTOOLS_SERVICE_NAME,
-        [MetricName.MessagesReceived]: 4,
+        [MetricName.MessagesReceived]: 5,
       })
     );
     // eslint-disable-next-line no-console
