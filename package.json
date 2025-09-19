@@ -10,6 +10,7 @@
     "@aws-sdk/client-appconfigdata": "3.883.0",
     "@aws-sdk/client-secrets-manager": "3.883.0",
     "@aws-sdk/client-sqs": "3.883.0",
+    "@govuk-one-login/data-vocab": "1.9.3",
     "@types/aws-lambda": "8.10.150",
     "esbuild": "0.25.4",
     "superagent": "^10.2.3",

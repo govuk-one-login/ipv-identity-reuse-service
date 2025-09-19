@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   id-token: write
+  packages: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -21,11 +22,13 @@ jobs:
       aws-region: eu-west-2
     permissions:
       contents: read
+      packages: read
 
   run-tests:
     uses: ./.github/workflows/test.yml
     permissions:
       contents: read
+      packages: read
     secrets:
       sonar-token: ${{ secrets.SONAR_TOKEN }}
 

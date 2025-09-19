@@ -23,6 +23,8 @@ const createTestSQSEvent = <T extends object>(...events: T[]): SQSEvent => ({
 const DEFAULT_CONFIGURATION: Configuration = Object.freeze({
   evcsApiUrl: "http://api.example.com",
   interventionCodesToInvalidate: ["12", "34"],
+  fraudIssuer: ["fraudCRI"],
+  fraudValidityPeriod: 4518,
 });
 
 const VALID_TXMA_MESSAGE: TxmaMessage = Object.freeze({
