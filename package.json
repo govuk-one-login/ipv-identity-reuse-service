@@ -13,6 +13,7 @@
     "@govuk-one-login/data-vocab": "1.9.3",
     "@types/aws-lambda": "8.10.150",
     "esbuild": "0.25.4",
+    "jose": "5.10.0",
     "superagent": "^10.2.3",
     "supertest": "7.1.3"
   },

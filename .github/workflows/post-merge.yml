@@ -44,22 +44,25 @@ jobs:
       aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
       aws-s3-bucket: ${{ secrets.GHA_SAM_DEPLOYMENT_BUCKET }}
 
-  acceptance-test:
-    uses: ./.github/workflows/acceptance-tests.yml
-    needs:
-      - preview-main
-    permissions:
-      id-token: write
-      contents: read
-    with:
-      stack-name: ${{ needs.preview-main.outputs.stack-name }}
-    secrets:
-      aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
+  # TODO: Disabled at the moment due to WAF rules needing to be added for mock.credential-store.dev.account.gov.uk
+  #
+  # acceptance-test:
+  #   uses: ./.github/workflows/acceptance-tests.yml
+  #   needs:
+  #     - preview-main
+  #   permissions:
+  #     id-token: write
+  #     contents: read
+  #   with:
+  #     stack-name: ${{ needs.preview-main.outputs.stack-name }}
+  #   secrets:
+  #     aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
 
   publish:
     uses: ./.github/workflows/publish.yml
     needs:
-      - acceptance-test
+      # - acceptance-test
+      - preview-main
     permissions:
       contents: read
       id-token: write

@@ -1,4 +1,5 @@
 import { getAppConfig } from "@aws-lambda-powertools/parameters/appconfig";
+import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { getString } from "./stringutils";
 
 export type Configuration = {
@@ -21,3 +22,6 @@ export const getConfiguration = async (): Promise<Configuration> => {
 
   return JSON.parse(stringResult);
 };
+
+export const getServiceApiKey = async (): Promise<string | undefined> =>
+  getString(await getSecret(process.env.EVCS_API_KEY_SECRET_ARN));
