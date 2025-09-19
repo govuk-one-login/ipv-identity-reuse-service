@@ -67,6 +67,11 @@ Resources:
                   - ec2:DescribeVpcs
                   - ssm:DeleteParameter
                   - s3:ListBucket
+                  - s3:CreateBucket
+                  - s3:DeleteBucket
+                  - s3:DeleteBucketPolicy
+                  - s3:PutBucket*
+                  - s3:PutEncryptionConfiguration
                   - apigateway:GET
                   - apigateway:PUT
                   - apigateway:POST
@@ -81,6 +86,10 @@ Resources:
                 Action:
                   - s3:GetObject
                   - s3:PutObject
+                  - s3:CreateBucket
+                  - s3:DeleteBucket
+                  - s3:PutBucket*
+                  - s3:PutEncryptionConfiguration
                   - s3:ListBucket
                   - s3:DeleteObject
 
@@ -89,6 +98,10 @@ Resources:
                 Action:
                   - s3:GetObject
                   - s3:PutObject
+                  - s3:CreateBucket
+                  - s3:PutBucket*
+                  - s3:PutEncryptionConfiguration
+                  - s3:DeleteBucket*
                   - s3:ListBucket
                   - s3:DeleteObject
 

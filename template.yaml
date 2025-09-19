@@ -30,7 +30,10 @@ Parameters:
     Description: The name of the applications configuration
     Type: String
     Default: id-reuse-config
-
+  LocalName:
+    Description: Unique name component used in ephemeral deploys
+    Type: String
+    Default: ""
   OwnerTagValue:
     Description: Value for the Owner Tag
     Type: String
@@ -277,6 +280,199 @@ Globals:
       Role: !GetAtt CodeDeployServiceRole.Arn
 
 Resources:
+  DidSigningKey:
+    Condition: IsDevOrBuild
+    Type: AWS::KMS::Key
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Description: KMS signing key for signing Identities
+      Enabled: true
+      KeySpec: ECC_NIST_P256
+      KeyPolicy:
+        Version: 2012-10-17
+        Id: !Sub ${AWS::StackName}-did-key
+        Statement:
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: 'kms:*'
+            Resource: '*'
+      KeyUsage: SIGN_VERIFY
+      PendingWindowInDays: 30
+      Tags:
+        - Key: environment
+          Value: !Ref Environment
+        - Key: application
+          Value: shared
+  
+  SISDidDocumentResourceS3Role:
+    Condition: IsDevOrBuild
+    Type: AWS::IAM::Role
+    Properties:
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+      Policies:
+        - PolicyName: AccessSISS3Document
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "s3:GetObject"
+                  - "s3:ListBucket"
+                Resource:
+                  - !GetAtt SISKeysS3Bucket.Arn
+                  - !Sub
+                    - "${Bucket}/did.json"
+                    - Bucket: !GetAtt SISKeysS3Bucket.Arn
+  
+  DidApiGateway:
+    Type: AWS::Serverless::Api
+    Condition: IsDevOrBuild
+    Metadata:
+      checkov:
+        skip:
+          - id: "CKV_AWS_120"
+            comment: "API should have caching - not for our use case"
+          - id: "CKV_AWS_76"
+            comment: "Ensure API Gateway has Access Logging enabled - this is only for testing purposes"
+    Properties:
+      Name: !Sub test-did-document-${AWS::StackName}
+      StageName: !Sub ${Environment}
+      TracingEnabled: true
+      EndpointConfiguration:
+        Type: REGIONAL
+      DefinitionBody:
+        swagger: "2.0"
+        info:
+          title: !Sub test-did-document-${AWS::StackName}
+        paths:
+          /.well-known/did.json:
+            get:
+              responses:
+                "200":
+                  description: OK
+                  headers:
+                    Cache-Control:
+                      type: string
+                  content:
+                    application/did+json:
+                      schema:
+                        type: object
+                "404":
+                  description: Not Found
+              x-amazon-apigateway-integration:
+                credentials: !GetAtt SISDidDocumentResourceS3Role.Arn
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:s3:path/${SISKeysS3Bucket}/did.json"
+                passthroughBehavior: WHEN_NO_MATCH
+                httpMethod: GET
+                type: aws
+                responses:
+                  "200":
+                    statusCode: "200"
+                    responseParameters:
+                      method.response.header.Cache-Control: "'max-age=3600, private'"
+                  "404":
+                    statusCode: "404"
+                    responseTemplates:
+                      application/json: |
+                        {
+                            "message": "Not Found"
+                        }
+  WellKnownUrl:
+    Type: AWS::SSM::Parameter
+    Condition: IsDevOrBuild
+    Properties:
+      Type: String
+      Name: !If
+        - IsDev
+        - !Sub "/${Environment}${LocalName}/${AWS::StackName}/DidWellKnownUrl"
+        - /tests/ipv-identity-reuse-service/DidWellKnownUrl
+      Value: !Sub "https://${DidApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/.well-known/did.json"
+  
+  SISKeysS3Bucket:
+    Type: AWS::S3::Bucket
+    # checkov:skip=CKV_AWS_18: "Ensure the S3 bucket has access logging enabled"
+    Condition: IsDevOrBuild
+    Properties:
+      BucketName: !If
+        - IsDev
+        - !Sub "govuk-one-login-sis-published-keys-${AWS::StackName}"
+        - !Sub "govuk-one-login-sis-published-keys-${Environment}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
+      NotificationConfiguration:
+        EventBridgeConfiguration:
+          EventBridgeEnabled: true
+      Tags:
+        - Key: "Description"
+          Value: "SIS published keys bucket"
+
+  SISKeysS3BucketPolicy:
+    Condition: IsDevOrBuild
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref SISKeysS3Bucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: "Delegate IAM Access"
+            Action:
+              - 's3:*'
+            Effect: Allow
+            Resource:
+              - !GetAtt SISKeysS3Bucket.Arn
+              - !Sub
+                - "${Bucket}/*"
+                - Bucket: !GetAtt SISKeysS3Bucket.Arn
+            Principal:
+              AWS:
+                - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+
+          - Sid: "Allow API Gateway Access"
+            Action:
+              - 's3:GetObject'
+            Effect: Allow
+            Resource:
+              - !Sub
+                - "${Bucket}/did.json"
+                - Bucket: !GetAtt SISKeysS3Bucket.Arn
+            Principal:
+              Service: apigateway.amazonaws.com
+          - Sid: "Allow useridentity function Access"
+            Action:
+              - 's3:PutObject'
+              - 's3:GetObject'
+            Effect: Allow
+            Resource:
+              - !GetAtt SISKeysS3Bucket.Arn
+              - !Sub
+                - "${Bucket}/did.json"
+                - Bucket: !GetAtt SISKeysS3Bucket.Arn
+            Principal:
+              AWS:
+                - !GetAtt UserIdentityFunctionRole.Arn
+    
   ################################
   # POST USER IDENTITY FEATURE  #
   ################################
