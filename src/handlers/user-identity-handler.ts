@@ -76,7 +76,7 @@ const createErrorResponse = (errorCode: HttpCodesEnum): APIGatewayProxyResult =>
   switch (errorCode) {
     case HttpCodesEnum.NOT_FOUND:
       error = "not_found";
-      error_description = "No Stored identity exists for this user";
+      error_description = "No Stored Identity exists for this user or Stored Identity has been invalidated";
       break;
     case HttpCodesEnum.UNAUTHORIZED:
       error = "invalid_token";

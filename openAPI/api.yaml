@@ -9,8 +9,8 @@ paths:
     post:
       summary: "Retrieve the user’s stored identity record"
       description: >
-        Returns the signed Stored Identity JWT and associated metadata  
-        indicating whether the record is still valid, whether it has expired,  
+        Returns the signed Stored Identity JWT and associated metadata
+        indicating whether the record is still valid, whether it has expired,
         and the stored vector of trust (VOT).
       security:
         - bearerAuth: []
@@ -24,31 +24,31 @@ paths:
             schema:
               $ref: "#/components/schemas/userIdentityInput"
       responses:
-        '200':
+        "200":
           description: "Stored identity record returned"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/storedIdentityResponse"
-        '401':
+        "401":
           description: "Unauthorized – e.g. missing or invalid access token"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/oauthError"
-        '403':
+        "403":
           description: "Forbidden – e.g. expired access token"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/oauthError"
-        '404':
-          description: "Not Found – no stored identity exists for this user"
+        "404":
+          description: "Not Found – No Stored Identity exists for this user or Stored Identity has been invalidated"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/oauthError"
-        '500':
+        "500":
           description: "Internal server error"
           content:
             application/json:
@@ -197,6 +197,3 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
-
-
-

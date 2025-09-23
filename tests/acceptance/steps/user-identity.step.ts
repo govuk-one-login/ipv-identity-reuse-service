@@ -15,6 +15,7 @@ Given<WorldDefinition>(
   "I have a user with a Stored Identity and {int} credentials",
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async function (credentials: number) {
+    // TODO: credentials parameter to be implemented in SPT-1629
     const header: JWTHeaderParameters = getDefaultStoredIdentityHeader();
     const payload: JWTPayload = {
       sub: this.userId,
@@ -48,7 +49,7 @@ When<WorldDefinition>("I make a request for the users identity with invalid Auth
 });
 
 When<WorldDefinition>("I make a request for the users identity without Authorization header", async function () {
-  this.userIdentityPostResponse = await sisPostUserIdentity(this);
+  this.userIdentityPostResponse = await sisPostUserIdentity({});
 });
 
 Then<WorldDefinition>("the status code should be {int}", function (statusCode: number) {

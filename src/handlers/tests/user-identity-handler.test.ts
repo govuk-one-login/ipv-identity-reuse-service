@@ -65,7 +65,7 @@ describe("user-identity-handler tests", () => {
     expect(body.signatureValid).toBe(true);
   });
 
-  it("should return Unauthorised given no bearer token", async () => {
+  it("should return Unauthorised given no Bearer token", async () => {
     newEvent.headers["Authorization"] = "";
     const result = handler(newEvent as APIGatewayProxyEvent, {} as Context);
     await expect(result).resolves.toEqual({
@@ -74,7 +74,7 @@ describe("user-identity-handler tests", () => {
     });
   });
 
-  it("should return Unauthorised given malformed bearer token", async () => {
+  it("should return Unauthorised given the Bearer token is malformed", async () => {
     newEvent.headers["Authorization"] = "Bearer bad.bearer.token";
     const result = handler(newEvent as APIGatewayProxyEvent, {} as Context);
     await expect(result).resolves.toEqual({
@@ -83,7 +83,7 @@ describe("user-identity-handler tests", () => {
     });
   });
 
-  it("should return 403 given forbidden api response", async () => {
+  it("should return 403 given EVCS API responded with Forbidden", async () => {
     (global.fetch as jest.Mock) = jest.fn().mockResolvedValue(
       new Response(JSON.stringify({}), {
         status: HttpCodesEnum.FORBIDDEN,
@@ -97,7 +97,7 @@ describe("user-identity-handler tests", () => {
     });
   });
 
-  it("should return 401 given unauthorized api response", async () => {
+  it("should return 401 given EVCS API responded with Unauthorized", async () => {
     (global.fetch as jest.Mock) = jest.fn().mockResolvedValue(
       new Response(JSON.stringify({}), {
         status: HttpCodesEnum.UNAUTHORIZED,
@@ -111,7 +111,7 @@ describe("user-identity-handler tests", () => {
     });
   });
 
-  it("should return 500 given internal error api response", async () => {
+  it("should return 500 given EVCS API responded with Internal Server Error", async () => {
     (global.fetch as jest.Mock) = jest.fn().mockResolvedValue(
       new Response(JSON.stringify({}), {
         status: HttpCodesEnum.INTERNAL_SERVER_ERROR,
@@ -125,7 +125,7 @@ describe("user-identity-handler tests", () => {
     });
   });
 
-  it("should return 404 given internal error api response", async () => {
+  it("should return 404 given EVCS API responded with Not Found", async () => {
     (global.fetch as jest.Mock) = jest.fn().mockResolvedValue(
       new Response(JSON.stringify({}), {
         status: HttpCodesEnum.NOT_FOUND,
@@ -135,7 +135,10 @@ describe("user-identity-handler tests", () => {
     const result = handler(newEvent as APIGatewayProxyEvent, {} as Context);
     await expect(result).resolves.toEqual({
       statusCode: HttpCodesEnum.NOT_FOUND,
-      body: JSON.stringify({ error: "not_found", error_description: "No Stored identity exists for this user" }),
+      body: JSON.stringify({
+        error: "not_found",
+        error_description: "No Stored Identity exists for this user or Stored Identity has been invalidated",
+      }),
     });
   });
 });

@@ -5,7 +5,7 @@ Feature: UserIdentity Post - Happy Path
     When I make a request for the users identity
     Then the status code should be 404
     And the error should be "not_found"
-    And the error description should be "No Stored identity exists for this user"
+    And the error description should be "No Stored Identity exists for this user or Stored Identity has been invalidated"
 
   Scenario: A user does not include an Authorization header
     Given I have a user without a stored identity
