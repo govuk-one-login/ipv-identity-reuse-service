@@ -651,7 +651,7 @@ Resources:
       BuildProperties:
         UseNpmCi: True
         EntryPoints:
-          - src/message-processor/message-processor.ts
+          - src/handlers/message-processor.ts
         Sourcemap: true
         Target: "es2024"
 

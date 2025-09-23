@@ -1,5 +1,5 @@
 import { SQSEvent, SQSRecord } from "aws-lambda";
-import { handler } from "./message-processor";
+import { handler } from "../message-processor";
 import { mockClient } from "aws-sdk-client-mock";
 import { SecretsManagerClient, GetSecretValueCommand, GetSecretValueResponse } from "@aws-sdk/client-secrets-manager";
 import {
@@ -10,9 +10,9 @@ import {
   GetLatestConfigurationCommandOutput,
 } from "@aws-sdk/client-appconfigdata";
 import { Uint8ArrayBlobAdapter } from "@smithy/util-stream";
-import { Configuration } from "../types/configuration";
-import { MetricDimension, MetricName } from "../types/metricEnum";
-import { TxmaMessage } from "../types/txmaMessage";
+import { Configuration } from "../../types/configuration";
+import { MetricDimension, MetricName } from "../../types/metricEnum";
+import { TxmaMessage } from "../../types/txmaMessage";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
 
