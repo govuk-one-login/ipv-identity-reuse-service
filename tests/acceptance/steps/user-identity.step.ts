@@ -1,81 +1,87 @@
-import { Given, When, Then, Before } from "@cucumber/cucumber";
-import { type InvokeCommandOutput } from "@aws-sdk/client-lambda";
-import assert from "node:assert";
-import { UserIdentityInput } from "../../../src/types/interfaces";
-import { HttpCodesEnum } from "../../../src/types/constants";
-import request from "supertest";
-import { LambdaTestClient } from "./utils/lambda-test-client";
-import EndPoints from "./utils/endpoints";
-import { getApiKey } from "./utils/get-api-key";
-interface TestWorld {
-  lambdaTest: LambdaTestClient;
-  lambdaPhysicalId?: string;
-  lambdaResponse?: InvokeCommandOutput;
-}
-const userIdentityInput: UserIdentityInput = {
-  govukSigninJourneyId: "j8mMnXW_rP6JqNXBKKf8xsGXttk121",
-  vtr: ["P1", "P3"],
-};
-Before<TestWorld>(function () {
-  const stackName = process.env.SAM_STACK_NAME;
-  if (typeof stackName != "string" || stackName.length === 0) {
-    throw new Error("Environment variable SAM_STACK_NAME not defined");
+import { Given, When, Then } from "@cucumber/cucumber";
+import { sisPostUserIdentity } from "./utils/sisApi";
+import { getBearerToken } from "./utils/get-bearer-token";
+import assert from "assert";
+import { WorldDefinition } from "./base-verbs.step";
+import { evcsPostIdentity } from "./utils/evcsApi";
+import { JWTHeaderParameters, JWTPayload } from "jose";
+import { getDefaultStoredIdentityHeader, sign } from "./utils/jwtUtils";
+
+Given<WorldDefinition>("I have a user without a stored identity", async function () {
+  this.bearerToken = await getBearerToken(this.userId);
+});
+
+Given<WorldDefinition>(
+  "I have a user with a Stored Identity and {int} credentials",
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async function (credentials: number) {
+    // TODO: credentials parameter to be implemented in SPT-1629
+    const header: JWTHeaderParameters = getDefaultStoredIdentityHeader();
+    const payload: JWTPayload = {
+      sub: this.userId,
+      iss: "http://api.example.com",
+      vot: "P1",
+    };
+    const jwt = sign(header, payload);
+
+    const result = await evcsPostIdentity(
+      this,
+      this.userId,
+      {
+        vot: "P1",
+        jwt,
+      },
+      this.bearerToken || ""
+    );
+
+    assert.equal(result.status, 202);
+
+    this.bearerToken = await getBearerToken(this.userId);
   }
+);
 
-  this.lambdaTest = new LambdaTestClient(stackName);
-});
-type WorldDefinition = {
-  testUserId: string;
-  userIdentityPOSTResponse: import("superagent/lib/node/response.js");
-};
-
-Given<TestWorld>("I have the Lambda with resource name {string}", async function (lambdaName: string) {
-  this.lambdaPhysicalId = await this.lambdaTest.getPhysicalResourceId(lambdaName);
-});
-Given("I send a POST request with input value", async function (this: WorldDefinition) {
-  this.userIdentityPOSTResponse = await request(EndPoints.BASE_URL as string)
-    .post(EndPoints.PATH_USER_IDENTITY)
-    .send(userIdentityInput)
-    .set("x-api-key", await getApiKey())
-    .set("authorization", "Bearer 123")
-    .set("Content-Type", "application/json")
-    .set("Accept", "*/*");
-});
-Given("I send a POST request with malformed data", async function (this: WorldDefinition) {
-  this.userIdentityPOSTResponse = await request(EndPoints.BASE_URL as string)
-    .post(EndPoints.PATH_USER_IDENTITY)
-    .send("")
-    .set("authorization", "a-dummy-access-token")
-    .set("x-api-key", await getApiKey())
-    .set("Content-Type", "application/json")
-    .set("Accept", "*/*");
-});
-Given("I send a POST request without authorization header", async function (this: WorldDefinition) {
-  this.userIdentityPOSTResponse = await request(EndPoints.BASE_URL as string)
-    .post(EndPoints.PATH_USER_IDENTITY)
-    .send(userIdentityInput)
-    .set("x-api-key", await getApiKey())
-    .set("Content-Type", "application/json")
-    .set("Accept", "*/*");
-});
-Then("I should receive a success response", async function () {
-  assert.equal(this.userIdentityPOSTResponse.statusCode, HttpCodesEnum.OK);
-});
-Then("I should receive a Bad Request", async function () {
-  assert.equal(this.userIdentityPOSTResponse.status, HttpCodesEnum.BAD_REQUEST);
+When<WorldDefinition>("I make a request for the users identity", async function () {
+  this.userIdentityPostResponse = await sisPostUserIdentity({}, this.bearerToken);
 });
 
-Then("I should receive Unauthorized", async function () {
-  assert.equal(this.userIdentityPOSTResponse.status, HttpCodesEnum.UNAUTHORIZED);
-});
-When<TestWorld>("I call the Lambda", async function () {
-  if (!this.lambdaPhysicalId) {
-    throw new Error("Lambda Physical Id is not defined");
-  }
-  this.lambdaResponse = await this.lambdaTest.callLambda(this.lambdaPhysicalId, '{"Records":[]}');
+When<WorldDefinition>("I make a request for the users identity with invalid Authorization header", async function () {
+  this.userIdentityPostResponse = await sisPostUserIdentity({}, "Blah blah");
 });
 
-Then<TestWorld>("it will return null", function () {
-  assert.equal(this.lambdaResponse?.StatusCode, 200);
-  assert.equal(new TextDecoder().decode(this.lambdaResponse?.Payload), "null");
+When<WorldDefinition>("I make a request for the users identity without Authorization header", async function () {
+  this.userIdentityPostResponse = await sisPostUserIdentity({});
+});
+
+Then<WorldDefinition>("the status code should be {int}", function (statusCode: number) {
+  assert.ok(this.userIdentityPostResponse);
+  assert.equal(this.userIdentityPostResponse.statusCode, statusCode);
+});
+
+Then<WorldDefinition>("the error should be {string}", function (error: string) {
+  assert.ok(this.userIdentityPostResponse);
+  assert.equal(this.userIdentityPostResponse.body.error, error);
+});
+
+Then<WorldDefinition>("the error description should be {string}", function (errorDescription: string) {
+  assert.ok(this.userIdentityPostResponse);
+  assert.equal(this.userIdentityPostResponse.body.error_description, errorDescription);
+});
+
+Then<WorldDefinition>("the stored identity should be returned", function () {
+  assert.deepEqual(this.userIdentityPostResponse?.body, {
+    content: {
+      sub: this.userId,
+      iss: "http://api.example.com",
+      vot: "P1",
+    },
+    vot: "P1",
+    isValid: true,
+    expired: false,
+    kidValid: true,
+    signatureValid: true,
+  });
+});
+
+Then<WorldDefinition>("the stored credentials should be returned", function () {
+  // TODO: To be implemented in SPT-1629
 });

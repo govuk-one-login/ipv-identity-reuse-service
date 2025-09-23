@@ -58,10 +58,6 @@ if [ -z "$SAM_STACK_NAME" ]; then
   exit 1
 fi
 
-echo "Setting environment variables..."
-./export-stack-outputs.sh --stack-name "$SAM_STACK_NAME"
-eval "$(./export-stack-outputs.sh --stack-name "$SAM_STACK_NAME")"
-
 if $RUN_WITH_DOCKER; then
   docker build -t acceptance-test-runner -f tests/acceptance/Dockerfile .
 
@@ -74,8 +70,7 @@ if $RUN_WITH_DOCKER; then
     -e AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY:?}" \
     -e AWS_SESSION_TOKEN="${AWS_SESSION_TOKEN:?}" \
     -e AWS_SECURITY_TOKEN="${AWS_SECURITY_TOKEN}" \
-    -e CFN_RegionalApiEndpoint="${CFN_RegionalApiEndpoint:?}" \
-    -e CFN_PrivateApiEndpoint="${CFN_PrivateApiEndpoint:?}" \
+    -e SAM_STACK_NAME="${SAM_STACK_NAME}" \
     acceptance-test-runner \
     /bin/bash -c "npm i && npm run test:acceptance -- --format html:test-reports/acceptance.html"
 else

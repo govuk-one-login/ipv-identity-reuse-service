@@ -58,6 +58,7 @@ Resources:
                   - iam:UpdateAssumeRolePolicy
                   - cloudformation:DescribeStacks
                   - cloudformation:DescribeStackResource
+                  - cloudformation:ListExports
                   - lambda:CreateEventSourceMapping
                   - lambda:GetEventSourceMapping
                   - lambda:DeleteEventSourceMapping
@@ -238,22 +239,10 @@ Resources:
 
               - Effect: Allow
                 Resource:
-                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*
+                  - !Sub arn:aws:appconfig:${AWS::Region}:${AWS::AccountId}:application/*
                 Action:
-                  - states:CreateStateMachine
-                  - states:DescribeStateMachine
-                  - states:UpdateStateMachine
-                  - states:DeleteStateMachine
-                  - states:TagResource
-                  - states:UntagResource
-                  - states:UpdateStateMachine
-                  - states:ListStateMachineVersions
-                  - states:CreateStateMachineAlias
-                  - states:DescribeStateMachineAlias
-                  - states:DeleteStateMachineAlias
-                  - states:UpdateStateMachineAlias
-                  - states:PublishStateMachineVersion
-                  - states:DeleteStateMachineVersion
+                  - appconfig:StartConfigurationSession
+                  - appconfig:GetLatestConfiguration
 
               - Effect: Allow
                 Resource:
@@ -312,4 +301,3 @@ Resources:
 Outputs:
   Role:
     Value: !GetAtt Role.Arn
-

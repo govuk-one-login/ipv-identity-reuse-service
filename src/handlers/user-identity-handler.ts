@@ -1,33 +1,97 @@
-import logger from "../commons/logger";
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { HTTP_MESSAGE_INVALID_REQUEST, HttpCodesEnum } from "../types/constants";
+import { decodeJwt, JWTPayload } from "jose";
 
-export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  logger.debug("Received message", { event: event.body });
-  if (!event.body) {
-    return {
-      statusCode: HttpCodesEnum.BAD_REQUEST,
-      body: JSON.stringify({ message: HTTP_MESSAGE_INVALID_REQUEST }),
-    };
-  }
+import logger from "../commons/logger";
+import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
+import { HttpCodesEnum } from "../types/constants";
+import { getConfiguration, getServiceApiKey } from "../types/configuration";
+import { EvcsStoredIdentityResponse, StoredIdentityResponse, UserIdentityDataType } from "../types/interfaces";
+
+interface ErrorResponse {
+  error: string;
+  error_description: string;
+}
+
+export const handler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
+  logger.addContext(context);
+
   if (!event?.headers?.Authorization) {
-    return {
-      statusCode: HttpCodesEnum.UNAUTHORIZED,
-      body: JSON.stringify({ message: "Request Unauthorized" }),
-    };
+    logger.error("Authorisation header was not included in request");
+    return createErrorResponse(HttpCodesEnum.UNAUTHORIZED);
   }
+
+  const configuration = await getConfiguration();
+  const serviceApiKey = await getServiceApiKey();
 
   try {
-    JSON.parse(JSON.stringify(event.body));
-  } catch {
-    return {
-      statusCode: HttpCodesEnum.BAD_REQUEST,
-      body: JSON.stringify({ message: "Event body is not valid JSON" }),
-    };
-  }
+    try {
+      getJwtBody(event.headers.Authorization.split(" ").at(1) || ""); // Validate bearer token
+    } catch {
+      logger.error("Error whilst decoding Bearer token body");
+      return createErrorResponse(HttpCodesEnum.UNAUTHORIZED);
+    }
 
+    const result = await fetch(`${configuration.evcsApiUrl}/identity`, {
+      method: "GET",
+      headers: {
+        ...event.headers,
+        ...(serviceApiKey && { "x-api-key": serviceApiKey }),
+      },
+    });
+
+    if (!result.ok) {
+      logger.error("Error received from EVCS service", { status: result.status });
+      return createErrorResponse(result.status);
+    }
+
+    const storedIdentity: EvcsStoredIdentityResponse = await result.json();
+    const content = getJwtBody(storedIdentity.si.vc) as unknown as UserIdentityDataType;
+
+    const response: StoredIdentityResponse = {
+      content,
+      vot: content.vot,
+      isValid: true,
+      expired: false,
+      kidValid: true,
+      signatureValid: true,
+    };
+    return { statusCode: HttpCodesEnum.OK, body: JSON.stringify(response) };
+  } catch (error) {
+    logger.error("Error retrieving user identity", { error });
+    return createErrorResponse(HttpCodesEnum.INTERNAL_SERVER_ERROR);
+  }
+};
+
+const getJwtBody = <T extends JWTPayload = JWTPayload>(token: string): T => {
+  try {
+    return decodeJwt(token) as T;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`Invalid JWT: ${msg}`);
+  }
+};
+
+const createErrorResponse = (errorCode: HttpCodesEnum): APIGatewayProxyResult => {
+  let error;
+  let error_description;
+  switch (errorCode) {
+    case HttpCodesEnum.NOT_FOUND:
+      error = "not_found";
+      error_description = "No Stored Identity exists for this user or Stored Identity has been invalidated";
+      break;
+    case HttpCodesEnum.UNAUTHORIZED:
+      error = "invalid_token";
+      error_description = "Bearer token is missing or invalid";
+      break;
+    case HttpCodesEnum.FORBIDDEN:
+      error = "forbidden";
+      error_description = "Access token expired or not permitted";
+      break;
+    default:
+      error = "server_error";
+      error_description = "Unable to retrieve data";
+  }
   return {
-    statusCode: HttpCodesEnum.OK,
-    body: JSON.stringify({ message: "Request Success" }),
+    statusCode: errorCode,
+    body: JSON.stringify({ error, error_description } as ErrorResponse),
   };
 };

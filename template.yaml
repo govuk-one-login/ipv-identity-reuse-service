@@ -115,8 +115,8 @@ Mappings:
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
       messageQueueArn: "unused"
       messageQueueKeyArn: "unused"
-      ApiRateLimit: 5         # allowed requests per second
-      ApiBurstLimit: 5        # requests the API can handle concurrently
+      ApiRateLimit: 5 # allowed requests per second
+      ApiBurstLimit: 5 # requests the API can handle concurrently
       IPVCoreVPCID: vpc-093ac0375aa3f291d # ID Reuse Service VPC ID
       UniqueVPCEndpointIDs: none
       UseCanary: false
@@ -125,8 +125,8 @@ Mappings:
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
       messageQueueArn: "unused"
       messageQueueKeyArn: "unused"
-      ApiRateLimit: 5         # allowed requests per second
-      ApiBurstLimit: 5        # requests the API can handle concurrently
+      ApiRateLimit: 5 # allowed requests per second
+      ApiBurstLimit: 5 # requests the API can handle concurrently
       IPVCoreVPCID: vpc-093ac0375aa3f291d # ID Reuse Service VPC ID
       UniqueVPCEndpointIDs: none
       UseCanary: false
@@ -135,8 +135,8 @@ Mappings:
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
       messageQueueArn: "unused"
       messageQueueKeyArn: "unused"
-      ApiRateLimit: 5        # allowed requests per second
-      ApiBurstLimit: 5       # requests the API can handle concurrently
+      ApiRateLimit: 5 # allowed requests per second
+      ApiBurstLimit: 5 # requests the API can handle concurrently
       IPVCoreVPCID: vpc-08d7c4b3c5e2a0d9a # ID Reuse Service Build VPC ID
       UniqueVPCEndpointIDs: vpce-0edf9e66222007102 # IPV Build VPCE ID
       UseCanary: false
@@ -145,8 +145,8 @@ Mappings:
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
       messageQueueArn: "arn:aws:sqs:eu-west-2:178023842775:self-staging-EC-SQS-Output-Queue-identityreuse"
       messageQueueKeyArn: "arn:aws:kms:eu-west-2:178023842775:key/325458a5-de28-4c28-aaf0-678ebefb35ac"
-      ApiRateLimit: 5         # allowed requests per second
-      ApiBurstLimit: 5        # requests the API can handle concurrently
+      ApiRateLimit: 5 # allowed requests per second
+      ApiBurstLimit: 5 # requests the API can handle concurrently
       IPVCoreVPCID: vpc-039e664a2b3abb03e # ID Reuse Service Staging VPC ID
       UniqueVPCEndpointIDs: vpce-0cc0de10742b83b8a # IPV Staging VPCE ID
       UseCanary: true
@@ -155,8 +155,8 @@ Mappings:
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
       messageQueueArn: "arn:aws:sqs:eu-west-2:729485541398:self-integration-EC-SQS-Output-Queue-identityreuse"
       messageQueueKeyArn: "arn:aws:kms:eu-west-2:729485541398:key/c199c69c-7ce7-4a82-b5a7-b344c7ac04f5"
-      ApiRateLimit: 2000        # allowed requests per second
-      ApiBurstLimit: 2000        # requests the API can handle concurrently
+      ApiRateLimit: 2000 # allowed requests per second
+      ApiBurstLimit: 2000 # requests the API can handle concurrently
       IPVCoreVPCID: vpc-0a9e773e1f32b6697 # ID Reuse Service Integration VPC ID
       UniqueVPCEndpointIDs: vpce-0f47068fdf9ad0c3d # IPV Int VPCE ID
       UseCanary: true
@@ -165,8 +165,8 @@ Mappings:
       dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables"
       messageQueueArn: "arn:aws:sqs:eu-west-2:451773080033:self-production-EC-SQS-Output-Queue-identityreuse"
       messageQueueKeyArn: "arn:aws:kms:eu-west-2:451773080033:key/5b5d3a8e-cf70-49ca-bec8-b3a2e61ce770"
-      ApiRateLimit: 2000         # allowed requests per second
-      ApiBurstLimit: 2000        # requests the API can handle concurrently
+      ApiRateLimit: 2000 # allowed requests per second
+      ApiBurstLimit: 2000 # requests the API can handle concurrently
       IPVCoreVPCID: vpc-0274d75007239691f # IPV Reuse Seruice Production VPC ID
       UniqueVPCEndpointIDs: vpce-0e40247a557c2169e # IPV Reuse Seruice Prod VPCE ID
       UseCanary: true
@@ -199,8 +199,9 @@ Conditions:
   IsNotDev: !Not [!Condition IsDev]
 
   CanariesEnabled: !Equals
-    - !FindInMap [ EnvironmentMap, !Ref Environment, UseCanary ]
+    - !FindInMap [EnvironmentMap, !Ref Environment, UseCanary]
     - true
+
   IsDevOrBuild:
     Fn::Or:
       - Fn::Equals: [!Ref Environment, "local"]
@@ -295,9 +296,25 @@ Resources:
       MemorySize: 128
       Role: !GetAtt UserIdentityFunctionRole.Arn
       KmsKeyArn: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
+      VpcConfig: !If
+        - UseVpc
+        - SecurityGroupIds:
+            - Fn::ImportValue: !Sub "${VpcStackName}-AWSServicesEndpointSecurityGroupId"
+          SubnetIds:
+            - Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdA"
+            - Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdB"
+        - !Ref "AWS::NoValue"
       Environment:
         Variables:
           METRIC_SERVICE_NAME: "UserIdentityFunction"
+          EVCS_API_KEY_SECRET_ARN:
+            Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
+          POWERTOOLS_METRICS_NAMESPACE:
+            !If [IsDev, !Sub "${AWS::StackName}-UserIdentityFunction", "UserIdentityFunction"]
+          POWERTOOLS_SERVICE_NAME: "UserIdentityFunction"
+          ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
+          APP_CONFIG_NAME: !Ref ApplicationConfigName
+          APP_CONFIG_APPLICATION: !Ref ApplicationName
       CodeSigningConfigArn: !If
         - UseCodeSigning
         - !Ref CodeSigningConfigArn
@@ -356,16 +373,41 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
 
+  UserIdentityFunctionPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-UserIdentityFunctionPolicy"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - kms:Decrypt
+              - kms:GenerateDataKey
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - "secretsmanager:GetSecretValue" #pragma: allowlist secret
+            Resource:
+              - Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
+          - Effect: Allow
+            Action:
+              - "appconfig:StartConfigurationSession"
+              - "appconfig:GetLatestConfiguration"
+            Resource: "*"
+      Roles:
+        - !Ref UserIdentityFunctionRole
+
   RegionalGatewayUserIdentityFunctionResourcePolicy:
     Condition: IsDev
     DependsOn: UserIdentityFunctionAliaslive
     Type: AWS::Lambda::Permission
     Properties:
       FunctionName: !Join
-        - ':'
-        - - 'function'
-          - !Select [ 6, !Split [ ':', !GetAtt UserIdentityFunction.Arn ] ]
-          - 'live'
+        - ":"
+        - - "function"
+          - !Select [6, !Split [":", !GetAtt UserIdentityFunction.Arn]]
+          - "live"
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
       SourceAccount: !Ref AWS::AccountId
@@ -376,15 +418,14 @@ Resources:
     Type: AWS::Lambda::Permission
     Properties:
       FunctionName: !Join
-        - ':'
-        - - 'function'
-          - !Select [ 6, !Split [ ':', !GetAtt UserIdentityFunction.Arn ] ]
-          - 'live'
+        - ":"
+        - - "function"
+          - !Select [6, !Split [":", !GetAtt UserIdentityFunction.Arn]]
+          - "live"
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
       SourceAccount: !Ref AWS::AccountId
-      SourceArn:
-        !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PrivateRestApi}/${ApiStageName}/POST/*"
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PrivateRestApi}/${ApiStageName}/POST/*"
 
   PrivateRestApi:
     Type: AWS::Serverless::Api
@@ -398,7 +439,7 @@ Resources:
         openapi: "3.0.3" # workaround to get `sam validate` to work
         paths: # workaround to get `sam validate` to work
           /never-created:
-            options: { } # workaround to get `sam validate` to work
+            options: {} # workaround to get `sam validate` to work
         Fn::Transform:
           Name: AWS::Include
           Parameters:
@@ -408,7 +449,7 @@ Resources:
       Auth:
         ResourcePolicy:
           IntrinsicVpcWhitelist:
-            - !FindInMap [ EnvironmentMap, !Ref Environment, IPVCoreVPCID ]
+            - !FindInMap [EnvironmentMap, !Ref Environment, IPVCoreVPCID]
       AccessLogSetting:
         Format: >-
           {
@@ -444,8 +485,8 @@ Resources:
         Type: PRIVATE
         VpcEndpointIds: !If
           - IsDev
-          - [ ]
-          - !Split [ ",",  !FindInMap [ EnvironmentMap, !Ref Environment, UniqueVPCEndpointIDs ] ]
+          - []
+          - !Split [",", !FindInMap [EnvironmentMap, !Ref Environment, UniqueVPCEndpointIDs]]
       Tags:
         CheckovRulesToSkip: CKV_AWS_120
         Product: !Ref ProductTagValue
@@ -520,7 +561,7 @@ Resources:
     Properties:
       RoleName: !Sub "${AWS::StackName}-UserIdentityRestApiRole"
       Description: !Sub "Update User identity Function related permissions for the ${AWS::StackName}-RestApi Gateway IAM role"
-      PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
+      PermissionsBoundary: !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -575,7 +616,6 @@ Resources:
           Value: !Ref SourceTagValue
         - Key: Name
           Value: !Sub "/aws/lambda/${UserIdentityFunction}"
-  
 
   MessageProcessorLambda:
     Type: AWS::Serverless::Function
@@ -716,7 +756,6 @@ Resources:
           MetricNamespace: !Ref MainCloudWatchMetricNamespace
           MetricValue: "1"
 
-  
   #######
   # API #
   #######
@@ -732,7 +771,7 @@ Resources:
         openapi: "3.0.3" # workaround to get `sam validate` to work
         paths: # workaround to get `sam validate` to work
           /never-created:
-            options: { } # workaround to get `sam validate` to work
+            options: {} # workaround to get `sam validate` to work
         Fn::Transform:
           Name: AWS::Include
           Parameters:
@@ -820,8 +859,8 @@ Resources:
               BurstLimit: !FindInMap [EnvironmentMap, !Ref Environment, ApiBurstLimit]
 
       Throttle:
-        RateLimit: !FindInMap [ EnvironmentMap, !Ref Environment, ApiRateLimit ]
-        BurstLimit: !FindInMap [ EnvironmentMap, !Ref Environment, ApiBurstLimit ]
+        RateLimit: !FindInMap [EnvironmentMap, !Ref Environment, ApiRateLimit]
+        BurstLimit: !FindInMap [EnvironmentMap, !Ref Environment, ApiBurstLimit]
       Tags:
         - Key: Product
           Value: !Ref ProductTagValue
@@ -911,9 +950,9 @@ Resources:
       GenerateSecretString:
         ExcludeLowercase: false
         ExcludeNumbers: false
-        ExcludePunctuation: true        # avoids handling escaped chars
+        ExcludePunctuation: true # avoids handling escaped chars
         ExcludeUppercase: false
-        IncludeSpace: false             # avoids handling escaped chars
+        IncludeSpace: false # avoids handling escaped chars
         RequireEachIncludedType: true
         PasswordLength: 128
       KmsKeyId: !GetAtt SecretsManagerEncryptionKey.Arn
@@ -951,11 +990,11 @@ Resources:
           Stage: !Ref ApiStageName
           Throttle:
             "/user-identity/POST":
-              RateLimit: !FindInMap [ EnvironmentMap, !Ref Environment, ApiRateLimit ]
-              BurstLimit: !FindInMap [ EnvironmentMap, !Ref Environment, ApiBurstLimit ]
+              RateLimit: !FindInMap [EnvironmentMap, !Ref Environment, ApiRateLimit]
+              BurstLimit: !FindInMap [EnvironmentMap, !Ref Environment, ApiBurstLimit]
       Throttle:
-        RateLimit: !FindInMap [ EnvironmentMap, !Ref Environment, ApiRateLimit ]
-        BurstLimit: !FindInMap [ EnvironmentMap, !Ref Environment, ApiBurstLimit ]
+        RateLimit: !FindInMap [EnvironmentMap, !Ref Environment, ApiRateLimit]
+        BurstLimit: !FindInMap [EnvironmentMap, !Ref Environment, ApiBurstLimit]
       Tags:
         - Key: Product
           Value: !Ref ProductTagValue
@@ -1009,9 +1048,9 @@ Resources:
       GenerateSecretString:
         ExcludeLowercase: false
         ExcludeNumbers: false
-        ExcludePunctuation: true        # avoids handling escaped chars
+        ExcludePunctuation: true # avoids handling escaped chars
         ExcludeUppercase: false
-        IncludeSpace: false             # avoids handling escaped chars
+        IncludeSpace: false # avoids handling escaped chars
         RequireEachIncludedType: true
         PasswordLength: 128
       KmsKeyId: !GetAtt SecretsManagerEncryptionKey.Arn
@@ -1329,11 +1368,31 @@ Resources:
       AliasName: !Sub "alias/${AWS::StackName}-LambdaEnvironmentVariableEncryptionKey"
       TargetKeyId: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
 Outputs:
-  RegionalApiEndpoint:
-    Condition: IsDev
-    Description: "Regional API Gateway endpoint URL for VC Storage methods"
-    Value: !Sub "https://${RestApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"
+  ApiEndpoint:
+    Description: The URL of the Stored Identity Service API
+    Value: !If
+      - IsDev
+      - !Sub "https://${RestApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"
+      - !Sub "https://${PrivateRestApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"
 
-  PrivateApiEndpoint:
-    Description: "Private API Gateway endpoint URL for VC Storage methods"
-    Value: !Sub "https://${PrivateRestApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"
+  ApiKeyPath:
+    Description: The Path of the Stored Identity Service API Key in Secrets Manager
+    Value: !If
+      - IsDev
+      - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${AWS::StackName}/Config/API/Key/IPVCore"
+      - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret://${AWS::StackName}/Config/PrivateAPI/Key/IPVCore"
+
+  AppConfigName:
+    Condition: IsDevOrBuild
+    Description: App Config name - used for testing.
+    Value: !Ref ApplicationConfigName
+
+  AppConfigApplication:
+    Condition: IsDevOrBuild
+    Description: App Config application name - used for testing.
+    Value: !Ref ApplicationName
+
+  AppConfigEnvironment:
+    Condition: IsDevOrBuild
+    Description: App Config environment - used for testing.
+    Value: !Ref Environment
