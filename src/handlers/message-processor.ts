@@ -7,7 +7,7 @@ import { isTxmaMessage, TxmaMessage } from "../types/txmaMessage";
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { getConfiguration, type Configuration } from "../types/configuration";
 import { getString, isStringWithLength } from "../types/stringutils";
-import logger from "../services/logger";
+import logger from "../commons/logger";
 import { isErrorResponse } from "../types/endpoint";
 import { auditIdentityRecordInvalidated } from "../services/audit";
 
