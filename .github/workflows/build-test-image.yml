@@ -1,0 +1,64 @@
+name: build-test-image
+
+on:
+  workflow_call:
+
+concurrency:
+  group: build-test-image-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+  packages: read
+
+jobs:
+  build-test-image:
+    name: Build Test Image
+    runs-on: ubuntu-latest
+    environment: development
+    permissions:
+      contents: read
+      id-token: write
+      packages: read
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v5
+
+      - name: Assume AWS Role
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.GHA_AWS_ROLE_ARN }}
+          aws-region: "eu-west-2"
+
+      - name: Login to Amazon ECR
+        id: login-to-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Setup node
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@govuk-one-login"
+          always-auth: true
+
+      - name: Set Build Environment Variables
+        run:
+          echo "BUILD_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"" >> $GITHUB_ENV
+
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          platforms: linux/amd64
+          file: tests/acceptance/Dockerfile
+          tags: ${{ secrets.TEST_IMAGE_ECR_REPOSITORY }}:latest
+          secrets: |
+            node-auth-token=${{ secrets.GITHUB_TOKEN }}
+          secret-files: |
+            npmrc=${{ env.NPM_CONFIG_USERCONFIG }}
+          build-args: |
+            BUILD_DATE=${{ env.BUILD_DATE }}
+            COMMIT_SHA=${{ github.sha }}
+            GIT_REPO=${{ github.repository }}
