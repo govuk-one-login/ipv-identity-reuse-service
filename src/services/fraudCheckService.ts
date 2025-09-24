@@ -1,4 +1,4 @@
-import logger from "./logger";
+import logger from "../commons/logger";
 import { FraudCheckType, IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials";
 import { VerifiableCredentialJWT } from "../types/interfaces";
 
