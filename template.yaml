@@ -307,7 +307,7 @@ Resources:
         - Key: application
           Value: shared
   
-  SISDidDocumentResourceS3Role:
+  DidApiResourceRole:
     Condition: IsDevOrBuild
     Type: AWS::IAM::Role
     Properties:
@@ -323,20 +323,24 @@ Resources:
             Principal:
               Service: apigateway.amazonaws.com
       Policies:
-        - PolicyName: AccessSISS3Document
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "s3:GetObject"
-                  - "s3:ListBucket"
-                Resource:
-                  - !GetAtt SISKeysS3Bucket.Arn
-                  - !Sub
-                    - "${Bucket}/did.json"
-                    - Bucket: !GetAtt SISKeysS3Bucket.Arn
+         - PolicyName: InvokeDidGenerationFunction
+           PolicyDocument:
+             Version: 2012-10-17
+             Statement:
+               - Effect: Allow
+                 Action: lambda:InvokeFunction
+                 Resource:
+                  - !GetAtt DidGenerationFunction.Arn     
   
+  DidGenerationFunctionDevAPIGatewayPermission:
+    Condition: IsDevOrBuild
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref DidGenerationFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${DidApiGateway}/*/GET/.well-known/did.json"
+ 
   DidApiGateway:
     Type: AWS::Serverless::Api
     Condition: IsDevOrBuild
@@ -373,23 +377,11 @@ Resources:
                 "404":
                   description: Not Found
               x-amazon-apigateway-integration:
-                credentials: !GetAtt SISDidDocumentResourceS3Role.Arn
-                uri: !Sub "arn:aws:apigateway:${AWS::Region}:s3:path/${SISKeysS3Bucket}/did.json"
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DidGenerationFunction.Arn}/invocations"
                 passthroughBehavior: WHEN_NO_MATCH
-                httpMethod: GET
-                type: aws
-                responses:
-                  "200":
-                    statusCode: "200"
-                    responseParameters:
-                      method.response.header.Cache-Control: "'max-age=3600, private'"
-                  "404":
-                    statusCode: "404"
-                    responseTemplates:
-                      application/json: |
-                        {
-                            "message": "Not Found"
-                        }
+                httpMethod: POST
+                type: AWS_PROXY
+            
   WellKnownUrl:
     Type: AWS::SSM::Parameter
     Condition: IsDevOrBuild
@@ -401,78 +393,115 @@ Resources:
         - /tests/ipv-identity-reuse-service/DidWellKnownUrl
       Value: !Sub "https://${DidApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/.well-known/did.json"
   
-  SISKeysS3Bucket:
-    Type: AWS::S3::Bucket
-    # checkov:skip=CKV_AWS_18: "Ensure the S3 bucket has access logging enabled"
-    Condition: IsDevOrBuild
+  DidGenerationFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
     Properties:
-      BucketName: !If
-        - IsDev
-        - !Sub "govuk-one-login-sis-published-keys-${AWS::StackName}"
-        - !Sub "govuk-one-login-sis-published-keys-${Environment}"
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
-      VersioningConfiguration:
-        Status: Enabled
-      NotificationConfiguration:
-        EventBridgeConfiguration:
-          EventBridgeEnabled: true
+      LogGroupName: !Sub "/aws/lambda/${DidGenerationFunction}"
+      RetentionInDays: 30
+      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
-        - Key: "Description"
-          Value: "SIS published keys bucket"
-
-  SISKeysS3BucketPolicy:
-    Condition: IsDevOrBuild
-    Type: AWS::S3::BucketPolicy
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "/aws/lambda/${DidGenerationFunction}" 
+  
+  ################################
+  # DID GENERATION FUNCTION #
+  ################################              
+  DidGenerationFunction:
+    Type: AWS::Serverless::Function
     Properties:
-      Bucket: !Ref SISKeysS3Bucket
-      PolicyDocument:
+      FunctionName: !Sub "${AWS::StackName}-DidGenerationFunction"
+      Description: "A lambda function that generates a did generation"
+      DeploymentPreference:
+        Type: !If
+          - CanariesEnabled
+          - !Ref LambdaDeploymentPreference
+          - AllAtOnce
+        Role: !GetAtt CodeDeployServiceRole.Arn
+      Timeout: 10
+      Handler: did-generation-handler.handler
+      MemorySize: 128
+      Role: !GetAtt DidGenerationFunctionRole.Arn
+      KmsKeyArn: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
+      Environment:
+        Variables:
+          METRIC_SERVICE_NAME: "DidGenerationFunction"
+          DID_SIGNING_KEY_ARN: !If [IsDevOrBuild, !GetAtt DidSigningKey.Arn, !Ref "AWS::NoValue"]
+      CodeSigningConfigArn: !If
+        - UseCodeSigning
+        - !Ref CodeSigningConfigArn
+        - !Ref AWS::NoValue
+      Tags:
+        Product: !Ref ProductTagValue
+        System: !Ref SystemTagValue
+        Environment: !Ref Environment
+        Owner: !Ref OwnerTagValue
+        Source: !Ref SourceTagValue
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        UseNpmCi: True
+        Minify: true
+        Target: es2022
+        Sourcemap: false
+        EntryPoints:
+          - src/handlers/did-generation/did-generation-handler.ts
+        Format: esm
+        Platform: node
+        OutExtension:
+          - .js=.mjs
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
+
+  DidGenerationFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-DidGenerationFunctionRole"
+      Description: !Sub "The role assumed by ${AWS::StackName}-DidGenerationFunction"
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
-          - Sid: "Delegate IAM Access"
-            Action:
-              - 's3:*'
-            Effect: Allow
-            Resource:
-              - !GetAtt SISKeysS3Bucket.Arn
-              - !Sub
-                - "${Bucket}/*"
-                - Bucket: !GetAtt SISKeysS3Bucket.Arn
+          - Effect: Allow
             Principal:
-              AWS:
-                - !Sub "arn:aws:iam::${AWS::AccountId}:root"
-
-          - Sid: "Allow API Gateway Access"
+              Service: lambda.amazonaws.com
             Action:
-              - 's3:GetObject'
-            Effect: Allow
-            Resource:
-              - !Sub
-                - "${Bucket}/did.json"
-                - Bucket: !GetAtt SISKeysS3Bucket.Arn
-            Principal:
-              Service: apigateway.amazonaws.com
-          - Sid: "Allow useridentity function Access"
-            Action:
-              - 's3:PutObject'
-              - 's3:GetObject'
-            Effect: Allow
-            Resource:
-              - !GetAtt SISKeysS3Bucket.Arn
-              - !Sub
-                - "${Bucket}/did.json"
-                - Bucket: !GetAtt SISKeysS3Bucket.Arn
-            Principal:
-              AWS:
-                - !GetAtt UserIdentityFunctionRole.Arn
-    
+              - "sts:AssumeRole" 
+      Policies:
+        - PolicyName: DidSigningKeyPolicy 
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "kms:DescribeKey"
+                  - "kms:GetPublicKey"
+                Resource: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/*"                               
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue   
   ################################
   # POST USER IDENTITY FEATURE  #
   ################################
