@@ -90,4 +90,4 @@ const parseSQSRecords = (records: SQSRecord[]): TxmaMessage[] =>
 
 const isInterventionRecord = (message: TxmaMessage, configuration: Configuration) =>
   isStringWithLength(message.intervention_code) &&
-  configuration.interventionCodesToInvalidate.some((code) => message.intervention_code === code);
+  configuration.interventionCodesToInvalidate.includes(message.intervention_code);
