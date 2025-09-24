@@ -44,7 +44,13 @@ const invalidateUser = async (userId: string, interventionCode: string, baseUrl:
       },
     });
 
-    if (!response.ok) {
+    if (response.ok) {
+      const invalidateMetric = metrics.singleMetric();
+      invalidateMetric.addDimension(MetricDimension.InterventionCode, interventionCode);
+      invalidateMetric.addMetric(MetricName.IdentityInvalidatedOnIntervention, MetricUnit.Count, 1);
+
+      await auditIdentityRecordInvalidated(userId, interventionCode);
+    } else {
       const responseBody = await response.json();
       if (isErrorResponse(responseBody) && response.status === 404) {
         metrics.addMetric(MetricName.IdentityDoesNotExist, MetricUnit.Count, 1);
@@ -56,12 +62,6 @@ const invalidateUser = async (userId: string, interventionCode: string, baseUrl:
         });
         throw new Error("Call to invalidation endpoint failed");
       }
-    } else {
-      const invalidateMetric = metrics.singleMetric();
-      invalidateMetric.addDimension(MetricDimension.InterventionCode, interventionCode);
-      invalidateMetric.addMetric(MetricName.IdentityInvalidatedOnIntervention, MetricUnit.Count, 1);
-
-      await auditIdentityRecordInvalidated(userId, interventionCode);
     }
   } catch (e) {
     if (e instanceof TypeError) {
