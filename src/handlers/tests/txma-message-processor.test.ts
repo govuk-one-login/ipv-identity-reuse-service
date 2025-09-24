@@ -1,5 +1,5 @@
 import { SQSEvent, SQSRecord } from "aws-lambda";
-import { handler } from "../message-processor";
+import { handler } from "../txma-message-processor";
 import { mockClient } from "aws-sdk-client-mock";
 import { SecretsManagerClient, GetSecretValueCommand, GetSecretValueResponse } from "@aws-sdk/client-secrets-manager";
 import {
@@ -33,7 +33,7 @@ const VALID_TXMA_MESSAGE: TxmaMessage = Object.freeze({
   intervention_code: "12",
 });
 
-describe("message-processor", () => {
+describe("txma-message-processor", () => {
   beforeAll(() => {
     const secretsManagerMock = mockClient(SecretsManagerClient);
     secretsManagerMock.on(GetSecretValueCommand).resolves({
