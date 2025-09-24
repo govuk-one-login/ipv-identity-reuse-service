@@ -33,7 +33,7 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
     const result = await fetch(`${configuration.evcsApiUrl}/identity`, {
       method: "GET",
       headers: {
-        ...event.headers,
+        Authorization: event.headers.Authorization,
         ...(serviceApiKey && { "x-api-key": serviceApiKey }),
       },
     });
