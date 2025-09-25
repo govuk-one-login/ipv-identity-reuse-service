@@ -1,6 +1,6 @@
 import { setDefaultTimeout, Before } from "@cucumber/cucumber";
 import { Response } from "superagent";
-import { randomString } from "./utils/stringUtils";
+import { randomString } from "./utils/string-utils";
 
 export type WorldDefinition = {
   userId: string;

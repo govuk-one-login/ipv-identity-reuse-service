@@ -2,7 +2,7 @@ import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
 import { mockClient } from "aws-sdk-client-mock";
 import "aws-sdk-client-mock-jest";
 import { auditIdentityRecordInvalidated } from "../audit";
-import { IdentityRecordInvalidatedEvent } from "../../types/auditEvents";
+import { IdentityRecordInvalidatedEvent } from "../../types/audit-events";
 
 const sqsClientMock = mockClient(SQSClient);
 sqsClientMock.on(SendMessageCommand).resolves({});

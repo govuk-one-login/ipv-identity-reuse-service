@@ -11,8 +11,8 @@ import {
 } from "@aws-sdk/client-appconfigdata";
 import { Uint8ArrayBlobAdapter } from "@smithy/util-stream";
 import { Configuration } from "../../types/configuration";
-import { MetricDimension, MetricName } from "../../types/metricEnum";
-import { TxmaMessage } from "../../types/txmaMessage";
+import { MetricDimension, MetricName } from "../../types/metric-enum";
+import { TxmaMessage } from "../../types/txma-message";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
 

@@ -1,4 +1,4 @@
-import { hasFraudCheckExpired } from "../fraudCheckService";
+import { hasFraudCheckExpired } from "../fraud-check-service";
 import {
   FraudCheckType,
   IdentityCheckClass,

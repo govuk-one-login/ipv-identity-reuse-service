@@ -1,12 +1,12 @@
 import { Metrics, MetricUnit } from "@aws-lambda-powertools/metrics";
 import { SQSEvent, SQSRecord } from "aws-lambda";
 
-import { MetricDimension, MetricName } from "../types/metricEnum";
-import { isTxmaMessage, TxmaMessage } from "../types/txmaMessage";
+import { MetricDimension, MetricName } from "../types/metric-enum";
+import { isTxmaMessage, TxmaMessage } from "../types/txma-message";
 
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { getConfiguration, type Configuration } from "../types/configuration";
-import { getString, isStringWithLength } from "../types/stringutils";
+import { getString, isStringWithLength } from "../types/string-utils";
 import logger from "../commons/logger";
 import { isErrorResponse } from "../types/endpoint";
 import { auditIdentityRecordInvalidated } from "../services/audit";

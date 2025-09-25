@@ -1,5 +1,5 @@
 import { base64url, JWTHeaderParameters, JWTPayload } from "jose";
-import { randomString } from "./stringUtils";
+import { randomString } from "./string-utils";
 
 export const sign = (jwtHeader: JWTHeaderParameters, jwtPayload: JWTPayload): string => {
   const header = base64url.encode(Buffer.from(JSON.stringify(jwtHeader)));

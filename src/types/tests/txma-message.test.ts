@@ -1,4 +1,4 @@
-import { isTxmaMessage } from "../txmaMessage";
+import { isTxmaMessage } from "../txma-message";
 
 describe("isTxmaMessage", () => {
   it("should return true when required fields present", () => {
