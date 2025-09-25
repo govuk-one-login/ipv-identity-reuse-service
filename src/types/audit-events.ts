@@ -13,5 +13,3 @@ export type IdentityRecordInvalidatedEvent = BaseAuditEvent & {
     intervention_code: string;
   };
 };
-
-export type AuditEvent = IdentityRecordInvalidatedEvent;

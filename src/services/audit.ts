@@ -1,5 +1,5 @@
 import { SQSClient, SendMessageCommand, SendMessageCommandOutput } from "@aws-sdk/client-sqs";
-import { AuditEvent } from "../types/audit-events";
+import { IdentityRecordInvalidatedEvent } from "../types/audit-events";
 
 const sqsClient = new SQSClient({});
 
@@ -15,7 +15,7 @@ export const auditIdentityRecordInvalidated = async (
   userId: string,
   interventionCode: string
 ): Promise<SendMessageCommandOutput> => {
-  const identityRecordInvalidatedEvent: AuditEvent = {
+  const identityRecordInvalidatedEvent: IdentityRecordInvalidatedEvent = {
     component_id: "SIS",
     event_timestamp_ms: Date.now(),
     timestamp: Math.floor(Date.now() / 1000),
