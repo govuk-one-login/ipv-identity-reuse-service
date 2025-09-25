@@ -65,25 +65,22 @@ jobs:
       aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
       aws-s3-bucket: ${{ secrets.GHA_SAM_DEPLOYMENT_BUCKET }}
 
-  # TODO: Disabled at the moment due to WAF rules needing to be added for mock.credential-store.dev.account.gov.uk
-  #
-  # acceptance-test:
-  #   uses: ./.github/workflows/acceptance-tests.yml
-  #   needs:
-  #     - preview-main
-  #   permissions:
-  #     id-token: write
-  #     contents: read
-  #   with:
-  #     stack-name: ${{ needs.preview-main.outputs.stack-name }}
-  #   secrets:
-  #     aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
+  acceptance-test:
+   uses: ./.github/workflows/acceptance-tests.yml
+   needs:
+     - preview-main
+   permissions:
+     id-token: write
+     contents: read
+   with:
+     stack-name: ${{ needs.preview-main.outputs.stack-name }}
+   secrets:
+     aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
 
   publish-test-image:
     uses: ./.github/workflows/publish-test-image.yml
     needs:
-      # - acceptance-test
-      - preview-main
+      - acceptance-test
       - detect-changes
     if: needs.detect-changes.outputs.acceptance-tests-changed == 'true'
     permissions:
@@ -100,12 +97,11 @@ jobs:
     uses: ./.github/workflows/publish.yml
     needs:
       - publish-test-image
-      # - acceptance-test
-      - preview-main
+      - acceptance-test
     if: |
       always() &&
       (needs.publish-test-image.result == 'success' || needs.publish-test-image.result == 'skipped') &&
-      (needs.preview-main.result == 'success')
+      (needs.acceptance-test.result == 'success')
     permissions:
       contents: read
       id-token: write
