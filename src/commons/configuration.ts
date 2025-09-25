@@ -7,6 +7,7 @@ export type Configuration = {
   interventionCodesToInvalidate: string[];
   fraudIssuer: string[];
   fraudValidityPeriod: number;
+  controllerAllowList: string[];
 };
 
 export const getConfiguration = async (): Promise<Configuration> => {

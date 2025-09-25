@@ -9,11 +9,16 @@ const resolver = new DIDResolverPlugin({
 
 const didRegex = /^did:web:(?<controller>[a-z0-9.-]+(?::\d+)?(?:[:][a-z0-9._~%-]+)*)#(?<kid>[A-Za-z0-9._~%-:]+)$/i;
 
-export const verifySignature = async (kid: string, jwt: string): Promise<void> => {
+export const verifySignature = async (kid: string, jwt: string): Promise<boolean> => {
   const didDocument = await resolver.resolveDid({ didUrl: kid });
 
   const webKeys = didDocument.didDocument?.verificationMethod;
-  jwtVerify(jwt, webKeys?.at(0)?.publicKeyJwk as JWK);
+  try {
+    jwtVerify(jwt, webKeys?.at(0)?.publicKeyJwk as JWK);
+  } catch {
+    return false;
+  }
+  return true;
 };
 
 export const isValidDidWeb = (did: string): boolean => {

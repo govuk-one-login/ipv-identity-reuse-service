@@ -30,7 +30,7 @@ describe("user-identity-handler tests", () => {
     jest.spyOn(configuration, "getServiceApiKey").mockResolvedValue("an-api-key");
     jest
       .spyOn(configuration, "getConfiguration")
-      .mockResolvedValue({ evcsApiUrl: "https://evcs.gov.uk" } as Configuration);
+      .mockResolvedValue({ evcsApiUrl: "https://evcs.gov.uk", controllerAllowList: ["ipv.gov.uk"] } as Configuration);
   });
 
   it("should return Success, given a valid bearer token", async () => {

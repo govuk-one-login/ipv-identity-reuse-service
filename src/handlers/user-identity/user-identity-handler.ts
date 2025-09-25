@@ -5,6 +5,8 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda
 import { HttpCodesEnum } from "../../commons/constants";
 import { getIdentityFromCredentialStore } from "../../credential-store/encrypted-credential-store";
 import { CredentialStoreIdentityResponse } from "../../credential-store/credential-store-identity-response";
+import { getConfiguration } from "../../commons/configuration";
+import * as didResolutionService from "../../identity-reuse/did-resolution-service";
 import { UserIdentityResponse } from "./user-identity-response";
 import { UserIdentityResponseMetadata } from "./user-identity-response-metadata";
 
@@ -22,6 +24,7 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
   }
 
   try {
+    const configuration = await getConfiguration();
     try {
       getJwtBody(event.headers.Authorization.split(" ").at(1) || ""); // Validate bearer token
     } catch {
@@ -37,15 +40,20 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
     }
 
     const identityResponse: CredentialStoreIdentityResponse = await result.json();
-    const content = getJwtBody(identityResponse.si.vc) as unknown as UserIdentityResponse;
+    const vc = getJwtBody(identityResponse.si.vc);
+    const kid = vc.iss || "";
+    const signatureValid = await didResolutionService.verifySignature(kid, identityResponse.si.vc);
+    const kidValid = didResolutionService.isValidDidWeb(kid) && configuration.controllerAllowList.includes(kid);
+
+    const content = vc as unknown as UserIdentityResponse;
 
     const response: UserIdentityResponseMetadata = {
-      content,
+      content: content,
       vot: content.vot,
       isValid: true,
       expired: false,
-      kidValid: true,
-      signatureValid: true,
+      kidValid,
+      signatureValid,
     };
     return { statusCode: HttpCodesEnum.OK, body: JSON.stringify(response) };
   } catch (error) {
