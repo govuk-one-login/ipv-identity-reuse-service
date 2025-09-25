@@ -1,19 +1,36 @@
-import { DIDResolverPlugin } from "@veramo/did-resolver";
 import { getResolver } from "web-did-resolver";
-import { Resolver } from "did-resolver";
-import { JWK, jwtVerify } from "jose";
+import { Resolver, VerificationMethod } from "did-resolver";
 
-const resolver = new DIDResolverPlugin({
-  resolver: new Resolver({ ...getResolver() }),
+import { JWK } from "jose";
+
+const webResolver = getResolver();
+
+export const resolver = new Resolver({
+  ...webResolver,
 });
 
 const didRegex = /^did:web:(?<controller>[\w\-.]+(?::\d+)?(:[\w\-.~%]+)*)#[\w.~%\-:]+$/i;
 
-export const verifySignature = async (kid: string, jwt: string): Promise<void> => {
-  const didDocument = await resolver.resolveDid({ didUrl: kid });
+export const getPublicKeyJwkForKid = async (kid: string): Promise<JWK> => {
+  const didResolution = await resolver.resolve(kid);
+  const webKeys = didResolution.didDocument?.assertionMethod;
+  const verificationMethod = webKeys?.map(extractAssertionMethodJwk).find((key) => key.id == kid);
+  if (verificationMethod) {
+    const publicKeyJwk = verificationMethod?.publicKeyJwk as JWK;
+    return publicKeyJwk;
+  }
+  throw new Error("Cannot resolve kid to a JWK");
+};
 
-  const webKeys = didDocument.didDocument?.verificationMethod;
-  jwtVerify(jwt, webKeys?.at(0)?.publicKeyJwk as JWK);
+const extractAssertionMethodJwk = (method?: string | VerificationMethod): VerificationMethod => {
+  switch (typeof method) {
+    case "object":
+      return method;
+    case "string":
+      throw new Error("Assertion method as string not supported.");
+    default:
+      throw new Error("Assertion method not defined on document.");
+  }
 };
 
 export const isValidDidWeb = (did: string): boolean => {

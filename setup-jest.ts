@@ -14,6 +14,7 @@ process.env.POWERTOOLS_METRICS_DISABLED = "false";
 process.env.SQS_AUDIT_EVENT_QUEUE_URL = "https://api.example.com";
 process.env.DID_CONTROLLER = "did:web:identity.dev.account.gov.uk";
 process.env.COMPONENT_ID = "https://identity.local.account.gov.uk/sis";
+process.env.AWS_REGION = "eu-west-2";
 
 // Setup up spys on console
 jest.spyOn(console, "log");

@@ -1,13 +1,13 @@
-import { getDefaultJwtHeader, sign } from "../../../shared-test/jwt-utils";
+import { getDefaultStoredIdentityHeader, sign } from "../../../shared-test/jwt-utils";
 import { getJwtBody, getJwtSignature } from "../jwt-utils";
 
 describe("getJwtBody", () => {
-  it("should decode a valid JWT", () => {
+  it("should decode a valid JWT", async () => {
     const validJwtBody = {
       iss: "iss",
       sub: "sub",
     };
-    const testJwt = sign(getDefaultJwtHeader(), validJwtBody);
+    const testJwt = await sign(getDefaultStoredIdentityHeader(), validJwtBody);
     expect(getJwtBody(testJwt)).toEqual(validJwtBody);
   });
 
