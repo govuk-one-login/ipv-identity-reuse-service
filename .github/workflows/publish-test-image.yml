@@ -1,0 +1,80 @@
+name: publish-test-image
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+        default: build
+    secrets:
+      aws-role-arn:
+        required: true
+        description: >
+          The Amazon Resource Name (ARN) of the role to assume. Use the provided credentials to assume an IAM role and
+          configure the Actions environment with the assumed role credentials rather than with the provided credentials.
+      ecr-repository:
+        required: true
+        description: >
+          The URL of the ECR repository to publish the test image to.
+
+concurrency:
+  group: publish-test-image-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+  packages: read
+
+jobs:
+  build-test-image:
+    name: Build Test Image
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
+      packages: read
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v5
+
+      - name: Assume AWS Role
+        uses: aws-actions/configure-aws-credentials@a03048d87541d1d9fcf2ecf528a4a65ba9bd7838 # v5.0.0
+        with:
+          role-to-assume: ${{ secrets.aws-role-arn }}
+          aws-region: "eu-west-2"
+
+      - name: Login to Amazon ECR
+        id: login-to-ecr
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
+
+      - name: Setup node
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@govuk-one-login"
+          always-auth: true
+
+      - name: Set Build Environment Variables
+        run:
+          echo "BUILD_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"" >> $GITHUB_ENV
+
+      - name: Build
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          platforms: linux/amd64
+          file: tests/acceptance/Dockerfile
+          push: 'true'
+          tags: ${{ secrets.ecr-repository }}:latest
+          secrets: | # pragma: allowlist secret
+            node-auth-token=${{ secrets.GITHUB_TOKEN }}
+          secret-files: |
+            npmrc=${{ env.NPM_CONFIG_USERCONFIG }}
+          build-args: |
+            BUILD_DATE=${{ env.BUILD_DATE }}
+            COMMIT_SHA=${{ github.sha }}
+            GIT_REPO=${{ github.repository }}

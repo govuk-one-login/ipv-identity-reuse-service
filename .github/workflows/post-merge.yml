@@ -15,8 +15,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      acceptance-tests-changed: ${{ steps.filter.outputs.acceptance-tests }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        id: filter
+        with:
+          filters: |
+            acceptance-tests:
+              - '.github/workflows/publish-test-image.yml'
+              - 'tests/acceptance/**'
+              - 'cucumber.json'
+              - 'tsconfig.json'
+              - 'package.json'
+              - 'package-lock.json'  
+
   build:
     uses: ./.github/workflows/build.yml
+    needs: detect-changes
     with:
       artifact-name: built-code
       aws-region: eu-west-2
@@ -26,6 +46,7 @@ jobs:
 
   run-tests:
     uses: ./.github/workflows/test.yml
+    needs: detect-changes
     permissions:
       contents: read
       packages: read
@@ -58,11 +79,33 @@ jobs:
   #   secrets:
   #     aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
 
-  publish:
-    uses: ./.github/workflows/publish.yml
+  publish-test-image:
+    uses: ./.github/workflows/publish-test-image.yml
     needs:
       # - acceptance-test
       - preview-main
+      - detect-changes
+    if: needs.detect-changes.outputs.acceptance-tests-changed == 'true'
+    permissions:
+      contents: read
+      id-token: write
+      packages: read
+    with:
+      environment: build
+    secrets:
+      aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
+      ecr-repository: ${{ secrets.TEST_IMAGE_ECR_REPOSITORY }}
+
+  publish:
+    uses: ./.github/workflows/publish.yml
+    needs:
+      - publish-test-image
+      # - acceptance-test
+      - preview-main
+    if: |
+      always() &&
+      (needs.publish-test-image.result == 'success' || needs.publish-test-image.result == 'skipped') &&
+      (needs.preview-main.result == 'success')
     permissions:
       contents: read
       id-token: write
