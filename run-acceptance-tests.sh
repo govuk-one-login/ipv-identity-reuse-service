@@ -59,20 +59,19 @@ if [ -z "$SAM_STACK_NAME" ]; then
 fi
 
 if $RUN_WITH_DOCKER; then
-  docker build -t acceptance-test-runner -f tests/acceptance/Dockerfile .
+  docker build \
+    -t acceptance-test-runner \
+    --secret id=npmrc,src=$HOME/.npmrc \
+    -f tests/acceptance/Dockerfile .
 
-  docker run -ti --rm --entrypoint "" \
-    -v $PWD:/test \
-    -w /test \
+  docker run -ti --rm \
     -e AWS_REGION="eu-west-2" \
     -e AWS_DEFAULT_REGION="eu-west-2" \
-    -e AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID:?}" \
-    -e AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY:?}" \
-    -e AWS_SESSION_TOKEN="${AWS_SESSION_TOKEN:?}" \
-    -e AWS_SECURITY_TOKEN="${AWS_SECURITY_TOKEN}" \
-    -e SAM_STACK_NAME="${SAM_STACK_NAME}" \
-    acceptance-test-runner \
-    /bin/bash -c "npm i && npm run test:acceptance -- --format html:test-reports/acceptance.html"
+    -e AWS_ACCESS_KEY_ID \
+    -e AWS_SECRET_ACCESS_KEY \
+    -e AWS_SESSION_TOKEN \
+    -e SAM_STACK_NAME \
+    acceptance-test-runner
 else
   export SAM_STACK_NAME
   export TEST_ENVIRONMENT="dev"

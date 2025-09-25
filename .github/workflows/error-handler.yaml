@@ -8,6 +8,7 @@ on:
       - deploy-to-aws
       - post-merge
       - publish
+      - publish-test-image
       - test
     types:
       - completed
