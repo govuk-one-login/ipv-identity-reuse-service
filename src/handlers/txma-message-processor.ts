@@ -4,18 +4,17 @@ import { SQSEvent, SQSRecord } from "aws-lambda";
 import { MetricDimension, MetricName } from "../types/metric-enum";
 import { isTxmaMessage, TxmaMessage } from "../types/txma-message";
 
-import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { getConfiguration, type Configuration } from "../types/configuration";
-import { getString, isStringWithLength } from "../types/string-utils";
+import { isStringWithLength } from "../types/string-utils";
 import logger from "../commons/logger";
-import { isErrorResponse } from "../types/endpoint";
+import { isErrorResponse } from "../credential-store/credential-store-error-response";
 import { auditIdentityRecordInvalidated } from "../services/audit";
+import { invalidateIdentityInCredentialStore } from "../credential-store/encrypted-credential-store";
 
 const metrics = new Metrics();
 
 export const handler = async (event: SQSEvent): Promise<void> => {
   const records = parseSQSRecords(event.Records);
-  const apiKey: string | undefined = await getServiceApiKey();
 
   logger.info(`Event received containing ${records.length} messages`);
   metrics.addMetric(MetricName.MessagesReceived, MetricUnit.Count, records.length);
@@ -29,22 +28,16 @@ export const handler = async (event: SQSEvent): Promise<void> => {
         continue;
       }
 
-      await invalidateUser(record.user_id, record.intervention_code!, config.evcsApiUrl, apiKey);
+      await invalidateUser(record.user_id, record.intervention_code!);
     }
   } finally {
     metrics.publishStoredMetrics();
   }
 };
 
-const invalidateUser = async (userId: string, interventionCode: string, baseUrl: string, apiKey?: string) => {
+const invalidateUser = async (userId: string, interventionCode: string) => {
   try {
-    const response = await fetch(`${baseUrl}/identity/invalidate`, {
-      method: "POST",
-      body: JSON.stringify({ userId: userId }),
-      headers: {
-        ...(apiKey && { "x-api-key": apiKey }),
-      },
-    });
+    const response = await invalidateIdentityInCredentialStore(userId);
 
     if (response.ok) {
       logger.info(`Successfully invalidated user identity`);
@@ -73,9 +66,6 @@ const invalidateUser = async (userId: string, interventionCode: string, baseUrl:
     throw e;
   }
 };
-
-const getServiceApiKey = async (): Promise<string | undefined> =>
-  getString(await getSecret(process.env.EVCS_API_KEY_SECRET_ARN));
 
 const parseSQSRecords = (records: SQSRecord[]): TxmaMessage[] =>
   records.map((record, index) => {

@@ -1,9 +1,10 @@
 import { APIGatewayProxyEvent, Context } from "aws-lambda";
 import { handler } from "../user-identity-handler";
-import { EvcsStoredIdentityResponse, StoredIdentityResponse } from "../../types/interfaces";
+import { StoredIdentityResponse } from "../../types/interfaces";
 import { HttpCodesEnum } from "../../types/constants";
 import { Configuration } from "../../types/configuration";
 import * as configuration from "../../types/configuration";
+import { CredentialStoreIdentityResponse } from "../../credential-store/credential-store-identity-response";
 
 describe("user-identity-handler tests", () => {
   const event = () => {
@@ -33,7 +34,7 @@ describe("user-identity-handler tests", () => {
   });
 
   it("should return Success, given a valid bearer token", async () => {
-    const payload: EvcsStoredIdentityResponse = {
+    const payload: CredentialStoreIdentityResponse = {
       si: {
         state: "CURRENT",
         vc: "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6ImU3Y2RmZWY4MjdmZmQyNzhjNmI2MDRkNGQ0MTAwZGM0In0.eyJzdWIiOiJ1c2VyLXN1YiIsInZvdCI6IlAyIiwidnRtIjpbXX0.SWzszRaCfwa3tpHChXH5YRFXvo7ZNx4WRkVU9pp-ea8iQ-UDY-Sivf9MjTJ3IWa173AO9Y0-xbasOL5qVM-3ng",

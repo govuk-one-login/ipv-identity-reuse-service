@@ -23,23 +23,6 @@ export interface StoredIdentityResponse {
   signatureValid: boolean;
 }
 
-export interface Metadata {
-  [key: string]: unknown;
-}
-
-export interface JWTIncludingStateAndMetadata {
-  state: string;
-  vc: string;
-  metadata: Metadata | null | string;
-  signature?: string;
-}
-
-export type EvcsStoredIdentityResponse = {
-  si: JWTIncludingStateAndMetadata;
-  vcs: JWTIncludingStateAndMetadata[];
-  afterKey?: string;
-};
-
 export type VerifiableCredentialJWT =
   | IdentityCheckCredentialJWTClass
   | RiskAssessmentCredentialJWTClass
