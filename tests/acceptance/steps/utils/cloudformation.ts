@@ -4,7 +4,7 @@ import {
   DescribeStacksCommandOutput,
   ListExportsCommand,
 } from "@aws-sdk/client-cloudformation";
-import { getString } from "../../../../src/types/stringutils";
+import { getString } from "../../../../src/types/string-utils";
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 
 export const CloudFormationOutputs = {

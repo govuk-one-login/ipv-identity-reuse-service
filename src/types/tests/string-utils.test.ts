@@ -1,4 +1,4 @@
-import { isStringWithLength } from "../stringutils";
+import { isStringWithLength } from "../string-utils";
 
 describe("isStringWithLength", () => {
   it("should return false if value is undefined", () => {

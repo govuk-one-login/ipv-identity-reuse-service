@@ -3,7 +3,7 @@ import request from "supertest";
 import type { Response } from "superagent";
 import type { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
 import { getAppConfig } from "@aws-lambda-powertools/parameters/appconfig";
-import { getString } from "../../../../src/types/stringutils";
+import { getString } from "../../../../src/types/string-utils";
 import { Configuration } from "../../../../src/types/configuration";
 import { WorldDefinition } from "../base-verbs.step";
 import {

@@ -1,4 +1,4 @@
-import { isStringWithLength } from "./stringutils";
+import { isStringWithLength } from "./string-utils";
 
 export type TxmaMessage = {
   user_id: string;
