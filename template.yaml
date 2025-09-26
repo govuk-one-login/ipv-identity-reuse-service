@@ -626,7 +626,7 @@ Resources:
     Properties:
       FunctionName: !Sub "${AWS::StackName}-MessageProcessorLambda"
       Description: Logs passed in VCs
-      Handler: message-processor.handler
+      Handler: txma-message-processor.handler
       Role: !GetAtt MessageProcessorLambdaTriggerRole.Arn
       Environment:
         Variables:

@@ -17,6 +17,7 @@ export const handler = async (event: SQSEvent): Promise<void> => {
   const records = parseSQSRecords(event.Records);
   const apiKey: string | undefined = await getServiceApiKey();
 
+  logger.info(`Event received containing ${records.length} messages`);
   metrics.addMetric(MetricName.MessagesReceived, MetricUnit.Count, records.length);
 
   const config = await getConfiguration();
@@ -24,6 +25,7 @@ export const handler = async (event: SQSEvent): Promise<void> => {
   try {
     for (const record of records) {
       if (!isInterventionRecord(record, config)) {
+        logger.info(`Message does not contain relevant intervention code`);
         continue;
       }
 
@@ -45,6 +47,7 @@ const invalidateUser = async (userId: string, interventionCode: string, baseUrl:
     });
 
     if (response.ok) {
+      logger.info(`Successfully invalidated user identity`);
       const invalidateMetric = metrics.singleMetric();
       invalidateMetric.addDimension(MetricDimension.InterventionCode, interventionCode);
       invalidateMetric.addMetric(MetricName.IdentityInvalidatedOnIntervention, MetricUnit.Count, 1);
