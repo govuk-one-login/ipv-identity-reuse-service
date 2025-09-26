@@ -6,13 +6,9 @@ import { getAppConfig } from "@aws-lambda-powertools/parameters/appconfig";
 import { getString } from "../../../../src/types/string-utils";
 import { Configuration } from "../../../../src/types/configuration";
 import { WorldDefinition } from "../base-verbs.step";
-import {
-  CloudFormationOutputs,
-  getCloudFormationExport,
-  getCloudFormationOutput,
-  getCloudFormationParameter,
-} from "./cloudformation";
+import { CloudFormationOutputs, getCloudFormationOutput } from "./cloudformation";
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
+import { getParameter } from "@aws-lambda-powertools/parameters/ssm";
 
 export const EvcsEndpoints = {
   BuildStubBaseUrl: "https://evcs.reuse.stubs.account.gov.uk",
@@ -32,8 +28,12 @@ export interface StoredIdentityObjectDetails {
 }
 
 export const getEvcsApiKey = async (): Promise<string> => {
-  const sharedStackName = await getCloudFormationParameter("SharedStackName");
-  const evcsApiKeySecretArn = await getCloudFormationExport(`${sharedStackName}-EVCSApiKeySecret`);
+  const stackName = process.env.SHARED_STACK_NAME || "reuse-identity-shared";
+  const evcsApiKeySecretArn = await getParameter(`/acceptance-tests/${stackName}/APIKeySecretARN`);
+
+  if (!evcsApiKeySecretArn) {
+    throw new Error("Unable to get APIKeySecretARN");
+  }
 
   const evcsApiKeySecret = getString(await getSecret(evcsApiKeySecretArn));
 
