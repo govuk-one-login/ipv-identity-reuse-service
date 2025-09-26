@@ -129,7 +129,7 @@ jobs:
             --no-fail-on-empty-changeset \
             --capabilities CAPABILITY_NAMED_IAM \
             --tags DeploymentSource="GitHub Actions" StackType=Preview \
-            --parameter-overrides Environment="dev"
+            --parameter-overrides Environment="dev" VpcStackName=vpc
 
       - name: Report deployment
         run: echo "Deployed stack \`$STACK_NAME\`" >> "$GITHUB_STEP_SUMMARY"
