@@ -64,7 +64,7 @@ Parameters:
   VpcStackName:
     Description: VPC Stack name
     Type: String
-    Default: none
+    Default: vpc
 
   DynatraceNodeLayerArn:
     Type: String
@@ -449,6 +449,10 @@ Resources:
       Auth:
         ResourcePolicy:
           IntrinsicVpcWhitelist:
+            - !If
+              - IsDevOrBuild
+              - Fn::ImportValue: !Sub "${VpcStackName}-VpcId"
+              - !Ref AWS::NoValue
             - !FindInMap [EnvironmentMap, !Ref Environment, IPVCoreVPCID]
       AccessLogSetting:
         Format: >-
