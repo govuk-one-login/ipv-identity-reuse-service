@@ -58,6 +58,8 @@ if [ -z "$SAM_STACK_NAME" ]; then
   exit 1
 fi
 
+export TEST_ENVIRONMENT="dev"
+export SAM_STACK_NAME
 if $RUN_WITH_DOCKER; then
   docker build \
     -t acceptance-test-runner \
@@ -71,9 +73,8 @@ if $RUN_WITH_DOCKER; then
     -e AWS_SECRET_ACCESS_KEY \
     -e AWS_SESSION_TOKEN \
     -e SAM_STACK_NAME \
+    -e TEST_ENVIRONMENT \
     acceptance-test-runner
 else
-  export SAM_STACK_NAME
-  export TEST_ENVIRONMENT="dev"
   npm run test:acceptance -- --format html:test-reports/acceptance.html
 fi

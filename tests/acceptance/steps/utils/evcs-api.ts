@@ -15,10 +15,8 @@ import {
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 
 export const EvcsEndpoints = {
-  BaseUrl:
-    process.env.TEST_ENVIRONMENT === "dev"
-      ? "https://evcs.reuse.dev.stubs.account.gov.uk"
-      : "https://evcs.reuse.stubs.account.gov.uk",
+  BuildStubBaseUrl: "https://evcs.reuse.stubs.account.gov.uk",
+  DevStubBaseUrl: "https://evcs.reuse.dev.stubs.account.gov.uk",
   IdentityEndpoint: "/identity",
 } as const;
 
@@ -49,6 +47,10 @@ export const getEvcsApiKey = async (): Promise<string> => {
 export const getEvcsApiEndpoint = async (): Promise<string> => {
   const environment = await getCloudFormationOutput(CloudFormationOutputs.AppConfigEnvironment);
 
+  if (environment === "build") {
+    return EvcsEndpoints.BuildStubBaseUrl;
+  }
+
   const result = await getAppConfig(await getCloudFormationOutput(CloudFormationOutputs.AppConfigName), {
     environment: environment === "local" ? "dev" : environment,
     application: await getCloudFormationOutput(CloudFormationOutputs.AppConfigApplication),
@@ -60,7 +62,7 @@ export const getEvcsApiEndpoint = async (): Promise<string> => {
 
   const configuration = JSON.parse(getString(result) || "") as Configuration;
 
-  return configuration.evcsApiUrl;
+  return configuration.evcsApiUrl || EvcsEndpoints.DevStubBaseUrl;
 };
 
 export const evcsPostIdentity = async (
