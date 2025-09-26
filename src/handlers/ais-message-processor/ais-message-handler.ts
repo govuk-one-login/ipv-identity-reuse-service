@@ -1,15 +1,15 @@
 import { Metrics, MetricUnit } from "@aws-lambda-powertools/metrics";
 import { SQSEvent, SQSRecord } from "aws-lambda";
 
-import { MetricDimension, MetricName } from "../types/metric-enum";
-import { isTxmaMessage, TxmaMessage } from "../types/txma-message";
+import { MetricDimension, MetricName } from "../../types/metric-enum";
+import { isAisMessage, AisMessage } from "./ais-message";
 
-import { getConfiguration, type Configuration } from "../types/configuration";
-import { isStringWithLength } from "../types/string-utils";
-import logger from "../commons/logger";
-import { isErrorResponse } from "../credential-store/credential-store-error-response";
-import { auditIdentityRecordInvalidated } from "../services/audit";
-import { invalidateIdentityInCredentialStore } from "../credential-store/encrypted-credential-store";
+import { getConfiguration, type Configuration } from "../../types/configuration";
+import { isStringWithLength } from "../../types/string-utils";
+import logger from "../../commons/logger";
+import { isErrorResponse } from "../../credential-store/credential-store-error-response";
+import { auditIdentityRecordInvalidated } from "../../services/audit";
+import { invalidateIdentityInCredentialStore } from "../../credential-store/encrypted-credential-store";
 
 const metrics = new Metrics();
 
@@ -67,20 +67,20 @@ const invalidateUser = async (userId: string, interventionCode: string) => {
   }
 };
 
-const parseSQSRecords = (records: SQSRecord[]): TxmaMessage[] =>
+const parseSQSRecords = (records: SQSRecord[]): AisMessage[] =>
   records.map((record, index) => {
     if (!record?.body) {
       throw new Error(`SQS record ${index} does not have a body`);
     }
 
     const recordObj = JSON.parse(record.body);
-    if (isTxmaMessage(recordObj)) {
+    if (isAisMessage(recordObj)) {
       return recordObj;
     }
 
     throw new Error(`SQS record ${index} does not have required fields`);
   });
 
-const isInterventionRecord = (message: TxmaMessage, configuration: Configuration) =>
+const isInterventionRecord = (message: AisMessage, configuration: Configuration) =>
   isStringWithLength(message.intervention_code) &&
   configuration.interventionCodesToInvalidate.includes(message.intervention_code);

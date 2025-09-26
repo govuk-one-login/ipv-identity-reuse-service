@@ -333,7 +333,7 @@ Resources:
         Target: es2022
         Sourcemap: false
         EntryPoints:
-          - src/handlers/user-identity-handler.ts
+          - src/handlers/user-identity/user-identity-handler.ts
         Format: esm
         Platform: node
         OutExtension:
@@ -626,7 +626,7 @@ Resources:
     Properties:
       FunctionName: !Sub "${AWS::StackName}-MessageProcessorLambda"
       Description: Logs passed in VCs
-      Handler: txma-message-processor.handler
+      Handler: ais-message-handler.handler
       Role: !GetAtt MessageProcessorLambdaTriggerRole.Arn
       Environment:
         Variables:
@@ -651,7 +651,7 @@ Resources:
       BuildProperties:
         UseNpmCi: True
         EntryPoints:
-          - src/handlers/txma-message-processor.ts
+          - src/handlers/ais-message-processor/ais-message-handler.ts
         Sourcemap: true
         Target: "es2024"
 

@@ -1,11 +1,12 @@
 import { decodeJwt, JWTPayload } from "jose";
 
-import logger from "../commons/logger";
+import logger from "../../commons/logger";
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
-import { HttpCodesEnum } from "../types/constants";
-import { StoredIdentityResponse, UserIdentityDataType } from "../types/interfaces";
-import { getIdentityFromCredentialStore } from "../credential-store/encrypted-credential-store";
-import { CredentialStoreIdentityResponse } from "../credential-store/credential-store-identity-response";
+import { HttpCodesEnum } from "../../types/constants";
+import { getIdentityFromCredentialStore } from "../../credential-store/encrypted-credential-store";
+import { CredentialStoreIdentityResponse } from "../../credential-store/credential-store-identity-response";
+import { UserIdentityResponse } from "./user-identity-response";
+import { UserIdentityResponseMetadata } from "./user-identity-response-metadata";
 
 interface ErrorResponse {
   error: string;
@@ -36,9 +37,9 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
     }
 
     const identityResponse: CredentialStoreIdentityResponse = await result.json();
-    const content = getJwtBody(identityResponse.si.vc) as unknown as UserIdentityDataType;
+    const content = getJwtBody(identityResponse.si.vc) as unknown as UserIdentityResponse;
 
-    const response: StoredIdentityResponse = {
+    const response: UserIdentityResponseMetadata = {
       content,
       vot: content.vot,
       isValid: true,
