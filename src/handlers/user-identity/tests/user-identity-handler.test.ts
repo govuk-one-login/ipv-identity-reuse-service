@@ -1,9 +1,10 @@
 import { APIGatewayProxyEvent, Context } from "aws-lambda";
 import { handler } from "../user-identity-handler";
-import { EvcsStoredIdentityResponse, StoredIdentityResponse } from "../../types/interfaces";
-import { HttpCodesEnum } from "../../types/constants";
-import { Configuration } from "../../types/configuration";
-import * as configuration from "../../types/configuration";
+import { HttpCodesEnum } from "../../../commons/constants";
+import { Configuration } from "../../../commons/configuration";
+import * as configuration from "../../../commons/configuration";
+import { CredentialStoreIdentityResponse } from "../../../credential-store/credential-store-identity-response";
+import { UserIdentityResponseMetadata } from "../user-identity-response-metadata";
 
 describe("user-identity-handler tests", () => {
   const event = () => {
@@ -33,7 +34,7 @@ describe("user-identity-handler tests", () => {
   });
 
   it("should return Success, given a valid bearer token", async () => {
-    const payload: EvcsStoredIdentityResponse = {
+    const payload: CredentialStoreIdentityResponse = {
       si: {
         state: "CURRENT",
         vc: "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6ImU3Y2RmZWY4MjdmZmQyNzhjNmI2MDRkNGQ0MTAwZGM0In0.eyJzdWIiOiJ1c2VyLXN1YiIsInZvdCI6IlAyIiwidnRtIjpbXX0.SWzszRaCfwa3tpHChXH5YRFXvo7ZNx4WRkVU9pp-ea8iQ-UDY-Sivf9MjTJ3IWa173AO9Y0-xbasOL5qVM-3ng",
@@ -52,7 +53,7 @@ describe("user-identity-handler tests", () => {
     const result = await handler(newEvent, {} as Context);
 
     expect(result.statusCode).toBe(HttpCodesEnum.OK);
-    const body = JSON.parse(result.body) as StoredIdentityResponse;
+    const body = JSON.parse(result.body) as UserIdentityResponseMetadata;
     expect(body.vot).toBe("P2");
     expect(body.content).toEqual({
       sub: "user-sub",

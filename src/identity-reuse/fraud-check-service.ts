@@ -1,6 +1,6 @@
 import logger from "../commons/logger";
 import { FraudCheckType, IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials";
-import { VerifiableCredentialJWT } from "../types/interfaces";
+import { VerifiableCredentialJWT } from "./verifiable-credential-jwt";
 
 export const hasFraudCheckExpired = (
   fraudIssuers: string[],

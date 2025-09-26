@@ -1,9 +1,9 @@
-import { isTxmaMessage } from "../txma-message";
+import { isAisMessage } from "../ais-message";
 
 describe("isTxmaMessage", () => {
   it("should return true when required fields present", () => {
     expect(
-      isTxmaMessage({
+      isAisMessage({
         user_id: "jane.smith-12345",
         timestamp: 1752755454,
         intervention_code: "12",
@@ -13,7 +13,7 @@ describe("isTxmaMessage", () => {
 
   it("should return true when extra fields present", () => {
     expect(
-      isTxmaMessage({
+      isAisMessage({
         user_id: "jane.smith-12345",
         timestamp: 1752755454,
         intervention_code: "12",
@@ -24,7 +24,7 @@ describe("isTxmaMessage", () => {
 
   it("should return false when user_id missing", () => {
     expect(
-      isTxmaMessage({
+      isAisMessage({
         timestamp: 1752755454,
         intervention_code: "12",
       })
@@ -33,7 +33,7 @@ describe("isTxmaMessage", () => {
 
   it("should return false when timestamp missing", () => {
     expect(
-      isTxmaMessage({
+      isAisMessage({
         user_id: "jane.smith-12345",
         intervention_code: "12",
       })
@@ -42,7 +42,7 @@ describe("isTxmaMessage", () => {
 
   it("should return true when intervention_code missing", () => {
     expect(
-      isTxmaMessage({
+      isAisMessage({
         user_id: "jane.smith-12345",
         timestamp: 1752755454,
       })
@@ -51,7 +51,7 @@ describe("isTxmaMessage", () => {
 
   it("should return false when user_id empty", () => {
     expect(
-      isTxmaMessage({
+      isAisMessage({
         user_id: "",
         timestamp: 1752755454,
         intervention_code: "12",

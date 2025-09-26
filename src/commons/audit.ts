@@ -1,5 +1,5 @@
 import { SQSClient, SendMessageCommand, SendMessageCommandOutput } from "@aws-sdk/client-sqs";
-import { IdentityRecordInvalidatedEvent } from "../types/audit-events";
+import { IdentityRecordInvalidatedEvent } from "./audit-events";
 
 const sqsClient = new SQSClient({});
 
