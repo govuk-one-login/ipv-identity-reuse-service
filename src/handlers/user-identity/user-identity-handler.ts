@@ -2,7 +2,7 @@ import { decodeJwt, JWTPayload } from "jose";
 
 import logger from "../../commons/logger";
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
-import { HttpCodesEnum } from "../../types/constants";
+import { HttpCodesEnum } from "../../commons/constants";
 import { getIdentityFromCredentialStore } from "../../credential-store/encrypted-credential-store";
 import { CredentialStoreIdentityResponse } from "../../credential-store/credential-store-identity-response";
 import { UserIdentityResponse } from "./user-identity-response";

@@ -10,8 +10,8 @@ import {
   GetLatestConfigurationCommandOutput,
 } from "@aws-sdk/client-appconfigdata";
 import { Uint8ArrayBlobAdapter } from "@smithy/util-stream";
-import { Configuration } from "../../../types/configuration";
-import { MetricDimension, MetricName } from "../../../types/metric-enum";
+import { Configuration } from "../../../commons/configuration";
+import { MetricDimension, MetricName } from "../../../commons/metric-enum";
 import { AisMessage } from "../ais-message";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";

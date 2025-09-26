@@ -1,4 +1,4 @@
-import { getConfiguration, getServiceApiKey } from "../types/configuration";
+import { getConfiguration, getServiceApiKey } from "../commons/configuration";
 
 export const getIdentityFromCredentialStore = async (authorizationToken: string): Promise<Response> => {
   const configuration = await getConfiguration();

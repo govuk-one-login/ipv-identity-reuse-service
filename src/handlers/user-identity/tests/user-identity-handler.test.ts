@@ -1,8 +1,8 @@
 import { APIGatewayProxyEvent, Context } from "aws-lambda";
 import { handler } from "../user-identity-handler";
-import { HttpCodesEnum } from "../../../types/constants";
-import { Configuration } from "../../../types/configuration";
-import * as configuration from "../../../types/configuration";
+import { HttpCodesEnum } from "../../../commons/constants";
+import { Configuration } from "../../../commons/configuration";
+import * as configuration from "../../../commons/configuration";
 import { CredentialStoreIdentityResponse } from "../../../credential-store/credential-store-identity-response";
 import { UserIdentityResponseMetadata } from "../user-identity-response-metadata";
 

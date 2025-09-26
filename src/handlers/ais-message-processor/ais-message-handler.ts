@@ -1,14 +1,14 @@
 import { Metrics, MetricUnit } from "@aws-lambda-powertools/metrics";
 import { SQSEvent, SQSRecord } from "aws-lambda";
 
-import { MetricDimension, MetricName } from "../../types/metric-enum";
+import { MetricDimension, MetricName } from "../../commons/metric-enum";
 import { isAisMessage, AisMessage } from "./ais-message";
 
-import { getConfiguration, type Configuration } from "../../types/configuration";
-import { isStringWithLength } from "../../types/string-utils";
+import { getConfiguration, type Configuration } from "../../commons/configuration";
+import { isStringWithLength } from "../../commons/string-utils";
 import logger from "../../commons/logger";
 import { isErrorResponse } from "../../credential-store/credential-store-error-response";
-import { auditIdentityRecordInvalidated } from "../../services/audit";
+import { auditIdentityRecordInvalidated } from "../../commons/audit";
 import { invalidateIdentityInCredentialStore } from "../../credential-store/encrypted-credential-store";
 
 const metrics = new Metrics();

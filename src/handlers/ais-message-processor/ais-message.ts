@@ -1,4 +1,4 @@
-import { isStringWithLength } from "../../types/string-utils";
+import { isStringWithLength } from "../../commons/string-utils";
 
 export type AisMessage = {
   user_id: string;
