@@ -1,7 +1,6 @@
-import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
-import { JWTPayload } from "jose";
+import { IdentityVectorOfTrust, JWTClass } from "@govuk-one-login/data-vocab/credentials";
 
-export interface UserIdentityResponse extends JWTPayload {
+export interface UserIdentityResponse extends JWTClass {
   sub: string;
   vot: IdentityVectorOfTrust | "P0";
   vtm: string[];

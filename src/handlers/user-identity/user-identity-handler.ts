@@ -1,5 +1,3 @@
-import { decodeJwt, JWTPayload } from "jose";
-
 import logger from "../../commons/logger";
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
 import { HttpCodesEnum } from "../../commons/constants";
@@ -10,6 +8,7 @@ import { UserIdentityResponseMetadata } from "./user-identity-response-metadata"
 import { calculateVot } from "../../identity-reuse/calculate-vot";
 import { UserIdentityRequest } from "./user-identity-request";
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
+import { getJwtBody } from "../../commons/jwt-utils";
 
 interface ErrorResponse {
   error: string;
@@ -53,15 +52,6 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
   } catch (error) {
     logger.error("Error retrieving user identity", { error });
     return createErrorResponse(HttpCodesEnum.INTERNAL_SERVER_ERROR);
-  }
-};
-
-const getJwtBody = <T extends JWTPayload = JWTPayload>(token: string): T => {
-  try {
-    return decodeJwt(token) as T;
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    throw new Error(`Invalid JWT: ${msg}`);
   }
 };
 
