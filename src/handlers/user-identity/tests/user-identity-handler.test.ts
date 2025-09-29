@@ -6,6 +6,7 @@ import * as configuration from "../../../commons/configuration";
 import { CredentialStoreIdentityResponse } from "../../../credential-store/credential-store-identity-response";
 import { UserIdentityResponseMetadata } from "../user-identity-response-metadata";
 import { UserIdentityRequest } from "../user-identity-request";
+import * as fraudCheckService from "../../../identity-reuse/fraud-check-service";
 
 describe("user-identity-handler tests", () => {
   const event = () => {
@@ -47,6 +48,8 @@ describe("user-identity-handler tests", () => {
       },
       vcs: [],
     };
+
+    jest.spyOn(fraudCheckService, "hasFraudCheckExpired").mockResolvedValue(false);
 
     (global.fetch as jest.Mock) = jest.fn().mockResolvedValue(
       new Response(JSON.stringify(payload), {

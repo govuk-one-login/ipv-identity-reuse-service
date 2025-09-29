@@ -6,6 +6,8 @@ import {
   RiskAssessmentCredentialJWTClass,
   SecurityCheckCredentialJWTClass,
 } from "@govuk-one-login/data-vocab/credentials";
+import * as configuration from "../../commons/configuration";
+import { Configuration } from "../../commons/configuration";
 
 const mockSuccessfulEvidence: IdentityCheckClass = {
   checkDetails: [
@@ -16,64 +18,71 @@ const mockSuccessfulEvidence: IdentityCheckClass = {
 };
 
 describe("hasFraudCheckExpired", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest
+      .spyOn(configuration, "getConfiguration")
+      .mockResolvedValue({ fraudIssuer: ["fraudCRI"], fraudValidityPeriod: 4320 } as Configuration);
+  });
+
   it.each([
-    [false, "2025-02-25T15:35:58.000Z", 4320, "2025-08-23T15:35:58.000Z"],
-    [true, "2025-02-25T15:35:58.000Z", 4320, "2025-08-25T15:35:58.000Z"],
-    [false, "2025-02-25T15:35:58.000Z", 4320, "2025-08-24T15:35:57.000Z"],
-    [true, "2025-02-25T15:35:58.000Z", 4320, "2025-08-24T15:35:59.000Z"],
-    [false, "2025-02-25T15:35:58.000Z", 4320, "2025-08-24T15:35:59.000+01:00"],
+    [false, "2025-02-25T15:35:58.000Z", "2025-08-23T15:35:58.000Z"],
+    [true, "2025-02-25T15:35:58.000Z", "2025-08-25T15:35:58.000Z"],
+    [false, "2025-02-25T15:35:58.000Z", "2025-08-24T15:35:57.000Z"],
+    [true, "2025-02-25T15:35:58.000Z", "2025-08-24T15:35:59.000Z"],
+    [false, "2025-02-25T15:35:58.000Z", "2025-08-24T15:35:59.000+01:00"],
   ])(
-    "should return %s with fraud check nbf of %s, validity period of %s, and current dateTime of %s",
-    (expiryResult: boolean, fraudNbfDate: string, validityPeriodHours: number, mockSystemDate: string) => {
+    "should return %s with fraud check nbf of %s, validity period of 4320 hours, and current dateTime of %s",
+    async (expiryResult: boolean, fraudNbfDate: string, mockSystemDate: string) => {
       const vcBundle = [
         createValidFraudVC(fraudNbfDate),
         createIdentityCheckCredentialJWT("2025-07-25T15:35:58.000Z", "passportCRI", mockSuccessfulEvidence),
       ];
 
       fakeSystemTime(new Date(mockSystemDate));
-      const fraudCheckExpired = hasFraudCheckExpired(["fraudCRI"], vcBundle, validityPeriodHours);
+      const fraudCheckExpired = await hasFraudCheckExpired(vcBundle);
       expect(fraudCheckExpired).toEqual(expiryResult);
     }
   );
 
-  it("should return true if no fraud VC exists in bundle", () => {
+  it("should return true if no fraud VC exists in bundle", async () => {
     const vcBundle = [
       createIdentityCheckCredentialJWT("2025-08-25T15:35:58.000Z", "passportCRI", mockSuccessfulEvidence),
     ];
     fakeSystemTime(new Date("2025-09-10T15:35:58.000Z"));
-    const fraudCheckExpired = hasFraudCheckExpired(["fraudCRI"], vcBundle, 4320);
+    const fraudCheckExpired = await hasFraudCheckExpired(vcBundle);
     expect(fraudCheckExpired).toEqual(true);
   });
 
-  it("should use fraud credential with latest nbf if multiple exist in a bundle", () => {
+  it("should use fraud credential with latest nbf if multiple exist in a bundle", async () => {
     const vcBundle = [createValidFraudVC("2025-01-25T15:35:58.000Z"), createValidFraudVC("2025-07-26T15:35:58.000Z")];
     fakeSystemTime(new Date("2025-08-24T15:35:58.000Z"));
-    const fraudCheckExpired = hasFraudCheckExpired(["fraudCRI"], vcBundle, 4320);
+    const fraudCheckExpired = await hasFraudCheckExpired(vcBundle);
     expect(fraudCheckExpired).toEqual(false);
 
-    const fraudCheckExpiredReversed = hasFraudCheckExpired(["fraudCRI"], vcBundle.reverse(), 4320);
+    const fraudCheckExpiredReversed = await hasFraudCheckExpired(vcBundle.reverse());
     expect(fraudCheckExpiredReversed).toEqual(false);
   });
 
-  it("should return false when the fraud credential has failedCheckDetails with fraudCheckType applicable_authoritative_source", () => {
+  it("should return false when the fraud credential has failedCheckDetails with fraudCheckType applicable_authoritative_source", async () => {
     const nbfDateExpired = "2025-01-25T15:35:58.000Z";
     const vcBundle = [
       createInvalidFraudVC(nbfDateExpired, "applicable_authoritative_source"),
       createSecurityCheckCredentialJWT(),
       createRiskAssessmentCredentialJWT(),
     ];
-    const fraudCheckExpired = hasFraudCheckExpired(["fraudCRI"], vcBundle, 4320);
+    const fraudCheckExpired = await hasFraudCheckExpired(vcBundle);
     expect(fraudCheckExpired).toEqual(false);
   });
 
-  it("should return true when the fraud credential has failedCheckDetails with fraudCheckType available_authoritative_source", () => {
+  it("should return true when the fraud credential has failedCheckDetails with fraudCheckType available_authoritative_source", async () => {
     const nbfDateNotExpired = "2025-08-25T15:35:58.000Z";
     const vcBundle = [
       createInvalidFraudVC(nbfDateNotExpired, "available_authoritative_source"),
       createSecurityCheckCredentialJWT(),
       createRiskAssessmentCredentialJWT(),
     ];
-    const fraudCheckExpired = hasFraudCheckExpired(["fraudCRI"], vcBundle, 4320);
+    const fraudCheckExpired = await hasFraudCheckExpired(vcBundle);
     expect(fraudCheckExpired).toEqual(true);
   });
 });

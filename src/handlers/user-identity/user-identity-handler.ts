@@ -1,7 +1,10 @@
 import logger from "../../commons/logger";
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
 import { HttpCodesEnum } from "../../commons/constants";
-import { getIdentityFromCredentialStore } from "../../credential-store/encrypted-credential-store";
+import {
+  getIdentityFromCredentialStore,
+  parseCurrentVerifiableCredentials,
+} from "../../credential-store/encrypted-credential-store";
 import { CredentialStoreIdentityResponse } from "../../credential-store/credential-store-identity-response";
 import { UserIdentityResponse as CredentialStoreStoredIdentityJWT } from "./user-identity-response";
 import { UserIdentityResponseMetadata } from "./user-identity-response-metadata";
@@ -9,6 +12,8 @@ import { calculateVot } from "../../identity-reuse/calculate-vot";
 import { UserIdentityRequest } from "./user-identity-request";
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
 import { getJwtBody } from "../../commons/jwt-utils";
+import { VerifiableCredentialJWT } from "../../identity-reuse/verifiable-credential-jwt";
+import { hasFraudCheckExpired } from "../../identity-reuse/fraud-check-service";
 
 interface ErrorResponse {
   error: string;
@@ -46,7 +51,7 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
     }
 
     const identityResponse: CredentialStoreIdentityResponse = await result.json();
-    const response: UserIdentityResponseMetadata = createSuccessResponse(identityResponse, request.vtr);
+    const response: UserIdentityResponseMetadata = await createSuccessResponse(identityResponse, request.vtr);
 
     return { statusCode: HttpCodesEnum.OK, body: JSON.stringify(response) };
   } catch (error) {
@@ -55,18 +60,20 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
   }
 };
 
-const createSuccessResponse = (
-  storedIdentity: CredentialStoreIdentityResponse,
+const createSuccessResponse = async (
+  identityResponse: CredentialStoreIdentityResponse,
   vtr: IdentityVectorOfTrust[]
-): UserIdentityResponseMetadata => {
-  const content: CredentialStoreStoredIdentityJWT = getJwtBody(storedIdentity.si.vc);
+): Promise<UserIdentityResponseMetadata> => {
+  const content: CredentialStoreStoredIdentityJWT = getJwtBody(identityResponse.si.vc);
+  const currentVcs: VerifiableCredentialJWT[] = parseCurrentVerifiableCredentials(identityResponse);
+
   const vot = calculateVot(content.vot as IdentityVectorOfTrust, vtr);
 
   return {
     content: { ...content, vot },
     vot: content.vot,
     isValid: true,
-    expired: false,
+    expired: await hasFraudCheckExpired(currentVcs),
     kidValid: true,
     signatureValid: true,
   };
