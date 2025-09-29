@@ -5,8 +5,10 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda
 import { HttpCodesEnum } from "../../commons/constants";
 import { getIdentityFromCredentialStore } from "../../credential-store/encrypted-credential-store";
 import { CredentialStoreIdentityResponse } from "../../credential-store/credential-store-identity-response";
-import { UserIdentityResponse } from "./user-identity-response";
+import { UserIdentityResponse as CredentialStoreStoreIdentityVC } from "./user-identity-response";
 import { UserIdentityResponseMetadata } from "./user-identity-response-metadata";
+import { isSiValid } from "../../commons/calculate-si-is-valid";
+import { UserIdentityRequest } from "./user-identity-request";
 
 interface ErrorResponse {
   error: string;
@@ -14,7 +16,14 @@ interface ErrorResponse {
 }
 
 export const handler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
+  const request = event.body ? (JSON.parse(event.body) as UserIdentityRequest) : undefined;
+
   logger.addContext(context);
+
+  if (!request) {
+    logger.error("Request body is invalid");
+    return createErrorResponse(HttpCodesEnum.BAD_REQUEST);
+  }
 
   if (!event?.headers?.Authorization) {
     logger.error("Authorisation header was not included in request");
@@ -37,16 +46,8 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
     }
 
     const identityResponse: CredentialStoreIdentityResponse = await result.json();
-    const content = getJwtBody(identityResponse.si.vc) as unknown as UserIdentityResponse;
+    const response: UserIdentityResponseMetadata = createSuccessResponse(identityResponse, request.vtr);
 
-    const response: UserIdentityResponseMetadata = {
-      content,
-      vot: content.vot,
-      isValid: true,
-      expired: false,
-      kidValid: true,
-      signatureValid: true,
-    };
     return { statusCode: HttpCodesEnum.OK, body: JSON.stringify(response) };
   } catch (error) {
     logger.error("Error retrieving user identity", { error });
@@ -61,6 +62,23 @@ const getJwtBody = <T extends JWTPayload = JWTPayload>(token: string): T => {
     const msg = err instanceof Error ? err.message : String(err);
     throw new Error(`Invalid JWT: ${msg}`);
   }
+};
+
+const createSuccessResponse = (
+  storedIdentity: CredentialStoreIdentityResponse,
+  vtr: string
+): UserIdentityResponseMetadata => {
+  const content: CredentialStoreStoreIdentityVC = getJwtBody(storedIdentity.si.vc);
+  const { vot, isValid } = isSiValid(content.vot, vtr);
+
+  return {
+    content: { ...content, vot },
+    vot: content.vot,
+    isValid,
+    expired: false,
+    kidValid: true,
+    signatureValid: true,
+  };
 };
 
 const createErrorResponse = (errorCode: HttpCodesEnum): APIGatewayProxyResult => {
