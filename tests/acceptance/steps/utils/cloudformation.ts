@@ -2,7 +2,6 @@ import {
   CloudFormationClient,
   DescribeStacksCommand,
   DescribeStacksCommandOutput,
-  ListExportsCommand,
 } from "@aws-sdk/client-cloudformation";
 import { getString } from "../../../../src/commons/string-utils";
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
@@ -18,23 +17,6 @@ export const CloudFormationOutputs = {
 export type CloudFormationOutputsType = keyof typeof CloudFormationOutputs;
 
 const cloudFormationStacks: Map<string, DescribeStacksCommandOutput> = new Map();
-let cloudFormationExports: Map<string, string>;
-
-export const getCloudFormationExport = async (exportName: string): Promise<string> => {
-  if (!cloudFormationExports) {
-    const client = new CloudFormationClient();
-    cloudFormationExports = new Map(
-      (await client.send(new ListExportsCommand())).Exports?.map(({ Name, Value }) => [Name as string, Value as string])
-    );
-  }
-
-  const exportedValue = cloudFormationExports.get(exportName);
-  if (!exportedValue) {
-    throw new Error(`Export ${exportName} not found`);
-  }
-
-  return exportedValue;
-};
 
 export const getCloudFormationStack = async (stackName: string): Promise<DescribeStacksCommandOutput> => {
   let cloudFormationStack = cloudFormationStacks.get(stackName);

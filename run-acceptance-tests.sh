@@ -11,12 +11,13 @@ Usage:
     -a      --aws-account       The AWS account to deploy to. (optional)
     -s      --stack-name        The name of your stack.
     -d      --docker            Run the tests using Docker and the acceptance testing image
+    -c      --shared-stack      The name of the shared configuration stack to use (defaults to reuse-identity-shared)
     -h      --help              Prints this help message and exits
 EOF
 }
 
 RUN_WITH_DOCKER=false
-
+SHARED_STACK_NAME=reuse-identity-shared
 while [ "$1" != "" ]; do
   case $1 in
   -a | --aws-account)
@@ -29,6 +30,10 @@ while [ "$1" != "" ]; do
     ;;
   -d | --docker)
     RUN_WITH_DOCKER=true
+    ;;
+  -c | --shared-stack)
+    shift
+    SHARED_STACK_NAME=$1
     ;;
   -h | --help)
     usage
@@ -59,6 +64,7 @@ if [ -z "$SAM_STACK_NAME" ]; then
 fi
 
 export TEST_ENVIRONMENT="dev"
+export SHARED_STACK_NAME
 export SAM_STACK_NAME
 if $RUN_WITH_DOCKER; then
   docker build \
@@ -74,6 +80,7 @@ if $RUN_WITH_DOCKER; then
     -e AWS_SESSION_TOKEN \
     -e SAM_STACK_NAME \
     -e TEST_ENVIRONMENT \
+    -e SHARED_STACK_NAME \
     acceptance-test-runner
 else
   npm run test:acceptance -- --format html:test-reports/acceptance.html
