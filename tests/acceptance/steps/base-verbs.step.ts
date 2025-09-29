@@ -1,4 +1,4 @@
-import { setDefaultTimeout, Before } from "@cucumber/cucumber";
+import { setDefaultTimeout, Before, defineParameterType } from "@cucumber/cucumber";
 import { Response } from "superagent";
 import { randomString } from "./utils/string-utils";
 
@@ -11,6 +11,12 @@ export type WorldDefinition = {
 };
 
 setDefaultTimeout(20000);
+
+defineParameterType({
+  name: "boolean",
+  regexp: /true|false/,
+  transformer: (s) => s === "true",
+});
 
 Before<WorldDefinition>(function () {
   this.userId = generateRandomTestUserId();
