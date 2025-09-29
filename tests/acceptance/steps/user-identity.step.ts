@@ -20,7 +20,7 @@ Given<WorldDefinition>(
     const payload: JWTPayload = {
       sub: this.userId,
       iss: "http://api.example.com",
-      vot: "P1",
+      vot: "P2",
     };
     const jwt = sign(header, payload);
 
@@ -28,7 +28,7 @@ Given<WorldDefinition>(
       this,
       this.userId,
       {
-        vot: "P1",
+        vot: "P2",
         jwt,
       },
       this.bearerToken || ""
@@ -41,15 +41,30 @@ Given<WorldDefinition>(
 );
 
 When<WorldDefinition>("I make a request for the users identity", async function () {
-  this.userIdentityPostResponse = await sisPostUserIdentity({}, this.bearerToken);
+  this.userIdentityPostResponse = await sisPostUserIdentity(
+    {
+      vtr: this.requestedVtr,
+      govukSigninJourneyId: this.govukSigninJourneyId,
+    },
+    this.bearerToken
+  );
 });
 
 When<WorldDefinition>("I make a request for the users identity with invalid Authorization header", async function () {
-  this.userIdentityPostResponse = await sisPostUserIdentity({}, "Blah blah");
+  this.userIdentityPostResponse = await sisPostUserIdentity(
+    {
+      vtr: this.requestedVtr,
+      govukSigninJourneyId: this.govukSigninJourneyId,
+    },
+    "Blah blah"
+  );
 });
 
 When<WorldDefinition>("I make a request for the users identity without Authorization header", async function () {
-  this.userIdentityPostResponse = await sisPostUserIdentity({});
+  this.userIdentityPostResponse = await sisPostUserIdentity({
+    vtr: this.requestedVtr,
+    govukSigninJourneyId: this.govukSigninJourneyId,
+  });
 });
 
 Then<WorldDefinition>("the status code should be {int}", function (statusCode: number) {
@@ -72,9 +87,9 @@ Then<WorldDefinition>("the stored identity should be returned", function () {
     content: {
       sub: this.userId,
       iss: "http://api.example.com",
-      vot: "P1",
+      vot: "P2",
     },
-    vot: "P1",
+    vot: "P2",
     isValid: true,
     expired: false,
     kidValid: true,

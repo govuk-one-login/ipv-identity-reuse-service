@@ -72,14 +72,8 @@ components:
       type: object
       properties:
         vtr:
-          type: array
-          items:
-            type: string
-            enum:
-              - P1
-              - P2
-              - P3
-              - P4
+          type: string
+          pattern: "^P[1-4](,P[1-4])*$"
         govukSigninJourneyId:
           type: string
           description: "Unique journey identifier"
@@ -197,3 +191,9 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
+
+x-amazon-apigateway-request-validators:
+  ALL:
+    validateRequestBody: true
+    validateRequestParameters: true
+    validateRequestHeaders: true
