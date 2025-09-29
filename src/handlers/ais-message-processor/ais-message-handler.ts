@@ -1,21 +1,20 @@
 import { Metrics, MetricUnit } from "@aws-lambda-powertools/metrics";
 import { SQSEvent, SQSRecord } from "aws-lambda";
 
-import { MetricDimension, MetricName } from "../types/metric-enum";
-import { isTxmaMessage, TxmaMessage } from "../types/txma-message";
+import { MetricDimension, MetricName } from "../../commons/metric-enum";
+import { isAisMessage, AisMessage } from "./ais-message";
 
-import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
-import { getConfiguration, type Configuration } from "../types/configuration";
-import { getString, isStringWithLength } from "../types/string-utils";
-import logger from "../commons/logger";
-import { isErrorResponse } from "../types/endpoint";
-import { auditIdentityRecordInvalidated } from "../services/audit";
+import { getConfiguration, type Configuration } from "../../commons/configuration";
+import { isStringWithLength } from "../../commons/string-utils";
+import logger from "../../commons/logger";
+import { isErrorResponse } from "../../credential-store/credential-store-error-response";
+import { auditIdentityRecordInvalidated } from "../../commons/audit";
+import { invalidateIdentityInCredentialStore } from "../../credential-store/encrypted-credential-store";
 
 const metrics = new Metrics();
 
 export const handler = async (event: SQSEvent): Promise<void> => {
   const records = parseSQSRecords(event.Records);
-  const apiKey: string | undefined = await getServiceApiKey();
 
   logger.info(`Event received containing ${records.length} messages`);
   metrics.addMetric(MetricName.MessagesReceived, MetricUnit.Count, records.length);
@@ -29,22 +28,16 @@ export const handler = async (event: SQSEvent): Promise<void> => {
         continue;
       }
 
-      await invalidateUser(record.user_id, record.intervention_code!, config.evcsApiUrl, apiKey);
+      await invalidateUser(record.user_id, record.intervention_code!);
     }
   } finally {
     metrics.publishStoredMetrics();
   }
 };
 
-const invalidateUser = async (userId: string, interventionCode: string, baseUrl: string, apiKey?: string) => {
+const invalidateUser = async (userId: string, interventionCode: string) => {
   try {
-    const response = await fetch(`${baseUrl}/identity/invalidate`, {
-      method: "POST",
-      body: JSON.stringify({ userId: userId }),
-      headers: {
-        ...(apiKey && { "x-api-key": apiKey }),
-      },
-    });
+    const response = await invalidateIdentityInCredentialStore(userId);
 
     if (response.ok) {
       logger.info(`Successfully invalidated user identity`);
@@ -74,23 +67,20 @@ const invalidateUser = async (userId: string, interventionCode: string, baseUrl:
   }
 };
 
-const getServiceApiKey = async (): Promise<string | undefined> =>
-  getString(await getSecret(process.env.EVCS_API_KEY_SECRET_ARN));
-
-const parseSQSRecords = (records: SQSRecord[]): TxmaMessage[] =>
+const parseSQSRecords = (records: SQSRecord[]): AisMessage[] =>
   records.map((record, index) => {
     if (!record?.body) {
       throw new Error(`SQS record ${index} does not have a body`);
     }
 
     const recordObj = JSON.parse(record.body);
-    if (isTxmaMessage(recordObj)) {
+    if (isAisMessage(recordObj)) {
       return recordObj;
     }
 
     throw new Error(`SQS record ${index} does not have required fields`);
   });
 
-const isInterventionRecord = (message: TxmaMessage, configuration: Configuration) =>
+const isInterventionRecord = (message: AisMessage, configuration: Configuration) =>
   isStringWithLength(message.intervention_code) &&
   configuration.interventionCodesToInvalidate.includes(message.intervention_code);

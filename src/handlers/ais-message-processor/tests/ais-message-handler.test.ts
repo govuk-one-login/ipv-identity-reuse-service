@@ -1,5 +1,5 @@
 import { SQSEvent, SQSRecord } from "aws-lambda";
-import { handler } from "../txma-message-processor";
+import { handler } from "../ais-message-handler";
 import { mockClient } from "aws-sdk-client-mock";
 import { SecretsManagerClient, GetSecretValueCommand, GetSecretValueResponse } from "@aws-sdk/client-secrets-manager";
 import {
@@ -10,9 +10,9 @@ import {
   GetLatestConfigurationCommandOutput,
 } from "@aws-sdk/client-appconfigdata";
 import { Uint8ArrayBlobAdapter } from "@smithy/util-stream";
-import { Configuration } from "../../types/configuration";
-import { MetricDimension, MetricName } from "../../types/metric-enum";
-import { TxmaMessage } from "../../types/txma-message";
+import { Configuration } from "../../../commons/configuration";
+import { MetricDimension, MetricName } from "../../../commons/metric-enum";
+import { AisMessage } from "../ais-message";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
 
@@ -27,7 +27,7 @@ const DEFAULT_CONFIGURATION: Configuration = Object.freeze({
   fraudValidityPeriod: 4518,
 });
 
-const VALID_TXMA_MESSAGE: TxmaMessage = Object.freeze({
+const VALID_TXMA_MESSAGE: AisMessage = Object.freeze({
   user_id: "test-user-id",
   timestamp: Math.floor(Date.now() / 1000),
   intervention_code: "12",
@@ -88,10 +88,10 @@ describe("txma-message-processor", () => {
     );
   });
 
-  it.each(["user_id", "timestamp"] as Array<keyof TxmaMessage>)(
+  it.each(["user_id", "timestamp"] as Array<keyof AisMessage>)(
     "should reject records which does not have the %s field",
     async (field) => {
-      const testMessage: Partial<TxmaMessage> = { ...VALID_TXMA_MESSAGE };
+      const testMessage: Partial<AisMessage> = { ...VALID_TXMA_MESSAGE };
       delete testMessage[field];
 
       const sqsEvent = createTestSQSEvent(testMessage);
@@ -115,7 +115,7 @@ describe("txma-message-processor", () => {
       json: () => Promise.resolve(""),
     } as Response);
 
-    const sqsEvent = createTestSQSEvent<TxmaMessage>(
+    const sqsEvent = createTestSQSEvent<AisMessage>(
       {
         user_id: "bob.smith-12345",
         timestamp: 1752755394,
@@ -201,7 +201,7 @@ describe("txma-message-processor", () => {
       json: () => ({ message: "Identity does not exist" }),
     } as never as Response);
 
-    const sqsEvent = createTestSQSEvent<TxmaMessage>({
+    const sqsEvent = createTestSQSEvent<AisMessage>({
       user_id: "jane.smith-12345",
       timestamp: 1752755454,
       intervention_code: "12",
@@ -252,7 +252,7 @@ describe("txma-message-processor", () => {
       json: () => ({ message: "Internal server error" }),
     } as never as Response);
 
-    const sqsEvent = createTestSQSEvent<TxmaMessage>({
+    const sqsEvent = createTestSQSEvent<AisMessage>({
       user_id: "jane.smith-12345",
       timestamp: 1752755454,
       intervention_code: "12",

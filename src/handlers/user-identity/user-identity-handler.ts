@@ -1,10 +1,12 @@
 import { decodeJwt, JWTPayload } from "jose";
 
-import logger from "../commons/logger";
+import logger from "../../commons/logger";
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
-import { HttpCodesEnum } from "../types/constants";
-import { getConfiguration, getServiceApiKey } from "../types/configuration";
-import { EvcsStoredIdentityResponse, StoredIdentityResponse, UserIdentityDataType } from "../types/interfaces";
+import { HttpCodesEnum } from "../../commons/constants";
+import { getIdentityFromCredentialStore } from "../../credential-store/encrypted-credential-store";
+import { CredentialStoreIdentityResponse } from "../../credential-store/credential-store-identity-response";
+import { UserIdentityResponse } from "./user-identity-response";
+import { UserIdentityResponseMetadata } from "./user-identity-response-metadata";
 
 interface ErrorResponse {
   error: string;
@@ -19,9 +21,6 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
     return createErrorResponse(HttpCodesEnum.UNAUTHORIZED);
   }
 
-  const configuration = await getConfiguration();
-  const serviceApiKey = await getServiceApiKey();
-
   try {
     try {
       getJwtBody(event.headers.Authorization.split(" ").at(1) || ""); // Validate bearer token
@@ -30,23 +29,17 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
       return createErrorResponse(HttpCodesEnum.UNAUTHORIZED);
     }
 
-    const result = await fetch(`${configuration.evcsApiUrl}/identity`, {
-      method: "GET",
-      headers: {
-        Authorization: event.headers.Authorization,
-        ...(serviceApiKey && { "x-api-key": serviceApiKey }),
-      },
-    });
+    const result = await getIdentityFromCredentialStore(event.headers.Authorization);
 
     if (!result.ok) {
       logger.error("Error received from EVCS service", { status: result.status });
       return createErrorResponse(result.status);
     }
 
-    const storedIdentity: EvcsStoredIdentityResponse = await result.json();
-    const content = getJwtBody(storedIdentity.si.vc) as unknown as UserIdentityDataType;
+    const identityResponse: CredentialStoreIdentityResponse = await result.json();
+    const content = getJwtBody(identityResponse.si.vc) as unknown as UserIdentityResponse;
 
-    const response: StoredIdentityResponse = {
+    const response: UserIdentityResponseMetadata = {
       content,
       vot: content.vot,
       isValid: true,
