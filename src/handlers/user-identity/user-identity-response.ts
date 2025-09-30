@@ -3,6 +3,6 @@ import { JWTPayload } from "jose";
 
 export interface UserIdentityResponse extends JWTPayload {
   sub: string;
-  vot: IdentityVectorOfTrust;
+  vot: IdentityVectorOfTrust | "P0";
   vtm: string[];
 }

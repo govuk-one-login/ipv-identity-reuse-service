@@ -21,12 +21,11 @@ Feature: UserIdentity Post - Happy Path
     And the error should be "invalid_token"
     And the error description should be "Bearer token is missing or invalid"
 
-  Scenario Outline: Correctly validates identity and processes vtr when VOT does not match
-    And I have a user with a Stored Identity, with Vot "P2" and 0 credentials
+  Scenario Outline: Correctly validates identity and processes VTR when VOT does not match
+    And I have a user with a Stored Identity, with VOT "P2" and 0 credentials
     When I make a request for the users identity with a VTR "P3"
     Then the status code should be 200
     And the stored identity should be returned
     And the stored identity content.vot should be "P0"
-    And the stored identity vot should be "P2"
-    And the stored identity isValid field is false
+    And the stored identity VOT should be "P2"
     And the stored credentials should be returned

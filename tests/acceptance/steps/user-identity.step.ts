@@ -13,7 +13,7 @@ Given<WorldDefinition>("I have a user without a stored identity", async function
 });
 
 Given<WorldDefinition>(
-  "I have a user with a Stored Identity, with Vot {string} and {int} credentials",
+  "I have a user with a Stored Identity, with VOT {string} and {int} credentials",
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async function (vot: string, credentials: number) {
     // TODO: credentials parameter to be implemented in SPT-1629
@@ -113,7 +113,7 @@ Then("the stored identity content.vot should be {string}", function (vot: string
   assert.equal(this.userIdentityPostResponse?.body?.content?.vot, vot);
 });
 
-Then("the stored identity vot should be {string}", function (vot: string) {
+Then("the stored identity VOT should be {string}", function (vot: string) {
   assert.equal(this.userIdentityPostResponse?.body?.vot, vot);
 });
 

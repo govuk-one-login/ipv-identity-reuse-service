@@ -5,10 +5,11 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda
 import { HttpCodesEnum } from "../../commons/constants";
 import { getIdentityFromCredentialStore } from "../../credential-store/encrypted-credential-store";
 import { CredentialStoreIdentityResponse } from "../../credential-store/credential-store-identity-response";
-import { UserIdentityResponse as CredentialStoreStoreIdentityVC } from "./user-identity-response";
+import { UserIdentityResponse as CredentialStoreStoredIdentityJWT } from "./user-identity-response";
 import { UserIdentityResponseMetadata } from "./user-identity-response-metadata";
-import { isSiValid } from "../../commons/calculate-si-is-valid";
+import { calculateVot } from "../../identity-reuse/calculate-vot";
 import { UserIdentityRequest } from "./user-identity-request";
+import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
 
 interface ErrorResponse {
   error: string;
@@ -66,15 +67,15 @@ const getJwtBody = <T extends JWTPayload = JWTPayload>(token: string): T => {
 
 const createSuccessResponse = (
   storedIdentity: CredentialStoreIdentityResponse,
-  vtr: string[]
+  vtr: IdentityVectorOfTrust[]
 ): UserIdentityResponseMetadata => {
-  const content: CredentialStoreStoreIdentityVC = getJwtBody(storedIdentity.si.vc);
-  const { vot, isValid } = isSiValid(content.vot, vtr);
+  const content: CredentialStoreStoredIdentityJWT = getJwtBody(storedIdentity.si.vc);
+  const vot = calculateVot(content.vot as IdentityVectorOfTrust, vtr);
 
   return {
     content: { ...content, vot },
     vot: content.vot,
-    isValid,
+    isValid: true,
     expired: false,
     kidValid: true,
     signatureValid: true,
@@ -85,6 +86,10 @@ const createErrorResponse = (errorCode: HttpCodesEnum): APIGatewayProxyResult =>
   let error;
   let error_description;
   switch (errorCode) {
+    case HttpCodesEnum.BAD_REQUEST:
+      error = "bad_request";
+      error_description = "Bad request from client";
+      break;
     case HttpCodesEnum.NOT_FOUND:
       error = "not_found";
       error_description = "No Stored Identity exists for this user or Stored Identity has been invalidated";
