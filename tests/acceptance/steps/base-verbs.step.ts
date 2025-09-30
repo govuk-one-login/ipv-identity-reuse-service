@@ -5,7 +5,7 @@ import { randomString } from "./utils/string-utils";
 export type WorldDefinition = {
   userId: string;
   bearerToken?: string;
-  requestedVtr: string;
+  requestedVtr: string[];
   govukSigninJourneyId: string;
   userIdentityPostResponse?: Response;
 };
@@ -21,7 +21,7 @@ defineParameterType({
 Before<WorldDefinition>(function () {
   this.userId = generateRandomTestUserId();
   this.govukSigninJourneyId = randomString(12);
-  this.requestedVtr = "P2";
+  this.requestedVtr = ["P2"];
 });
 
 function generateRandomTestUserId() {

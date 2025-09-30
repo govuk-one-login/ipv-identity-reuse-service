@@ -44,7 +44,7 @@ Given<WorldDefinition>(
 When<WorldDefinition>("I make a request for the users identity with a VTR {string}", async function (vtr: string) {
   this.userIdentityPostResponse = await sisPostUserIdentity(
     {
-      vtr,
+      vtr: vtr.split(",").map((s) => s.trim()),
       govukSigninJourneyId: this.govukSigninJourneyId,
     },
     this.bearerToken

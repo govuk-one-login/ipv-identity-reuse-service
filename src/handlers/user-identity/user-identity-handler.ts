@@ -66,7 +66,7 @@ const getJwtBody = <T extends JWTPayload = JWTPayload>(token: string): T => {
 
 const createSuccessResponse = (
   storedIdentity: CredentialStoreIdentityResponse,
-  vtr: string
+  vtr: string[]
 ): UserIdentityResponseMetadata => {
   const content: CredentialStoreStoreIdentityVC = getJwtBody(storedIdentity.si.vc);
   const { vot, isValid } = isSiValid(content.vot, vtr);

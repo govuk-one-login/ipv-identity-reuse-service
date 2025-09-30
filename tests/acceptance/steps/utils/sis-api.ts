@@ -4,7 +4,7 @@ import { CloudFormationOutputs, getCloudFormationOutput } from "./cloudformation
 
 export type SisPostBody = {
   govukSigninJourneyId: string;
-  vtr: string;
+  vtr: string[];
 };
 
 export async function sisPostUserIdentity(data: SisPostBody, bearerToken?: string): Promise<Response> {

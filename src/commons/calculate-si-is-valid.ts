@@ -8,13 +8,12 @@ export type IsSiValidOutput = {
   vot: "P0";
 };
 
-export const isSiValid = (vot: IdentityVectorOfTrust, vtr: string, isDeleted: boolean = false): IsSiValidOutput => {
+export const isSiValid = (vot: IdentityVectorOfTrust, vtr: string[], isDeleted: boolean = false): IsSiValidOutput => {
   if (isDeleted) {
     return { isValid: false, vot: "P0" } as IsSiValidOutput;
   }
 
   const foundVot = vtr
-    .split(",")
     .map((s) => s.trim())
     .sort((a, b) => (a < b ? 1 : -1))
     .find((s) => s <= vot);

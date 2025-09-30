@@ -72,8 +72,14 @@ components:
       type: object
       properties:
         vtr:
-          type: string
-          pattern: "^P[1-4](,P[1-4])*$"
+          type: array
+          items:
+            type: string
+            enum:
+              - P1
+              - P2
+              - P3
+              - P4
         govukSigninJourneyId:
           type: string
           description: "Unique journey identifier"
