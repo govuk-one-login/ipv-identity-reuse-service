@@ -1,6 +1,6 @@
 import { base64url, exportJWK, importSPKI, JWK } from "jose";
 
-export const binaryPkToJwk = async (pk: Uint8Array, alg: string) => {
+export const binaryPkToJwk = async (pk: Uint8Array, alg: string): Promise<JWK> => {
   return await exportJWK(await getSpki(pk, alg));
 };
 

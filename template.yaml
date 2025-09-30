@@ -30,10 +30,7 @@ Parameters:
     Description: The name of the applications configuration
     Type: String
     Default: id-reuse-config
-  LocalName:
-    Description: Unique name component used in ephemeral deploys
-    Type: String
-    Default: ""
+
   OwnerTagValue:
     Description: Value for the Owner Tag
     Type: String
@@ -198,7 +195,7 @@ Conditions:
     Fn::Or:
       - Fn::Equals: [!Ref Environment, "local"]
       - Fn::Equals: [!Ref Environment, "dev"]
-
+  
   IsNotDev: !Not [!Condition IsDev]
 
   CanariesEnabled: !Equals
@@ -389,7 +386,7 @@ Resources:
       Type: String
       Name: !If
         - IsDev
-        - !Sub "/${Environment}${LocalName}/${AWS::StackName}/DidWellKnownUrl"
+        - !Sub "/${Environment}/${AWS::StackName}/DidWellKnownUrl"
         - /tests/ipv-identity-reuse-service/DidWellKnownUrl
       Value: !Sub "https://${DidApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/.well-known/did.json"
   
@@ -436,6 +433,7 @@ Resources:
         Variables:
           METRIC_SERVICE_NAME: "DidGenerationFunction"
           DID_SIGNING_KEY_ARN: !If [IsDevOrBuild, !GetAtt DidSigningKey.Arn, !Ref "AWS::NoValue"]
+          DID_CONTROLLER: !If [IsDev, "did:web:api.identity.dev.account.gov.uk", "did:web:api.identity.build.account.gov.uk"]
       CodeSigningConfigArn: !If
         - UseCodeSigning
         - !Ref CodeSigningConfigArn

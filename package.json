@@ -13,7 +13,7 @@
     "@aws-sdk/client-sqs": "3.883.0",
     "@govuk-one-login/data-vocab": "1.9.3",
     "@types/aws-lambda": "8.10.150",
-    "did-resolver": "^4.1.0",
+    "did-resolver": "4.1.0",
     "esbuild": "0.25.4",
     "jose": "5.10.0",
     "superagent": "^10.2.3",

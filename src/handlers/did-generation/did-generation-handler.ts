@@ -7,6 +7,7 @@ import logger from "../../commons/logger";
 export const handler = async (): Promise<APIGatewayProxyResult> => {
   const alg = "ES256";
   const publicKeyData = await getKmsPublicKey(process.env.DID_SIGNING_KEY_ARN);
+  const didController = process.env.DID_CONTROLLER;
   try {
     let jwk = await binaryPkToJwk(publicKeyData.publicKey, alg);
     jwk = updateJwk(jwk, { alg });
@@ -16,8 +17,8 @@ export const handler = async (): Promise<APIGatewayProxyResult> => {
       assertionMethod: [
         {
           type: "JsonWebKey",
-          id: "did:web:identity.dev.account.gov.uk#" + publicKeyData.keyId,
-          controller: "did:web:identity.dev.account.gov.uk",
+          id: didController + "#" + publicKeyData.keyId,
+          controller: didController,
           publicKeyJwk: jwk,
         },
       ],

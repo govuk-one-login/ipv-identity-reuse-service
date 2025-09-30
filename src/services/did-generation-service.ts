@@ -1,5 +1,6 @@
 import * as AWS from "@aws-sdk/client-kms";
 import { GetPublicKeyCommand } from "@aws-sdk/client-kms";
+
 export const getKmsPublicKey = async (keyArn: string): Promise<{ keyId: string; publicKey: Uint8Array }> => {
   const getPublicKeyCommand = new GetPublicKeyCommand({
     KeyId: keyArn,
