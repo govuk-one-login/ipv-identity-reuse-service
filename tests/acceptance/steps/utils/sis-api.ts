@@ -2,7 +2,10 @@ import request from "supertest";
 import type { Response } from "superagent";
 import { CloudFormationOutputs, getCloudFormationOutput } from "./cloudformation";
 
-export type SisPostBody = Record<string, never>;
+export type SisPostBody = {
+  govukSigninJourneyId: string;
+  vtr: string[];
+};
 
 export async function sisPostUserIdentity(data: SisPostBody, bearerToken?: string): Promise<Response> {
   const requestOperation = request(await getCloudFormationOutput(CloudFormationOutputs.ApiEndpoint))

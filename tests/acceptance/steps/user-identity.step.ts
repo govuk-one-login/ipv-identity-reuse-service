@@ -6,21 +6,22 @@ import { WorldDefinition } from "./base-verbs.step";
 import { evcsPostIdentity } from "./utils/evcs-api";
 import { JWTHeaderParameters, JWTPayload } from "jose";
 import { getDefaultStoredIdentityHeader, sign } from "./utils/jwt-utils";
+import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
 
 Given<WorldDefinition>("I have a user without a stored identity", async function () {
   this.bearerToken = await getBearerToken(this.userId);
 });
 
 Given<WorldDefinition>(
-  "I have a user with a Stored Identity and {int} credentials",
+  "I have a user with a Stored Identity, with VOT {string} and {int} credentials",
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async function (credentials: number) {
+  async function (vot: string, credentials: number) {
     // TODO: credentials parameter to be implemented in SPT-1629
     const header: JWTHeaderParameters = getDefaultStoredIdentityHeader();
     const payload: JWTPayload = {
       sub: this.userId,
       iss: "http://api.example.com",
-      vot: "P1",
+      vot,
     };
     const jwt = sign(header, payload);
 
@@ -28,7 +29,7 @@ Given<WorldDefinition>(
       this,
       this.userId,
       {
-        vot: "P1",
+        vot: vot as never as IdentityVectorOfTrust,
         jwt,
       },
       this.bearerToken || ""
@@ -40,16 +41,31 @@ Given<WorldDefinition>(
   }
 );
 
-When<WorldDefinition>("I make a request for the users identity", async function () {
-  this.userIdentityPostResponse = await sisPostUserIdentity({}, this.bearerToken);
+When<WorldDefinition>("I make a request for the users identity with a VTR {string}", async function (vtr: string) {
+  this.userIdentityPostResponse = await sisPostUserIdentity(
+    {
+      vtr: vtr.split(",").map((s) => s.trim()),
+      govukSigninJourneyId: this.govukSigninJourneyId,
+    },
+    this.bearerToken
+  );
 });
 
 When<WorldDefinition>("I make a request for the users identity with invalid Authorization header", async function () {
-  this.userIdentityPostResponse = await sisPostUserIdentity({}, "Blah blah");
+  this.userIdentityPostResponse = await sisPostUserIdentity(
+    {
+      vtr: this.requestedVtr,
+      govukSigninJourneyId: this.govukSigninJourneyId,
+    },
+    "Blah blah"
+  );
 });
 
 When<WorldDefinition>("I make a request for the users identity without Authorization header", async function () {
-  this.userIdentityPostResponse = await sisPostUserIdentity({});
+  this.userIdentityPostResponse = await sisPostUserIdentity({
+    vtr: this.requestedVtr,
+    govukSigninJourneyId: this.govukSigninJourneyId,
+  });
 });
 
 Then<WorldDefinition>("the status code should be {int}", function (statusCode: number) {
@@ -68,18 +84,41 @@ Then<WorldDefinition>("the error description should be {string}", function (erro
 });
 
 Then<WorldDefinition>("the stored identity should be returned", function () {
-  assert.deepEqual(this.userIdentityPostResponse?.body, {
-    content: {
-      sub: this.userId,
-      iss: "http://api.example.com",
-      vot: "P1",
+  assert.deepEqual(
+    {
+      ...this.userIdentityPostResponse?.body,
+      content: {
+        ...this.userIdentityPostResponse?.body?.content,
+        vot: undefined,
+      },
+      vot: undefined,
+      isValid: undefined,
     },
-    vot: "P1",
-    isValid: true,
-    expired: false,
-    kidValid: true,
-    signatureValid: true,
-  });
+    {
+      content: {
+        sub: this.userId,
+        iss: "http://api.example.com",
+        vot: undefined,
+      },
+      vot: undefined,
+      isValid: undefined,
+      expired: false,
+      kidValid: true,
+      signatureValid: true,
+    }
+  );
+});
+
+Then("the stored identity content.vot should be {string}", function (vot: string) {
+  assert.equal(this.userIdentityPostResponse?.body?.content?.vot, vot);
+});
+
+Then("the stored identity VOT should be {string}", function (vot: string) {
+  assert.equal(this.userIdentityPostResponse?.body?.vot, vot);
+});
+
+Then("the stored identity isValid field is {boolean}", function (isValid: boolean) {
+  assert.equal(this.userIdentityPostResponse?.body?.isValid, isValid);
 });
 
 Then<WorldDefinition>("the stored credentials should be returned", function () {

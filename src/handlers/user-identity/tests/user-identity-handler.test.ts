@@ -5,6 +5,7 @@ import { Configuration } from "../../../commons/configuration";
 import * as configuration from "../../../commons/configuration";
 import { CredentialStoreIdentityResponse } from "../../../credential-store/credential-store-identity-response";
 import { UserIdentityResponseMetadata } from "../user-identity-response-metadata";
+import { UserIdentityRequest } from "../user-identity-request";
 
 describe("user-identity-handler tests", () => {
   const event = () => {
@@ -20,9 +21,13 @@ describe("user-identity-handler tests", () => {
         Authorization:
           "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6ImVjS2lkMTIzIn0.eyJzdWIiOiJ1cm46ZmRjOmdvdi51azoyMDIyOlRFU1RfVVNFUi1TN2pjckhMR0JqLTJrZ0ItOC1jWWhWck1kbzNDVjBMbEQ3QW4iLCJleHAiOjE3NTczMjQyMTcsImlhdCI6MTc1NzMyMzkxNywiaXNzIjoiaHR0cHM6Ly9tb2NrLmNyZWRlbnRpYWwtc3RvcmUuYnVpbGQuYWNjb3VudC5nb3YudWsvb3JjaGVzdHJhdGlvbiIsImF1ZCI6Imh0dHBzOi8vY3JlZGVudGlhbC1zdG9yZS5idWlsZC5hY2NvdW50Lmdvdi51ayIsInNjb3BlIjoicHJvdmluZyJ9.Sj-2jA6mLdfkU1ryoBCNHxpBCT49o9qfqpKPMLkKwY1D6V6SvVIERGbC0X-fh8SYk2z-strc9vahvacvkrNDUQ",
       },
+      body: JSON.stringify({
+        vtr: ["P2"],
+        govukSigninJourneyId: "govuk_signin_journey_id",
+      } satisfies UserIdentityRequest),
     } as unknown as APIGatewayProxyEvent;
   };
-  let newEvent: any;
+  let newEvent: APIGatewayProxyEvent;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -66,9 +71,18 @@ describe("user-identity-handler tests", () => {
     expect(body.signatureValid).toBe(true);
   });
 
+  it("should return Bad Request, given an invalid body", async () => {
+    newEvent.body = undefined as never as string;
+    const result = handler(newEvent, {} as Context);
+    await expect(result).resolves.toEqual({
+      statusCode: HttpCodesEnum.BAD_REQUEST,
+      body: JSON.stringify({ error: "bad_request", error_description: "Bad request from client" }),
+    });
+  });
+
   it("should return Unauthorised given no Bearer token", async () => {
     newEvent.headers["Authorization"] = "";
-    const result = handler(newEvent as APIGatewayProxyEvent, {} as Context);
+    const result = handler(newEvent, {} as Context);
     await expect(result).resolves.toEqual({
       statusCode: HttpCodesEnum.UNAUTHORIZED,
       body: JSON.stringify({ error: "invalid_token", error_description: "Bearer token is missing or invalid" }),
@@ -77,7 +91,7 @@ describe("user-identity-handler tests", () => {
 
   it("should return Unauthorised given the Bearer token is malformed", async () => {
     newEvent.headers["Authorization"] = "Bearer bad.bearer.token";
-    const result = handler(newEvent as APIGatewayProxyEvent, {} as Context);
+    const result = handler(newEvent, {} as Context);
     await expect(result).resolves.toEqual({
       statusCode: HttpCodesEnum.UNAUTHORIZED,
       body: JSON.stringify({ error: "invalid_token", error_description: "Bearer token is missing or invalid" }),
@@ -91,7 +105,7 @@ describe("user-identity-handler tests", () => {
         headers: { "content-type": "application/json" },
       })
     );
-    const result = handler(newEvent as APIGatewayProxyEvent, {} as Context);
+    const result = handler(newEvent, {} as Context);
     await expect(result).resolves.toEqual({
       statusCode: HttpCodesEnum.FORBIDDEN,
       body: JSON.stringify({ error: "forbidden", error_description: "Access token expired or not permitted" }),
@@ -105,7 +119,7 @@ describe("user-identity-handler tests", () => {
         headers: { "content-type": "application/json" },
       })
     );
-    const result = handler(newEvent as APIGatewayProxyEvent, {} as Context);
+    const result = handler(newEvent, {} as Context);
     await expect(result).resolves.toEqual({
       statusCode: HttpCodesEnum.UNAUTHORIZED,
       body: JSON.stringify({ error: "invalid_token", error_description: "Bearer token is missing or invalid" }),
@@ -119,7 +133,7 @@ describe("user-identity-handler tests", () => {
         headers: { "content-type": "application/json" },
       })
     );
-    const result = handler(newEvent as APIGatewayProxyEvent, {} as Context);
+    const result = handler(newEvent, {} as Context);
     await expect(result).resolves.toEqual({
       statusCode: HttpCodesEnum.INTERNAL_SERVER_ERROR,
       body: JSON.stringify({ error: "server_error", error_description: "Unable to retrieve data" }),
@@ -133,7 +147,7 @@ describe("user-identity-handler tests", () => {
         headers: { "content-type": "application/json" },
       })
     );
-    const result = handler(newEvent as APIGatewayProxyEvent, {} as Context);
+    const result = handler(newEvent, {} as Context);
     await expect(result).resolves.toEqual({
       statusCode: HttpCodesEnum.NOT_FOUND,
       body: JSON.stringify({

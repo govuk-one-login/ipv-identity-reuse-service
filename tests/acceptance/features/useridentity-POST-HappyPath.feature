@@ -1,15 +1,36 @@
 Feature: UserIdentity Post - Happy Path
 
   Scenario: A stored identity is returned for the user
-    Given I have a user with a Stored Identity and 0 credentials
-    When I make a request for the users identity
+    Given I have a user with a Stored Identity, with VOT "P2" and 0 credentials
+    When I make a request for the users identity with a VTR "P2"
     Then the status code should be 200
     And the stored identity should be returned
     And the stored credentials should be returned
 
   Scenario: A stored identity is returned for the user
-    Given I have a user with a Stored Identity and 4 credentials
-    When I make a request for the users identity
+    Given I have a user with a Stored Identity, with VOT "P2" and 4 credentials
+    When I make a request for the users identity with a VTR "P2"
     Then the status code should be 200
     And the stored identity should be returned
     And the stored credentials should be returned
+
+  Scenario Outline: Correctly validates identity and processes vtr
+    And I have a user with a Stored Identity, with VOT "<vot>" and 0 credentials
+    When I make a request for the users identity with a VTR "<vtr>"
+    Then the status code should be 200
+    And the stored identity should be returned
+    And the stored identity content.vot should be "<expectedVot>"
+    And the stored identity VOT should be "<vot>"
+    And the stored identity isValid field is true
+    And the stored credentials should be returned
+
+    Examples:
+      | vot | vtr   | expectedVot |
+      | P2  | P1    | P1          |
+      | P2  | P1,P2 | P2          |
+      | P1  | P1,P2 | P1          |
+      | P3  | P2    | P2          |
+      | P2  | P2,P3 | P2          |
+      | P3  | P2    | P2          |
+      | P3  | P2,P3 | P3          |
+      | P2  | P2,P3 | P2          |

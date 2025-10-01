@@ -197,3 +197,9 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
+
+x-amazon-apigateway-request-validators:
+  ALL:
+    validateRequestBody: true
+    validateRequestParameters: true
+    validateRequestHeaders: true
