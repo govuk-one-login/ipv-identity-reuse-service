@@ -8,6 +8,8 @@ declare global {
       POWERTOOLS_METRICS_NAMESPACE: string;
       POWERTOOLS_SERVICE_NAME: string;
       SQS_AUDIT_EVENT_QUEUE_URL: string;
+      DID_SIGNING_KEY_ARN: string;
+      DID_CONTROLLER: string;
     }
   }
 }

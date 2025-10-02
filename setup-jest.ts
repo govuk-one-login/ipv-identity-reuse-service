@@ -12,6 +12,7 @@ process.env.EVCS_API_KEY_SECRET_ARN = "arn:aws:secretsmanager:eu-west-2:00000000
 process.env.POWERTOOLS_DEV = "true";
 process.env.POWERTOOLS_METRICS_DISABLED = "false";
 process.env.SQS_AUDIT_EVENT_QUEUE_URL = "https://api.example.com";
+process.env.DID_CONTROLLER = "did:web:identity.dev.account.gov.uk";
 
 // Setup up spys on console
 jest.spyOn(console, "log");
