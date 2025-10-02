@@ -10,10 +10,12 @@ import { UserIdentityResponse as CredentialStoreStoredIdentityJWT } from "./user
 import { UserIdentityResponseMetadata } from "./user-identity-response-metadata";
 import { calculateVot } from "../../identity-reuse/calculate-vot";
 import { UserIdentityRequest } from "./user-identity-request";
-import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
+import { IdentityVectorOfTrust, JWTClass } from "@govuk-one-login/data-vocab/credentials";
 import { getJwtBody } from "../../commons/jwt-utils";
 import { VerifiableCredentialJWT } from "../../identity-reuse/verifiable-credential-jwt";
 import { hasFraudCheckExpired } from "../../identity-reuse/fraud-check-service";
+import { TxmaSisStoredIdentityReadEvent } from "../../commons/audit-events";
+import { sendAuditMessage } from "../../commons/audit";
 
 interface ErrorResponse {
   error: string;
@@ -25,19 +27,36 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
 
   logger.addContext(context);
 
-  if (!request) {
-    logger.error("Request body is invalid");
-    return createErrorResponse(HttpCodesEnum.BAD_REQUEST);
-  }
-
-  if (!event?.headers?.Authorization) {
-    logger.error("Authorisation header was not included in request");
-    return createErrorResponse(HttpCodesEnum.UNAUTHORIZED);
-  }
+  const txmaEvent: TxmaSisStoredIdentityReadEvent = {
+    component_id: process.env.COMPONENT_ID,
+    event_name: "SIS_STORED_IDENTITY_READ",
+    event_timestamp_ms: Date.now(),
+    timestamp: Math.floor(Date.now() / 1000),
+    extensions: {
+      retrieval_outcome: "service_error",
+    },
+    restricted: {},
+  };
 
   try {
+    let jwt: JWTClass;
+
+    if (!request) {
+      logger.error("Request body is invalid");
+      return createErrorResponse(HttpCodesEnum.BAD_REQUEST);
+    }
+
+    if (!event?.headers?.Authorization) {
+      logger.error("Authorisation header was not included in request");
+      return createErrorResponse(HttpCodesEnum.UNAUTHORIZED);
+    }
+
     try {
-      getJwtBody(event.headers.Authorization.split(" ").at(1) || ""); // Validate bearer token
+      jwt = getJwtBody(event.headers.Authorization.split(" ").at(1) || ""); // Validate bearer token
+      txmaEvent.user = {
+        user_id: jwt.sub,
+        govuk_signin_journey_id: request.govukSigninJourneyId,
+      };
     } catch {
       logger.error("Error whilst decoding Bearer token body");
       return createErrorResponse(HttpCodesEnum.UNAUTHORIZED);
@@ -47,16 +66,30 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
 
     if (!result.ok) {
       logger.error("Error received from EVCS service", { status: result.status });
+      txmaEvent.extensions = {
+        retrieval_outcome: result.status === HttpCodesEnum.NOT_FOUND ? "no_record" : "service_error",
+      };
       return createErrorResponse(result.status);
     }
 
     const identityResponse: CredentialStoreIdentityResponse = await result.json();
     const response: UserIdentityResponseMetadata = await createSuccessResponse(identityResponse, request.vtr);
 
+    txmaEvent.extensions = {
+      retrieval_outcome: "success",
+      max_vot: response.content.vot,
+      timestamp_fraud_check_iat: response.content.iat,
+    };
+    txmaEvent.restricted = {
+      stored_identity_jwt: identityResponse.si.vc,
+    };
+
     return { statusCode: HttpCodesEnum.OK, body: JSON.stringify(response) };
   } catch (error) {
     logger.error("Error retrieving user identity", { error });
     return createErrorResponse(HttpCodesEnum.INTERNAL_SERVER_ERROR);
+  } finally {
+    await sendAuditMessage(txmaEvent);
   }
 };
 

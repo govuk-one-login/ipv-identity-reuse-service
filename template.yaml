@@ -31,6 +31,11 @@ Parameters:
     Type: String
     Default: id-reuse-config
 
+  ComponentId:
+    Description: The component id
+    Type: String
+    Default: https://identity.account.gov.uk/sis
+
   OwnerTagValue:
     Description: Value for the Owner Tag
     Type: String
@@ -538,6 +543,8 @@ Resources:
           ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
           APP_CONFIG_NAME: !Ref ApplicationConfigName
           APP_CONFIG_APPLICATION: !Ref ApplicationName
+          SQS_AUDIT_EVENT_QUEUE_URL: !Ref AuditEventQueue
+          COMPONENT_ID: !Ref ComponentId
       CodeSigningConfigArn: !If
         - UseCodeSigning
         - !Ref CodeSigningConfigArn
@@ -618,6 +625,10 @@ Resources:
               - "appconfig:StartConfigurationSession"
               - "appconfig:GetLatestConfiguration"
             Resource: "*"
+          - Effect: Allow
+            Action:
+              - sqs:SendMessage
+            Resource: !GetAtt AuditEventQueue.Arn
       Roles:
         - !Ref UserIdentityFunctionRole
 
@@ -866,6 +877,7 @@ Resources:
           APP_CONFIG_NAME: !Ref ApplicationConfigName
           APP_CONFIG_APPLICATION: !Ref ApplicationName
           SQS_AUDIT_EVENT_QUEUE_URL: !Ref AuditEventQueue
+          COMPONENT_ID: !Ref ComponentId
       Tags:
         Product: !Ref ProductTagValue
         System: !Ref SystemTagValue

@@ -2,7 +2,7 @@ import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
 import { mockClient } from "aws-sdk-client-mock";
 import "aws-sdk-client-mock-jest";
 import { auditIdentityRecordInvalidated } from "../audit";
-import { IdentityRecordInvalidatedEvent } from "../audit-events";
+import { TxmaSisIdentityRecordInvalidated } from "../audit-events";
 
 const sqsClientMock = mockClient(SQSClient);
 sqsClientMock.on(SendMessageCommand).resolves({});
@@ -20,13 +20,14 @@ afterAll(() => {
 it("should send the message using the defined specification", async () => {
   await auditIdentityRecordInvalidated("bob.smith", "12");
 
-  const identityRecordInvalidatedEvent: IdentityRecordInvalidatedEvent = {
+  const identityRecordInvalidatedEvent: TxmaSisIdentityRecordInvalidated = {
     component_id: "SIS",
     event_timestamp_ms: Date.now(),
     timestamp: Math.floor(Date.now() / 1000),
     user: { user_id: "bob.smith" },
     event_name: "SIS_IDENTITY_RECORD_INVALIDATED",
     extensions: { intervention_code: "12" },
+    restricted: undefined,
   };
 
   expect(sqsClientMock).toHaveReceivedCommandWith(SendMessageCommand, {
