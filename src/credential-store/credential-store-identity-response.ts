@@ -4,7 +4,7 @@ export type CredentialStoreIdentityResponse = {
   afterKey?: string;
 };
 
-interface JWTIncludingStateAndMetadata {
+export interface JWTIncludingStateAndMetadata {
   state: string;
   vc: string;
   metadata: Metadata | null | string;

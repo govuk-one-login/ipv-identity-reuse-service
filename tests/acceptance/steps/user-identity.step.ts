@@ -102,7 +102,7 @@ Then<WorldDefinition>("the stored identity should be returned", function () {
       },
       vot: undefined,
       isValid: undefined,
-      expired: false,
+      expired: true,
       kidValid: true,
       signatureValid: true,
     }

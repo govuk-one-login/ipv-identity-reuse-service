@@ -1,4 +1,7 @@
 import { getConfiguration, getServiceApiKey } from "../commons/configuration";
+import { CredentialStoreIdentityResponse } from "./credential-store-identity-response";
+import { VerifiableCredentialJWT } from "../identity-reuse/verifiable-credential-jwt";
+import { getJwtBody } from "../commons/jwt-utils";
 
 export const getIdentityFromCredentialStore = async (authorizationToken: string): Promise<Response> => {
   const configuration = await getConfiguration();
@@ -24,4 +27,12 @@ export const invalidateIdentityInCredentialStore = async (userId: string): Promi
       ...(apiKey && { "x-api-key": apiKey }),
     },
   });
+};
+
+export const parseCurrentVerifiableCredentials = (
+  identityResponse: CredentialStoreIdentityResponse
+): VerifiableCredentialJWT[] => {
+  return identityResponse.vcs
+    .filter((encodedVcWithState) => encodedVcWithState.state === "CURRENT")
+    .map((encodedVcWithState) => getJwtBody<VerifiableCredentialJWT>(encodedVcWithState.vc));
 };
