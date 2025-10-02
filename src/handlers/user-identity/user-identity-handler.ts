@@ -1,19 +1,21 @@
-import logger from "../../commons/logger";
+import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
+import { auditIdentityRecordRead } from "../../commons/audit";
+import { getConfiguration } from "../../commons/configuration";
 import { HttpCodesEnum } from "../../commons/constants";
+import { getJwtBody } from "../../commons/jwt-utils";
+import logger from "../../commons/logger";
+import { CredentialStoreIdentityResponse } from "../../credential-store/credential-store-identity-response";
 import {
   getIdentityFromCredentialStore,
   parseCurrentVerifiableCredentials,
 } from "../../credential-store/encrypted-credential-store";
-import { CredentialStoreIdentityResponse } from "../../credential-store/credential-store-identity-response";
+import { calculateVot } from "../../identity-reuse/calculate-vot";
+import { getFraudVc, hasFraudCheckExpired } from "../../identity-reuse/fraud-check-service";
+import { VerifiableCredentialJWT } from "../../identity-reuse/verifiable-credential-jwt";
+import { UserIdentityRequest } from "./user-identity-request";
 import { UserIdentityResponse as CredentialStoreStoredIdentityJWT } from "./user-identity-response";
 import { UserIdentityResponseMetadata } from "./user-identity-response-metadata";
-import { calculateVot } from "../../identity-reuse/calculate-vot";
-import { UserIdentityRequest } from "./user-identity-request";
-import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
-import { getJwtBody } from "../../commons/jwt-utils";
-import { VerifiableCredentialJWT } from "../../identity-reuse/verifiable-credential-jwt";
-import { hasFraudCheckExpired } from "../../identity-reuse/fraud-check-service";
 
 interface ErrorResponse {
   error: string;
@@ -35,45 +37,68 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
     return createErrorResponse(HttpCodesEnum.UNAUTHORIZED);
   }
 
+  let subject: string;
   try {
-    try {
-      getJwtBody(event.headers.Authorization.split(" ").at(1) || ""); // Validate bearer token
-    } catch {
-      logger.error("Error whilst decoding Bearer token body");
+    const jwt = getJwtBody(event.headers.Authorization.split(" ").at(1) || ""); // Validate bearer token
+    if (!jwt.sub) {
+      logger.error("Bearer token does not include subject");
       return createErrorResponse(HttpCodesEnum.UNAUTHORIZED);
     }
 
+    subject = jwt.sub;
+  } catch {
+    logger.error("Error whilst decoding Bearer token body");
+    return createErrorResponse(HttpCodesEnum.UNAUTHORIZED);
+  }
+
+  try {
     const result = await getIdentityFromCredentialStore(event.headers.Authorization);
 
     if (!result.ok) {
       logger.error("Error received from EVCS service", { status: result.status });
-      return createErrorResponse(result.status);
+      return await createAndLogErrorResponse(result.status, subject, request.govukSigninJourneyId);
     }
 
     const identityResponse: CredentialStoreIdentityResponse = await result.json();
-    const response: UserIdentityResponseMetadata = await createSuccessResponse(identityResponse, request.vtr);
+    const response = await createSuccessResponse(identityResponse, request.vtr, subject, request.govukSigninJourneyId);
 
     return { statusCode: HttpCodesEnum.OK, body: JSON.stringify(response) };
   } catch (error) {
     logger.error("Error retrieving user identity", { error });
-    return createErrorResponse(HttpCodesEnum.INTERNAL_SERVER_ERROR);
+    return await createAndLogErrorResponse(HttpCodesEnum.INTERNAL_SERVER_ERROR, subject, request.govukSigninJourneyId);
   }
 };
 
 const createSuccessResponse = async (
   identityResponse: CredentialStoreIdentityResponse,
-  vtr: IdentityVectorOfTrust[]
+  vtr: IdentityVectorOfTrust[],
+  userId: string,
+  govukSigninJourneyId: string
 ): Promise<UserIdentityResponseMetadata> => {
+  const { fraudIssuer, fraudValidityPeriod } = await getConfiguration();
   const content: CredentialStoreStoredIdentityJWT = getJwtBody(identityResponse.si.vc);
   const currentVcs: VerifiableCredentialJWT[] = parseCurrentVerifiableCredentials(identityResponse);
-
+  const fraudVc = getFraudVc(currentVcs, fraudIssuer);
   const vot = calculateVot(content.vot as IdentityVectorOfTrust, vtr);
+
+  await auditIdentityRecordRead(
+    {
+      retrieval_outcome: "success",
+      max_vot: content.vot,
+      ...(fraudVc ? { timestamp_fraud_check_iat: fraudVc?.iat } : {}),
+    },
+    {
+      stored_identity_jwt: identityResponse.si.vc,
+    },
+    userId,
+    govukSigninJourneyId
+  );
 
   return {
     content: { ...content, vot },
     vot: content.vot,
     isValid: true,
-    expired: await hasFraudCheckExpired(currentVcs),
+    expired: hasFraudCheckExpired(fraudVc, fraudValidityPeriod),
     kidValid: true,
     signatureValid: true,
   };
@@ -107,4 +132,20 @@ const createErrorResponse = (errorCode: HttpCodesEnum): APIGatewayProxyResult =>
     statusCode: errorCode,
     body: JSON.stringify({ error, error_description } as ErrorResponse),
   };
+};
+
+const createAndLogErrorResponse = async (
+  errorCode: HttpCodesEnum,
+  userId: string,
+  govukSigninJourneyId?: string
+): Promise<APIGatewayProxyResult> => {
+  await auditIdentityRecordRead(
+    {
+      retrieval_outcome: errorCode === HttpCodesEnum.NOT_FOUND ? "no_record" : "service_error",
+    },
+    undefined,
+    userId,
+    govukSigninJourneyId
+  );
+  return createErrorResponse(errorCode);
 };

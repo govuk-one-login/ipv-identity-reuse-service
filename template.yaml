@@ -31,6 +31,11 @@ Parameters:
     Type: String
     Default: id-reuse-config
 
+  ComponentId:
+    Description: The component id
+    Type: String
+    Default: https://identity.account.gov.uk/sis
+
   OwnerTagValue:
     Description: Value for the Owner Tag
     Type: String
@@ -195,7 +200,7 @@ Conditions:
     Fn::Or:
       - Fn::Equals: [!Ref Environment, "local"]
       - Fn::Equals: [!Ref Environment, "dev"]
-  
+
   IsNotDev: !Not [!Condition IsDev]
 
   CanariesEnabled: !Equals
@@ -294,8 +299,8 @@ Resources:
             Effect: Allow
             Principal:
               AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
-            Action: 'kms:*'
-            Resource: '*'
+            Action: "kms:*"
+            Resource: "*"
       KeyUsage: SIGN_VERIFY
       PendingWindowInDays: 30
       Tags:
@@ -303,7 +308,7 @@ Resources:
           Value: !Ref Environment
         - Key: application
           Value: shared
-  
+
   DidApiResourceRole:
     Condition: IsDevOrBuild
     Type: AWS::IAM::Role
@@ -320,15 +325,15 @@ Resources:
             Principal:
               Service: apigateway.amazonaws.com
       Policies:
-         - PolicyName: InvokeDidGenerationFunction
-           PolicyDocument:
-             Version: 2012-10-17
-             Statement:
-               - Effect: Allow
-                 Action: lambda:InvokeFunction
-                 Resource:
-                  - !GetAtt DidGenerationFunction.Arn     
-  
+        - PolicyName: InvokeDidGenerationFunction
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !GetAtt DidGenerationFunction.Arn
+
   DidGenerationFunctionDevAPIGatewayPermission:
     Condition: IsDevOrBuild
     Type: AWS::Lambda::Permission
@@ -337,7 +342,7 @@ Resources:
       FunctionName: !Ref DidGenerationFunction
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${DidApiGateway}/*/GET/.well-known/did.json"
- 
+
   DidApiGateway:
     Type: AWS::Serverless::Api
     Condition: IsDevOrBuild
@@ -378,7 +383,7 @@ Resources:
                 passthroughBehavior: WHEN_NO_MATCH
                 httpMethod: POST
                 type: AWS_PROXY
-            
+
   WellKnownUrl:
     Type: AWS::SSM::Parameter
     Condition: IsDevOrBuild
@@ -389,7 +394,7 @@ Resources:
         - !Sub "/${Environment}/${AWS::StackName}/DidWellKnownUrl"
         - /tests/ipv-identity-reuse-service/DidWellKnownUrl
       Value: !Sub "https://${DidApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/.well-known/did.json"
-  
+
   DidGenerationFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -408,11 +413,11 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
         - Key: Name
-          Value: !Sub "/aws/lambda/${DidGenerationFunction}" 
-  
+          Value: !Sub "/aws/lambda/${DidGenerationFunction}"
+
   ################################
   # DID GENERATION FUNCTION #
-  ################################              
+  ################################
   DidGenerationFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -433,7 +438,9 @@ Resources:
         Variables:
           METRIC_SERVICE_NAME: "DidGenerationFunction"
           DID_SIGNING_KEY_ARN: !If [IsDevOrBuild, !GetAtt DidSigningKey.Arn, !Ref "AWS::NoValue"]
-          DID_CONTROLLER: !If [IsDev, "did:web:api.identity.dev.account.gov.uk", "did:web:api.identity.build.account.gov.uk"]
+          DID_CONTROLLER:
+            !If [IsDev, "did:web:api.identity.dev.account.gov.uk", "did:web:api.identity.build.account.gov.uk"]
+          COMPONENT_ID: !Ref ComponentId
       CodeSigningConfigArn: !If
         - UseCodeSigning
         - !Ref CodeSigningConfigArn
@@ -476,16 +483,16 @@ Resources:
             Principal:
               Service: lambda.amazonaws.com
             Action:
-              - "sts:AssumeRole" 
+              - "sts:AssumeRole"
       Policies:
-        - PolicyName: DidSigningKeyPolicy 
+        - PolicyName: DidSigningKeyPolicy
           PolicyDocument:
             Statement:
               - Effect: Allow
                 Action:
                   - "kms:DescribeKey"
                   - "kms:GetPublicKey"
-                Resource: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/*"                               
+                Resource: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/*"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
@@ -499,7 +506,7 @@ Resources:
         - Key: Owner
           Value: !Ref OwnerTagValue
         - Key: Source
-          Value: !Ref SourceTagValue   
+          Value: !Ref SourceTagValue
   ################################
   # POST USER IDENTITY FEATURE  #
   ################################
@@ -538,6 +545,8 @@ Resources:
           ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
           APP_CONFIG_NAME: !Ref ApplicationConfigName
           APP_CONFIG_APPLICATION: !Ref ApplicationName
+          SQS_AUDIT_EVENT_QUEUE_URL: !Ref AuditEventQueue
+          COMPONENT_ID: !Ref ComponentId
       CodeSigningConfigArn: !If
         - UseCodeSigning
         - !Ref CodeSigningConfigArn
@@ -618,6 +627,10 @@ Resources:
               - "appconfig:StartConfigurationSession"
               - "appconfig:GetLatestConfiguration"
             Resource: "*"
+          - Effect: Allow
+            Action:
+              - sqs:SendMessage
+            Resource: !GetAtt AuditEventQueue.Arn
       Roles:
         - !Ref UserIdentityFunctionRole
 
@@ -866,6 +879,7 @@ Resources:
           APP_CONFIG_NAME: !Ref ApplicationConfigName
           APP_CONFIG_APPLICATION: !Ref ApplicationName
           SQS_AUDIT_EVENT_QUEUE_URL: !Ref AuditEventQueue
+          COMPONENT_ID: !Ref ComponentId
       Tags:
         Product: !Ref ProductTagValue
         System: !Ref SystemTagValue
