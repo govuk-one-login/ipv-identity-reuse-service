@@ -10,6 +10,7 @@ declare global {
       SQS_AUDIT_EVENT_QUEUE_URL: string;
       DID_SIGNING_KEY_ARN: string;
       DID_CONTROLLER: string;
+      COMPONENT_ID: string;
     }
   }
 }
