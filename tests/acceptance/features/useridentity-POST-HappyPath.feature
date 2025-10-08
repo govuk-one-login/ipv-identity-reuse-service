@@ -1,13 +1,6 @@
 Feature: UserIdentity Post - Happy Path
 
   Scenario: A stored identity is returned for the user
-    Given I have a user with a Stored Identity, with VOT "P2" and 0 credentials
-    When I make a request for the users identity with a VTR "P2"
-    Then the status code should be 200
-    And the stored identity should be returned
-    And the stored credentials should be returned
-
-  Scenario: A stored identity is returned for the user
     Given I have a user with a Stored Identity, with VOT "P2" and 4 credentials
     When I make a request for the users identity with a VTR "P2"
     Then the status code should be 200
@@ -15,7 +8,7 @@ Feature: UserIdentity Post - Happy Path
     And the stored credentials should be returned
 
   Scenario Outline: Correctly validates identity and processes vtr
-    And I have a user with a Stored Identity, with VOT "<vot>" and 0 credentials
+    And I have a user with a Stored Identity, with VOT "<vot>" and 4 credentials
     When I make a request for the users identity with a VTR "<vtr>"
     Then the status code should be 200
     And the stored identity should be returned
