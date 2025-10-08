@@ -1,4 +1,5 @@
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
+import { UserIdentityResponse } from "../handlers/user-identity/user-identity-response";
 
 export type TxmaEvent<
   EventName extends string,
@@ -33,6 +34,23 @@ export type TxmaSisStoredIdentityReadEvent = TxmaEvent<
       stored_identity_jwt?: string;
     }
   | undefined
+>;
+
+export type TxmaSisStoredIdentityReturnedEvent = TxmaEvent<
+  "SIS_STORED_IDENTITY_RETURNED",
+  | {
+      response_outcome: "returned";
+      is_valid: boolean;
+      expired: boolean;
+      vot: IdentityVectorOfTrust | "P0";
+    }
+  | {
+      response_outcome: "error";
+      error_code: string;
+    },
+  {
+    response_body: UserIdentityResponse | string;
+  }
 >;
 
 export type TxmaSisIdentityRecordInvalidated = TxmaEvent<
