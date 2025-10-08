@@ -82,11 +82,6 @@ pre-commit run --all-files
 
 For testing, you can deploy your code changes to a development environment.
 
-### Prerequisites
-
-- You'll need the AWS CLI and AWS SAM CLI installed.
-- You'll need access to the AWS account where the development environment is deployed.
-
 ### Instructions
 
 Follow these instructions to build and deploy the lambda functions to your development environment.
