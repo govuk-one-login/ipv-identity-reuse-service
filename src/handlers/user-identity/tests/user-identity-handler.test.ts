@@ -102,6 +102,26 @@ describe("user-identity-handler authorization", () => {
         govuk_signin_journey_id: "govuk_signin_journey_id",
       },
     });
+    expect(mockSendTxmaEvent).toHaveBeenCalledWith({
+      component_id: "https://identity.local.account.gov.uk/sis",
+      event_name: "SIS_STORED_IDENTITY_RETURNED",
+      event_timestamp_ms: 1759240815925,
+      timestamp: 1759240815,
+      extensions: {
+        response_outcome: "returned",
+        is_valid: true,
+        expired: false,
+        vot: "P2",
+      },
+      restricted: {
+        response_body:
+          '{"content":{"sub":"user-sub","vot":"P2","vtm":[]},"vot":"P2","isValid":true,"expired":false,"kidValid":true,"signatureValid":true}',
+      },
+      user: {
+        user_id: TEST_USER,
+        govuk_signin_journey_id: "govuk_signin_journey_id",
+      },
+    });
   });
 
   it("should return Bad Request, given an invalid body", async () => {
@@ -157,6 +177,23 @@ describe("user-identity-handler authorization", () => {
         govuk_signin_journey_id: "govuk_signin_journey_id",
       },
     });
+    expect(mockSendTxmaEvent).toHaveBeenCalledWith({
+      component_id: "https://identity.local.account.gov.uk/sis",
+      event_name: "SIS_STORED_IDENTITY_RETURNED",
+      event_timestamp_ms: 1759240815925,
+      timestamp: 1759240815,
+      extensions: {
+        response_outcome: "error",
+        error_code: "forbidden",
+      },
+      restricted: {
+        response_body: '{"error":"forbidden","error_description":"Access token expired or not permitted"}',
+      },
+      user: {
+        user_id: TEST_USER,
+        govuk_signin_journey_id: "govuk_signin_journey_id",
+      },
+    });
   });
 
   it("should return 401 given EVCS API responded with Unauthorized", async () => {
@@ -180,6 +217,23 @@ describe("user-identity-handler authorization", () => {
         retrieval_outcome: "service_error",
       },
       restricted: undefined,
+      user: {
+        user_id: TEST_USER,
+        govuk_signin_journey_id: "govuk_signin_journey_id",
+      },
+    });
+    expect(mockSendTxmaEvent).toHaveBeenCalledWith({
+      component_id: "https://identity.local.account.gov.uk/sis",
+      event_name: "SIS_STORED_IDENTITY_RETURNED",
+      event_timestamp_ms: 1759240815925,
+      timestamp: 1759240815,
+      extensions: {
+        response_outcome: "error",
+        error_code: "authentication_failure",
+      },
+      restricted: {
+        response_body: '{"error":"invalid_token","error_description":"Bearer token is missing or invalid"}',
+      },
       user: {
         user_id: TEST_USER,
         govuk_signin_journey_id: "govuk_signin_journey_id",
@@ -213,6 +267,23 @@ describe("user-identity-handler authorization", () => {
         govuk_signin_journey_id: "govuk_signin_journey_id",
       },
     });
+    expect(mockSendTxmaEvent).toHaveBeenCalledWith({
+      component_id: "https://identity.local.account.gov.uk/sis",
+      event_name: "SIS_STORED_IDENTITY_RETURNED",
+      event_timestamp_ms: 1759240815925,
+      timestamp: 1759240815,
+      extensions: {
+        response_outcome: "error",
+        error_code: "service_error",
+      },
+      restricted: {
+        response_body: '{"error":"server_error","error_description":"Unable to retrieve data"}',
+      },
+      user: {
+        user_id: TEST_USER,
+        govuk_signin_journey_id: "govuk_signin_journey_id",
+      },
+    });
   });
 
   it("should return 404 given EVCS API responded with Not Found", async () => {
@@ -239,6 +310,24 @@ describe("user-identity-handler authorization", () => {
         retrieval_outcome: "no_record",
       },
       restricted: undefined,
+      user: {
+        user_id: TEST_USER,
+        govuk_signin_journey_id: "govuk_signin_journey_id",
+      },
+    });
+    expect(mockSendTxmaEvent).toHaveBeenCalledWith({
+      component_id: "https://identity.local.account.gov.uk/sis",
+      event_name: "SIS_STORED_IDENTITY_RETURNED",
+      event_timestamp_ms: 1759240815925,
+      timestamp: 1759240815,
+      extensions: {
+        response_outcome: "error",
+        error_code: "no_record",
+      },
+      restricted: {
+        response_body:
+          '{"error":"not_found","error_description":"No Stored Identity exists for this user or Stored Identity has been invalidated"}',
+      },
       user: {
         user_id: TEST_USER,
         govuk_signin_journey_id: "govuk_signin_journey_id",

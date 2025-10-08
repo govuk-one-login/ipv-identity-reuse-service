@@ -35,6 +35,23 @@ export type TxmaSisStoredIdentityReadEvent = TxmaEvent<
   | undefined
 >;
 
+export type TxmaSisStoredIdentityReturnedEvent = TxmaEvent<
+  "SIS_STORED_IDENTITY_RETURNED",
+  | {
+      response_outcome: "returned";
+      is_valid: boolean;
+      expired: boolean;
+      vot: IdentityVectorOfTrust | "P0";
+    }
+  | {
+      response_outcome: "error";
+      error_code: string;
+    },
+  {
+    response_body: string;
+  }
+>;
+
 export type TxmaSisIdentityRecordInvalidated = TxmaEvent<
   "SIS_IDENTITY_RECORD_INVALIDATED",
   { intervention_code: string }
