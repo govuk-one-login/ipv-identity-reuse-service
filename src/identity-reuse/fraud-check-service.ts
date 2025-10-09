@@ -1,29 +1,29 @@
 import logger from "../commons/logger";
 import { FraudCheckType, IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials";
 import { VerifiableCredentialJWT } from "./verifiable-credential-jwt";
-import { Configuration, getConfiguration } from "../commons/configuration";
 
-export const hasFraudCheckExpired = async (vcBundle: VerifiableCredentialJWT[]): Promise<boolean> => {
-  const config: Configuration = await getConfiguration();
-  const fraudIssuers: string[] = config.fraudIssuer;
-  const fraudValidityPeriod: number = config.fraudValidityPeriod;
-
-  const fraudVc = vcBundle
+export const getFraudVc = (
+  vcBundle: VerifiableCredentialJWT[],
+  fraudIssuers: string[]
+): VerifiableCredentialJWT | undefined =>
+  vcBundle
     .filter((vc) => vc.iss !== undefined && fraudIssuers.includes(vc.iss) && vc.nbf !== undefined)
-    .sort((vc1, vc2) => {
-      return vc1.nbf! - vc2.nbf!;
-    })
+    .sort((vc1, vc2) => vc1.nbf! - vc2.nbf!)
     .pop();
 
+export const hasFraudCheckExpired = (
+  fraudVc: VerifiableCredentialJWT | undefined,
+  fraudValidityPeriod: number
+): boolean => {
   if (!fraudVc) {
     logger.info("No fraud check credential found in bundle of verifiable credentials");
     return true;
   }
 
-  if (instanceOfIdentityCheckCredential(fraudVc)) {
-    if (checkForFailedFraudCheck(fraudVc, "applicable_authoritative_source")) {
+  if (isIdentityCheckCredential(fraudVc)) {
+    if (hasFailedFraudCheck(fraudVc, "applicable_authoritative_source")) {
       return false;
-    } else if (checkForFailedFraudCheck(fraudVc, "available_authoritative_source")) {
+    } else if (hasFailedFraudCheck(fraudVc, "available_authoritative_source")) {
       return true;
     }
   }
@@ -36,17 +36,10 @@ const hasNbfExpired = (nbf: number, validityPeriodHours: number): boolean => {
   return expiredTimeMilliSeconds <= Date.now();
 };
 
-const instanceOfIdentityCheckCredential = (
-  object: VerifiableCredentialJWT
-): object is IdentityCheckCredentialJWTClass => {
-  return !!object.vc.type?.includes("IdentityCheckCredential");
-};
+const isIdentityCheckCredential = (object: VerifiableCredentialJWT): object is IdentityCheckCredentialJWTClass =>
+  !!object.vc.type?.includes("IdentityCheckCredential");
 
-const checkForFailedFraudCheck = (
-  fraudVc: IdentityCheckCredentialJWTClass,
-  fraudCheckType: FraudCheckType
-): boolean => {
-  return fraudVc.vc.evidence.some((evidence) =>
+const hasFailedFraudCheck = (fraudVc: IdentityCheckCredentialJWTClass, fraudCheckType: FraudCheckType): boolean =>
+  fraudVc.vc.evidence.some((evidence) =>
     evidence.failedCheckDetails?.some((failedCheckDetails) => failedCheckDetails.fraudCheck === fraudCheckType)
   );
-};

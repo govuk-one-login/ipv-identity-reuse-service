@@ -13,6 +13,11 @@ import { getDefaultStoredIdentityHeader, sign } from "../../../../tests/acceptan
 
 const CURRENT = "CURRENT";
 const HISTORIC = "HISTORIC";
+import * as AuditModule from "../../../commons/audit";
+import { TxmaEvent } from "../../../commons/audit-events";
+import { SendMessageCommandOutput } from "@aws-sdk/client-sqs";
+
+const TEST_USER = "urn:fdc:gov.uk:2022:TEST_USER-S7jcrHLGBj-2kgB-8-cYhVrMdo3CV0LlD7An";
 
 const event = () => {
   return {
@@ -33,7 +38,6 @@ const event = () => {
     } satisfies UserIdentityRequest),
   } as unknown as APIGatewayProxyEvent;
 };
-let newEvent: APIGatewayProxyEvent;
 
 const mockEVCSResponse = (response: CredentialStoreIdentityResponse) => {
   (global.fetch as jest.Mock) = jest.fn().mockResolvedValue(
@@ -44,15 +48,25 @@ const mockEVCSResponse = (response: CredentialStoreIdentityResponse) => {
   );
 };
 
+let newEvent: APIGatewayProxyEvent;
+let mockSendTxmaEvent: jest.SpyInstance<
+  Promise<SendMessageCommandOutput>,
+  [event: TxmaEvent<string, object | undefined, object | undefined>],
+  any
+>;
+
 describe("user-identity-handler authorization", () => {
   beforeEach(() => {
+    jest.useFakeTimers({ now: 1759240815925 });
     jest.clearAllMocks();
     newEvent = event();
     jest.spyOn(configuration, "getServiceApiKey").mockResolvedValue("an-api-key");
     jest
       .spyOn(configuration, "getConfiguration")
       .mockResolvedValue({ evcsApiUrl: "https://evcs.gov.uk" } as Configuration);
-    jest.spyOn(fraudCheckService, "hasFraudCheckExpired").mockResolvedValue(false);
+    jest.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
+
+    mockSendTxmaEvent = jest.spyOn(AuditModule, "sendAuditMessage").mockResolvedValue({ $metadata: {} });
   });
 
   it("should return Success, given a valid bearer token", async () => {
@@ -70,6 +84,23 @@ describe("user-identity-handler authorization", () => {
       isValid: true,
       kidValid: true,
       signatureValid: true,
+    });
+    expect(mockSendTxmaEvent).toHaveBeenCalledWith({
+      component_id: "https://identity.local.account.gov.uk/sis",
+      event_name: "SIS_STORED_IDENTITY_READ",
+      event_timestamp_ms: 1759240815925,
+      timestamp: 1759240815,
+      extensions: {
+        max_vot: "P2",
+        retrieval_outcome: "success",
+      },
+      restricted: {
+        stored_identity_jwt: mockEVCSData.si.vc,
+      },
+      user: {
+        user_id: TEST_USER,
+        govuk_signin_journey_id: "govuk_signin_journey_id",
+      },
     });
   });
 
@@ -112,6 +143,20 @@ describe("user-identity-handler authorization", () => {
       statusCode: HttpCodesEnum.FORBIDDEN,
       body: JSON.stringify({ error: "forbidden", error_description: "Access token expired or not permitted" }),
     });
+    expect(mockSendTxmaEvent).toHaveBeenCalledWith({
+      component_id: "https://identity.local.account.gov.uk/sis",
+      event_name: "SIS_STORED_IDENTITY_READ",
+      event_timestamp_ms: 1759240815925,
+      timestamp: 1759240815,
+      extensions: {
+        retrieval_outcome: "service_error",
+      },
+      restricted: undefined,
+      user: {
+        user_id: TEST_USER,
+        govuk_signin_journey_id: "govuk_signin_journey_id",
+      },
+    });
   });
 
   it("should return 401 given EVCS API responded with Unauthorized", async () => {
@@ -126,6 +171,20 @@ describe("user-identity-handler authorization", () => {
       statusCode: HttpCodesEnum.UNAUTHORIZED,
       body: JSON.stringify({ error: "invalid_token", error_description: "Bearer token is missing or invalid" }),
     });
+    expect(mockSendTxmaEvent).toHaveBeenCalledWith({
+      component_id: "https://identity.local.account.gov.uk/sis",
+      event_name: "SIS_STORED_IDENTITY_READ",
+      event_timestamp_ms: 1759240815925,
+      timestamp: 1759240815,
+      extensions: {
+        retrieval_outcome: "service_error",
+      },
+      restricted: undefined,
+      user: {
+        user_id: TEST_USER,
+        govuk_signin_journey_id: "govuk_signin_journey_id",
+      },
+    });
   });
 
   it("should return 500 given EVCS API responded with Internal Server Error", async () => {
@@ -139,6 +198,20 @@ describe("user-identity-handler authorization", () => {
     await expect(result).resolves.toEqual({
       statusCode: HttpCodesEnum.INTERNAL_SERVER_ERROR,
       body: JSON.stringify({ error: "server_error", error_description: "Unable to retrieve data" }),
+    });
+    expect(mockSendTxmaEvent).toHaveBeenCalledWith({
+      component_id: "https://identity.local.account.gov.uk/sis",
+      event_name: "SIS_STORED_IDENTITY_READ",
+      event_timestamp_ms: 1759240815925,
+      timestamp: 1759240815,
+      extensions: {
+        retrieval_outcome: "service_error",
+      },
+      restricted: undefined,
+      user: {
+        user_id: TEST_USER,
+        govuk_signin_journey_id: "govuk_signin_journey_id",
+      },
     });
   });
 
@@ -156,6 +229,20 @@ describe("user-identity-handler authorization", () => {
         error: "not_found",
         error_description: "No Stored Identity exists for this user or Stored Identity has been invalidated",
       }),
+    });
+    expect(mockSendTxmaEvent).toHaveBeenCalledWith({
+      component_id: "https://identity.local.account.gov.uk/sis",
+      event_name: "SIS_STORED_IDENTITY_READ",
+      event_timestamp_ms: 1759240815925,
+      timestamp: 1759240815,
+      extensions: {
+        retrieval_outcome: "no_record",
+      },
+      restricted: undefined,
+      user: {
+        user_id: TEST_USER,
+        govuk_signin_journey_id: "govuk_signin_journey_id",
+      },
     });
   });
 });
