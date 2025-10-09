@@ -3,36 +3,26 @@ import { sisPostUserIdentity } from "./utils/sis-api";
 import { getBearerToken } from "./utils/get-bearer-token";
 import assert from "assert";
 import { WorldDefinition } from "./base-verbs.step";
-import { evcsPostCredentials, evcsPostIdentity } from "./utils/evcs-api";
+import { evcsPatchCredentials, evcsPostCredentials, evcsPostIdentity } from "./utils/evcs-api";
 import { JWTHeaderParameters, JWTPayload } from "jose";
 import { getDefaultStoredIdentityHeader, sign } from "./utils/jwt-utils";
 import { IdentityCheckCredentialJWTClass, IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
 
 Given<WorldDefinition>("a user has {int} CURRENT credentials stored", async function (credentials: number) {
-  const header: JWTHeaderParameters = getDefaultStoredIdentityHeader();
-  for (let i = 0; i < credentials; i++) {
-    const credentialPayload: IdentityCheckCredentialJWTClass = {
-      sub: this.userId,
-      iss: "http://cri.example.com",
-      nbf: Math.floor(Date.now() / 1000),
-      vc: {
-        evidence: [],
-      },
-    };
+  this.credentialJwts = await createAndPostCredentials(credentials, this.userId);
+});
 
-    this.credentialJwts.push(sign(header, credentialPayload));
+Given<WorldDefinition>("an extra CURRENT credential is stored for the user", async function () {
+  await createAndPostCredentials(1, this.userId);
+});
+
+Given<WorldDefinition>("an existing CURRENT credential is marked as HISTORIC for the user", async function () {
+  if (!this.credentialJwts?.length) {
+    throw new Error("The step expects to be able to access credentials from the WorldDefinition");
   }
 
-  if (this.credentialJwts.length) {
-    const result = await evcsPostCredentials(
-      this.userId,
-      this.credentialJwts.map((jwt) => {
-        return { vc: jwt, state: "CURRENT" };
-      })
-    );
-
-    assert.equal(result.status, 202);
-  }
+  const signatureOfCredentialToUpdate = this.credentialJwts!.at(0)?.split(".").at(-1) as string;
+  await evcsPatchCredentials(this.userId, [{ signature: signatureOfCredentialToUpdate, state: "HISTORIC" }]);
 });
 
 Given<WorldDefinition>("I have a user without a stored identity", async function () {
@@ -148,3 +138,31 @@ Then("the stored identity isValid field is {boolean}", function (isValid: boolea
 Then<WorldDefinition>("the stored credentials should be returned", function () {
   // TODO: To be implemented in SPT-1629
 });
+
+const createAndPostCredentials = async (credentials: number, userId: string): Promise<string[]> => {
+  const credentialJwts = [];
+  const header: JWTHeaderParameters = getDefaultStoredIdentityHeader();
+  for (let i = 0; i < credentials; i++) {
+    const credentialPayload: IdentityCheckCredentialJWTClass = {
+      sub: userId,
+      iss: "http://cri.example.com",
+      nbf: Math.floor(Date.now() / 1000),
+      vc: {
+        evidence: [],
+      },
+    };
+    credentialJwts.push(sign(header, credentialPayload));
+  }
+
+  if (credentialJwts.length) {
+    const result = await evcsPostCredentials(
+      userId,
+      credentialJwts.map((jwt) => {
+        return { vc: jwt, state: "CURRENT" };
+      })
+    );
+    assert.equal(result.status, 202);
+  }
+
+  return credentialJwts;
+};

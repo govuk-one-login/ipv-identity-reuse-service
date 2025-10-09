@@ -39,3 +39,23 @@ Feature: UserIdentity Post - Happy Path
     And the stored identity isValid field is false
     And the stored identity should be returned
     And the stored credentials should be returned
+
+  Scenario: A user's stored identity is missing a CURRENT credential
+    Given a user has 4 CURRENT credentials stored
+    And the user has a stored identity, with VOT "P2"
+    And an extra CURRENT credential is stored for the user
+    When I make a request for the users identity with a VTR "P2"
+    Then the status code should be 200
+    And the stored identity should be returned
+    And the stored identity isValid field is false
+    And the stored credentials should be returned
+
+  Scenario: A user's stored identity has additional credential
+    Given a user has 4 CURRENT credentials stored
+    And the user has a stored identity, with VOT "P2"
+    And an existing CURRENT credential is marked as HISTORIC for the user
+    When I make a request for the users identity with a VTR "P2"
+    Then the status code should be 200
+    And the stored identity should be returned
+    And the stored identity isValid field is false
+    And the stored credentials should be returned

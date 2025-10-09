@@ -33,6 +33,11 @@ export interface StoredCredentialObjectDetails {
   state: string;
 }
 
+export interface UpdateStoredCredentialObjectDetails {
+  signature: string;
+  state: string;
+}
+
 export const getEvcsApiKey = async (): Promise<string> => {
   const stackName = process.env.SHARED_STACK_NAME || "reuse-identity-shared";
   const evcsApiKeySecretArn = await getParameter(`/acceptance-tests/${stackName}/APIKeySecretARN`);
@@ -103,6 +108,21 @@ export const evcsPostCredentials = async (
 
   return request(apiEndpoint)
     .post(`${EvcsEndpoints.VcsEndpoint}/${userId}`)
+    .send(JSON.stringify(credentials))
+    .set("x-api-key", apiKey)
+    .set("Accept", "*/*")
+    .set("Content-Type", "application/json");
+};
+
+export const evcsPatchCredentials = async (
+  userId: string,
+  credentials: UpdateStoredCredentialObjectDetails[]
+): Promise<Response> => {
+  const apiEndpoint = await getEvcsApiEndpoint();
+  const apiKey = await getEvcsApiKey();
+
+  return request(apiEndpoint)
+    .patch(`${EvcsEndpoints.VcsEndpoint}/${userId}`)
     .send(JSON.stringify(credentials))
     .set("x-api-key", apiKey)
     .set("Accept", "*/*")
