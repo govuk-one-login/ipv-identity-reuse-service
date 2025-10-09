@@ -14,6 +14,7 @@ export const EvcsEndpoints = {
   BuildStubBaseUrl: "https://evcs.reuse.stubs.account.gov.uk",
   DevStubBaseUrl: "https://evcs.reuse.dev.stubs.account.gov.uk",
   IdentityEndpoint: "/identity",
+  VcsEndpoint: "/vcs",
 } as const;
 
 export interface PersistStoredIdentity {
@@ -25,6 +26,11 @@ export interface StoredIdentityObjectDetails {
   jwt: string;
   vot: IdentityVectorOfTrust;
   metadata?: Record<string, AttributeValue>;
+}
+
+export interface StoredCredentialObjectDetails {
+  vc: string;
+  state: string;
 }
 
 export const getEvcsApiKey = async (): Promise<string> => {
@@ -84,6 +90,21 @@ export const evcsPostIdentity = async (
     )
     .set("x-api-key", apiKey)
     .set("Authorization", bearerToken)
+    .set("Accept", "*/*")
+    .set("Content-Type", "application/json");
+};
+
+export const evcsPostCredentials = async (
+  userId: string,
+  credentials: StoredCredentialObjectDetails[]
+): Promise<Response> => {
+  const apiEndpoint = await getEvcsApiEndpoint();
+  const apiKey = await getEvcsApiKey();
+
+  return request(apiEndpoint)
+    .post(`${EvcsEndpoints.VcsEndpoint}/${userId}`)
+    .send(JSON.stringify(credentials))
+    .set("x-api-key", apiKey)
     .set("Accept", "*/*")
     .set("Content-Type", "application/json");
 };

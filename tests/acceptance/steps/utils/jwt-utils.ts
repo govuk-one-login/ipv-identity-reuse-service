@@ -5,7 +5,8 @@ import { JWTClass } from "@govuk-one-login/data-vocab/credentials";
 export const sign = (jwtHeader: JWTHeaderParameters, jwtPayload: JWTPayload | JWTClass): string => {
   const header = base64url.encode(Buffer.from(JSON.stringify(jwtHeader)));
   const payload = base64url.encode(Buffer.from(JSON.stringify(jwtPayload)));
-  return `${header}.${payload}.`;
+  const signature = base64url.encode(Buffer.from(randomString(16)));
+  return `${header}.${payload}.${signature}`;
 };
 
 export function getDefaultStoredIdentityHeader(alg: string = "EC"): JWTHeaderParameters {

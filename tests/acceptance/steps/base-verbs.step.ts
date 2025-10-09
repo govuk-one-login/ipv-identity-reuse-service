@@ -7,6 +7,7 @@ export type WorldDefinition = {
   bearerToken?: string;
   requestedVtr: string[];
   govukSigninJourneyId: string;
+  credentialJwts: string[];
   userIdentityPostResponse?: Response;
 };
 
@@ -22,6 +23,7 @@ Before<WorldDefinition>(function () {
   this.userId = generateRandomTestUserId();
   this.govukSigninJourneyId = randomString(12);
   this.requestedVtr = ["P2"];
+  this.credentialJwts = [];
 });
 
 function generateRandomTestUserId() {
