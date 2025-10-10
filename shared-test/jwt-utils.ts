@@ -1,5 +1,6 @@
 import { DIDDocument } from "did-resolver";
 import { CompactJWSHeaderParameters, CompactSign, importJWK, JWK, JWTHeaderParameters } from "jose";
+import { signKms } from "../tests/acceptance/steps/utils/kms-utils";
 
 export const privateKeyJwk: JWK = {
   kty: "EC",
@@ -35,13 +36,21 @@ export const didDocument: DIDDocument = {
   assertionMethod: [verificationMethodId],
 };
 
-export async function sign(header: Record<string, any>, body: Record<string, any>): Promise<string> {
+export async function sign(
+  header: Record<string, any>,
+  body: Record<string, any>,
+  kms: boolean = false
+): Promise<string> {
   const protectedHeader: CompactJWSHeaderParameters = {
     typ: header?.typ ?? "JWT",
     kid: header?.kid ?? verificationMethodId,
     alg: header?.alg ?? "ES256",
     ...header,
   };
+  return kms ? await signKms(body, protectedHeader) : await signLocal(body, protectedHeader);
+}
+
+async function signLocal(body: Record<string, any>, protectedHeader: CompactJWSHeaderParameters) {
   const key = await importJWK(privateKeyJwk, "ES256");
   const payloadBytes = new TextEncoder().encode(JSON.stringify(body));
   return await new CompactSign(payloadBytes).setProtectedHeader(protectedHeader).sign(key);
