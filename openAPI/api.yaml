@@ -90,7 +90,7 @@ components:
       type: object
       properties:
         content:
-          ref: "#/components/schemas/userIdentityDataType"
+          $ref: "#/components/schemas/userIdentityDataType"
           description: "The expanded body of the signed Stored Identity JWT"
         isValid:
           type: boolean
