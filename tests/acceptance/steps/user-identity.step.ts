@@ -5,7 +5,7 @@ import assert from "assert";
 import { WorldDefinition } from "./base-verbs.step";
 import { evcsPatchCredentials, evcsPostCredentials, evcsPostIdentity } from "./utils/evcs-api";
 import { JWTHeaderParameters, JWTPayload } from "jose";
-import { getDefaultStoredIdentityHeader, sign } from "./utils/jwt-utils";
+import { getDefaultJwtHeader, sign } from "../../../shared-test/jwt-utils";
 import { IdentityCheckCredentialJWTClass, IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
 
 Given<WorldDefinition>("a user has {int} CURRENT credentials stored", async function (credentials: number) {
@@ -30,7 +30,7 @@ Given<WorldDefinition>("I have a user without a stored identity", async function
 });
 
 Given<WorldDefinition>("the user has a stored identity, with VOT {string}", async function (vot: string) {
-  const header: JWTHeaderParameters = getDefaultStoredIdentityHeader();
+  const header: JWTHeaderParameters = getDefaultJwtHeader();
   const payload: JWTPayload = {
     sub: this.userId,
     iss: "http://api.example.com",
@@ -137,7 +137,7 @@ Then("the stored identity isValid field is {boolean}", function (isValid: boolea
 
 const createAndPostCredentials = async (credentials: number, userId: string): Promise<string[]> => {
   const credentialJwts = [];
-  const header: JWTHeaderParameters = getDefaultStoredIdentityHeader();
+  const header: JWTHeaderParameters = getDefaultJwtHeader();
   for (let i = 0; i < credentials; i++) {
     const credentialPayload: IdentityCheckCredentialJWTClass = {
       sub: userId,

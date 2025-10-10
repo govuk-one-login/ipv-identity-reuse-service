@@ -1,4 +1,4 @@
-import { getDefaultStoredIdentityHeader, sign } from "../../../tests/acceptance/steps/utils/jwt-utils";
+import { getDefaultJwtHeader, sign } from "../../../shared-test/jwt-utils";
 import { getJwtBody } from "../jwt-utils";
 
 describe("getJwtBody", () => {
@@ -7,7 +7,7 @@ describe("getJwtBody", () => {
       iss: "iss",
       sub: "sub",
     };
-    const testJwt = sign(getDefaultStoredIdentityHeader(), validJwtBody);
+    const testJwt = sign(getDefaultJwtHeader(), validJwtBody);
     expect(getJwtBody(testJwt)).toEqual(validJwtBody);
   });
 

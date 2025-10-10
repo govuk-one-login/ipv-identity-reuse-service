@@ -9,7 +9,7 @@ export const sign = (jwtHeader: JWTHeaderParameters, jwtPayload: JWTPayload | JW
   return `${header}.${payload}.${signature}`;
 };
 
-export function getDefaultStoredIdentityHeader(alg: string = "EC"): JWTHeaderParameters {
+export function getDefaultJwtHeader(alg: string = "EC"): JWTHeaderParameters {
   return {
     alg,
     typ: "JWT",

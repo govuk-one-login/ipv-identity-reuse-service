@@ -9,7 +9,7 @@ import { UserIdentityRequest } from "../user-identity-request";
 import * as fraudCheckService from "../../../identity-reuse/fraud-check-service";
 import { IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials";
 import { VerifiableCredentialJWT } from "../../../identity-reuse/verifiable-credential-jwt";
-import { getDefaultStoredIdentityHeader, sign } from "../../../../tests/acceptance/steps/utils/jwt-utils";
+import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utils";
 
 const CURRENT = "CURRENT";
 const HISTORIC = "HISTORIC";
@@ -419,11 +419,11 @@ const createCredentialStoreIdentityResponse = (
   return {
     si: {
       state: CURRENT,
-      vc: sign(getDefaultStoredIdentityHeader(), storedIdentity),
+      vc: sign(getDefaultJwtHeader(), storedIdentity),
       metadata: null,
     },
     vcs: verifiableCredentialStates.map((vcState) => {
-      return { state: vcState.state, vc: sign(getDefaultStoredIdentityHeader(), vcState.vc), metadata: null };
+      return { state: vcState.state, vc: sign(getDefaultJwtHeader(), vcState.vc), metadata: null };
     }),
   };
 };
