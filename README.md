@@ -89,8 +89,8 @@ Follow these instructions to build and deploy the lambda functions to your devel
 1. Set your environment variables (replace with your actual values):
 
 ```sh
-export AWS_PROFILE="your_aws_profile_name"
-export STACK_NAME="your_stack_name"
+export AWS_PROFILE="<your_aws_profile_name>"
+export STACK_NAME="<your_stack_name>"
 ```
 
 2. Run the following commands:
@@ -99,11 +99,8 @@ export STACK_NAME="your_stack_name"
 # Login to AWS
 aws sso login --profile $AWS_PROFILE
 
-# Build the lambda functions locally
-sam build --parallel
-
-# Deploy the lambda functions to your development environment
-sam deploy --profile $AWS_PROFILE --stack-name $STACK_NAME
+# Takes ~5 minutes to complete
+./dev-deploy.sh -s $STACK_NAME
 ```
 
 3. To verify the deployment, you can pick either one of the following options:
@@ -117,10 +114,11 @@ aws cloudformation describe-stacks --profile $AWS_PROFILE --stack-name $STACK_NA
 
 ### Delete your stack deployment
 
-When you are done testing, you'll need to manually delete the stack you created:
+When you have finished testing, you'll need to manually delete the stack you created:
 
 ```sh
-sam delete --stack-name $STACK_NAME
+# Takes ~5 minutes to complete
+./dev-deploy.sh -s $STACK_NAME -d
 ```
 
 ## Interact with the deployed service in development
@@ -140,7 +138,7 @@ aws cloudformation describe-stacks --profile $AWS_PROFILE \
 2. Use cURL to make a request to the User Identity endpoint:
 
 ```sh
-UI_LAMBDA="https://URL_FROM_PREVIOUS_STEP"
+UI_LAMBDA="<https://URL_FROM_PREVIOUS_STEP>"
 curl -X POST \
   --header "Authorization: Bearer ABC" \
   ${UI_LAMBDA}/user-identity \
