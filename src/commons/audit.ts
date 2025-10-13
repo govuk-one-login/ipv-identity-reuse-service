@@ -1,5 +1,10 @@
 import { SQSClient, SendMessageCommand, SendMessageCommandOutput } from "@aws-sdk/client-sqs";
-import { TxmaEvent, TxmaSisIdentityRecordInvalidated, TxmaSisStoredIdentityReadEvent } from "./audit-events";
+import {
+  TxmaEvent,
+  TxmaSisIdentityRecordInvalidated,
+  TxmaSisStoredIdentityReadEvent,
+  TxmaSisStoredIdentityReturnedEvent,
+} from "./audit-events";
 
 const sqsClient = new SQSClient({});
 
@@ -49,6 +54,21 @@ export const auditIdentityRecordRead = async (
   };
 
   return await sendAuditMessage(identityReadEvent);
+};
+
+export const auditIdentityRecordReturned = async (
+  extensions: TxmaSisStoredIdentityReturnedEvent["extensions"],
+  restricted: TxmaSisStoredIdentityReturnedEvent["restricted"],
+  userId: string,
+  govukSigninJourneyId?: string
+): Promise<SendMessageCommandOutput> => {
+  const identityReturnedEvent: TxmaSisStoredIdentityReturnedEvent = {
+    ...createDefaultEventFields("SIS_STORED_IDENTITY_RETURNED", userId, govukSigninJourneyId),
+    extensions,
+    restricted,
+  };
+
+  return await sendAuditMessage(identityReturnedEvent);
 };
 
 export const auditIdentityRecordInvalidated = async (

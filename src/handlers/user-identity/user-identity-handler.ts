@@ -1,6 +1,6 @@
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
-import { auditIdentityRecordRead } from "../../commons/audit";
+import { auditIdentityRecordRead, auditIdentityRecordReturned } from "../../commons/audit";
 import { getConfiguration } from "../../commons/configuration";
 import { HttpCodesEnum } from "../../commons/constants";
 import { getJwtBody } from "../../commons/jwt-utils";
@@ -10,12 +10,12 @@ import {
   getIdentityFromCredentialStore,
   parseCurrentVerifiableCredentials,
 } from "../../credential-store/encrypted-credential-store";
-import { calculateVot } from "../../identity-reuse/calculate-vot";
-import { getFraudVc, hasFraudCheckExpired } from "../../identity-reuse/fraud-check-service";
 import { VerifiableCredentialJWT } from "../../identity-reuse/verifiable-credential-jwt";
 import { UserIdentityRequest } from "./user-identity-request";
 import { UserIdentityResponse as CredentialStoreStoredIdentityJWT } from "./user-identity-response";
 import { UserIdentityResponseMetadata } from "./user-identity-response-metadata";
+import { calculateVot } from "../../identity-reuse/calculate-vot";
+import { getFraudVc, hasFraudCheckExpired } from "../../identity-reuse/fraud-check-service";
 
 interface ErrorResponse {
   error: string;
@@ -94,7 +94,7 @@ const createSuccessResponse = async (
     govukSigninJourneyId
   );
 
-  return {
+  const successResponse = {
     content: { ...content, vot },
     vot: content.vot,
     isValid: true,
@@ -102,6 +102,22 @@ const createSuccessResponse = async (
     kidValid: true,
     signatureValid: true,
   };
+
+  await auditIdentityRecordReturned(
+    {
+      response_outcome: "returned",
+      is_valid: successResponse.isValid,
+      expired: successResponse.expired,
+      vot: successResponse.vot,
+    },
+    {
+      response_body: JSON.stringify(successResponse),
+    },
+    userId,
+    govukSigninJourneyId
+  );
+
+  return successResponse;
 };
 
 const createErrorResponse = (errorCode: HttpCodesEnum): APIGatewayProxyResult => {
@@ -134,6 +150,24 @@ const createErrorResponse = (errorCode: HttpCodesEnum): APIGatewayProxyResult =>
   };
 };
 
+const generateErrorCodeDescription = async (errorCode: HttpCodesEnum): Promise<string> => {
+  let error_code_description;
+  switch (errorCode) {
+    case HttpCodesEnum.NOT_FOUND:
+      error_code_description = "no_record";
+      break;
+    case HttpCodesEnum.UNAUTHORIZED:
+      error_code_description = "authentication_failure";
+      break;
+    case HttpCodesEnum.FORBIDDEN:
+      error_code_description = "forbidden";
+      break;
+    default:
+      error_code_description = "service_error";
+  }
+  return error_code_description;
+};
+
 const createAndLogErrorResponse = async (
   errorCode: HttpCodesEnum,
   userId: string,
@@ -147,5 +181,22 @@ const createAndLogErrorResponse = async (
     userId,
     govukSigninJourneyId
   );
-  return createErrorResponse(errorCode);
+
+  const identityRecordErrorDescription = await generateErrorCodeDescription(errorCode);
+
+  const errorResponse = createErrorResponse(errorCode);
+
+  await auditIdentityRecordReturned(
+    {
+      response_outcome: "error",
+      error_code: identityRecordErrorDescription,
+    },
+    {
+      response_body: errorResponse.body,
+    },
+    userId,
+    govukSigninJourneyId
+  );
+
+  return errorResponse;
 };
