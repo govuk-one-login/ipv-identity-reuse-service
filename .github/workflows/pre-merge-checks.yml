@@ -29,6 +29,13 @@ jobs:
     secrets:
       sonar-token: ${{ secrets.SONAR_TOKEN }}
 
+  run-pact-tests:
+    if: ${{ !github.event.pull_request.draft }}
+    uses: ./.github/workflows/pact-tests.yml
+    permissions:
+      contents: read
+      packages: read
+
   pre-commit:
     if: ${{ !github.event.pull_request.draft }}
     uses: ./.github/workflows/pre-commit.yml

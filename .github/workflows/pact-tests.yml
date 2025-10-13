@@ -1,0 +1,45 @@
+name: pact-tests
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  pact-testing:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+
+      - name: Setup node
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+          registry-url: "https://npm.pkg.github.com/"
+          scope: "@govuk-one-login"
+          always-auth: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Pact Consumer dependencies
+        working-directory: ./tests/pact-consumer
+        run: npm ci
+
+      - name: Run Pact Consumer tests
+        working-directory: ./tests/pact-consumer
+        run: npm run test
+
+      - name: Install Pact Provider dependencies
+        working-directory: ./tests/pact-provider
+        run: npm ci
+
+      - name: Run Pact Provider tests
+        working-directory: ./tests/pact-provider
+        run: npm run test
+        env:
+          PACT_TYPE: file

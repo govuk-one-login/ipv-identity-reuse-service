@@ -89,7 +89,7 @@ describe("Sis Pact Verification", () => {
       ...(environmentType === "file" && {
         pactUrls: [path.resolve(__dirname, "../../pact-consumer/pacts/SisConsumerTests-StoredIdentityService.json")],
       }),
-      consumerVersionSelectors: [{ mainBranch: true }, { deployedOrReleased: true }, { latest: true }], // TODO: Look at this
+      consumerVersionSelectors: [{ mainBranch: true }, { deployedOrReleased: true }, { latest: true }],
       publishVerificationResult: process.env["PUBLISH_RESULT"]?.toLowerCase() === "true",
       logLevel: "warn",
       providerVersion: process.env["PROVIDER_APP_VERSION"]! || "1.0.0",
