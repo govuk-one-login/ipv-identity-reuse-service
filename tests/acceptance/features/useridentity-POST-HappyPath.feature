@@ -17,6 +17,8 @@ Feature: UserIdentity Post - Happy Path
     And the stored identity content.vot should be "<expectedVot>"
     And the stored identity VOT should be "<vot>"
     And the stored identity isValid field is true
+    And the stored identity signatureValid field is true
+    And the stored credentials should be returned
 
     Examples:
       | vot | vtr   | expectedVot |

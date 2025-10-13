@@ -9,3 +9,7 @@ export const randomString = (length: number): string => {
   }
   return result;
 };
+
+export const renderDid = (didController: string, keyId: string): string => {
+  return `did:web:${didController}#${keyId}`;
+};

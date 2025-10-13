@@ -17,14 +17,14 @@ export const publicKeyJwk: JWK = {
   y: privateKeyJwk.y,
 };
 
-export const did = "did:web:api.identity.dev.account.gov.uk:issuer";
-export const verificationMethodId = `${did}#key-1`;
+export const did = "did:web:api.identity.dev.account.gov.uk";
+export const verificationMethodId = `${did}#f5fe5d2a-9eb6-4819-8c46-723e3a21565a`;
 
 export const didDocument: DIDDocument = {
   "@context": ["https://www.w3.org/ns/did/v1", "https://w3id.org/security/jws/v1"],
   id: did,
   controller: did,
-  verificationMethod: [
+  assertionMethod: [
     {
       id: verificationMethodId,
       type: "JsonWebKey2020",
@@ -32,8 +32,6 @@ export const didDocument: DIDDocument = {
       publicKeyJwk,
     },
   ],
-  authentication: [verificationMethodId],
-  assertionMethod: [verificationMethodId],
 };
 
 export async function sign(

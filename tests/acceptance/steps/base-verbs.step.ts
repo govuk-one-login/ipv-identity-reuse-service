@@ -1,8 +1,11 @@
 import { setDefaultTimeout, Before, defineParameterType } from "@cucumber/cucumber";
 import { Response } from "superagent";
 import { randomString } from "../../../shared-test/string-utils";
+import { getDidControllerName, getSigningKeyId } from "./utils/ssm-utils";
 
 export type WorldDefinition = {
+  testDidController: string;
+  keyId: string;
   userId: string;
   bearerToken?: string;
   requestedVtr: string[];
@@ -19,11 +22,13 @@ defineParameterType({
   transformer: (s) => s === "true",
 });
 
-Before<WorldDefinition>(function () {
+Before<WorldDefinition>(async function () {
   this.userId = generateRandomTestUserId();
   this.govukSigninJourneyId = randomString(12);
   this.requestedVtr = ["P2"];
   this.credentialJwts = [];
+  this.testDidController = await getDidControllerName();
+  this.keyId = await getSigningKeyId();
 });
 
 function generateRandomTestUserId() {
