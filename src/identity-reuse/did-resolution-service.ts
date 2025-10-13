@@ -18,7 +18,7 @@ export const getPublicKeyJwkForKid = async (kid: string): Promise<JWK> => {
   }
   const didResolution = await resolver.resolve(kid);
   const webKeys = didResolution.didDocument?.assertionMethod;
-  const verificationMethod = webKeys?.map(extractAssertionMethodJwk).find((key) => key.id == kid);
+  const verificationMethod = webKeys?.map(extractAssertionVerificationMethod).find((key) => key.id == kid);
   if (verificationMethod) {
     const publicKeyJwk = verificationMethod?.publicKeyJwk as JWK;
     cache.set(kid, publicKeyJwk);
@@ -27,15 +27,11 @@ export const getPublicKeyJwkForKid = async (kid: string): Promise<JWK> => {
   throw new Error("Cannot resolve kid to a JWK");
 };
 
-const extractAssertionMethodJwk = (method?: string | VerificationMethod): VerificationMethod => {
-  switch (typeof method) {
-    case "object":
-      return method;
-    case "string":
-      throw new Error("Assertion method as string not supported.");
-    default:
-      throw new Error("Assertion method not defined on document.");
+const extractAssertionVerificationMethod = (method?: string | VerificationMethod): VerificationMethod => {
+  if (typeof method === "object") {
+    return method;
   }
+  throw new Error("Assertion method as string not supported");
 };
 
 export const isValidDidWeb = (did: string): boolean => {
@@ -45,4 +41,8 @@ export const isValidDidWeb = (did: string): boolean => {
 export const getDidWebController = (did: string): string => {
   const match = didRegex.exec(did);
   return match?.groups?.controller ?? "";
+};
+
+export const clearCache = (): void => {
+  cache.clear();
 };

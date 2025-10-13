@@ -1,6 +1,12 @@
-import { didDocument } from "../../../shared-test/jwt-utils";
-import { getDidWebController, isValidDidWeb, resolver } from "../did-resolution-service";
-import { DIDResolutionResult } from "did-resolver";
+import { did, didDocument, publicKeyJwk, verificationMethodId } from "../../../shared-test/jwt-utils";
+import {
+  clearCache,
+  getDidWebController,
+  getPublicKeyJwkForKid,
+  isValidDidWeb,
+  resolver,
+} from "../did-resolution-service";
+import { DIDDocument, DIDResolutionResult } from "did-resolver";
 
 describe("isValidDidWeb", () => {
   it.each([
@@ -35,8 +41,52 @@ describe("getDidWebController", () => {
 describe("getPublicKeyJwkForKid", () => {
   const DEFAULT_DID_RESOLUTION_RESPONSE = { didDocument } as DIDResolutionResult;
 
-  beforeAll(() => {
+  beforeEach(() => {
     resolver.resolve = jest.fn().mockResolvedValue(DEFAULT_DID_RESOLUTION_RESPONSE);
+    clearCache();
   });
-  it("should cache calls to ", () => {});
+
+  it("should fetch a non-cached version from the DID endpoint resolved from kid", async () => {
+    const jwk = await getPublicKeyJwkForKid(verificationMethodId);
+
+    expect(jwk).toEqual(publicKeyJwk);
+    expect(resolver.resolve).toHaveBeenCalledTimes(1);
+  });
+
+  it("should fetch a cached version of JWK on subsequent calls with same kid", async () => {
+    await getPublicKeyJwkForKid(verificationMethodId);
+    const jwk = await getPublicKeyJwkForKid(verificationMethodId);
+
+    expect(jwk).toEqual(publicKeyJwk);
+    expect(resolver.resolve).toHaveBeenCalledTimes(1);
+  });
+
+  it("throws error if matching key material not found in retrieved did document", async () => {
+    const badVerificationMethodId = `${did}#non-existent-key-id`;
+    await expect(getPublicKeyJwkForKid(badVerificationMethodId)).rejects.toThrow("Cannot resolve kid to a JWK");
+    expect(resolver.resolve).toHaveBeenCalledTimes(1);
+  });
+
+  it("throws error if unexpected formatting of DID document", async () => {
+    const badDidDocument: DIDDocument = {
+      "@context": ["https://www.w3.org/ns/did/v1", "https://w3id.org/security/jws/v1"],
+      id: did,
+      controller: did,
+      verificationMethod: [
+        {
+          id: verificationMethodId,
+          type: "JsonWebKey2020",
+          controller: did,
+          publicKeyJwk,
+        },
+      ],
+      assertionMethod: [verificationMethodId],
+    };
+
+    resolver.resolve = jest.fn().mockResolvedValue({ didDocument: badDidDocument });
+    await expect(getPublicKeyJwkForKid(verificationMethodId)).rejects.toThrow(
+      "Assertion method as string not supported"
+    );
+    expect(resolver.resolve).toHaveBeenCalledTimes(1);
+  });
 });
