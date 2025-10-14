@@ -135,10 +135,6 @@ Then("the stored identity isValid field is {boolean}", function (isValid: boolea
   assert.equal(this.userIdentityPostResponse?.body?.isValid, isValid);
 });
 
-Then<WorldDefinition>("the stored credentials should be returned", function () {
-  // TODO: To be implemented in SPT-1629
-});
-
 const createAndPostCredentials = async (credentials: number, userId: string): Promise<string[]> => {
   const credentialJwts = [];
   const header: JWTHeaderParameters = getDefaultStoredIdentityHeader();

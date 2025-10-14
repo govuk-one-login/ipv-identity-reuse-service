@@ -7,7 +7,6 @@ Feature: UserIdentity Post - Happy Path
     Then the status code should be 200
     And the stored identity should be returned
     And the stored identity isValid field is true
-    And the stored credentials should be returned
 
   Scenario Outline: Correctly validates identity and processes vtr
     Given a user has 4 CURRENT credentials stored
@@ -18,7 +17,6 @@ Feature: UserIdentity Post - Happy Path
     And the stored identity content.vot should be "<expectedVot>"
     And the stored identity VOT should be "<vot>"
     And the stored identity isValid field is true
-    And the stored credentials should be returned
 
     Examples:
       | vot | vtr   | expectedVot |

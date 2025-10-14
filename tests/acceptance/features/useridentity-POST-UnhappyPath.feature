@@ -29,7 +29,6 @@ Feature: UserIdentity Post - Happy Path
     And the stored identity should be returned
     And the stored identity content.vot should be "P0"
     And the stored identity VOT should be "P2"
-    And the stored credentials should be returned
 
   Scenario: A user does not have any stored credentials
     Given a user has 0 CURRENT credentials stored
@@ -38,7 +37,6 @@ Feature: UserIdentity Post - Happy Path
     Then the status code should be 200
     And the stored identity isValid field is false
     And the stored identity should be returned
-    And the stored credentials should be returned
 
   Scenario: A user's stored identity is missing a CURRENT credential
     Given a user has 4 CURRENT credentials stored
@@ -48,7 +46,6 @@ Feature: UserIdentity Post - Happy Path
     Then the status code should be 200
     And the stored identity should be returned
     And the stored identity isValid field is false
-    And the stored credentials should be returned
 
   Scenario: A user's stored identity has additional credential
     Given a user has 4 CURRENT credentials stored
@@ -58,4 +55,3 @@ Feature: UserIdentity Post - Happy Path
     Then the status code should be 200
     And the stored identity should be returned
     And the stored identity isValid field is false
-    And the stored credentials should be returned
