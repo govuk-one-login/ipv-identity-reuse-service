@@ -1,0 +1,18 @@
+{
+  "author": "",
+  "description": "",
+  "devDependencies": {
+    "@pact-foundation/pact": "16.0.0",
+    "jest": "30.2.0",
+    "typescript": "5.9.3"
+  },
+  "keywords": [],
+  "license": "ISC",
+  "main": "index.js",
+  "name": "pact-consumer",
+  "scripts": {
+    "test": "jest"
+  },
+  "type": "commonjs",
+  "version": "1.0.0"
+}

@@ -1,0 +1,8 @@
+services:
+  pact:
+    image: pactfoundation/pact-broker
+    environment:
+      PACT_BROKER_DATABASE_ADAPTER: sqlite
+      PACT_BROKER_DATABASE_NAME: pact_broker.sqlite
+    ports:
+      - 9292:9292

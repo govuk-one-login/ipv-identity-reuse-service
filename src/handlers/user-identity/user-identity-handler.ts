@@ -18,10 +18,10 @@ import { calculateVot } from "../../identity-reuse/calculate-vot";
 import { getFraudVc, hasFraudCheckExpired } from "../../identity-reuse/fraud-check-service";
 import { validateStoredIdentityCredentials } from "../../identity-reuse/stored-identity-validator";
 
-interface ErrorResponse {
+type ErrorResponse = {
   error: string;
   error_description: string;
-}
+};
 
 export const handler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
   const request = event.body ? (JSON.parse(event.body) as UserIdentityRequest) : undefined;
@@ -33,14 +33,16 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
     return createErrorResponse(HttpCodesEnum.BAD_REQUEST);
   }
 
-  if (!event?.headers?.Authorization) {
+  const authorisation = getProperty(event?.headers, "authorization");
+
+  if (!authorisation) {
     logger.error("Authorisation header was not included in request");
     return createErrorResponse(HttpCodesEnum.UNAUTHORIZED);
   }
 
   let subject: string;
   try {
-    const jwt = getJwtBody(event.headers.Authorization.split(" ").at(1) || ""); // Validate bearer token
+    const jwt = getJwtBody(authorisation.split(" ").at(1) || ""); // Validate bearer token
     if (!jwt.sub) {
       logger.error("Bearer token does not include subject");
       return createErrorResponse(HttpCodesEnum.UNAUTHORIZED);
@@ -53,7 +55,7 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
   }
 
   try {
-    const result = await getIdentityFromCredentialStore(event.headers.Authorization);
+    const result = await getIdentityFromCredentialStore(authorisation);
 
     if (!result.ok) {
       logger.error("Error received from EVCS service", { status: result.status });
@@ -68,6 +70,12 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
     logger.error("Error retrieving user identity", { error });
     return await createAndLogErrorResponse(HttpCodesEnum.INTERNAL_SERVER_ERROR, subject, request.govukSigninJourneyId);
   }
+};
+
+const getProperty = <T extends Record<string, any>>(obj: T, property: string) => {
+  const propertyLowerCase = property.toLowerCase();
+  const foundKey = Object.keys(obj).find((k) => k.toLowerCase() === propertyLowerCase);
+  return foundKey ? obj[foundKey] : undefined;
 };
 
 const createSuccessResponse = async (

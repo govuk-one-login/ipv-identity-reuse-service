@@ -1,5 +1,4 @@
 {
-  "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
@@ -8,8 +7,7 @@
     "resolveJsonModule": true,
     "rootDirs": [
       "src",
-      "tests/steps",
-      "tests/pact-provider"
+      "../../src"
     ],
     "skipLibCheck": true,
     "sourceMap": true,

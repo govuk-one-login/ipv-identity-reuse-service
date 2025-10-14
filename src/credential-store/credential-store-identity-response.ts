@@ -4,6 +4,10 @@ export type CredentialStoreIdentityResponse = {
   afterKey?: string;
 };
 
+export type CredentialStoreErrorResponse = {
+  message: string;
+};
+
 export interface JWTIncludingStateAndMetadata {
   state: string;
   vc: string;

@@ -5,11 +5,12 @@ import { VerifiableCredentialJWT } from "./verifiable-credential-jwt";
 export const getFraudVc = (
   vcBundle: VerifiableCredentialJWT[],
   fraudIssuers: string[]
-): VerifiableCredentialJWT | undefined =>
-  vcBundle
+): VerifiableCredentialJWT | undefined => {
+  return vcBundle
     .filter((vc) => vc.iss !== undefined && fraudIssuers.includes(vc.iss) && vc.nbf !== undefined)
     .sort((vc1, vc2) => vc1.nbf! - vc2.nbf!)
     .pop();
+};
 
 export const hasFraudCheckExpired = (
   fraudVc: VerifiableCredentialJWT | undefined,
