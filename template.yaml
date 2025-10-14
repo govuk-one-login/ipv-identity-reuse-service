@@ -278,8 +278,17 @@ Globals:
       - - !Ref DynatraceNodeLayerArn
       - !Ref AWS::NoValue
     DeploymentPreference:
-      Type: !Ref LambdaDeploymentPreference
+      Type: !If
+        - CanariesEnabled
+        - !Ref LambdaDeploymentPreference
+        - AllAtOnce
       Role: !GetAtt CodeDeployServiceRole.Arn
+      Alarms:
+        Fn::If:
+          - CanariesEnabled
+          - - !Ref LambdaErrorAlarm
+          - - !Ref "AWS::NoValue"
+
 
 Resources:
   ################################
@@ -290,12 +299,6 @@ Resources:
     Properties:
       FunctionName: !Sub "${AWS::StackName}-UserIdentityFunction"
       Description: "A lambda function that queues SIS data for processing"
-      DeploymentPreference:
-        Type: !If
-          - CanariesEnabled
-          - !Ref LambdaDeploymentPreference
-          - AllAtOnce
-        Role: !GetAtt CodeDeployServiceRole.Arn
       Timeout: 10
       Handler: user-identity-handler.handler
       MemorySize: 128
