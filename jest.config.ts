@@ -8,6 +8,7 @@ const config: Config = {
   coverageProvider: "v8",
   reporters: ["default"],
   setupFiles: ["./setup-jest.ts"],
+  testPathIgnorePatterns: ["pact\\.(test|spec)"],
 };
 
 export default config;

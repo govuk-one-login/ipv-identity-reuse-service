@@ -24,22 +24,16 @@ jobs:
           registry-url: "https://npm.pkg.github.com/"
           scope: "@govuk-one-login"
           always-auth: true
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install Pact Consumer dependencies
-        working-directory: ./tests/pact-consumer
+      - name: Install dependencies
         run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run Pact Consumer tests
-        working-directory: ./tests/pact-consumer
-        run: npm run test
-
-      - name: Install Pact Provider dependencies
-        working-directory: ./tests/pact-provider
-        run: npm ci
+        run: npm run test:consumer
 
       - name: Run Pact Provider tests
-        working-directory: ./tests/pact-provider
-        run: npm run test
+        run: npm run test:provider
         env:
           PACT_TYPE: file

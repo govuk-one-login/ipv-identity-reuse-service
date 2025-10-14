@@ -1,14 +1,17 @@
 import type { Server } from "http";
 import { Verifier, type VerifierOptions } from "@pact-foundation/pact";
-import { createServer as createProviderServer } from "./provider-app";
+import { createServer as createProviderServer } from "./sis-provider-app";
 import path from "node:path";
-import type { Configuration } from "../../../src/commons/configuration";
-import type {
-  CredentialStoreErrorResponse,
-  CredentialStoreIdentityResponse,
-} from "../../../src/credential-store/credential-store-identity-response";
-import type { VerifiableCredentialJWT } from "../../../src/identity-reuse/verifiable-credential-jwt";
-import { sign, getDefaultStoredIdentityHeader } from "../../../tests/acceptance/steps/utils/jwt-utils";
+import type { Configuration } from "../../../commons/configuration";
+import type { CredentialStoreIdentityResponse } from "../../../credential-store/credential-store-identity-response";
+import type { VerifiableCredentialJWT } from "../../../identity-reuse/verifiable-credential-jwt";
+import * as ConfigurationModule from "../../../commons/configuration";
+import * as FraudCheckService from "../../../identity-reuse/fraud-check-service";
+import * as AuditModule from "../../../commons/audit";
+import { SendMessageCommandOutput } from "@aws-sdk/client-sqs";
+import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utils";
+import { UserIdentityResponse } from "../../../handlers/user-identity/user-identity-response";
+import { CredentialStoreErrorResponse } from "../../../credential-store/credential-store-error-response";
 
 const PORT = 8080;
 
@@ -41,7 +44,7 @@ const mockEVCSResponse = (
   response: CredentialStoreIdentityResponse | CredentialStoreErrorResponse,
   status: number = 200
 ) => {
-  (global.fetch as jest.Mock) = jest.fn().mockResolvedValue(
+  jest.spyOn(global, "fetch").mockResolvedValue(
     new Response(JSON.stringify(response), {
       status,
       headers: { "content-type": "application/json" },
@@ -49,24 +52,21 @@ const mockEVCSResponse = (
   );
 };
 
-jest.setTimeout(120000);
-
-jest.mock("../../../src/commons/configuration", () => ({
-  getConfiguration: jest.fn(() => Promise.resolve({ evcsApiUrl: "https://evcs.gov.uk" } as Configuration)),
-  getServiceApiKey: jest.fn(() => Promise.resolve("an-api-key")),
-}));
-
-jest.mock("../../../src/identity-reuse/fraud-check-service", () => ({
-  hasFraudCheckExpired: jest.fn(() => Promise.resolve(false)),
-  getFraudVc: jest.requireActual("../../../src/identity-reuse/fraud-check-service").getFraudVc,
-}));
-
 describe("Sis Pact Verification", () => {
   let server: Server;
 
   beforeAll(() => {
     validateEnvironment();
     server = createProviderServer(PORT);
+  });
+
+  beforeEach(() => {
+    jest
+      .spyOn(ConfigurationModule, "getConfiguration")
+      .mockResolvedValue({ evcsApiUrl: "https://evcs.gov.uk" } as Configuration);
+    jest.spyOn(ConfigurationModule, "getServiceApiKey").mockResolvedValue("an-api-key");
+    jest.spyOn(FraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
+    jest.spyOn(AuditModule, "sendAuditMessage").mockImplementation(async () => ({}) as SendMessageCommandOutput);
   });
 
   afterAll(() => {
@@ -87,13 +87,13 @@ describe("Sis Pact Verification", () => {
         pactBrokerPassword: process.env.PACT_PASSWORD,
       }),
       ...(environmentType === "file" && {
-        pactUrls: [path.resolve(__dirname, "../../pact-consumer/pacts/SisConsumerTests-StoredIdentityService.json")],
+        pactUrls: [path.resolve(process.cwd(), "pacts", "SisConsumerTests-StoredIdentityService.json")],
       }),
       consumerVersionSelectors: [{ mainBranch: true }, { deployedOrReleased: true }, { latest: true }],
-      publishVerificationResult: process.env["PUBLISH_RESULT"]?.toLowerCase() === "true",
-      logLevel: "warn",
-      providerVersion: process.env["PROVIDER_APP_VERSION"]! || "1.0.0",
-      providerVersionBranch: process.env["GIT_BRANCH"] || "none",
+      publishVerificationResult: process.env.PUBLISH_RESULT?.toLowerCase() === "true",
+      logLevel: "info",
+      providerVersion: process.env.PROVIDER_APP_VERSION || "1.0.0",
+      providerVersionBranch: process.env.GIT_BRANCH || "none",
       beforeEach: async (): Promise<unknown> => {
         mockEVCSData = createCredentialStoreIdentityResponse();
         mockEVCSResponse(mockEVCSData);
@@ -135,14 +135,15 @@ describe("Sis Pact Verification", () => {
 const createCredentialStoreIdentityResponse = (
   verifiableCredentialStates: { vc: VerifiableCredentialJWT; state: string }[] = []
 ): CredentialStoreIdentityResponse => {
-  const storedIdentity = {
+  const storedIdentity: UserIdentityResponse = {
     sub: "user-sub",
     vot: "P2",
     iss: "http://api.example.com",
     vtm: ["https://oidc.account.gov.uk/trustmark"],
+    credentials: [],
   };
 
-  const defaultStoredIdentityHeader = getDefaultStoredIdentityHeader();
+  const defaultStoredIdentityHeader = getDefaultJwtHeader();
 
   return {
     si: {

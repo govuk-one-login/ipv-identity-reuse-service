@@ -1,6 +1,6 @@
 import express, { type Request } from "express";
 import type { Server } from "http";
-import { handler } from "../../../src/handlers/user-identity/user-identity-handler";
+import { handler } from "../../../handlers/user-identity/user-identity-handler";
 import {
   APIGatewayEventRequestContextWithAuthorizer,
   APIGatewayProxyEvent,
@@ -18,11 +18,11 @@ export const createServer = (port: number): Server => {
     .use(express.json())
     .use(
       OpenApiValidatorMiddleware({
-        apiSpec: path.resolve(__dirname, "../../../openAPI/api.yaml"),
+        apiSpec: path.resolve(process.cwd(), "openAPI/api.yaml"),
         validateRequests: true,
       })
     )
-    .post("/user-identity", async (request, response, next) => {
+    .post("/user-identity", async (request, response) => {
       const headerOverrides: Record<string, string> = {};
 
       if (/test-access-token/.test(request.header("authorization") || "")) {
@@ -34,8 +34,6 @@ export const createServer = (port: number): Server => {
       const result = await handler(apiGatewayRequest, {} as Context);
 
       response.status(result.statusCode).json(JSON.parse(result.body));
-
-      next();
     })
     .listen(port);
 };

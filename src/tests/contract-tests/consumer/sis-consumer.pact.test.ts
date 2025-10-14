@@ -1,6 +1,6 @@
 import path from "path";
 import { PactV4, SpecificationVersion, MatchersV3 } from "@pact-foundation/pact";
-import type { UserIdentityResponseMetadata } from "../../../src/handlers/user-identity/user-identity-response-metadata";
+import type { UserIdentityResponseMetadata } from "../../../handlers/user-identity/user-identity-response-metadata";
 
 const { like } = MatchersV3;
 
@@ -36,16 +36,17 @@ describe("SIS Consumer", () => {
         builder.jsonBody(
           like({
             content: {
-              sub: "bob-smith",
+              sub: "user-sub",
+              vot: "P2",
               iss: "http://api.example.com",
-              vot: "P3",
               vtm: ["https://oidc.account.gov.uk/trustmark"],
+              credentials: [],
             },
-            isValid: true,
+            vot: "P2",
+            isValid: false,
+            expired: false,
             kidValid: true,
             signatureValid: true,
-            expired: false,
-            vot: "P2",
           })
         );
       })
@@ -63,16 +64,17 @@ describe("SIS Consumer", () => {
         });
         await expect(result.json()).resolves.toMatchObject<UserIdentityResponseMetadata>({
           content: {
+            sub: "user-sub",
+            vot: "P2",
             iss: "http://api.example.com",
-            sub: "bob-smith",
-            vot: "P3",
             vtm: ["https://oidc.account.gov.uk/trustmark"],
+            credentials: [],
           },
+          vot: "P2",
+          isValid: false,
           expired: false,
-          isValid: true,
           kidValid: true,
           signatureValid: true,
-          vot: "P2",
         });
       });
   });
