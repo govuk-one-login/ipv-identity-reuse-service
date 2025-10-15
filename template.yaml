@@ -203,6 +203,8 @@ Conditions:
 
   IsNotDev: !Not [!Condition IsDev]
 
+  IsNotDevOrBuild: !Not [!Condition IsDevOrBuild]
+
   CanariesEnabled: !Equals
     - !FindInMap [EnvironmentMap, !Ref Environment, UseCanary]
     - true
@@ -551,7 +553,7 @@ Resources:
           Value: !Sub "/aws/apigateway/${PrivateRestApi}/${ApiStageName}"
 
   PrivateAPIAccessLogGroupCSLS:
-    Condition: IsNotDev
+    Condition: IsNotDevOrBuild
     Type: AWS::Logs::SubscriptionFilter
     Properties:
       DestinationArn: !Ref CSLSSubscriptionEndpointArn
@@ -760,9 +762,9 @@ Resources:
 
   MessageProcessorLambdaLogGroupSubscriptionFilter:
     Type: AWS::Logs::SubscriptionFilter
-    Condition: IsNotDev
+    Condition: IsNotDevOrBuild
     Properties:
-      DestinationArn: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
+      DestinationArn: !Ref CSLSSubscriptionEndpointArn
       FilterPattern: "{$._aws.CloudWatchMetrics NOT EXISTS}"
       LogGroupName: !Ref MessageProcessorLambdaLogGroup
 
