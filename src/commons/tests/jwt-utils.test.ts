@@ -14,7 +14,7 @@ describe("getJwtBody", () => {
 
   it("should throw when decoding an invalid JWT", () => {
     const testJwt = "invalidJWT";
-    expect(() => getJwtBody(testJwt)).toThrow("Invalid JWT: Invalid JWT");
+    expect(() => getJwtBody(testJwt)).toThrow("Invalid JWT");
   });
 });
 
@@ -26,7 +26,7 @@ describe("getJwtHeader", () => {
 
   it("should throw when decoding an invalid JWT", () => {
     const testJwt = "invalidJWT";
-    expect(() => getJwtBody(testJwt)).toThrow("Invalid JWT: Invalid JWT");
+    expect(() => getJwtBody(testJwt)).toThrow("Invalid JWT");
   });
 });
 

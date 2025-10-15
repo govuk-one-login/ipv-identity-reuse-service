@@ -1,5 +1,5 @@
 import { getResolver } from "web-did-resolver";
-import { Resolver, VerificationMethod } from "did-resolver";
+import { Resolver, VerificationMethod, parse } from "did-resolver";
 
 import { JWK } from "jose";
 
@@ -10,8 +10,6 @@ export const resolver = new Resolver({
   ...webResolver,
 });
 
-const didRegex = /^did:web:(?<controller>[\w\-.]+(?::\d+)?(:[\w\-.~%]+)*)#[\w.~%\-:]+$/i;
-
 export const getPublicKeyJwkForKid = async (kid: string): Promise<JWK> => {
   if (cache.has(kid)) {
     return cache.get(kid) as JWK;
@@ -20,7 +18,7 @@ export const getPublicKeyJwkForKid = async (kid: string): Promise<JWK> => {
   const webKeys = didResolution.didDocument?.assertionMethod;
   const verificationMethod = webKeys?.map(extractAssertionVerificationMethod).find((key) => key.id == kid);
   if (verificationMethod) {
-    const publicKeyJwk = verificationMethod?.publicKeyJwk as JWK;
+    const publicKeyJwk = verificationMethod.publicKeyJwk as JWK;
     cache.set(kid, publicKeyJwk);
     return publicKeyJwk;
   }
@@ -35,12 +33,13 @@ const extractAssertionVerificationMethod = (method?: string | VerificationMethod
 };
 
 export const isValidDidWeb = (did: string): boolean => {
-  return didRegex.test(did);
+  const result = parse(did);
+  const keyId = result?.fragment;
+  return !!result && !!keyId; // enforces existence of keyId in DIDs
 };
 
 export const getDidWebController = (did: string): string => {
-  const match = didRegex.exec(did);
-  return match?.groups?.controller ?? "";
+  return parse(did)?.id || "";
 };
 
 export const clearCache = (): void => {

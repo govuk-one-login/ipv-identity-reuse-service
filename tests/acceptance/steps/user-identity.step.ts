@@ -31,14 +31,17 @@ Given<WorldDefinition>("I have a user without a stored identity", async function
 });
 
 Given<WorldDefinition>("the user has a stored identity, with VOT {string}", async function (vot: string) {
-  const header: JWTHeaderParameters = getDefaultStoredIdentityHeader();
+  const header: JWTHeaderParameters = getDefaultStoredIdentityHeader(
+    "ES256",
+    renderDid(this.testDidController, this.keyId)
+  );
   const payload: JWTPayload = {
     sub: this.userId,
     iss: "http://api.example.com",
     credentials: this.credentialJwts.map((jwt) => jwt.split(".").at(-1)),
     vot,
   };
-  const jwt = await sign(header, payload);
+  const jwt = await sign(header, payload, true);
 
   const result = await evcsPostIdentity(
     this,
