@@ -278,8 +278,17 @@ Globals:
       - - !Ref DynatraceNodeLayerArn
       - !Ref AWS::NoValue
     DeploymentPreference:
-      Type: !Ref LambdaDeploymentPreference
+      Type: !If
+        - CanariesEnabled
+        - !Ref LambdaDeploymentPreference
+        - AllAtOnce
       Role: !GetAtt CodeDeployServiceRole.Arn
+      Alarms:
+        Fn::If:
+          - CanariesEnabled
+          - - !Ref LambdaErrorAlarm
+          - - !Ref "AWS::NoValue"
+
 
 Resources:
   ################################
@@ -290,12 +299,6 @@ Resources:
     Properties:
       FunctionName: !Sub "${AWS::StackName}-UserIdentityFunction"
       Description: "A lambda function that queues SIS data for processing"
-      DeploymentPreference:
-        Type: !If
-          - CanariesEnabled
-          - !Ref LambdaDeploymentPreference
-          - AllAtOnce
-        Role: !GetAtt CodeDeployServiceRole.Arn
       Timeout: 10
       Handler: user-identity-handler.handler
       MemorySize: 128
@@ -1383,6 +1386,58 @@ Resources:
     Properties:
       AliasName: !Sub "alias/${AWS::StackName}-LambdaEnvironmentVariableEncryptionKey"
       TargetKeyId: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
+
+  LambdaErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-LambdaErrorAlarm"
+      AlarmDescription: "Errors invoking SIS lambda functions"
+      Metrics:
+        - Id: m1
+          Label: MessageProcessorLambda Errors
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Ref MessageProcessorLambda
+            Period: 60
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: m2
+          Label: UserIdentityFunction Errors
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Ref UserIdentityFunction
+            Period: 60
+            Stat: Sum
+            Unit: Count
+          ReturnData: false
+        - Id: e1
+          Label: Total Lambda Errors
+          Expression: "m1 + m2"
+          ReturnData: true
+      DatapointsToAlarm: 1
+      EvaluationPeriods: 1
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 0
+      TreatMissingData: notBreaching
+      ActionsEnabled:
+        Fn::If:
+          - IsNotDev
+          - TRUE
+          - FALSE
+      AlarmActions:
+        - !ImportValue alerting-integration-AlertNotificationTopicArn
+      OKActions:
+        - !ImportValue alerting-integration-AlertNotificationTopicArn
+
 Outputs:
   ApiEndpoint:
     Description: The URL of the Stored Identity Service API
