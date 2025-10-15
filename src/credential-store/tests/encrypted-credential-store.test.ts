@@ -1,6 +1,6 @@
 import { CredentialStoreIdentityResponse, JWTIncludingStateAndMetadata } from "../credential-store-identity-response";
 import { IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials";
-import { getDefaultStoredIdentityHeader, sign } from "../../../tests/acceptance/steps/utils/jwt-utils";
+import { getDefaultJwtHeader, sign } from "../../../shared-test/jwt-utils";
 import { parseCurrentVerifiableCredentials } from "../encrypted-credential-store";
 
 describe("parseCurrentVerifiableCredentials", () => {
@@ -29,7 +29,7 @@ describe("parseCurrentVerifiableCredentials", () => {
 const createVerifiableCredentialWithState = (issuer: string, state: string): JWTIncludingStateAndMetadata => {
   return {
     state: state,
-    vc: sign(getDefaultStoredIdentityHeader(), getVerifiableCredential(issuer)),
+    vc: sign(getDefaultJwtHeader(), getVerifiableCredential(issuer)),
     metadata: null,
   };
 };

@@ -16,6 +16,7 @@ import { UserIdentityResponse as CredentialStoreStoredIdentityJWT } from "./user
 import { UserIdentityResponseMetadata } from "./user-identity-response-metadata";
 import { calculateVot } from "../../identity-reuse/calculate-vot";
 import { getFraudVc, hasFraudCheckExpired } from "../../identity-reuse/fraud-check-service";
+import { validateStoredIdentityCredentials } from "../../identity-reuse/stored-identity-validator";
 
 interface ErrorResponse {
   error: string;
@@ -77,6 +78,7 @@ const createSuccessResponse = async (
 ): Promise<UserIdentityResponseMetadata> => {
   const { fraudIssuer, fraudValidityPeriod } = await getConfiguration();
   const content: CredentialStoreStoredIdentityJWT = getJwtBody(identityResponse.si.vc);
+  const currentVcsEncoded: string[] = identityResponse.vcs.map((vcWithMetadata) => vcWithMetadata.vc);
   const currentVcs: VerifiableCredentialJWT[] = parseCurrentVerifiableCredentials(identityResponse);
   const fraudVc = getFraudVc(currentVcs, fraudIssuer);
   const vot = calculateVot(content.vot as IdentityVectorOfTrust, vtr);
@@ -97,7 +99,7 @@ const createSuccessResponse = async (
   const successResponse = {
     content: { ...content, vot },
     vot: content.vot,
-    isValid: true,
+    isValid: validateStoredIdentityCredentials(content, currentVcsEncoded),
     expired: hasFraudCheckExpired(fraudVc, fraudValidityPeriod),
     kidValid: true,
     signatureValid: true,

@@ -21,11 +21,37 @@ Feature: UserIdentity Post - Happy Path
     And the error should be "invalid_token"
     And the error description should be "Bearer token is missing or invalid"
 
-  Scenario Outline: Correctly validates identity and processes VTR when VOT does not match
-    And I have a user with a Stored Identity, with VOT "P2" and 0 credentials
+  Scenario: Correctly validates identity and processes VTR when VOT does not match
+    Given a user has 4 CURRENT credentials stored
+    And the user has a stored identity, with VOT "P2"
     When I make a request for the users identity with a VTR "P3"
     Then the status code should be 200
     And the stored identity should be returned
     And the stored identity content.vot should be "P0"
     And the stored identity VOT should be "P2"
-    And the stored credentials should be returned
+
+  Scenario: A user does not have any stored credentials
+    Given a user has 0 CURRENT credentials stored
+    And the user has a stored identity, with VOT "P2"
+    When I make a request for the users identity with a VTR "P2"
+    Then the status code should be 200
+    And the stored identity isValid field is false
+    And the stored identity should be returned
+
+  Scenario: A user's stored identity is missing a CURRENT credential
+    Given a user has 4 CURRENT credentials stored
+    And the user has a stored identity, with VOT "P2"
+    And an extra CURRENT credential is stored for the user
+    When I make a request for the users identity with a VTR "P2"
+    Then the status code should be 200
+    And the stored identity should be returned
+    And the stored identity isValid field is false
+
+  Scenario: A user's stored identity has additional credential
+    Given a user has 4 CURRENT credentials stored
+    And the user has a stored identity, with VOT "P2"
+    And an existing CURRENT credential is marked as HISTORIC for the user
+    When I make a request for the users identity with a VTR "P2"
+    Then the status code should be 200
+    And the stored identity should be returned
+    And the stored identity isValid field is false

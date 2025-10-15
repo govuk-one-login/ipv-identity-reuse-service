@@ -123,6 +123,11 @@ components:
           type: string
         vtm:
           type: string
+        credentials:
+          type: array
+          items:
+            type: string
+          description: A list of JWT signatures that reference the credential JWTs that achieve the maximum vot
         "https://vocab.account.gov.uk/v1/credentialJWT":
           type: array
           items:
@@ -176,12 +181,12 @@ components:
             # API Gateway doesn't support these external references
             # but they may be turned into $ref's by tooling that does
             description: https://vocab.account.gov.uk/v1/json-schemas/SocialSecurityRecord.json
-        required:
-          - sub
-          - vot
-          - vtm
-          - "https://vocab.account.gov.uk/v1/credentialJWT"
-        additionalProperties: false
+      required:
+        - sub
+        - vot
+        - vtm
+        - credentials
+      additionalProperties: false
     oauthError:
       type: object
       properties:
