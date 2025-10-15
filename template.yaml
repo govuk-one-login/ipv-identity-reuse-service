@@ -221,6 +221,8 @@ Globals:
     MemorySize: 1024
     CodeUri: ./
     Runtime: nodejs20.x
+    Architectures:
+      - arm64
     Environment:
       Variables:
         AWS_LAMBDA_EXEC_WRAPPER: !If [DynaTraceEnabled, "/opt/dynatrace", !Ref "AWS::NoValue"]
@@ -288,7 +290,6 @@ Globals:
           - CanariesEnabled
           - - !Ref LambdaErrorAlarm
           - - !Ref "AWS::NoValue"
-
 
 Resources:
   ################################
