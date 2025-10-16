@@ -9,7 +9,7 @@ import * as ConfigurationModule from "../../../commons/configuration";
 import * as FraudCheckService from "../../../identity-reuse/fraud-check-service";
 import * as AuditModule from "../../../commons/audit";
 import { SendMessageCommandOutput } from "@aws-sdk/client-sqs";
-import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utils";
+import { getDefaultStoredIdentityHeader, sign } from "../../../../shared-test/jwt-utils";
 import { UserIdentityResponse } from "../../../handlers/user-identity/user-identity-response";
 import { CredentialStoreErrorResponse } from "../../../credential-store/credential-store-error-response";
 
@@ -61,9 +61,10 @@ describe("Sis Pact Verification", () => {
   });
 
   beforeEach(() => {
-    jest
-      .spyOn(ConfigurationModule, "getConfiguration")
-      .mockResolvedValue({ evcsApiUrl: "https://evcs.gov.uk" } as Configuration);
+    jest.spyOn(ConfigurationModule, "getConfiguration").mockResolvedValue({
+      evcsApiUrl: "https://evcs.gov.uk",
+      controllerAllowList: ["did:web:api.identity.dev.account.gov.uk"],
+    } as Configuration);
     jest.spyOn(ConfigurationModule, "getServiceApiKey").mockResolvedValue("an-api-key");
     jest.spyOn(FraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
     jest.spyOn(AuditModule, "sendAuditMessage").mockImplementation(async () => ({}) as SendMessageCommandOutput);
@@ -95,7 +96,7 @@ describe("Sis Pact Verification", () => {
       providerVersion: process.env.PROVIDER_APP_VERSION || "1.0.0",
       providerVersionBranch: process.env.GIT_BRANCH || "none",
       beforeEach: async (): Promise<unknown> => {
-        mockEVCSData = createCredentialStoreIdentityResponse();
+        mockEVCSData = await createCredentialStoreIdentityResponse();
         mockEVCSResponse(mockEVCSData);
 
         return {};
@@ -132,9 +133,9 @@ describe("Sis Pact Verification", () => {
   });
 });
 
-const createCredentialStoreIdentityResponse = (
+const createCredentialStoreIdentityResponse = async (
   verifiableCredentialStates: { vc: VerifiableCredentialJWT; state: string }[] = []
-): CredentialStoreIdentityResponse => {
+): Promise<CredentialStoreIdentityResponse> => {
   const storedIdentity: UserIdentityResponse = {
     sub: "user-sub",
     vot: "P2",
@@ -143,16 +144,18 @@ const createCredentialStoreIdentityResponse = (
     credentials: [],
   };
 
-  const defaultStoredIdentityHeader = getDefaultJwtHeader();
+  const defaultStoredIdentityHeader = getDefaultStoredIdentityHeader();
 
   return {
     si: {
       state: "CURRENT",
-      vc: sign(defaultStoredIdentityHeader, storedIdentity),
+      vc: await sign(defaultStoredIdentityHeader, storedIdentity),
       metadata: null,
     },
-    vcs: verifiableCredentialStates.map((vcState) => {
-      return { state: vcState.state, vc: sign(defaultStoredIdentityHeader, vcState.vc), metadata: null };
-    }),
+    vcs: await Promise.all(
+      verifiableCredentialStates.map(async (vcState) => {
+        return { state: vcState.state, vc: await sign(defaultStoredIdentityHeader, vcState.vc), metadata: null };
+      })
+    ),
   };
 };

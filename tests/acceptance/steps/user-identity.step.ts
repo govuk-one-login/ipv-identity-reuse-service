@@ -62,7 +62,6 @@ Given<WorldDefinition>(
   "I have a user with a Stored Identity, with VOT {string} and {int} credentials",
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async function (vot: string, credentials: number) {
-    // TODO: credentials parameter to be implemented in SPT-1629
     const header: JWTHeaderParameters = getDefaultStoredIdentityHeader(
       "ES256",
       renderDid(this.testDidController, this.keyId)
@@ -120,7 +119,6 @@ Given<WorldDefinition>(
   "I have a user with a Stored Identity, with {string} kid",
 
   async function (status: string) {
-    // TODO: credentials parameter to be implemented in SPT-1629
     let kid: string;
     if (status == "no") {
       kid = "";
