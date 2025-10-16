@@ -8,7 +8,8 @@
     "resolveJsonModule": true,
     "rootDirs": [
       "src",
-      "tests/steps"
+      "tests/steps",
+      "tests/pact-provider"
     ],
     "skipLibCheck": true,
     "sourceMap": true,

@@ -125,6 +125,9 @@ lib-cov
 coverage
 *.lcov
 
+# pact testing
+pacts
+
 # nyc test coverage
 .nyc_output
 

@@ -28,7 +28,7 @@ const createDefaultEventFields = <EventName extends string>(
   govukSigninJourneyId?: string
 ): TxmaEvent<EventName, any, any> => {
   return {
-    component_id: process.env.COMPONENT_ID,
+    component_id: process.env.COMPONENT_ID || "Unknown",
     event_name: eventName,
     event_timestamp_ms: Date.now(),
     timestamp: Math.floor(Date.now() / 1000),

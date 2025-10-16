@@ -7,7 +7,7 @@ import { isAisMessage, AisMessage } from "./ais-message";
 import { getConfiguration, type Configuration } from "../../commons/configuration";
 import { isStringWithLength } from "../../commons/string-utils";
 import logger from "../../commons/logger";
-import { isErrorResponse } from "../../credential-store/credential-store-error-response";
+import { isCredentialStoreErrorResponse } from "../../credential-store/credential-store-error-response";
 import { auditIdentityRecordInvalidated } from "../../commons/audit";
 import { invalidateIdentityInCredentialStore } from "../../credential-store/encrypted-credential-store";
 
@@ -48,7 +48,7 @@ const invalidateUser = async (userId: string, interventionCode: string) => {
       await auditIdentityRecordInvalidated(userId, interventionCode);
     } else {
       const responseBody = await response.json();
-      if (isErrorResponse(responseBody) && response.status === 404) {
+      if (isCredentialStoreErrorResponse(responseBody) && response.status === 404) {
         metrics.addMetric(MetricName.IdentityDoesNotExist, MetricUnit.Count, 1);
       } else {
         logger.error("Error calling service to invalid user", {

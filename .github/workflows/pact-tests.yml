@@ -1,17 +1,15 @@
-name: test
+name: pact-tests
 
 on:
   workflow_call:
-    secrets:
-      sonar-token:
-        required: true
+  workflow_dispatch:
 
 permissions:
   contents: read
   packages: read
 
 jobs:
-  test-code:
+  pact-testing:
     runs-on: ubuntu-latest
 
     steps:
@@ -32,15 +30,10 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Unit tests
-        run: npm run test
+      - name: Run Pact Consumer tests
+        run: npm run test:consumer
 
-      - name: Linting
-        run: npm run lint
-
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@master
-        if: ${{ github.actor != 'dependabot[bot]' && env.ACT != 'true' }}
+      - name: Run Pact Provider tests
+        run: npm run test:provider
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
-          SONAR_TOKEN: ${{ secrets.sonar-token }}
+          PACT_TYPE: file

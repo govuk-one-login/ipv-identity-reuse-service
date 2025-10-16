@@ -1,5 +1,6 @@
-export type ErrorResponse = {
+export type CredentialStoreErrorResponse = {
   message: string;
 };
 
-export const isErrorResponse = (message: any): message is ErrorResponse => !!message && message.message;
+export const isCredentialStoreErrorResponse = (message: any): message is CredentialStoreErrorResponse =>
+  !!message && message.message;
