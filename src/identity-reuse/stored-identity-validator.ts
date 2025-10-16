@@ -7,7 +7,7 @@ export const validateStoredIdentityCredentials = (
   encodedCredentialJwts: string[]
 ): boolean => {
   const expectedCredentialSignatures = storedIdentityRecord.credentials;
-  if (!expectedCredentialSignatures || !expectedCredentialSignatures.length) {
+  if (!expectedCredentialSignatures?.length) {
     logger.error(
       "Failed to validate stored identity record. Stored identity record does not reference any credentials."
     );

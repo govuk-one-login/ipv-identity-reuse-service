@@ -54,7 +54,7 @@ async function signLocal(body: Record<string, any>, protectedHeader: CompactJWSH
   return await new CompactSign(payloadBytes).setProtectedHeader(protectedHeader).sign(key);
 }
 
-export function getDefaultStoredIdentityHeader(
+export function getDefaultJwtHeader(
   alg: string = "ES256",
   kid = "did:web:api.identity.dev.account.gov.uk#f5fe5d2a-9eb6-4819-8c46-723e3a21565a"
 ): JWTHeaderParameters {
@@ -64,3 +64,7 @@ export function getDefaultStoredIdentityHeader(
     kid,
   };
 }
+
+export const renderDid = (didController: string, keyId: string): string => {
+  return `did:web:${didController}#${keyId}`;
+};

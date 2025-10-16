@@ -9,7 +9,7 @@ import * as ConfigurationModule from "../../../commons/configuration";
 import * as FraudCheckService from "../../../identity-reuse/fraud-check-service";
 import * as AuditModule from "../../../commons/audit";
 import { SendMessageCommandOutput } from "@aws-sdk/client-sqs";
-import { getDefaultStoredIdentityHeader, sign } from "../../../../shared-test/jwt-utils";
+import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utils";
 import { UserIdentityResponse } from "../../../handlers/user-identity/user-identity-response";
 import { CredentialStoreErrorResponse } from "../../../credential-store/credential-store-error-response";
 
@@ -144,7 +144,7 @@ const createCredentialStoreIdentityResponse = async (
     credentials: [],
   };
 
-  const defaultStoredIdentityHeader = getDefaultStoredIdentityHeader();
+  const defaultStoredIdentityHeader = getDefaultJwtHeader();
 
   return {
     si: {

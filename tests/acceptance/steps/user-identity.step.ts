@@ -6,8 +6,8 @@ import { WorldDefinition } from "./base-verbs.step";
 import { evcsPatchCredentials, evcsPostCredentials, evcsPostIdentity } from "./utils/evcs-api";
 import { JWTHeaderParameters, JWTPayload } from "jose";
 import { IdentityVectorOfTrust, IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials";
-import { getDefaultStoredIdentityHeader, sign } from "../../../shared-test/jwt-utils";
-import { renderDid } from "../../../shared-test/string-utils";
+import { getDefaultJwtHeader, sign } from "../../../shared-test/jwt-utils";
+import { renderDid } from "../../../shared-test/jwt-utils";
 
 Given<WorldDefinition>("a user has {int} CURRENT credentials stored", async function (credentials: number) {
   this.credentialJwts = await createAndPostCredentials(credentials, this.userId);
@@ -31,10 +31,7 @@ Given<WorldDefinition>("I have a user without a stored identity", async function
 });
 
 Given<WorldDefinition>("the user has a stored identity, with VOT {string}", async function (vot: string) {
-  const header: JWTHeaderParameters = getDefaultStoredIdentityHeader(
-    "ES256",
-    renderDid(this.testDidController, this.keyId)
-  );
+  const header: JWTHeaderParameters = getDefaultJwtHeader("ES256", renderDid(this.testDidController, this.keyId));
   const payload: JWTPayload = {
     sub: this.userId,
     iss: "http://api.example.com",
@@ -62,10 +59,7 @@ Given<WorldDefinition>(
   "I have a user with a Stored Identity, with VOT {string} and {int} credentials",
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async function (vot: string, credentials: number) {
-    const header: JWTHeaderParameters = getDefaultStoredIdentityHeader(
-      "ES256",
-      renderDid(this.testDidController, this.keyId)
-    );
+    const header: JWTHeaderParameters = getDefaultJwtHeader("ES256", renderDid(this.testDidController, this.keyId));
     const payload: JWTPayload = {
       sub: this.userId,
       iss: "http://api.example.com",
@@ -90,10 +84,7 @@ Given<WorldDefinition>(
 );
 
 Given<WorldDefinition>("I have a user with a Stored Identity, and an invalid signature", async function () {
-  const header: JWTHeaderParameters = getDefaultStoredIdentityHeader(
-    "ES256",
-    renderDid(this.testDidController, this.keyId)
-  );
+  const header: JWTHeaderParameters = getDefaultJwtHeader("ES256", renderDid(this.testDidController, this.keyId));
   const payload: JWTPayload = {
     sub: this.userId,
     iss: "http://api.example.com",
@@ -130,7 +121,7 @@ Given<WorldDefinition>(
       throw new Error("Invalid kid config");
     }
 
-    const header: JWTHeaderParameters = getDefaultStoredIdentityHeader("ES256", kid);
+    const header: JWTHeaderParameters = getDefaultJwtHeader("ES256", kid);
     const payload: JWTPayload = {
       sub: this.userId,
       iss: "http://api.example.com",
@@ -267,7 +258,7 @@ Then("the stored identity isValid field is {boolean}", function (isValid: boolea
 
 const createAndPostCredentials = async (credentials: number, userId: string): Promise<string[]> => {
   const credentialJwts = [];
-  const header: JWTHeaderParameters = getDefaultStoredIdentityHeader();
+  const header: JWTHeaderParameters = getDefaultJwtHeader();
   for (let i = 0; i < credentials; i++) {
     const credentialPayload: IdentityCheckCredentialJWTClass = {
       sub: userId,
@@ -298,8 +289,4 @@ Then("the stored identity kidValid field is {boolean}", function (kidValid: bool
 
 Then("the stored identity signatureValid field is {boolean}", function (signatureValid: boolean) {
   assert.equal(this.userIdentityPostResponse?.body?.signatureValid, signatureValid);
-});
-
-Then<WorldDefinition>("the stored credentials should be returned", function () {
-  // TODO: To be implemented in SPT-1629
 });

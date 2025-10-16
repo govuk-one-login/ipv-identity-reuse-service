@@ -1,6 +1,6 @@
 import { CredentialStoreIdentityResponse, JWTIncludingStateAndMetadata } from "../credential-store-identity-response";
 import { IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials";
-import { getDefaultStoredIdentityHeader, sign } from "../../../shared-test/jwt-utils";
+import { getDefaultJwtHeader, sign } from "../../../shared-test/jwt-utils";
 import { parseCurrentVerifiableCredentials } from "../encrypted-credential-store";
 
 describe("parseCurrentVerifiableCredentials", () => {
@@ -32,7 +32,7 @@ const createVerifiableCredentialWithState = async (
 ): Promise<JWTIncludingStateAndMetadata> => {
   return {
     state: state,
-    vc: await sign(getDefaultStoredIdentityHeader(), getVerifiableCredential(issuer)),
+    vc: await sign(getDefaultJwtHeader(), getVerifiableCredential(issuer)),
     metadata: null,
   };
 };

@@ -16,7 +16,7 @@ import { TxmaEvent } from "../../../commons/audit-events";
 import { SendMessageCommandOutput } from "@aws-sdk/client-sqs";
 import { decodeJwt, JWTHeaderParameters } from "jose";
 import { getJwtSignature } from "../../../commons/jwt-utils";
-import { publicKeyJwk, getDefaultStoredIdentityHeader, sign } from "../../../../shared-test/jwt-utils";
+import { publicKeyJwk, getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utils";
 
 const CURRENT = "CURRENT";
 const HISTORIC = "HISTORIC";
@@ -156,7 +156,7 @@ describe("user-identity-handler authorization", () => {
   it("signatureValid should be false, given signature validation fails", async () => {
     const misSignedStoredIdentity =
       "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRpZDp3ZWI6YXBpLmlkZW50aXR5LmRldi5hY2NvdW50Lmdvdi51ayNmNWZlNWQyYS05ZWI2LTQ4MTktOGM0Ni03MjNlM2EyMTU2NWEifQ.eyJzdWIiOiJ1c2VyLXN1YiIsInZvdCI6IlAyIiwidnRtIjpbXX0.-jy9iwsn6uDzr6b3mk0JJZ4NdUf8z3O3ldBbbXKAAtxMH3TIMlBm5u2bI4I1qHrWk1BL2k8muKLV-VIUeych1A";
-    const { mockEVCSData } = await createCredentialStoreIdentityResponse([], getDefaultStoredIdentityHeader());
+    const { mockEVCSData } = await createCredentialStoreIdentityResponse([], getDefaultJwtHeader());
     mockEVCSData.si.vc = misSignedStoredIdentity;
     mockEVCSResponse(mockEVCSData);
 
@@ -178,7 +178,7 @@ describe("user-identity-handler authorization", () => {
     jest.spyOn(DidResolutionService, "isValidDidWeb").mockReturnValue(false);
     const { mockEVCSData } = await createCredentialStoreIdentityResponse(
       [],
-      getDefaultStoredIdentityHeader("ES256", "did:invalid-did")
+      getDefaultJwtHeader("ES256", "did:invalid-did")
     );
     mockEVCSResponse(mockEVCSData);
 
@@ -202,7 +202,7 @@ describe("user-identity-handler authorization", () => {
 
     const { mockEVCSData } = await createCredentialStoreIdentityResponse(
       [],
-      getDefaultStoredIdentityHeader("ES256", "did:web:DISALLOWED.CONTROLLER#f5fe5d2a-9eb6-4819-8c46-723e3a21565a")
+      getDefaultJwtHeader("ES256", "did:web:DISALLOWED.CONTROLLER#f5fe5d2a-9eb6-4819-8c46-723e3a21565a")
     );
     mockEVCSResponse(mockEVCSData);
 
@@ -516,7 +516,7 @@ describe("user-identity-handler isValid", () => {
 
     const { mockEVCSData } = await createCredentialStoreIdentityResponse(
       credentials,
-      getDefaultStoredIdentityHeader(),
+      getDefaultJwtHeader(),
       credentialSignaturesMissingOne
     );
     mockEVCSResponse(mockEVCSData);
@@ -546,7 +546,7 @@ describe("user-identity-handler isValid", () => {
 
     const { mockEVCSData } = await createCredentialStoreIdentityResponse(
       credentials,
-      getDefaultStoredIdentityHeader(),
+      getDefaultJwtHeader(),
       credentialSignaturesExtraOne
     );
     mockEVCSResponse(mockEVCSData);
@@ -573,7 +573,7 @@ type StoredIdentityResponse = {
 
 const createCredentialStoreIdentityResponse = async (
   signedVcs: string[],
-  header: JWTHeaderParameters = getDefaultStoredIdentityHeader(),
+  header: JWTHeaderParameters = getDefaultJwtHeader(),
   forcedCredentialSignatures?: string[]
 ): Promise<StoredIdentityResponse> => {
   const vcsAndStates = signedVcs.map((vc) => {
@@ -584,7 +584,7 @@ const createCredentialStoreIdentityResponse = async (
 
 const createCredentialStoreIdentityResponseWithStates = async (
   credentialsAndStates: { signedVc: string; state: string }[],
-  header: JWTHeaderParameters = getDefaultStoredIdentityHeader(),
+  header: JWTHeaderParameters = getDefaultJwtHeader(),
   forcedCredentialSignatures?: string[]
 ): Promise<StoredIdentityResponse> => {
   const evcsVcs = credentialsAndStates.map((vcState) => {
@@ -630,5 +630,5 @@ const createSignedIdentityCheckCredentialJWT = async (issuer: string, nbfDate?: 
       type: ["VerifiableCredential", "IdentityCheckCredential"],
     },
   };
-  return await sign(getDefaultStoredIdentityHeader(), credential);
+  return await sign(getDefaultJwtHeader(), credential);
 };
