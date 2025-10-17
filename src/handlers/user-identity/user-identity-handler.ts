@@ -1,5 +1,6 @@
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
+import { jwtVerify } from "jose";
 import { auditIdentityRecordRead, auditIdentityRecordReturned } from "../../commons/audit";
 import { getConfiguration } from "../../commons/configuration";
 import { HttpCodesEnum } from "../../commons/constants";
@@ -10,20 +11,15 @@ import {
   getIdentityFromCredentialStore,
   parseCurrentVerifiableCredentials,
 } from "../../credential-store/encrypted-credential-store";
-import { VerifiableCredentialJWT } from "../../identity-reuse/verifiable-credential-jwt";
-import { UserIdentityRequest } from "./user-identity-request";
-import * as didResolutionService from "../../identity-reuse/did-resolution-service";
-import { UserIdentityResponse as CredentialStoreStoredIdentityJWT } from "./user-identity-response";
-import { UserIdentityResponseMetadata } from "./user-identity-response-metadata";
 import { calculateVot } from "../../identity-reuse/calculate-vot";
+import * as didResolutionService from "../../identity-reuse/did-resolution-service";
 import { getFraudVc, hasFraudCheckExpired } from "../../identity-reuse/fraud-check-service";
 import { validateStoredIdentityCredentials } from "../../identity-reuse/stored-identity-validator";
-import { jwtVerify } from "jose";
-
-type ErrorResponse = {
-  error: string;
-  error_description: string;
-};
+import { VerifiableCredentialJWT } from "../../identity-reuse/verifiable-credential-jwt";
+import { UserIdentityErrorResponse } from "./user-identity-error-response";
+import { UserIdentityRequest } from "./user-identity-request";
+import { UserIdentityResponse as CredentialStoreStoredIdentityJWT } from "./user-identity-response";
+import { UserIdentityResponseMetadata } from "./user-identity-response-metadata";
 
 export const handler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
   const request = event.body ? (JSON.parse(event.body) as UserIdentityRequest) : undefined;
@@ -74,10 +70,10 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
   }
 };
 
-const getProperty = <T extends Record<string, any>>(obj: T, property: string) => {
+const getProperty = <T extends Record<string, unknown>>(obj: T, property: string): string | undefined => {
   const propertyLowerCase = property.toLowerCase();
   const foundKey = Object.keys(obj).find((k) => k.toLowerCase() === propertyLowerCase);
-  return foundKey ? obj[foundKey] : undefined;
+  return foundKey && typeof obj[foundKey] === "string" ? obj[foundKey] : undefined;
 };
 
 const createSuccessResponse = async (
@@ -159,7 +155,7 @@ const createErrorResponse = (errorCode: HttpCodesEnum): APIGatewayProxyResult =>
   }
   return {
     statusCode: errorCode,
-    body: JSON.stringify({ error, error_description } as ErrorResponse),
+    body: JSON.stringify({ error, error_description } as UserIdentityErrorResponse),
   };
 };
 

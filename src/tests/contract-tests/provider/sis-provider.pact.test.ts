@@ -1,19 +1,21 @@
-import type { Server } from "http";
-import { Verifier, type VerifierOptions } from "@pact-foundation/pact";
-import { createServer as createProviderServer } from "./sis-provider-app";
-import path from "node:path";
-import type { Configuration } from "../../../commons/configuration";
-import type { CredentialStoreIdentityResponse } from "../../../credential-store/credential-store-identity-response";
-import type { VerifiableCredentialJWT } from "../../../identity-reuse/verifiable-credential-jwt";
-import * as ConfigurationModule from "../../../commons/configuration";
-import * as FraudCheckService from "../../../identity-reuse/fraud-check-service";
-import * as AuditModule from "../../../commons/audit";
 import { SendMessageCommandOutput } from "@aws-sdk/client-sqs";
+import { Verifier, type VerifierOptions } from "@pact-foundation/pact";
+import type { Server } from "http";
+import path from "node:path";
 import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utils";
-import { UserIdentityResponse } from "../../../handlers/user-identity/user-identity-response";
+import * as AuditModule from "../../../commons/audit";
+import type { Configuration } from "../../../commons/configuration";
+import * as ConfigurationModule from "../../../commons/configuration";
 import { CredentialStoreErrorResponse } from "../../../credential-store/credential-store-error-response";
+import type { CredentialStoreIdentityResponse } from "../../../credential-store/credential-store-identity-response";
+import { UserIdentityResponse } from "../../../handlers/user-identity/user-identity-response";
+import * as FraudCheckService from "../../../identity-reuse/fraud-check-service";
+import type { VerifiableCredentialJWT } from "../../../identity-reuse/verifiable-credential-jwt";
+import { createServer as createProviderServer } from "./sis-provider-app";
 
 const PORT = 8080;
+
+jest.setTimeout(10000);
 
 const validateEnvironment = () => {
   const environmentType = (process.env.PACT_TYPE || "file").toLowerCase();
@@ -102,6 +104,9 @@ describe("Sis Pact Verification", () => {
         return {};
       },
       stateHandlers: {
+        "stored identity does not exist": async () => {
+          mockEVCSResponse({ message: "not found" }, 404);
+        },
         "[P1, P2] and test-gov-journey-id are valid but record was not found": async () => {
           mockEVCSResponse({ message: "not found" }, 404);
         },

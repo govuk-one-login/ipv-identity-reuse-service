@@ -1,5 +1,7 @@
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
 
+type WithOptionalNever<Key extends PropertyKey, T> = [T] extends [never] ? { [P in Key]?: T } : { [P in Key]: T };
+
 export type TxmaEvent<
   EventName extends string,
   ExtensionsT extends object | undefined = undefined,
@@ -9,15 +11,14 @@ export type TxmaEvent<
   event_name: EventName;
   event_timestamp_ms: number;
   timestamp: number;
-  extensions: ExtensionsT;
-  restricted: RestrictedT;
   user: {
     govuk_signin_journey_id?: string;
     ip_address?: string;
     session_id?: string;
     user_id?: string;
   };
-};
+} & WithOptionalNever<"extensions", ExtensionsT> &
+  WithOptionalNever<"restricted", RestrictedT>;
 
 export type TxmaSisStoredIdentityReadEvent = TxmaEvent<
   "SIS_STORED_IDENTITY_READ",

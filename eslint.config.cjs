@@ -38,7 +38,7 @@ module.exports = defineConfig([
 
     rules: {
       "@typescript-eslint/no-var-requires": 0,
-      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-explicit-any": "error",
       "no-console": 2,
 
       "@typescript-eslint/explicit-module-boundary-types": [

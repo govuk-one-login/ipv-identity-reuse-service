@@ -34,21 +34,21 @@ export const didDocument: DIDDocument = {
   ],
 };
 
-export async function sign(
-  header: Record<string, any>,
-  body: Record<string, any>,
+export async function sign<BodyT extends object>(
+  header: JWTHeaderParameters,
+  body: BodyT,
   kms: boolean = false
 ): Promise<string> {
   const protectedHeader: CompactJWSHeaderParameters = {
+    ...header,
     typ: header?.typ ?? "JWT",
     kid: header?.kid ?? verificationMethodId,
     alg: header?.alg ?? "ES256",
-    ...header,
   };
   return kms ? await signKms(body, protectedHeader) : await signLocal(body, protectedHeader);
 }
 
-async function signLocal(body: Record<string, any>, protectedHeader: CompactJWSHeaderParameters) {
+async function signLocal<BodyT extends object>(body: BodyT, protectedHeader: CompactJWSHeaderParameters) {
   const key = await importJWK(privateKeyJwk, "ES256");
   const payloadBytes = new TextEncoder().encode(JSON.stringify(body));
   return await new CompactSign(payloadBytes).setProtectedHeader(protectedHeader).sign(key);
