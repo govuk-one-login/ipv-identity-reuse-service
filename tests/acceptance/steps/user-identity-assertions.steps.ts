@@ -64,10 +64,6 @@ Then("the stored identity expired field is {boolean}", function (isExpired: bool
   assert.equal(this.userIdentityPostResponse?.body?.expired, isExpired);
 });
 
-Then<WorldDefinition>("the stored credentials should be returned", function () {
-  // TODO: To be implemented in SPT-1629
-});
-
 Then<WorldDefinition>("the untrusted stored identity should be returned", function () {
   assert.deepEqual(
     {
