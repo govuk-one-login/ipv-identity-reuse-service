@@ -67,3 +67,39 @@ Then("the stored identity expired field is {boolean}", function (isExpired: bool
 Then<WorldDefinition>("the stored credentials should be returned", function () {
   // TODO: To be implemented in SPT-1629
 });
+
+Then<WorldDefinition>("the untrusted stored identity should be returned", function () {
+  assert.deepEqual(
+    {
+      ...this.userIdentityPostResponse?.body,
+      content: {
+        ...this.userIdentityPostResponse?.body?.content,
+        vot: undefined,
+      },
+      vot: undefined,
+      isValid: undefined,
+      kidValid: undefined,
+      signatureValid: undefined,
+    },
+    {
+      content: {
+        sub: this.userId,
+        iss: "http://api.example.com",
+        vot: undefined,
+      },
+      vot: undefined,
+      isValid: undefined,
+      expired: true,
+      kidValid: undefined,
+      signatureValid: undefined,
+    }
+  );
+});
+
+Then("the stored identity kidValid field is {boolean}", function (kidValid: boolean) {
+  assert.equal(this.userIdentityPostResponse?.body?.kidValid, kidValid);
+});
+
+Then("the stored identity signatureValid field is {boolean}", function (signatureValid: boolean) {
+  assert.equal(this.userIdentityPostResponse?.body?.signatureValid, signatureValid);
+});
