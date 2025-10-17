@@ -1,19 +1,32 @@
 import { getDefaultJwtHeader, sign } from "../../../shared-test/jwt-utils";
-import { getJwtBody, getJwtSignature } from "../jwt-utils";
+import { getJwtBody, getJwtHeader, getJwtSignature } from "../jwt-utils";
 
+const validJwtBody = {
+  iss: "iss",
+  sub: "sub",
+};
+const validJwtHeader = getDefaultJwtHeader();
 describe("getJwtBody", () => {
-  it("should decode a valid JWT", () => {
-    const validJwtBody = {
-      iss: "iss",
-      sub: "sub",
-    };
-    const testJwt = sign(getDefaultJwtHeader(), validJwtBody);
+  it("should decode a valid JWT", async () => {
+    const testJwt = await sign(validJwtHeader, validJwtBody);
     expect(getJwtBody(testJwt)).toEqual(validJwtBody);
   });
 
   it("should throw when decoding an invalid JWT", () => {
     const testJwt = "invalidJWT";
-    expect(() => getJwtBody(testJwt)).toThrow(Error);
+    expect(() => getJwtBody(testJwt)).toThrow("Invalid JWT");
+  });
+});
+
+describe("getJwtHeader", () => {
+  it("should decode a valid JWT", async () => {
+    const testJwt = await sign(validJwtHeader, validJwtBody);
+    expect(getJwtHeader(testJwt)).toEqual(validJwtHeader);
+  });
+
+  it("should throw when decoding an invalid JWT", () => {
+    const testJwt = "invalidJWT";
+    expect(() => getJwtBody(testJwt)).toThrow("Invalid JWT");
   });
 });
 

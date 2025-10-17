@@ -55,3 +55,36 @@ Feature: UserIdentity Post - Happy Path
     Then the status code should be 200
     And the stored identity should be returned
     And the stored identity isValid field is false
+
+
+  Scenario: A request is made with an invalid kid, and kidValid is false
+    Given I have a user with a Stored Identity, with "invalid" kid
+    When I make a request for the users identity with a VTR "P2"
+    Then the status code should be 200
+    And the untrusted stored identity should be returned
+    And the stored identity kidValid field is false
+    And the stored identity signatureValid field is false
+
+  Scenario: A request is made without a kid, and kidValid is false
+    Given I have a user with a Stored Identity, with "no" kid
+    When I make a request for the users identity with a VTR "P2"
+    Then the status code should be 200
+    And the untrusted stored identity should be returned
+    And the stored identity kidValid field is false
+    And the stored identity signatureValid field is false
+
+  Scenario: A request is made with a forbidden kid, and kidValid is false
+    Given I have a user with a Stored Identity, with "forbidden" kid
+    When I make a request for the users identity with a VTR "P2"
+    Then the status code should be 200
+    And the untrusted stored identity should be returned
+    And the stored identity kidValid field is false
+    And the stored identity signatureValid field is false
+
+  Scenario: A stored identity is returned for the user, and signatureValid is false
+    Given I have a user with a Stored Identity, and an invalid signature
+    When I make a request for the users identity with a VTR "P2"
+    Then the status code should be 200
+    And the untrusted stored identity should be returned
+    And the stored identity kidValid field is true
+    And the stored identity signatureValid field is false

@@ -3,7 +3,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda
 import { auditIdentityRecordRead, auditIdentityRecordReturned } from "../../commons/audit";
 import { getConfiguration } from "../../commons/configuration";
 import { HttpCodesEnum } from "../../commons/constants";
-import { getJwtBody } from "../../commons/jwt-utils";
+import { getJwtBody, getJwtHeader } from "../../commons/jwt-utils";
 import logger from "../../commons/logger";
 import { CredentialStoreIdentityResponse } from "../../credential-store/credential-store-identity-response";
 import {
@@ -12,11 +12,13 @@ import {
 } from "../../credential-store/encrypted-credential-store";
 import { VerifiableCredentialJWT } from "../../identity-reuse/verifiable-credential-jwt";
 import { UserIdentityRequest } from "./user-identity-request";
+import * as didResolutionService from "../../identity-reuse/did-resolution-service";
 import { UserIdentityResponse as CredentialStoreStoredIdentityJWT } from "./user-identity-response";
 import { UserIdentityResponseMetadata } from "./user-identity-response-metadata";
 import { calculateVot } from "../../identity-reuse/calculate-vot";
 import { getFraudVc, hasFraudCheckExpired } from "../../identity-reuse/fraud-check-service";
 import { validateStoredIdentityCredentials } from "../../identity-reuse/stored-identity-validator";
+import { jwtVerify } from "jose";
 
 type ErrorResponse = {
   error: string;
@@ -84,11 +86,13 @@ const createSuccessResponse = async (
   userId: string,
   govukSigninJourneyId: string
 ): Promise<UserIdentityResponseMetadata> => {
-  const { fraudIssuer, fraudValidityPeriod } = await getConfiguration();
+  const configuration = await getConfiguration();
   const content: CredentialStoreStoredIdentityJWT = getJwtBody(identityResponse.si.vc);
   const currentVcsEncoded: string[] = identityResponse.vcs.map((vcWithMetadata) => vcWithMetadata.vc);
   const currentVcs: VerifiableCredentialJWT[] = parseCurrentVerifiableCredentials(identityResponse);
-  const fraudVc = getFraudVc(currentVcs, fraudIssuer);
+  const fraudVc = getFraudVc(currentVcs, configuration.fraudIssuer);
+  const kid = getJwtHeader(identityResponse.si.vc).kid || "";
+  const validationResults = await validateCryptography(kid, identityResponse);
   const vot = calculateVot(content.vot as IdentityVectorOfTrust, vtr);
 
   await auditIdentityRecordRead(
@@ -108,9 +112,8 @@ const createSuccessResponse = async (
     content: { ...content, vot },
     vot: content.vot,
     isValid: validateStoredIdentityCredentials(content, currentVcsEncoded),
-    expired: hasFraudCheckExpired(fraudVc, fraudValidityPeriod),
-    kidValid: true,
-    signatureValid: true,
+    expired: hasFraudCheckExpired(fraudVc, configuration.fraudValidityPeriod),
+    ...validationResults,
   };
 
   await auditIdentityRecordReturned(
@@ -209,4 +212,29 @@ const createAndLogErrorResponse = async (
   );
 
   return errorResponse;
+};
+
+const validateCryptography = async (
+  kid: string,
+  identityResponse: CredentialStoreIdentityResponse
+): Promise<{ kidValid: boolean; signatureValid: boolean }> => {
+  const configuration = await getConfiguration();
+  const controller = didResolutionService.getDidWebController(kid);
+  const kidValid = didResolutionService.isValidDidWeb(kid) && configuration.controllerAllowList.includes(controller);
+  let signatureValid = false;
+  if (kidValid) {
+    signatureValid = await verifySignature(kid, identityResponse.si.vc);
+  }
+  return { kidValid, signatureValid };
+};
+
+export const verifySignature = async (kid: string, jwt: string): Promise<boolean> => {
+  try {
+    const jwk = await didResolutionService.getPublicKeyJwkForKid(kid);
+    await jwtVerify(jwt, jwk);
+  } catch (error) {
+    logger.error("Error verifying signature", { error });
+    return false;
+  }
+  return true;
 };

@@ -9,12 +9,14 @@ import { UserIdentityRequest } from "../user-identity-request";
 import * as fraudCheckService from "../../../identity-reuse/fraud-check-service";
 import * as storedIdentityValidator from "../../../identity-reuse/stored-identity-validator";
 import { IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials";
-import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utils";
+
 import * as AuditModule from "../../../commons/audit";
+import * as DidResolutionService from "../../../identity-reuse/did-resolution-service";
 import { TxmaEvent } from "../../../commons/audit-events";
 import { SendMessageCommandOutput } from "@aws-sdk/client-sqs";
-import { decodeJwt } from "jose";
+import { decodeJwt, JWTHeaderParameters } from "jose";
 import { getJwtSignature } from "../../../commons/jwt-utils";
+import { publicKeyJwk, getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utils";
 
 const CURRENT = "CURRENT";
 const HISTORIC = "HISTORIC";
@@ -60,6 +62,8 @@ let mockSendTxmaEvent: jest.SpyInstance<
   any
 >;
 
+const ALLOWED_CONTROLLER = "api.identity.dev.account.gov.uk";
+
 beforeEach(() => {
   jest.useFakeTimers({ now: 1759240815925 });
   jest.clearAllMocks();
@@ -67,12 +71,15 @@ beforeEach(() => {
   jest.spyOn(configuration, "getServiceApiKey").mockResolvedValue("an-api-key");
   jest.spyOn(configuration, "getConfiguration").mockResolvedValue({
     evcsApiUrl: "https://evcs.gov.uk",
+    controllerAllowList: [ALLOWED_CONTROLLER],
     fraudIssuer: [FRAUD_ISSUER],
     fraudValidityPeriod: TEST_FRAUD_VALIDITY_HOURS,
   } as Configuration);
   jest.spyOn(fraudCheckService, "hasFraudCheckExpired").mockRestore();
   jest.spyOn(storedIdentityValidator, "validateStoredIdentityCredentials").mockRestore();
-
+  jest.spyOn(DidResolutionService, "getPublicKeyJwkForKid").mockResolvedValue(publicKeyJwk);
+  jest.spyOn(DidResolutionService, "isValidDidWeb").mockReturnValue(true);
+  jest.spyOn(DidResolutionService, "getDidWebController").mockReturnValue(ALLOWED_CONTROLLER);
   mockSendTxmaEvent = jest.spyOn(AuditModule, "sendAuditMessage").mockResolvedValue({ $metadata: {} });
 });
 
@@ -83,9 +90,9 @@ describe("user-identity-handler authorization", () => {
   });
 
   it("should return Success, given a valid bearer token", async () => {
-    const { mockEVCSData, credentialSignatures } = createCredentialStoreIdentityResponse([
-      createSignedIdentityCheckCredentialJWT(PASSPORT_ISSUER),
-      createSignedIdentityCheckCredentialJWT(FRAUD_ISSUER),
+    const { mockEVCSData, credentialSignatures } = await createCredentialStoreIdentityResponse([
+      await createSignedIdentityCheckCredentialJWT(PASSPORT_ISSUER),
+      await createSignedIdentityCheckCredentialJWT(FRAUD_ISSUER),
     ]);
     mockEVCSResponse(mockEVCSData);
 
@@ -143,6 +150,73 @@ describe("user-identity-handler authorization", () => {
         user_id: TEST_USER,
         govuk_signin_journey_id: "govuk_signin_journey_id",
       },
+    });
+  });
+
+  it("signatureValid should be false, given signature validation fails", async () => {
+    const misSignedStoredIdentity =
+      "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRpZDp3ZWI6YXBpLmlkZW50aXR5LmRldi5hY2NvdW50Lmdvdi51ayNmNWZlNWQyYS05ZWI2LTQ4MTktOGM0Ni03MjNlM2EyMTU2NWEifQ.eyJzdWIiOiJ1c2VyLXN1YiIsInZvdCI6IlAyIiwidnRtIjpbXX0.-jy9iwsn6uDzr6b3mk0JJZ4NdUf8z3O3ldBbbXKAAtxMH3TIMlBm5u2bI4I1qHrWk1BL2k8muKLV-VIUeych1A";
+    const { mockEVCSData } = await createCredentialStoreIdentityResponse([], getDefaultJwtHeader());
+    mockEVCSData.si.vc = misSignedStoredIdentity;
+    mockEVCSResponse(mockEVCSData);
+
+    const result = await handler(newEvent, {} as Context);
+
+    expect(result.statusCode).toBe(HttpCodesEnum.OK);
+    const body = JSON.parse(result.body) as UserIdentityResponseMetadata;
+    expect(body).toStrictEqual({
+      vot: "P2",
+      content: { sub: "user-sub", vot: "P2", vtm: [] },
+      expired: false,
+      isValid: true,
+      kidValid: true,
+      signatureValid: false,
+    });
+  });
+
+  it("kidValid should be false, given an invalid kid claim", async () => {
+    jest.spyOn(DidResolutionService, "isValidDidWeb").mockReturnValue(false);
+    const { mockEVCSData } = await createCredentialStoreIdentityResponse(
+      [],
+      getDefaultJwtHeader("ES256", "did:invalid-did")
+    );
+    mockEVCSResponse(mockEVCSData);
+
+    const result = await handler(newEvent, {} as Context);
+
+    expect(result.statusCode).toBe(HttpCodesEnum.OK);
+    const body = JSON.parse(result.body) as UserIdentityResponseMetadata;
+    expect(body).toStrictEqual({
+      vot: "P2",
+      content: { sub: "user-sub", vot: "P2", vtm: [] },
+      expired: false,
+      isValid: true,
+      kidValid: false,
+      signatureValid: false,
+    });
+  });
+
+  it("kidValid should be false, given non allow listed did controller header", async () => {
+    jest.spyOn(DidResolutionService, "isValidDidWeb").mockReturnValue(true);
+    jest.spyOn(DidResolutionService, "getDidWebController").mockReturnValue("DISALLOWED.CONTROLLER");
+
+    const { mockEVCSData } = await createCredentialStoreIdentityResponse(
+      [],
+      getDefaultJwtHeader("ES256", "did:web:DISALLOWED.CONTROLLER#f5fe5d2a-9eb6-4819-8c46-723e3a21565a")
+    );
+    mockEVCSResponse(mockEVCSData);
+
+    const result = await handler(newEvent, {} as Context);
+
+    expect(result.statusCode).toBe(HttpCodesEnum.OK);
+    const body = JSON.parse(result.body) as UserIdentityResponseMetadata;
+    expect(body).toStrictEqual({
+      vot: "P2",
+      content: { sub: "user-sub", vot: "P2", vtm: [] },
+      expired: false,
+      isValid: true,
+      kidValid: false,
+      signatureValid: false,
     });
   });
 
@@ -366,6 +440,18 @@ describe("user-identity-handler expired", () => {
 
   beforeEach(() => {
     jest.spyOn(storedIdentityValidator, "validateStoredIdentityCredentials").mockReturnValue(true);
+    jest.clearAllMocks();
+    newEvent = event();
+    jest.spyOn(configuration, "getServiceApiKey").mockResolvedValue("an-api-key");
+    jest.spyOn(configuration, "getConfiguration").mockResolvedValue({
+      evcsApiUrl: "https://evcs.gov.uk",
+      controllerAllowList: [ALLOWED_CONTROLLER],
+      fraudIssuer: [FRAUD_ISSUER],
+      fraudValidityPeriod: TEST_FRAUD_VALIDITY_HOURS,
+    } as Configuration);
+    jest.spyOn(fraudCheckService, "hasFraudCheckExpired").mockRestore();
+
+    jest.useFakeTimers();
     jest.setSystemTime(new Date(NOW));
   });
 
@@ -387,12 +473,14 @@ describe("user-identity-handler expired", () => {
       expectedExpired: true,
     },
   ])(`should set expired value based on NBF of CURRENT fraud check`, async ({ fraudCheckInputs, expectedExpired }) => {
-    const fraudChecks = fraudCheckInputs.map((input) => {
-      return { signedVc: createSignedIdentityCheckCredentialJWT(FRAUD_ISSUER, input.nbf), state: input.state };
-    });
-    const passportCheck = createSignedIdentityCheckCredentialJWT(PASSPORT_ISSUER, RANDOM_NBF);
+    const fraudChecks = await Promise.all(
+      fraudCheckInputs.map(async (input) => {
+        return { signedVc: await createSignedIdentityCheckCredentialJWT(FRAUD_ISSUER, input.nbf), state: input.state };
+      })
+    );
+    const passportCheck = await createSignedIdentityCheckCredentialJWT(PASSPORT_ISSUER, RANDOM_NBF);
 
-    const { mockEVCSData, credentialSignatures } = createCredentialStoreIdentityResponseWithStates([
+    const { mockEVCSData, credentialSignatures } = await createCredentialStoreIdentityResponseWithStates([
       ...fraudChecks,
       { signedVc: passportCheck, state: CURRENT },
     ]);
@@ -419,14 +507,18 @@ describe("user-identity-handler isValid", () => {
   });
 
   it("should set isValid to false if stored identity record is missing credential signature", async () => {
-    const passportCredential = createSignedIdentityCheckCredentialJWT(PASSPORT_ISSUER);
-    const fraudCredential = createSignedIdentityCheckCredentialJWT(FRAUD_ISSUER);
+    const passportCredential = await createSignedIdentityCheckCredentialJWT(PASSPORT_ISSUER);
+    const fraudCredential = await createSignedIdentityCheckCredentialJWT(FRAUD_ISSUER);
     const fraudCredentialSignature = getJwtSignature(fraudCredential)!;
 
     const credentials = [passportCredential, fraudCredential];
     const credentialSignaturesMissingOne = [fraudCredentialSignature];
 
-    const { mockEVCSData } = createCredentialStoreIdentityResponse(credentials, credentialSignaturesMissingOne);
+    const { mockEVCSData } = await createCredentialStoreIdentityResponse(
+      credentials,
+      getDefaultJwtHeader(),
+      credentialSignaturesMissingOne
+    );
     mockEVCSResponse(mockEVCSData);
 
     const result = await handler(newEvent, {} as Context);
@@ -444,15 +536,19 @@ describe("user-identity-handler isValid", () => {
   });
 
   it("should set isValid to false if stored identity record contains extra credential signature", async () => {
-    const passportCredential = createSignedIdentityCheckCredentialJWT(PASSPORT_ISSUER);
-    const fraudCredential = createSignedIdentityCheckCredentialJWT(FRAUD_ISSUER);
+    const passportCredential = await createSignedIdentityCheckCredentialJWT(PASSPORT_ISSUER);
+    const fraudCredential = await createSignedIdentityCheckCredentialJWT(FRAUD_ISSUER);
     const fraudCredentialSignature = fraudCredential.split(".").at(2)!;
     const passportCredentialSignature = passportCredential.split(".").at(2)!;
 
     const credentials = [passportCredential];
     const credentialSignaturesExtraOne = [passportCredentialSignature, fraudCredentialSignature];
 
-    const { mockEVCSData } = createCredentialStoreIdentityResponse(credentials, credentialSignaturesExtraOne);
+    const { mockEVCSData } = await createCredentialStoreIdentityResponse(
+      credentials,
+      getDefaultJwtHeader(),
+      credentialSignaturesExtraOne
+    );
     mockEVCSResponse(mockEVCSData);
 
     const result = await handler(newEvent, {} as Context);
@@ -470,20 +566,27 @@ describe("user-identity-handler isValid", () => {
   });
 });
 
-const createCredentialStoreIdentityResponse = (
+type StoredIdentityResponse = {
+  mockEVCSData: CredentialStoreIdentityResponse;
+  credentialSignatures: string[];
+};
+
+const createCredentialStoreIdentityResponse = async (
   signedVcs: string[],
+  header: JWTHeaderParameters = getDefaultJwtHeader(),
   forcedCredentialSignatures?: string[]
-): { mockEVCSData: CredentialStoreIdentityResponse; credentialSignatures: string[] } => {
+): Promise<StoredIdentityResponse> => {
   const vcsAndStates = signedVcs.map((vc) => {
     return { signedVc: vc, state: CURRENT };
   });
-  return createCredentialStoreIdentityResponseWithStates(vcsAndStates, forcedCredentialSignatures);
+  return await createCredentialStoreIdentityResponseWithStates(vcsAndStates, header, forcedCredentialSignatures);
 };
 
-const createCredentialStoreIdentityResponseWithStates = (
+const createCredentialStoreIdentityResponseWithStates = async (
   credentialsAndStates: { signedVc: string; state: string }[],
+  header: JWTHeaderParameters = getDefaultJwtHeader(),
   forcedCredentialSignatures?: string[]
-): { mockEVCSData: CredentialStoreIdentityResponse; credentialSignatures: string[] } => {
+): Promise<StoredIdentityResponse> => {
   const evcsVcs = credentialsAndStates.map((vcState) => {
     return { state: vcState.state, vc: vcState.signedVc, metadata: null };
   });
@@ -495,7 +598,7 @@ const createCredentialStoreIdentityResponseWithStates = (
   const response: CredentialStoreIdentityResponse = {
     si: {
       state: CURRENT,
-      vc: sign(getDefaultJwtHeader(), storedIdentity),
+      vc: await sign(header, storedIdentity),
       metadata: null,
     },
     vcs: evcsVcs,
@@ -516,7 +619,7 @@ const createStoredIdentityRecord = (...credentialSignatures: string[]) => {
     : storedIdentityRecord;
 };
 
-const createSignedIdentityCheckCredentialJWT = (issuer: string, nbfDate?: string): string => {
+const createSignedIdentityCheckCredentialJWT = async (issuer: string, nbfDate?: string): Promise<string> => {
   const nbfSeconds = Math.floor((nbfDate ? new Date(nbfDate).getTime() : Date.now()) / 1000);
   const credential: IdentityCheckCredentialJWTClass = {
     iss: issuer,
@@ -527,5 +630,5 @@ const createSignedIdentityCheckCredentialJWT = (issuer: string, nbfDate?: string
       type: ["VerifiableCredential", "IdentityCheckCredential"],
     },
   };
-  return sign(getDefaultJwtHeader(), credential);
+  return await sign(getDefaultJwtHeader(), credential);
 };

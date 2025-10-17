@@ -25,6 +25,7 @@ const DEFAULT_CONFIGURATION: Configuration = Object.freeze({
   interventionCodesToInvalidate: ["12", "34"],
   fraudIssuer: ["fraudCRI"],
   fraudValidityPeriod: 4518,
+  controllerAllowList: ["did:web:api.identity.dev.account.gov.uk"],
 });
 
 const VALID_TXMA_MESSAGE: AisMessage = Object.freeze({

@@ -204,6 +204,8 @@ Resources:
                   - kms:GenerateDataKey*
                   - kms:CreateGrant
                   - kms:RevokeGrant
+                  - kms:Sign
+                  - kms:Verify
 
               - Effect: Allow
                 Resource:

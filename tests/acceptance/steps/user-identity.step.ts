@@ -5,8 +5,9 @@ import assert from "assert";
 import { WorldDefinition } from "./base-verbs.step";
 import { evcsPatchCredentials, evcsPostCredentials, evcsPostIdentity } from "./utils/evcs-api";
 import { JWTHeaderParameters, JWTPayload } from "jose";
+import { IdentityVectorOfTrust, IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials";
 import { getDefaultJwtHeader, sign } from "../../../shared-test/jwt-utils";
-import { IdentityCheckCredentialJWTClass, IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
+import { renderDid } from "../../../shared-test/jwt-utils";
 
 Given<WorldDefinition>("a user has {int} CURRENT credentials stored", async function (credentials: number) {
   this.credentialJwts = await createAndPostCredentials(credentials, this.userId);
@@ -30,14 +31,14 @@ Given<WorldDefinition>("I have a user without a stored identity", async function
 });
 
 Given<WorldDefinition>("the user has a stored identity, with VOT {string}", async function (vot: string) {
-  const header: JWTHeaderParameters = getDefaultJwtHeader();
+  const header: JWTHeaderParameters = getDefaultJwtHeader("ES256", renderDid(this.testDidController, this.keyId));
   const payload: JWTPayload = {
     sub: this.userId,
     iss: "http://api.example.com",
     credentials: this.credentialJwts.map((jwt) => jwt.split(".").at(-1)),
     vot,
   };
-  const jwt = sign(header, payload);
+  const jwt = await sign(header, payload, true);
 
   const result = await evcsPostIdentity(
     this,
@@ -53,6 +54,96 @@ Given<WorldDefinition>("the user has a stored identity, with VOT {string}", asyn
 
   this.bearerToken = await getBearerToken(this.userId);
 });
+
+Given<WorldDefinition>(
+  "I have a user with a Stored Identity, with VOT {string} and {int} credentials",
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async function (vot: string, credentials: number) {
+    const header: JWTHeaderParameters = getDefaultJwtHeader("ES256", renderDid(this.testDidController, this.keyId));
+    const payload: JWTPayload = {
+      sub: this.userId,
+      iss: "http://api.example.com",
+      vot,
+    };
+    const jwt = await sign(header, payload, true);
+
+    const result = await evcsPostIdentity(
+      this,
+      this.userId,
+      {
+        vot: vot as never as IdentityVectorOfTrust,
+        jwt,
+      },
+      this.bearerToken || ""
+    );
+
+    assert.equal(result.status, 202);
+
+    this.bearerToken = await getBearerToken(this.userId);
+  }
+);
+
+Given<WorldDefinition>("I have a user with a Stored Identity, and an invalid signature", async function () {
+  const header: JWTHeaderParameters = getDefaultJwtHeader("ES256", renderDid(this.testDidController, this.keyId));
+  const payload: JWTPayload = {
+    sub: this.userId,
+    iss: "http://api.example.com",
+    vot: "P2",
+  };
+  const jwt = await sign(header, payload);
+  const result = await evcsPostIdentity(
+    this,
+    this.userId,
+    {
+      vot: "P2",
+      jwt,
+    },
+    this.bearerToken || ""
+  );
+
+  assert.equal(result.status, 202);
+
+  this.bearerToken = await getBearerToken(this.userId);
+});
+
+Given<WorldDefinition>(
+  "I have a user with a Stored Identity, with {string} kid",
+
+  async function (status: string) {
+    let kid: string;
+    if (status == "no") {
+      kid = "";
+    } else if (status == "invalid") {
+      kid = "invalid_kid";
+    } else if (status == "forbidden") {
+      kid = "did:web:forbidden.controller#f5fe5d2a-9eb6-4819-8c46-723e3a21565a";
+    } else {
+      throw new Error("Invalid kid config");
+    }
+
+    const header: JWTHeaderParameters = getDefaultJwtHeader("ES256", kid);
+    const payload: JWTPayload = {
+      sub: this.userId,
+      iss: "http://api.example.com",
+      vot: "P2",
+    };
+    const jwt = await sign(header, payload, true);
+
+    const result = await evcsPostIdentity(
+      this,
+      this.userId,
+      {
+        vot: "P2" as never as IdentityVectorOfTrust,
+        jwt,
+      },
+      this.bearerToken || ""
+    );
+
+    assert.equal(result.status, 202);
+
+    this.bearerToken = await getBearerToken(this.userId);
+  }
+);
 
 When<WorldDefinition>("I make a request for the users identity with a VTR {string}", async function (vtr: string) {
   this.userIdentityPostResponse = await sisPostUserIdentity(
@@ -106,6 +197,8 @@ Then<WorldDefinition>("the stored identity should be returned", function () {
       },
       vot: undefined,
       isValid: undefined,
+      kidValid: this.userIdentityPostResponse?.body.kidValid,
+      signatureValid: this.userIdentityPostResponse?.body.signatureValid,
     },
     {
       content: {
@@ -119,6 +212,34 @@ Then<WorldDefinition>("the stored identity should be returned", function () {
       expired: true,
       kidValid: true,
       signatureValid: true,
+    }
+  );
+});
+
+Then<WorldDefinition>("the untrusted stored identity should be returned", function () {
+  assert.deepEqual(
+    {
+      ...this.userIdentityPostResponse?.body,
+      content: {
+        ...this.userIdentityPostResponse?.body?.content,
+        vot: undefined,
+      },
+      vot: undefined,
+      isValid: undefined,
+      kidValid: undefined,
+      signatureValid: undefined,
+    },
+    {
+      content: {
+        sub: this.userId,
+        iss: "http://api.example.com",
+        vot: undefined,
+      },
+      vot: undefined,
+      isValid: undefined,
+      expired: true,
+      kidValid: undefined,
+      signatureValid: undefined,
     }
   );
 });
@@ -147,7 +268,7 @@ const createAndPostCredentials = async (credentials: number, userId: string): Pr
         evidence: [],
       },
     };
-    credentialJwts.push(sign(header, credentialPayload));
+    credentialJwts.push(await sign(header, credentialPayload));
   }
 
   if (credentialJwts.length) {
@@ -162,3 +283,10 @@ const createAndPostCredentials = async (credentials: number, userId: string): Pr
 
   return credentialJwts;
 };
+Then("the stored identity kidValid field is {boolean}", function (kidValid: boolean) {
+  assert.equal(this.userIdentityPostResponse?.body?.kidValid, kidValid);
+});
+
+Then("the stored identity signatureValid field is {boolean}", function (signatureValid: boolean) {
+  assert.equal(this.userIdentityPostResponse?.body?.signatureValid, signatureValid);
+});
