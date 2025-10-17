@@ -27,8 +27,8 @@ Feature: UserIdentity Fraud Check Expiry
     And the stored identity expired field is true
     And the stored identity isValid field is true
 
-  Scenario: Fraud VC for international address is valid regardless of age
-    Given the user has a fraud check credential with nbf 12 months ago and fraudCheck "applicable_authoritative_source"
+  Scenario: Fraud check for international address is not expired regardless of age
+    Given the user has a fraud check credential with nbf 12 months ago and failed fraudCheck "applicable_authoritative_source"
     And the user has a stored identity, with VOT "P2"
     When I make a request for the users identity with a VTR "P2"
     Then the status code should be 200
@@ -36,8 +36,8 @@ Feature: UserIdentity Fraud Check Expiry
     And the stored identity expired field is false
     And the stored identity isValid field is true
 
-  Scenario: Fraud VC from Fraud Resilience forces stored identity to be invalid
-    Given the user has a fraud check credential with nbf 1 months ago and fraudCheck "available_authoritative_source"
+  Scenario: Fraud check from Fraud Resilience forces stored identity to be expired
+    Given the user has a fraud check credential with nbf 1 months ago and failed fraudCheck "available_authoritative_source"
     And the user has a stored identity, with VOT "P2"
     When I make a request for the users identity with a VTR "P2"
     Then the status code should be 200

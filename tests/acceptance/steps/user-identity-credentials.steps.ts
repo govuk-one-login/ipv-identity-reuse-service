@@ -31,7 +31,7 @@ Given<WorldDefinition>(
 );
 
 Given<WorldDefinition>(
-  "the user has a fraud check credential with nbf {int} months ago and fraudCheck {string}",
+  "the user has a fraud check credential with nbf {int} months ago and failed fraudCheck {string}",
   async function (months: number, fraudCheckType: string) {
     const nbfDate = new Date();
     nbfDate.setDate(nbfDate.getDate() - months * 30);
