@@ -1,5 +1,5 @@
 import { CompactJWSHeaderParameters } from "jose";
-import { KMSClient, SignCommand } from "@aws-sdk/client-kms";
+import { KMSClient, SignCommand, SigningAlgorithmSpec } from "@aws-sdk/client-kms";
 import { getDidSigningKeyAlias } from "./ssm-utils";
 
 const kmsClient = new KMSClient({ region: process.env.AWS_REGION });
@@ -31,7 +31,10 @@ const derToJose = (der: Uint8Array, size: number) => {
   return out;
 };
 
-export async function signKms(body: Record<string, any>, protectedHeader: CompactJWSHeaderParameters): Promise<string> {
+export async function signKms<BodyT extends object>(
+  body: BodyT,
+  protectedHeader: CompactJWSHeaderParameters
+): Promise<string> {
   const alg = protectedHeader.alg;
   if (alg !== "ES256" && alg !== "RS256") {
     throw new Error(`Unsupported alg for KMS: ${alg}`);
@@ -48,7 +51,7 @@ export async function signKms(body: Record<string, any>, protectedHeader: Compac
       KeyId: await getDidSigningKeyAlias(),
       Message: new TextEncoder().encode(signingInput),
       MessageType: "RAW",
-      SigningAlgorithm: kmsAlg as any,
+      SigningAlgorithm: kmsAlg as SigningAlgorithmSpec,
     })
   );
   if (!resp.Signature) throw new Error("KMS returned no signature");

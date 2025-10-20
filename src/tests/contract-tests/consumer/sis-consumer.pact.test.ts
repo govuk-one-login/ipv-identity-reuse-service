@@ -1,6 +1,7 @@
 import path from "path";
 import { PactV4, SpecificationVersion, MatchersV3 } from "@pact-foundation/pact";
 import type { UserIdentityResponseMetadata } from "../../../handlers/user-identity/user-identity-response-metadata";
+import { UserIdentityErrorResponse } from "../../../handlers/user-identity/user-identity-error-response";
 
 const { like } = MatchersV3;
 
@@ -15,14 +16,32 @@ const provider = new PactV4({
   host: "127.0.0.1",
 });
 
-describe("SIS Consumer", () => {
-  it("should return 200 if the stored identity exists", async () => {
-    const govukSigninJourneyId = "Test-" + Date.now();
+const executeTest = async (mockServer: MatchersV3.V3MockServer, govukSigninJourneyId: string): Promise<Response> => {
+  return await fetch(`${mockServer.url}${USER_IDENTITY_ENDPOINT}`, {
+    method: "POST",
+    body: JSON.stringify({
+      vtr: ["P2"],
+      govukSigninJourneyId,
+    }),
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer test-access-token`,
+    },
+  });
+};
 
+describe("SIS Consumer", () => {
+  let govukSigninJourneyId: string;
+
+  beforeEach(() => {
+    govukSigninJourneyId = "Test-" + Date.now();
+  });
+
+  it("should return 200 if the stored identity exists", async () => {
     await provider
       .addInteraction()
       .given("stored identity exists")
-      .uponReceiving("A userId for a stored identity that does not exist")
+      .uponReceiving("A userId for a stored identity that exists")
       .withRequest("POST", USER_IDENTITY_ENDPOINT, (builder) => {
         builder.headers({
           Authorization: like(`Bearer test-access-token`),
@@ -51,17 +70,7 @@ describe("SIS Consumer", () => {
         );
       })
       .executeTest(async (mockServer) => {
-        const result = await fetch(`${mockServer.url}${USER_IDENTITY_ENDPOINT}`, {
-          method: "POST",
-          body: JSON.stringify({
-            vtr: ["P2"],
-            govukSigninJourneyId,
-          }),
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer test-access-token`,
-          },
-        });
+        const result = await executeTest(mockServer, govukSigninJourneyId);
         await expect(result.json()).resolves.toMatchObject<UserIdentityResponseMetadata>({
           content: {
             sub: "user-sub",
@@ -75,6 +84,130 @@ describe("SIS Consumer", () => {
           expired: false,
           kidValid: true,
           signatureValid: true,
+        });
+      });
+  });
+
+  it("should return 404 when no record", async () => {
+    await provider
+      .addInteraction()
+      .given("stored identity does not exist")
+      .uponReceiving("A userId for a stored identity that does not exist")
+      .withRequest("POST", USER_IDENTITY_ENDPOINT, (builder) => {
+        builder.headers({
+          Authorization: like(`Bearer test-access-token`),
+        });
+        builder.jsonBody({
+          vtr: ["P2"],
+          govukSigninJourneyId,
+        });
+      })
+      .willRespondWith(404, (builder) => {
+        builder.jsonBody(
+          like<UserIdentityErrorResponse>({
+            error: "no_record",
+            error_description: "No Stored Identity exists for this user or Stored Identity has been invalidated",
+          })
+        );
+      })
+      .executeTest(async (mockServer) => {
+        const result = await executeTest(mockServer, govukSigninJourneyId);
+        await expect(result.json()).resolves.toMatchObject<UserIdentityErrorResponse>({
+          error: "no_record",
+          error_description: "No Stored Identity exists for this user or Stored Identity has been invalidated",
+        });
+      });
+  });
+
+  it("should return 401 when authentication token is missing", async () => {
+    await provider
+      .addInteraction()
+      .given("test-invalid-access-token is invalid bearer token")
+      .uponReceiving("A invalid access token was provided")
+      .withRequest("POST", USER_IDENTITY_ENDPOINT, (builder) => {
+        builder.headers({
+          Authorization: like(`Bearer invalid.access.token`),
+        });
+        builder.jsonBody({
+          vtr: ["P2"],
+          govukSigninJourneyId,
+        });
+      })
+      .willRespondWith(401, (builder) => {
+        builder.jsonBody(
+          like<UserIdentityErrorResponse>({
+            error: "invalid_token",
+            error_description: "Bearer token is missing or invalid",
+          })
+        );
+      })
+      .executeTest(async (mockServer) => {
+        const result = await executeTest(mockServer, govukSigninJourneyId);
+        await expect(result.json()).resolves.toMatchObject<UserIdentityErrorResponse>({
+          error: "invalid_token",
+          error_description: "Bearer token is missing or invalid",
+        });
+      });
+  });
+
+  it("should return 403 when forbidden", async () => {
+    await provider
+      .addInteraction()
+      .given("test-expired-access-token is expired bearer token")
+      .uponReceiving("A request where the bearer token has expired")
+      .withRequest("POST", USER_IDENTITY_ENDPOINT, (builder) => {
+        builder.headers({
+          Authorization: like(`Bearer test-access-token`),
+        });
+        builder.jsonBody({
+          vtr: ["P2"],
+          govukSigninJourneyId,
+        });
+      })
+      .willRespondWith(403, (builder) => {
+        builder.jsonBody(
+          like<UserIdentityErrorResponse>({
+            error: "forbidden",
+            error_description: "Access token expired or not permitted",
+          })
+        );
+      })
+      .executeTest(async (mockServer) => {
+        const result = await executeTest(mockServer, govukSigninJourneyId);
+        await expect(result.json()).resolves.toMatchObject<UserIdentityErrorResponse>({
+          error: "forbidden",
+          error_description: "Access token expired or not permitted",
+        });
+      });
+  });
+
+  it("should return 500 when there is failure", async () => {
+    await provider
+      .addInteraction()
+      .given("A request returns 500")
+      .uponReceiving("A request but the downstream endpoint returns an internal error")
+      .withRequest("POST", USER_IDENTITY_ENDPOINT, (builder) => {
+        builder.headers({
+          Authorization: like(`Bearer test-access-token`),
+        });
+        builder.jsonBody({
+          vtr: ["P2"],
+          govukSigninJourneyId,
+        });
+      })
+      .willRespondWith(500, (builder) => {
+        builder.jsonBody(
+          like<UserIdentityErrorResponse>({
+            error: "server_error",
+            error_description: "Unable to retrieve data",
+          })
+        );
+      })
+      .executeTest(async (mockServer) => {
+        const result = await executeTest(mockServer, govukSigninJourneyId);
+        await expect(result.json()).resolves.toMatchObject<UserIdentityErrorResponse>({
+          error: "server_error",
+          error_description: "Unable to retrieve data",
         });
       });
   });

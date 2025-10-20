@@ -59,7 +59,7 @@ let newEvent: APIGatewayProxyEvent;
 let mockSendTxmaEvent: jest.SpyInstance<
   Promise<SendMessageCommandOutput>,
   [event: TxmaEvent<string, object | undefined, object | undefined>],
-  any
+  unknown
 >;
 
 const ALLOWED_CONTROLLER = "api.identity.dev.account.gov.uk";

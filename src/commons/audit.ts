@@ -26,7 +26,7 @@ const createDefaultEventFields = <EventName extends string>(
   eventName: EventName,
   userId: string,
   govukSigninJourneyId?: string
-): TxmaEvent<EventName, any, any> => {
+): TxmaEvent<EventName, never, never> => {
   return {
     component_id: process.env.COMPONENT_ID || "Unknown",
     event_name: eventName,
@@ -36,8 +36,6 @@ const createDefaultEventFields = <EventName extends string>(
       user_id: userId,
       ...(govukSigninJourneyId ? { govuk_signin_journey_id: govukSigninJourneyId } : {}),
     },
-    extensions: undefined,
-    restricted: undefined,
   };
 };
 
