@@ -90,6 +90,7 @@ const createSuccessResponse = async (
   const kid = getJwtHeader(identityResponse.si.vc).kid || "";
   const validationResults = await validateCryptography(kid, identityResponse);
   const vot = calculateVot(content.vot as IdentityVectorOfTrust, vtr);
+  const vtm = `https://oidc.account.gov.uk/trustmark`;
 
   await auditIdentityRecordRead(
     {
@@ -105,7 +106,7 @@ const createSuccessResponse = async (
   );
 
   const successResponse = {
-    content: { ...content, vot },
+    content: { ...content, vot, vtm },
     vot: content.vot,
     isValid: validateStoredIdentityCredentials(content, currentVcsEncoded),
     expired: hasFraudCheckExpired(fraudVc, configuration.fraudValidityPeriod),

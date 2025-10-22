@@ -4,5 +4,5 @@ export interface UserIdentityResponse extends JWTClass {
   sub: string;
   credentials: string[];
   vot: IdentityVectorOfTrust | "P0";
-  vtm: string[];
+  vtm: string;
 }
