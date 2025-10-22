@@ -90,7 +90,7 @@ const createSuccessResponse = async (
   const kid = getJwtHeader(identityResponse.si.vc).kid || "";
   const validationResults = await validateCryptography(kid, identityResponse);
   const vot = calculateVot(content.vot as IdentityVectorOfTrust, vtr);
-  const vtm = `https://change_me_later.identity.account.gov.uk`;
+  const vtm = `https://oidc.account.gov.uk/trustmark`;
 
   await auditIdentityRecordRead(
     {

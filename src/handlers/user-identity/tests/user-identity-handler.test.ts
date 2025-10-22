@@ -105,7 +105,7 @@ describe("user-identity-handler authorization", () => {
       content: {
         sub: "user-sub",
         vot: "P2",
-        vtm: "https://change_me_later.identity.account.gov.uk",
+        vtm: "https://oidc.account.gov.uk/trustmark",
         credentials: credentialSignatures,
       },
       expired: false,
@@ -171,7 +171,7 @@ describe("user-identity-handler authorization", () => {
     const body = JSON.parse(result.body) as UserIdentityResponseMetadata;
     expect(body).toStrictEqual({
       vot: "P2",
-      content: { sub: "user-sub", vot: "P2", vtm: "https://change_me_later.identity.account.gov.uk" },
+      content: { sub: "user-sub", vot: "P2", vtm: "https://oidc.account.gov.uk/trustmark" },
       expired: false,
       isValid: true,
       kidValid: true,
@@ -193,7 +193,7 @@ describe("user-identity-handler authorization", () => {
     const body = JSON.parse(result.body) as UserIdentityResponseMetadata;
     expect(body).toStrictEqual({
       vot: "P2",
-      content: { sub: "user-sub", vot: "P2", vtm: "https://change_me_later.identity.account.gov.uk" },
+      content: { sub: "user-sub", vot: "P2", vtm: "https://oidc.account.gov.uk/trustmark" },
       expired: false,
       isValid: true,
       kidValid: false,
@@ -217,7 +217,7 @@ describe("user-identity-handler authorization", () => {
     const body = JSON.parse(result.body) as UserIdentityResponseMetadata;
     expect(body).toStrictEqual({
       vot: "P2",
-      content: { sub: "user-sub", vot: "P2", vtm: "https://change_me_later.identity.account.gov.uk" },
+      content: { sub: "user-sub", vot: "P2", vtm: "https://oidc.account.gov.uk/trustmark" },
       expired: false,
       isValid: true,
       kidValid: false,
@@ -500,7 +500,7 @@ describe("user-identity-handler expired", () => {
       content: {
         sub: "user-sub",
         vot: "P2",
-        vtm: "https://change_me_later.identity.account.gov.uk",
+        vtm: "https://oidc.account.gov.uk/trustmark",
         credentials: credentialSignatures,
       },
       expired: expectedExpired,
@@ -540,7 +540,7 @@ describe("user-identity-handler isValid", () => {
       content: {
         sub: "user-sub",
         vot: "P2",
-        vtm: "https://change_me_later.identity.account.gov.uk",
+        vtm: "https://oidc.account.gov.uk/trustmark",
         credentials: credentialSignaturesMissingOne,
       },
       expired: false,
@@ -575,7 +575,7 @@ describe("user-identity-handler isValid", () => {
       content: {
         sub: "user-sub",
         vot: "P2",
-        vtm: "https://change_me_later.identity.account.gov.uk",
+        vtm: "https://oidc.account.gov.uk/trustmark",
         credentials: credentialSignaturesExtraOne,
       },
       expired: false,
@@ -631,7 +631,7 @@ const createStoredIdentityRecord = (...credentialSignatures: string[]) => {
   const storedIdentityRecord = {
     sub: "user-sub",
     vot: "P2",
-    vtm: "https://change_me_later.identity.account.gov.uk",
+    vtm: "https://oidc.account.gov.uk/trustmark",
   };
 
   return credentialSignatures?.length
