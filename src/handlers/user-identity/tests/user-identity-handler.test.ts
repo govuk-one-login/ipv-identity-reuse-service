@@ -102,7 +102,12 @@ describe("user-identity-handler authorization", () => {
     const body = JSON.parse(result.body) as UserIdentityResponseMetadata;
     expect(body).toStrictEqual({
       vot: "P2",
-      content: { sub: "user-sub", vot: "P2", vtm: [], credentials: credentialSignatures },
+      content: {
+        sub: "user-sub",
+        vot: "P2",
+        vtm: "https://change_me_later.identity.account.gov.uk",
+        credentials: credentialSignatures,
+      },
       expired: false,
       isValid: true,
       kidValid: true,
@@ -166,7 +171,7 @@ describe("user-identity-handler authorization", () => {
     const body = JSON.parse(result.body) as UserIdentityResponseMetadata;
     expect(body).toStrictEqual({
       vot: "P2",
-      content: { sub: "user-sub", vot: "P2", vtm: [] },
+      content: { sub: "user-sub", vot: "P2", vtm: "https://change_me_later.identity.account.gov.uk" },
       expired: false,
       isValid: true,
       kidValid: true,
@@ -188,7 +193,7 @@ describe("user-identity-handler authorization", () => {
     const body = JSON.parse(result.body) as UserIdentityResponseMetadata;
     expect(body).toStrictEqual({
       vot: "P2",
-      content: { sub: "user-sub", vot: "P2", vtm: [] },
+      content: { sub: "user-sub", vot: "P2", vtm: "https://change_me_later.identity.account.gov.uk" },
       expired: false,
       isValid: true,
       kidValid: false,
@@ -212,7 +217,7 @@ describe("user-identity-handler authorization", () => {
     const body = JSON.parse(result.body) as UserIdentityResponseMetadata;
     expect(body).toStrictEqual({
       vot: "P2",
-      content: { sub: "user-sub", vot: "P2", vtm: [] },
+      content: { sub: "user-sub", vot: "P2", vtm: "https://change_me_later.identity.account.gov.uk" },
       expired: false,
       isValid: true,
       kidValid: false,
@@ -492,7 +497,12 @@ describe("user-identity-handler expired", () => {
     const body = JSON.parse(result.body) as UserIdentityResponseMetadata;
     expect(body).toStrictEqual({
       vot: "P2",
-      content: { sub: "user-sub", vot: "P2", vtm: [], credentials: credentialSignatures },
+      content: {
+        sub: "user-sub",
+        vot: "P2",
+        vtm: "https://change_me_later.identity.account.gov.uk",
+        credentials: credentialSignatures,
+      },
       expired: expectedExpired,
       isValid: true,
       kidValid: true,
@@ -527,7 +537,12 @@ describe("user-identity-handler isValid", () => {
     const body = JSON.parse(result.body) as UserIdentityResponseMetadata;
     expect(body).toStrictEqual({
       vot: "P2",
-      content: { sub: "user-sub", vot: "P2", vtm: [], credentials: credentialSignaturesMissingOne },
+      content: {
+        sub: "user-sub",
+        vot: "P2",
+        vtm: "https://change_me_later.identity.account.gov.uk",
+        credentials: credentialSignaturesMissingOne,
+      },
       expired: false,
       isValid: false,
       kidValid: true,
@@ -557,7 +572,12 @@ describe("user-identity-handler isValid", () => {
     const body = JSON.parse(result.body) as UserIdentityResponseMetadata;
     expect(body).toStrictEqual({
       vot: "P2",
-      content: { sub: "user-sub", vot: "P2", vtm: [], credentials: credentialSignaturesExtraOne },
+      content: {
+        sub: "user-sub",
+        vot: "P2",
+        vtm: "https://change_me_later.identity.account.gov.uk",
+        credentials: credentialSignaturesExtraOne,
+      },
       expired: false,
       isValid: false,
       kidValid: true,
@@ -611,7 +631,7 @@ const createStoredIdentityRecord = (...credentialSignatures: string[]) => {
   const storedIdentityRecord = {
     sub: "user-sub",
     vot: "P2",
-    vtm: [],
+    vtm: "https://change_me_later.identity.account.gov.uk",
   };
 
   return credentialSignatures?.length

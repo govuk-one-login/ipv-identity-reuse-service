@@ -50,6 +50,6 @@ const createStoredIdentityRecord = (...signatures: string[]): UserIdentityRespon
     sub: "userId",
     credentials: signatures,
     vot: "P2",
-    vtm: [""],
+    vtm: "",
   };
 };
