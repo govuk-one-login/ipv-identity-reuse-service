@@ -33,7 +33,7 @@ jobs:
           fetch-depth: 0 # Shallow clone.
 
       - name: Setup node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version-file: ".nvmrc"
           cache: npm
