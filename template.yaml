@@ -122,7 +122,7 @@ Mappings:
       messageQueueKeyArn: "unused"
       ApiRateLimit: 5 # allowed requests per second
       ApiBurstLimit: 5 # requests the API can handle concurrently
-      IPVCoreVPCID: vpc-093ac0375aa3f291d # ID Reuse Service VPC ID
+      IPVCoreVPCID: none # Not used in dev
       UniqueVPCEndpointIDs: none
       UseCanary: false
     "dev":
@@ -132,7 +132,7 @@ Mappings:
       messageQueueKeyArn: "unused"
       ApiRateLimit: 5 # allowed requests per second
       ApiBurstLimit: 5 # requests the API can handle concurrently
-      IPVCoreVPCID: vpc-093ac0375aa3f291d # ID Reuse Service VPC ID
+      IPVCoreVPCID: none # Not used in dev
       UniqueVPCEndpointIDs: none
       UseCanary: false
     "build":
@@ -142,7 +142,7 @@ Mappings:
       messageQueueKeyArn: "unused"
       ApiRateLimit: 5 # allowed requests per second
       ApiBurstLimit: 5 # requests the API can handle concurrently
-      IPVCoreVPCID: vpc-08d7c4b3c5e2a0d9a # ID Reuse Service Build VPC ID
+      IPVCoreVPCID: vpc-02e4eb3b0cffc08b0 # This is performance testing VPC ID
       UniqueVPCEndpointIDs: vpce-0edf9e66222007102 # IPV Build VPCE ID
       UseCanary: false
     "staging":
