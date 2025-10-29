@@ -122,6 +122,8 @@ Mappings:
       messageQueueKeyArn: "unused"
       ApiRateLimit: 5 # allowed requests per second
       ApiBurstLimit: 5 # requests the API can handle concurrently
+      PerformanceTestApiRateLimit: 0 # not used in this environment
+      PerformanceTestApiBurstLimit: 0 # not used in this environment
       IPVCoreVPCID: none # Not used in dev
       UniqueVPCEndpointIDs: none
       UseCanary: false
@@ -132,6 +134,8 @@ Mappings:
       messageQueueKeyArn: "unused"
       ApiRateLimit: 5 # allowed requests per second
       ApiBurstLimit: 5 # requests the API can handle concurrently
+      PerformanceTestApiRateLimit: 0 # not used in this environment
+      PerformanceTestApiBurstLimit: 0 # not used in this environment
       IPVCoreVPCID: none # Not used in dev
       UniqueVPCEndpointIDs: none
       UseCanary: false
@@ -142,6 +146,8 @@ Mappings:
       messageQueueKeyArn: "unused"
       ApiRateLimit: 5 # allowed requests per second
       ApiBurstLimit: 5 # requests the API can handle concurrently
+      PerformanceTestApiRateLimit: 2000 # allowed requests per second
+      PerformanceTestApiBurstLimit: 2000 # requests the API can handle concurrently
       IPVCoreVPCID: vpc-02e4eb3b0cffc08b0 # This is performance testing VPC ID
       UniqueVPCEndpointIDs: vpce-0edf9e66222007102 # IPV Build VPCE ID
       UseCanary: false
@@ -152,6 +158,8 @@ Mappings:
       messageQueueKeyArn: "arn:aws:kms:eu-west-2:178023842775:key/325458a5-de28-4c28-aaf0-678ebefb35ac"
       ApiRateLimit: 5 # allowed requests per second
       ApiBurstLimit: 5 # requests the API can handle concurrently
+      PerformanceTestApiRateLimit: 0 # not used in this environment
+      PerformanceTestApiBurstLimit: 0 # not used in this environment
       IPVCoreVPCID: vpc-039e664a2b3abb03e # ID Reuse Service Staging VPC ID
       UniqueVPCEndpointIDs: vpce-0cc0de10742b83b8a # IPV Staging VPCE ID
       UseCanary: true
@@ -162,6 +170,8 @@ Mappings:
       messageQueueKeyArn: "arn:aws:kms:eu-west-2:729485541398:key/c199c69c-7ce7-4a82-b5a7-b344c7ac04f5"
       ApiRateLimit: 2000 # allowed requests per second
       ApiBurstLimit: 2000 # requests the API can handle concurrently
+      PerformanceTestApiRateLimit: 0 # not used in this environment
+      PerformanceTestApiBurstLimit: 0 # not used in this environment
       IPVCoreVPCID: vpc-0a9e773e1f32b6697 # ID Reuse Service Integration VPC ID
       UniqueVPCEndpointIDs: vpce-0f47068fdf9ad0c3d # IPV Int VPCE ID
       UseCanary: true
@@ -172,6 +182,8 @@ Mappings:
       messageQueueKeyArn: "arn:aws:kms:eu-west-2:451773080033:key/5b5d3a8e-cf70-49ca-bec8-b3a2e61ce770"
       ApiRateLimit: 2000 # allowed requests per second
       ApiBurstLimit: 2000 # requests the API can handle concurrently
+      PerformanceTestApiRateLimit: 0 # not used in this environment
+      PerformanceTestApiBurstLimit: 0 # not used in this environment
       IPVCoreVPCID: vpc-0274d75007239691f # IPV Reuse Seruice Production VPC ID
       UniqueVPCEndpointIDs: vpce-0e40247a557c2169e # IPV Reuse Seruice Prod VPCE ID
       UseCanary: true
@@ -214,6 +226,12 @@ Conditions:
       - Fn::Equals: [!Ref Environment, "local"]
       - Fn::Equals: [!Ref Environment, "dev"]
       - Fn::Equals: [!Ref Environment, "build"]
+
+  IsBuild:
+    Fn::Equals:
+      - !Ref Environment
+      - "build"
+
   UseVpc:
     Fn::Not:
       - Fn::Equals: [!Ref VpcStackName, "none"]
@@ -999,6 +1017,107 @@ Resources:
       KeyId: !Ref IpvCoreApiKey
       KeyType: API_KEY
       UsagePlanId: !Ref IpvCoreApiUsagePlan
+
+  PerformanceTestApiUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    Condition: IsBuild
+    DependsOn:
+      - PrivateRestApiStage # This resource is created as part of the RestApi resource
+    Properties:
+      UsagePlanName: !Sub "${AWS::StackName}-PerformanceTesting"
+      Description: "Usage plan to limit and throttle call made by Performance Testing"
+      ApiStages:
+        - ApiId: !Ref PrivateRestApi
+          Stage: !Ref ApiStageName
+          Throttle:
+            "/user-identity/POST":
+              RateLimit: !FindInMap [EnvironmentMap, !Ref Environment, PerformanceTestApiRateLimit]
+              BurstLimit: !FindInMap [EnvironmentMap, !Ref Environment, PerformanceTestApiBurstLimit]
+      Throttle:
+        RateLimit: !FindInMap [EnvironmentMap, !Ref Environment, PerformanceTestApiRateLimit]
+        BurstLimit: !FindInMap [EnvironmentMap, !Ref Environment, PerformanceTestApiBurstLimit]
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-PerformanceTestingUsagePlan"
+
+  PerformanceTestApiKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Condition: IsBuild
+    Properties:
+      Name: !Sub "/${AWS::StackName}/Config/API/Key/PerformanceTest"
+      Description: >-
+        Autogenerated API key for the PerformanceTest usage.
+        N.B. Manually update PerformanceTestApiKey's value upon change, does not auto-update!
+      GenerateSecretString:
+        ExcludeLowercase: false
+        ExcludeNumbers: false
+        ExcludePunctuation: true # avoids handling escaped chars
+        ExcludeUppercase: false
+        IncludeSpace: false # avoids handling escaped chars
+        RequireEachIncludedType: true
+        PasswordLength: 128
+      KmsKeyId: !GetAtt SecretsManagerEncryptionKey.Arn
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-PerformanceTestApiKeySecret"
+
+  PerformanceTestApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    Condition: IsBuild
+    DependsOn:
+      - PrivateRestApiStage # This resource is created as part of the RestApi resource
+    Properties:
+      Description: !Sub >-
+        API Key for IPV Core.
+        N.B. Does not auto-update if secret (/${AWS::StackName}/Config/API/Key/PerformanceTest) has changed!
+      Enabled: true
+      StageKeys:
+        - RestApiId: !Ref PrivateRestApi
+          StageName: !Ref ApiStageName
+      # WARNING - does not get updated if IPVCoreApiKeySecret is updated - manual step in console
+      # see https://repost.aws/knowledge-center/cloudformation-stack-update-secrets
+      Value: !Sub "{{resolve:secretsmanager:${PerformanceTestApiKeySecret}}}"
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-PerformanceTestApiKey"
+
+  PerformanceTestUsagePlanApiKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Condition: IsBuild
+    Properties:
+      KeyId: !Ref PerformanceTestApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref PerformanceTestApiUsagePlan
 
   IpvCorePrivateApiUsagePlan:
     Type: AWS::ApiGateway::UsagePlan
