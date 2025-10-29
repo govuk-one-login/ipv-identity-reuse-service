@@ -2,6 +2,7 @@ import { getResolver } from "web-did-resolver";
 import { Resolver, VerificationMethod, parse } from "did-resolver";
 
 import { JWK } from "jose";
+import logger from "../commons/logger";
 
 const cache = new Map<string, JWK>();
 const webResolver = getResolver();
@@ -14,6 +15,7 @@ export const getPublicKeyJwkForKid = async (kid: string): Promise<JWK> => {
   if (cache.has(kid)) {
     return cache.get(kid) as JWK;
   }
+  logger.info("Resolving public key JWK");
   const didResolution = await resolver.resolve(kid);
   const webKeys = didResolution.didDocument?.assertionMethod;
   const verificationMethod = webKeys?.map(extractAssertionVerificationMethod).find((key) => key.id == kid);
