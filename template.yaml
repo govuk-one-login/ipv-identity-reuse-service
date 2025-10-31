@@ -239,6 +239,7 @@ Conditions:
 Globals:
   Function:
     MemorySize: 1024
+    Timeout: 30
     CodeUri: ./
     Runtime: nodejs20.x
     Architectures:
@@ -320,9 +321,7 @@ Resources:
     Properties:
       FunctionName: !Sub "${AWS::StackName}-UserIdentityFunction"
       Description: "A lambda function that queues SIS data for processing"
-      Timeout: 10
       Handler: user-identity-handler.handler
-      MemorySize: 128
       Role: !GetAtt UserIdentityFunctionRole.Arn
       KmsKeyArn: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
       VpcConfig: !If
