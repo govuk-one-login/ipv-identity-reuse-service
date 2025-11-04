@@ -361,7 +361,8 @@ Resources:
         UseNpmCi: True
         Minify: true
         Target: es2022
-        Sourcemap: false
+        Sourcemap: true
+        SourcesContent: false
         EntryPoints:
           - src/handlers/user-identity/user-identity-handler.ts
         Format: esm
@@ -692,6 +693,7 @@ Resources:
         EntryPoints:
           - src/handlers/ais-message-processor/ais-message-handler.ts
         Sourcemap: true
+        SourcesContent: false
         Target: "es2024"
 
   MessageProcessorLambdaTriggerRole:
