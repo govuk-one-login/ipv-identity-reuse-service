@@ -8,6 +8,8 @@ import {
 } from "../did-resolution-service";
 import { DIDDocument, DIDResolutionResult } from "did-resolver";
 
+jest.mock("../../commons/logger");
+
 describe("isValidDidWeb", () => {
   it.each([
     "did:web:example.com#key-1",

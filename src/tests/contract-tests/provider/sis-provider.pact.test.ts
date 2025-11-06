@@ -8,7 +8,7 @@ import type { Configuration } from "../../../commons/configuration";
 import * as ConfigurationModule from "../../../commons/configuration";
 import { CredentialStoreErrorResponse } from "../../../credential-store/credential-store-error-response";
 import type { CredentialStoreIdentityResponse } from "../../../credential-store/credential-store-identity-response";
-import { UserIdentityResponse } from "../../../handlers/user-identity/user-identity-response";
+import { StoredIdentityJWT } from "../../../handlers/user-identity/stored-identity-jwt";
 import * as FraudCheckService from "../../../identity-reuse/fraud-check-service";
 import type { VerifiableCredentialJWT } from "../../../identity-reuse/verifiable-credential-jwt";
 import { createServer as createProviderServer } from "./sis-provider-app";
@@ -141,7 +141,7 @@ describe("Sis Pact Verification", () => {
 const createCredentialStoreIdentityResponse = async (
   verifiableCredentialStates: { vc: VerifiableCredentialJWT; state: string }[] = []
 ): Promise<CredentialStoreIdentityResponse> => {
-  const storedIdentity: UserIdentityResponse = {
+  const storedIdentity: StoredIdentityJWT = {
     sub: "user-sub",
     vot: "P2",
     iss: "http://api.example.com",

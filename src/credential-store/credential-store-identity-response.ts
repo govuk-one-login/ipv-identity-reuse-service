@@ -1,10 +1,19 @@
+import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
+
 export type CredentialStoreIdentityResponse = {
-  si: JWTIncludingStateAndMetadata;
-  vcs: JWTIncludingStateAndMetadata[];
+  si: StoredIdentityObject;
+  vcs: VerifiableCredentialObject[];
   afterKey?: string;
 };
 
-export interface JWTIncludingStateAndMetadata {
+export interface StoredIdentityObject {
+  state: string;
+  vc: string;
+  metadata: Metadata | null | string;
+  unsignedVot: IdentityVectorOfTrust;
+}
+
+export interface VerifiableCredentialObject {
   state: string;
   vc: string;
   metadata: Metadata | null | string;

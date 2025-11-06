@@ -20,6 +20,8 @@ const mockSuccessfulEvidence: IdentityCheckClass = {
 const VALIDITY_PERIOD = 4320;
 const FRAUD_ISSUERS = ["fraudCRI"];
 
+jest.mock("../../commons/logger");
+
 describe("hasFraudCheckExpired", () => {
   beforeEach(() => {
     jest.clearAllMocks();
