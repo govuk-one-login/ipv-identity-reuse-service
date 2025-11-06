@@ -1,6 +1,6 @@
 import { SendMessageCommandOutput } from "@aws-sdk/client-sqs";
 import { Verifier, type VerifierOptions } from "@pact-foundation/pact";
-import type { Server } from "http";
+import type { Server } from "node:http";
 import path from "node:path";
 import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utils";
 import * as AuditModule from "../../../commons/audit";
@@ -46,7 +46,7 @@ const mockEVCSResponse = (
   response: CredentialStoreIdentityResponse | CredentialStoreErrorResponse,
   status: number = 200
 ) => {
-  jest.spyOn(global, "fetch").mockResolvedValue(
+  jest.spyOn(globalThis, "fetch").mockResolvedValue(
     new Response(JSON.stringify(response), {
       status,
       headers: { "content-type": "application/json" },
@@ -153,9 +153,9 @@ const createCredentialStoreIdentityResponse = async (
 
   return {
     si: {
-      state: "CURRENT",
       vc: await sign(defaultStoredIdentityHeader, storedIdentity),
       metadata: null,
+      unsignedVot: storedIdentity.max_vot || storedIdentity.vot,
     },
     vcs: await Promise.all(
       verifiableCredentialStates.map(async (vcState) => {

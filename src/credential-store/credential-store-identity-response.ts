@@ -7,7 +7,6 @@ export type CredentialStoreIdentityResponse = {
 };
 
 export interface StoredIdentityObject {
-  state: string;
   vc: string;
   metadata: Metadata | null | string;
   unsignedVot: IdentityVectorOfTrust;

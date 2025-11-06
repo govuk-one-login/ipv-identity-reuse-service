@@ -28,8 +28,6 @@ describe("calculate-vot", () => {
     ["P2", ["P3", "P2"], "P2"],
     ["P0", ["P3"], "P2"],
   ])("should return %s, for vtr %s and unsigned vot %s when max_vot not present", (expected, vtr, unsignedVot) => {
-    jest.mock("../../commons/logger");
-
     const jwt: StoredIdentityJWT = {} as StoredIdentityJWT;
     const returnedVot = calculateVot(jwt, unsignedVot, vtr);
 

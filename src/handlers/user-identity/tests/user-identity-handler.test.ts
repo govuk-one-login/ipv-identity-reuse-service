@@ -619,7 +619,6 @@ const createCredentialStoreIdentityResponseWithStates = async (
 
   const response: CredentialStoreIdentityResponse = {
     si: {
-      state: CURRENT,
       vc: await sign(header, storedIdentity),
       metadata: null,
       unsignedVot: "P2",

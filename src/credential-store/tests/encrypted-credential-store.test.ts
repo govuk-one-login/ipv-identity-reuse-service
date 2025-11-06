@@ -7,7 +7,6 @@ describe("parseCurrentVerifiableCredentials", () => {
   it("should return verifiable credentials with CURRENT state only", async () => {
     const identityResponse: CredentialStoreIdentityResponse = {
       si: {
-        state: "doesThisActuallyHaveState",
         vc: "jwtString",
         metadata: null,
         unsignedVot: "P2",
