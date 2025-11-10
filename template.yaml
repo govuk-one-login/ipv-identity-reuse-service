@@ -425,7 +425,8 @@ Resources:
             Action:
               - "appconfig:StartConfigurationSession"
               - "appconfig:GetLatestConfiguration"
-            Resource: "*"
+            Resource:
+              - !Sub "arn:aws:appconfig:${AWS::Region}:${AWS::AccountId}:application/*"
           - Effect: Allow
             Action:
               - sqs:SendMessage
@@ -768,7 +769,8 @@ Resources:
             Action:
               - "appconfig:StartConfigurationSession"
               - "appconfig:GetLatestConfiguration"
-            Resource: "*"
+            Resource:
+              - !Sub "arn:aws:appconfig:${AWS::Region}:${AWS::AccountId}:application/*"
       Roles:
         - !Ref MessageProcessorLambdaTriggerRole
 
