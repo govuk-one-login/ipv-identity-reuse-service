@@ -77,3 +77,77 @@ can run pre-commit against all files using:
 ```bash
 pre-commit run --all-files
 ```
+
+## Deploy to a development environment
+
+For testing, you can deploy your code changes to a development environment.
+
+### Instructions
+
+Follow these instructions to build and deploy the lambda functions to your development environment.
+
+1. Set your environment variables (replace with your actual values):
+
+```sh
+export AWS_PROFILE="<your_aws_profile_name>"
+export STACK_NAME="<your_stack_name>"
+```
+
+2. Run the following commands:
+
+```sh
+# Login to AWS
+aws sso login --profile $AWS_PROFILE
+
+# Takes ~5 minutes to complete
+./dev-deploy.sh -s $STACK_NAME
+```
+
+3. To verify the deployment, you can pick either one of the following options:
+
+- Locate your Stack in CloudFormation > Stacks, from the AWS Console.
+- Run the following command:
+
+```sh
+aws cloudformation describe-stacks --profile $AWS_PROFILE --stack-name $STACK_NAME
+```
+
+### Delete your stack deployment
+
+When you have finished testing, you'll need to manually delete the stack you created:
+
+```sh
+# Takes ~5 minutes to complete
+./dev-deploy.sh -s $STACK_NAME -d
+```
+
+## Interact with the deployed service in development
+
+Note: This section is informative rather than instructional. These steps vary depending on what you're interacting with, and how those services are configured.
+
+Using the User Identity lambda function as an example, here's how you might interact with it - after a successful deployment to AWS:
+
+1. Copy the API Gateway endpoint URL from the CloudFormation stack outputs:
+
+```sh
+aws cloudformation describe-stacks --profile $AWS_PROFILE \
+    --stack-name $STACK_NAME --output text \
+    --query "Stacks[0].Outputs[?OutputKey=='ApiEndpoint'].OutputValue"
+```
+
+2. Use cURL to make a request to the User Identity endpoint:
+
+```sh
+UI_LAMBDA="<https://URL_FROM_PREVIOUS_STEP>"
+curl -X POST \
+  --header "Authorization: Bearer ABC" \
+  ${UI_LAMBDA}/user-identity \
+  --data '{"foo":"bar"}'
+```
+
+3. You can browse logs through CloudWatch in AWS Console to see the output of your request, or use the AWS CLI:
+
+```sh
+aws logs tail /aws/lambda/$STACK_NAME-UserIdentityFunction \
+    --follow --format json --profile $AWS_PROFILE
+```
