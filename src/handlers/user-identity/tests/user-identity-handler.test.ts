@@ -17,6 +17,7 @@ import { SendMessageCommandOutput } from "@aws-sdk/client-sqs";
 import { decodeJwt, JWTHeaderParameters } from "jose";
 import { getJwtSignature } from "../../../commons/jwt-utils";
 import { publicKeyJwk, getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utils";
+import logger from "../../../commons/logger";
 
 const CURRENT = "CURRENT";
 const HISTORIC = "HISTORIC";
@@ -61,6 +62,7 @@ let mockSendTxmaEvent: jest.SpyInstance<
   [event: TxmaEvent<string, object | undefined, object | undefined>],
   unknown
 >;
+let mockLoggerAppendKeys: jest.SpyInstance;
 
 const ALLOWED_CONTROLLER = "api.identity.dev.account.gov.uk";
 
@@ -81,6 +83,7 @@ beforeEach(() => {
   jest.spyOn(DidResolutionService, "isValidDidWeb").mockReturnValue(true);
   jest.spyOn(DidResolutionService, "getDidWebController").mockReturnValue(ALLOWED_CONTROLLER);
   mockSendTxmaEvent = jest.spyOn(AuditModule, "sendAuditMessage").mockResolvedValue({ $metadata: {} });
+  mockLoggerAppendKeys = jest.spyOn(logger, "appendKeys").mockImplementation();
 });
 
 describe("user-identity-handler authorization", () => {
@@ -158,6 +161,20 @@ describe("user-identity-handler authorization", () => {
     });
   });
 
+  it("should append govuk_signin_journey_id to logger, given a valid request", async () => {
+    const { mockEVCSData } = await createCredentialStoreIdentityResponse([
+      await createSignedIdentityCheckCredentialJWT(PASSPORT_ISSUER),
+      await createSignedIdentityCheckCredentialJWT(FRAUD_ISSUER),
+    ]);
+    mockEVCSResponse(mockEVCSData);
+
+    await handler(newEvent, {} as Context);
+
+    expect(mockLoggerAppendKeys).toHaveBeenCalledWith({
+      govuk_signin_journey_id: "govuk_signin_journey_id",
+    });
+  });
+
   it("signatureValid should be false, given signature validation fails", async () => {
     const misSignedStoredIdentity =
       "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRpZDp3ZWI6YXBpLmlkZW50aXR5LmRldi5hY2NvdW50Lmdvdi51ayNmNWZlNWQyYS05ZWI2LTQ4MTktOGM0Ni03MjNlM2EyMTU2NWEifQ.eyJzdWIiOiJ1c2VyLXN1YiIsInZvdCI6IlAyIiwidnRtIjpbXX0.-jy9iwsn6uDzr6b3mk0JJZ4NdUf8z3O3ldBbbXKAAtxMH3TIMlBm5u2bI4I1qHrWk1BL2k8muKLV-VIUeych1A";
@@ -232,6 +249,7 @@ describe("user-identity-handler authorization", () => {
       statusCode: HttpCodesEnum.BAD_REQUEST,
       body: JSON.stringify({ error: "bad_request", error_description: "Bad request from client" }),
     });
+    expect(mockLoggerAppendKeys).not.toHaveBeenCalled();
   });
 
   it("should return Unauthorised given no Bearer token", async () => {
