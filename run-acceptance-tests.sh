@@ -19,7 +19,7 @@ EOF
 
 RUN_WITH_DOCKER=false
 SHARED_STACK_NAME=reuse-identity-shared
-while [ "$1" != "" ]; do
+while [[ "$1" != "" ]]; do
   case $1 in
   -a | --aws-account)
     shift
@@ -49,7 +49,7 @@ while [ "$1" != "" ]; do
   shift
 done
 
-if [ -z "$AWS_TARGET_ACCOUNT" ]; then
+if [[ -z "$AWS_TARGET_ACCOUNT" ]]; then
   echo "Assuming you're already signed in to the target account..."
   echo
 else
@@ -58,7 +58,7 @@ else
   echo
 fi
 
-if [ -z "$SAM_STACK_NAME" ]; then
+if [[ -z "$SAM_STACK_NAME" ]]; then
   echo "Please specify a stack name."
   usage
   exit 1
