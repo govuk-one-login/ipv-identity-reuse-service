@@ -17,6 +17,8 @@ Usage:
     -h      --help              Prints this help message and exits
 
 EOF
+
+  return 0
 }
 
 RESOLVE_S3=false
@@ -26,7 +28,7 @@ OPERATION="deploy"
 ENVIRONMENT="local"
 PROFILE="sis-dev"
 
-while [ -n "$1" ]; do
+while [[ -n "$1" ]]; do
   case $1 in
     -s | --stack-name)
       shift
@@ -62,7 +64,7 @@ while [ -n "$1" ]; do
 done
 
 SAM_CONFIG=$(dirname "$0")/samconfig.toml
-[ -e "$SAM_CONFIG" ] || RESOLVE_S3=true
+[[ -e "$SAM_CONFIG" ]] || RESOLVE_S3=true
 if $RESOLVE_S3; then
   BUCKET_PARAM=(--resolve-s3)
 else
@@ -75,7 +77,7 @@ else
   CONFIRM_CHANGES_PARAM="--no-confirm-changeset"
 fi
 
-if [ -z "$STACK_NAME" ]; then
+if [[ -z "$STACK_NAME" ]]; then
   echo "Please specify a stack name."
   usage
   exit 1
@@ -124,5 +126,10 @@ case $OPERATION in
       --stack-name "$STACK_NAME" \
       --profile "$PROFILE"
     echo
+    ;;
+  *)
+    echo -e "Unknown operation $1...\n"
+    usage
+    exit 1
     ;;
 esac
