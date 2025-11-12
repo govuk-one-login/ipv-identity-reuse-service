@@ -14,6 +14,7 @@ Usage:
     -c      --shared-stack      The name of the shared configuration stack to use (defaults to reuse-identity-shared)
     -h      --help              Prints this help message and exits
 EOF
+  return 0
 }
 
 RUN_WITH_DOCKER=false
