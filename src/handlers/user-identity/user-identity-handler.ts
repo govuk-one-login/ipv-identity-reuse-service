@@ -31,6 +31,10 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
     return createErrorResponse(HttpCodesEnum.BAD_REQUEST);
   }
 
+  logger.appendKeys({
+    govuk_signin_journey_id: request.govukSigninJourneyId,
+  });
+
   const authorisation = getProperty(event?.headers, "authorization");
 
   if (!authorisation) {
