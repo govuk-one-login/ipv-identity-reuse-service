@@ -4,7 +4,7 @@ import { HttpCodesEnum } from "../../../commons/constants";
 import { Configuration } from "../../../commons/configuration";
 import * as configuration from "../../../commons/configuration";
 import { CredentialStoreIdentityResponse } from "../../../credential-store/credential-store-identity-response";
-import { UserIdentityResponseMetadata } from "../user-identity-response-metadata";
+import { UserIdentityResponse } from "../user-identity-response";
 import { UserIdentityRequest } from "../user-identity-request";
 import * as fraudCheckService from "../../../identity-reuse/fraud-check-service";
 import * as storedIdentityValidator from "../../../identity-reuse/stored-identity-validator";
@@ -18,6 +18,8 @@ import { decodeJwt, JWTHeaderParameters } from "jose";
 import { getJwtSignature } from "../../../commons/jwt-utils";
 import { publicKeyJwk, getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utils";
 import logger from "../../../commons/logger";
+
+jest.mock("../../../commons/logger");
 
 const CURRENT = "CURRENT";
 const HISTORIC = "HISTORIC";
@@ -102,7 +104,7 @@ describe("user-identity-handler authorization", () => {
     const result = await handler(newEvent, {} as Context);
 
     expect(result.statusCode).toBe(HttpCodesEnum.OK);
-    const body = JSON.parse(result.body) as UserIdentityResponseMetadata;
+    const body = JSON.parse(result.body) as UserIdentityResponse;
     expect(body).toStrictEqual({
       vot: "P2",
       content: {
@@ -185,7 +187,7 @@ describe("user-identity-handler authorization", () => {
     const result = await handler(newEvent, {} as Context);
 
     expect(result.statusCode).toBe(HttpCodesEnum.OK);
-    const body = JSON.parse(result.body) as UserIdentityResponseMetadata;
+    const body = JSON.parse(result.body) as UserIdentityResponse;
     expect(body).toStrictEqual({
       vot: "P2",
       content: { sub: "user-sub", vot: "P2", vtm: "https://oidc.account.gov.uk/trustmark" },
@@ -207,7 +209,7 @@ describe("user-identity-handler authorization", () => {
     const result = await handler(newEvent, {} as Context);
 
     expect(result.statusCode).toBe(HttpCodesEnum.OK);
-    const body = JSON.parse(result.body) as UserIdentityResponseMetadata;
+    const body = JSON.parse(result.body) as UserIdentityResponse;
     expect(body).toStrictEqual({
       vot: "P2",
       content: { sub: "user-sub", vot: "P2", vtm: "https://oidc.account.gov.uk/trustmark" },
@@ -231,7 +233,7 @@ describe("user-identity-handler authorization", () => {
     const result = await handler(newEvent, {} as Context);
 
     expect(result.statusCode).toBe(HttpCodesEnum.OK);
-    const body = JSON.parse(result.body) as UserIdentityResponseMetadata;
+    const body = JSON.parse(result.body) as UserIdentityResponse;
     expect(body).toStrictEqual({
       vot: "P2",
       content: { sub: "user-sub", vot: "P2", vtm: "https://oidc.account.gov.uk/trustmark" },
@@ -512,7 +514,7 @@ describe("user-identity-handler expired", () => {
     const result = await handler(newEvent, {} as Context);
 
     expect(result.statusCode).toBe(HttpCodesEnum.OK);
-    const body = JSON.parse(result.body) as UserIdentityResponseMetadata;
+    const body = JSON.parse(result.body) as UserIdentityResponse;
     expect(body).toStrictEqual({
       vot: "P2",
       content: {
@@ -552,7 +554,7 @@ describe("user-identity-handler isValid", () => {
     const result = await handler(newEvent, {} as Context);
 
     expect(result.statusCode).toBe(HttpCodesEnum.OK);
-    const body = JSON.parse(result.body) as UserIdentityResponseMetadata;
+    const body = JSON.parse(result.body) as UserIdentityResponse;
     expect(body).toStrictEqual({
       vot: "P2",
       content: {
@@ -587,7 +589,7 @@ describe("user-identity-handler isValid", () => {
     const result = await handler(newEvent, {} as Context);
 
     expect(result.statusCode).toBe(HttpCodesEnum.OK);
-    const body = JSON.parse(result.body) as UserIdentityResponseMetadata;
+    const body = JSON.parse(result.body) as UserIdentityResponse;
     expect(body).toStrictEqual({
       vot: "P2",
       content: {
@@ -635,9 +637,9 @@ const createCredentialStoreIdentityResponseWithStates = async (
 
   const response: CredentialStoreIdentityResponse = {
     si: {
-      state: CURRENT,
       vc: await sign(header, storedIdentity),
       metadata: null,
+      unsignedVot: "P2",
     },
     vcs: evcsVcs,
   };

@@ -1,6 +1,6 @@
 import { SendMessageCommandOutput } from "@aws-sdk/client-sqs";
 import { Verifier, type VerifierOptions } from "@pact-foundation/pact";
-import type { Server } from "http";
+import type { Server } from "node:http";
 import path from "node:path";
 import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utils";
 import * as AuditModule from "../../../commons/audit";
@@ -8,7 +8,7 @@ import type { Configuration } from "../../../commons/configuration";
 import * as ConfigurationModule from "../../../commons/configuration";
 import { CredentialStoreErrorResponse } from "../../../credential-store/credential-store-error-response";
 import type { CredentialStoreIdentityResponse } from "../../../credential-store/credential-store-identity-response";
-import { UserIdentityResponse } from "../../../handlers/user-identity/user-identity-response";
+import { StoredIdentityJWT } from "../../../handlers/user-identity/stored-identity-jwt";
 import * as FraudCheckService from "../../../identity-reuse/fraud-check-service";
 import type { VerifiableCredentialJWT } from "../../../identity-reuse/verifiable-credential-jwt";
 import { createServer as createProviderServer } from "./sis-provider-app";
@@ -46,7 +46,7 @@ const mockEVCSResponse = (
   response: CredentialStoreIdentityResponse | CredentialStoreErrorResponse,
   status: number = 200
 ) => {
-  jest.spyOn(global, "fetch").mockResolvedValue(
+  jest.spyOn(globalThis, "fetch").mockResolvedValue(
     new Response(JSON.stringify(response), {
       status,
       headers: { "content-type": "application/json" },
@@ -141,7 +141,7 @@ describe("Sis Pact Verification", () => {
 const createCredentialStoreIdentityResponse = async (
   verifiableCredentialStates: { vc: VerifiableCredentialJWT; state: string }[] = []
 ): Promise<CredentialStoreIdentityResponse> => {
-  const storedIdentity: UserIdentityResponse = {
+  const storedIdentity: StoredIdentityJWT = {
     sub: "user-sub",
     vot: "P2",
     iss: "http://api.example.com",
@@ -153,9 +153,9 @@ const createCredentialStoreIdentityResponse = async (
 
   return {
     si: {
-      state: "CURRENT",
       vc: await sign(defaultStoredIdentityHeader, storedIdentity),
       metadata: null,
+      unsignedVot: storedIdentity.max_vot || storedIdentity.vot,
     },
     vcs: await Promise.all(
       verifiableCredentialStates.map(async (vcState) => {

@@ -1,9 +1,9 @@
-import { UserIdentityResponse } from "../handlers/user-identity/user-identity-response";
+import { StoredIdentityJWT } from "../handlers/user-identity/stored-identity-jwt";
 import { getJwtSignature } from "../commons/jwt-utils";
 import logger from "../commons/logger";
 
 export const validateStoredIdentityCredentials = (
-  storedIdentityRecord: UserIdentityResponse,
+  storedIdentityRecord: StoredIdentityJWT,
   encodedCredentialJwts: string[]
 ): boolean => {
   const expectedCredentialSignatures = storedIdentityRecord.credentials;

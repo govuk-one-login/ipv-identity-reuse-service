@@ -16,6 +16,8 @@ import { AisMessage } from "../ais-message";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
 
+jest.mock("../../../commons/logger");
+
 const createTestSQSEvent = <T extends object>(...events: T[]): SQSEvent => ({
   Records: events.map((event) => ({ body: JSON.stringify(event) }) as never as SQSRecord),
 });

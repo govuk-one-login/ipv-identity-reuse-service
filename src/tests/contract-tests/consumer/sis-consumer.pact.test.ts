@@ -1,6 +1,6 @@
 import path from "path";
 import { PactV4, SpecificationVersion, MatchersV3 } from "@pact-foundation/pact";
-import type { UserIdentityResponseMetadata } from "../../../handlers/user-identity/user-identity-response-metadata";
+import type { UserIdentityResponse } from "../../../handlers/user-identity/user-identity-response";
 import { UserIdentityErrorResponse } from "../../../handlers/user-identity/user-identity-error-response";
 
 const { like } = MatchersV3;
@@ -71,7 +71,7 @@ describe("SIS Consumer", () => {
       })
       .executeTest(async (mockServer) => {
         const result = await executeTest(mockServer, govukSigninJourneyId);
-        await expect(result.json()).resolves.toMatchObject<UserIdentityResponseMetadata>({
+        await expect(result.json()).resolves.toMatchObject<UserIdentityResponse>({
           content: {
             sub: "user-sub",
             vot: "P2",

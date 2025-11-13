@@ -18,8 +18,8 @@ import { validateStoredIdentityCredentials } from "../../identity-reuse/stored-i
 import { VerifiableCredentialJWT } from "../../identity-reuse/verifiable-credential-jwt";
 import { UserIdentityErrorResponse } from "./user-identity-error-response";
 import { UserIdentityRequest } from "./user-identity-request";
-import { UserIdentityResponse as CredentialStoreStoredIdentityJWT } from "./user-identity-response";
-import { UserIdentityResponseMetadata } from "./user-identity-response-metadata";
+import { StoredIdentityJWT } from "./stored-identity-jwt";
+import { StoredIdentityVectorOfTrust, UserIdentityResponse } from "./user-identity-response";
 
 export const handler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
   const request = event.body ? (JSON.parse(event.body) as UserIdentityRequest) : undefined;
@@ -57,7 +57,7 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
   }
 
   try {
-    const result = await getIdentityFromCredentialStore(authorisation);
+    const result: Response = await getIdentityFromCredentialStore(authorisation);
 
     if (!result.ok) {
       logger.error("Error received from EVCS service", { status: result.status });
@@ -85,21 +85,21 @@ const createSuccessResponse = async (
   vtr: IdentityVectorOfTrust[],
   userId: string,
   govukSigninJourneyId: string
-): Promise<UserIdentityResponseMetadata> => {
+): Promise<UserIdentityResponse> => {
   const configuration = await getConfiguration();
-  const content: CredentialStoreStoredIdentityJWT = getJwtBody(identityResponse.si.vc);
   const currentVcsEncoded: string[] = identityResponse.vcs.map((vcWithMetadata) => vcWithMetadata.vc);
   const currentVcs: VerifiableCredentialJWT[] = parseCurrentVerifiableCredentials(identityResponse);
   const fraudVc = getFraudVc(currentVcs, configuration.fraudIssuer);
+  const content = getJwtBody<StoredIdentityJWT>(identityResponse.si.vc);
   const kid = getJwtHeader(identityResponse.si.vc).kid || "";
   const validationResults = await validateCryptography(kid, identityResponse);
-  const vot = calculateVot(content.vot as IdentityVectorOfTrust, vtr);
+  const vot: StoredIdentityVectorOfTrust = calculateVot(content, identityResponse.si.unsignedVot, vtr);
   const vtm = `https://oidc.account.gov.uk/trustmark`;
 
   await auditIdentityRecordRead(
     {
       retrieval_outcome: "success",
-      max_vot: content.vot,
+      max_vot: content.max_vot || identityResponse.si.unsignedVot,
       ...(fraudVc ? { timestamp_fraud_check_iat: fraudVc?.iat } : {}),
     },
     {
@@ -109,7 +109,9 @@ const createSuccessResponse = async (
     govukSigninJourneyId
   );
 
-  const successResponse = {
+  delete content.max_vot;
+
+  const successResponse: UserIdentityResponse = {
     content: { ...content, vot, vtm },
     vot: content.vot,
     isValid: validateStoredIdentityCredentials(content, currentVcsEncoded),
