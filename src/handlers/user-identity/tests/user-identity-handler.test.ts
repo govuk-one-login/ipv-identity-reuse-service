@@ -606,6 +606,65 @@ describe("user-identity-handler isValid", () => {
   });
 });
 
+describe("user-identity-handler max_vot", () => {
+  it("should set $.vot from unsignedVot if max_vot property not present in stored identity JWT", async () => {
+    jest.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
+    jest.spyOn(storedIdentityValidator, "validateStoredIdentityCredentials").mockReturnValue(true);
+
+    const storedIdentityRecordJwt = await sign(getDefaultJwtHeader(), {
+      sub: "user-sub",
+      vot: "P2",
+      vtm: "https://oidc.account.gov.uk/trustmark",
+      credentials: [],
+    });
+
+    const mockEVCSData: CredentialStoreIdentityResponse = {
+      si: {
+        vc: storedIdentityRecordJwt,
+        metadata: null,
+        unsignedVot: "P3",
+      },
+      vcs: [],
+    };
+
+    mockEVCSResponse(mockEVCSData);
+
+    const result = await handler(newEvent, {} as Context);
+    expect(result.statusCode).toBe(HttpCodesEnum.OK);
+    const body = JSON.parse(result.body) as UserIdentityResponse;
+    expect(body.vot).toEqual("P3");
+  });
+
+  it("should set $.vot from max_vot property in stored identity JWT if present", async () => {
+    jest.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
+    jest.spyOn(storedIdentityValidator, "validateStoredIdentityCredentials").mockReturnValue(true);
+
+    const storedIdentityRecordJwt = await sign(getDefaultJwtHeader(), {
+      sub: "user-sub",
+      vot: "P2",
+      max_vot: "P3",
+      vtm: "https://oidc.account.gov.uk/trustmark",
+      credentials: [],
+    });
+
+    const mockEVCSData: CredentialStoreIdentityResponse = {
+      si: {
+        vc: storedIdentityRecordJwt,
+        metadata: null,
+        unsignedVot: "P4", //setting this to something different to maxVot to test it gets the right value
+      },
+      vcs: [],
+    };
+
+    mockEVCSResponse(mockEVCSData);
+
+    const result = await handler(newEvent, {} as Context);
+    expect(result.statusCode).toBe(HttpCodesEnum.OK);
+    const body = JSON.parse(result.body) as UserIdentityResponse;
+    expect(body.vot).toEqual("P3");
+  });
+});
+
 type StoredIdentityResponse = {
   mockEVCSData: CredentialStoreIdentityResponse;
   credentialSignatures: string[];
