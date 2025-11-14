@@ -95,11 +95,12 @@ const createSuccessResponse = async (
   const validationResults = await validateCryptography(kid, identityResponse);
   const vot: StoredIdentityVectorOfTrust = calculateVot(content, identityResponse.si.unsignedVot, vtr);
   const vtm = `https://oidc.account.gov.uk/trustmark`;
+  const maxVot = content.max_vot || identityResponse.si.unsignedVot;
 
   await auditIdentityRecordRead(
     {
       retrieval_outcome: "success",
-      max_vot: content.max_vot || identityResponse.si.unsignedVot,
+      max_vot: maxVot,
       ...(fraudVc ? { timestamp_fraud_check_iat: fraudVc?.iat } : {}),
     },
     {
@@ -113,7 +114,7 @@ const createSuccessResponse = async (
 
   const successResponse: UserIdentityResponse = {
     content: { ...content, vot, vtm },
-    vot: content.vot,
+    vot: maxVot,
     isValid: validateStoredIdentityCredentials(content, currentVcsEncoded),
     expired: hasFraudCheckExpired(fraudVc, configuration.fraudValidityPeriod),
     ...validationResults,
