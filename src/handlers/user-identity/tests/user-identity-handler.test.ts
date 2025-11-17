@@ -79,8 +79,8 @@ beforeEach(() => {
     fraudIssuer: [FRAUD_ISSUER],
     fraudValidityPeriod: TEST_FRAUD_VALIDITY_HOURS,
   } as Configuration);
-  jest.spyOn(fraudCheckService, "hasFraudCheckExpired").mockRestore();
-  jest.spyOn(storedIdentityValidator, "validateStoredIdentityCredentials").mockRestore();
+  jest.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
+  jest.spyOn(storedIdentityValidator, "validateStoredIdentityCredentials").mockReturnValue(true);
   jest.spyOn(DidResolutionService, "getPublicKeyJwkForKid").mockResolvedValue(publicKeyJwk);
   jest.spyOn(DidResolutionService, "isValidDidWeb").mockReturnValue(true);
   jest.spyOn(DidResolutionService, "getDidWebController").mockReturnValue(ALLOWED_CONTROLLER);
@@ -89,11 +89,6 @@ beforeEach(() => {
 });
 
 describe("user-identity-handler authorization", () => {
-  beforeEach(() => {
-    jest.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
-    jest.spyOn(storedIdentityValidator, "validateStoredIdentityCredentials").mockReturnValue(true);
-  });
-
   it("should return Success, given a valid bearer token", async () => {
     const { mockEVCSData, credentialSignatures } = await createCredentialStoreIdentityResponse([
       await createSignedIdentityCheckCredentialJWT(PASSPORT_ISSUER),
@@ -464,19 +459,7 @@ describe("user-identity-handler expired", () => {
   const RANDOM_NBF: string = "2023-04-25T15:01:36.000Z";
 
   beforeEach(() => {
-    jest.spyOn(storedIdentityValidator, "validateStoredIdentityCredentials").mockReturnValue(true);
-    jest.clearAllMocks();
-    newEvent = event();
-    jest.spyOn(configuration, "getServiceApiKey").mockResolvedValue("an-api-key");
-    jest.spyOn(configuration, "getConfiguration").mockResolvedValue({
-      evcsApiUrl: "https://evcs.gov.uk",
-      controllerAllowList: [ALLOWED_CONTROLLER],
-      fraudIssuer: [FRAUD_ISSUER],
-      fraudValidityPeriod: TEST_FRAUD_VALIDITY_HOURS,
-    } as Configuration);
     jest.spyOn(fraudCheckService, "hasFraudCheckExpired").mockRestore();
-
-    jest.useFakeTimers();
     jest.setSystemTime(new Date(NOW));
   });
 
@@ -533,7 +516,7 @@ describe("user-identity-handler expired", () => {
 
 describe("user-identity-handler isValid", () => {
   beforeEach(() => {
-    jest.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
+    jest.spyOn(storedIdentityValidator, "validateStoredIdentityCredentials").mockRestore();
   });
 
   it("should set isValid to false if stored identity record is missing credential signature", async () => {
@@ -603,6 +586,59 @@ describe("user-identity-handler isValid", () => {
       kidValid: true,
       signatureValid: true,
     });
+  });
+});
+
+describe("user-identity-handler max_vot", () => {
+  it("should set $.vot from unsignedVot if max_vot property not present in stored identity JWT", async () => {
+    const storedIdentityRecordJwt = await sign(getDefaultJwtHeader(), {
+      sub: "user-sub",
+      vot: "P2",
+      vtm: "https://oidc.account.gov.uk/trustmark",
+      credentials: [],
+    });
+
+    const mockEVCSData: CredentialStoreIdentityResponse = {
+      si: {
+        vc: storedIdentityRecordJwt,
+        metadata: null,
+        unsignedVot: "P3",
+      },
+      vcs: [],
+    };
+
+    mockEVCSResponse(mockEVCSData);
+
+    const result = await handler(newEvent, {} as Context);
+    expect(result.statusCode).toBe(HttpCodesEnum.OK);
+    const body = JSON.parse(result.body) as UserIdentityResponse;
+    expect(body.vot).toEqual("P3");
+  });
+
+  it("should set $.vot from max_vot property in stored identity JWT if present", async () => {
+    const storedIdentityRecordJwt = await sign(getDefaultJwtHeader(), {
+      sub: "user-sub",
+      vot: "P2",
+      max_vot: "P3",
+      vtm: "https://oidc.account.gov.uk/trustmark",
+      credentials: [],
+    });
+
+    const mockEVCSData: CredentialStoreIdentityResponse = {
+      si: {
+        vc: storedIdentityRecordJwt,
+        metadata: null,
+        unsignedVot: "P4", //setting this to something different to maxVot to test it gets the right value
+      },
+      vcs: [],
+    };
+
+    mockEVCSResponse(mockEVCSData);
+
+    const result = await handler(newEvent, {} as Context);
+    expect(result.statusCode).toBe(HttpCodesEnum.OK);
+    const body = JSON.parse(result.body) as UserIdentityResponse;
+    expect(body.vot).toEqual("P3");
   });
 });
 
