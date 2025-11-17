@@ -535,7 +535,6 @@ Resources:
         Owner: !Ref OwnerTagValue
         Source: !Ref SourceTagValue
         FMSRegionalPolicy: false
-        CustomPolicy: idprivateapi
 
   PrivateRestApiIDSSM:
     Type: AWS::SSM::Parameter
