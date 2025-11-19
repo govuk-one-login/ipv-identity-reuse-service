@@ -125,7 +125,7 @@ const createSuccessResponse = async (
       response_outcome: "returned",
       is_valid: successResponse.isValid,
       expired: successResponse.expired,
-      vot: successResponse.vot,
+      vot: successResponse.content.vot,
     },
     {
       response_body: JSON.stringify(successResponse),
