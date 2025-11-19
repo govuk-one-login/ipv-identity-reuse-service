@@ -14,7 +14,7 @@ import * as AuditModule from "../../../commons/audit";
 import * as DidResolutionService from "../../../identity-reuse/did-resolution-service";
 import { TxmaEvent } from "../../../commons/audit-events";
 import { SendMessageCommandOutput } from "@aws-sdk/client-sqs";
-import { decodeJwt, JWTHeaderParameters } from "jose";
+import { JWTHeaderParameters } from "jose";
 import { getJwtSignature } from "../../../commons/jwt-utils";
 import { publicKeyJwk, getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utils";
 import logger from "../../../commons/logger";
@@ -101,7 +101,7 @@ describe("user-identity-handler authorization", () => {
     expect(result.statusCode).toBe(HttpCodesEnum.OK);
     const body = JSON.parse(result.body) as UserIdentityResponse;
     expect(body).toStrictEqual({
-      vot: "P2",
+      vot: "P3",
       content: {
         sub: "user-sub",
         vot: "P2",
@@ -119,7 +119,7 @@ describe("user-identity-handler authorization", () => {
       event_timestamp_ms: 1759240815925,
       timestamp: 1759240815,
       extensions: {
-        max_vot: "P2",
+        max_vot: "P3",
         retrieval_outcome: "success",
       },
       restricted: {
@@ -142,14 +142,7 @@ describe("user-identity-handler authorization", () => {
         vot: "P2",
       },
       restricted: {
-        response_body: JSON.stringify({
-          content: decodeJwt(mockEVCSData.si.vc),
-          vot: "P2",
-          isValid: true,
-          expired: false,
-          kidValid: true,
-          signatureValid: true,
-        }),
+        response_body: JSON.stringify(body),
       },
       user: {
         user_id: TEST_USER,
@@ -184,7 +177,7 @@ describe("user-identity-handler authorization", () => {
     expect(result.statusCode).toBe(HttpCodesEnum.OK);
     const body = JSON.parse(result.body) as UserIdentityResponse;
     expect(body).toStrictEqual({
-      vot: "P2",
+      vot: "P3",
       content: { sub: "user-sub", vot: "P2", vtm: "https://oidc.account.gov.uk/trustmark" },
       expired: false,
       isValid: true,
@@ -206,7 +199,7 @@ describe("user-identity-handler authorization", () => {
     expect(result.statusCode).toBe(HttpCodesEnum.OK);
     const body = JSON.parse(result.body) as UserIdentityResponse;
     expect(body).toStrictEqual({
-      vot: "P2",
+      vot: "P3",
       content: { sub: "user-sub", vot: "P2", vtm: "https://oidc.account.gov.uk/trustmark" },
       expired: false,
       isValid: true,
@@ -230,7 +223,7 @@ describe("user-identity-handler authorization", () => {
     expect(result.statusCode).toBe(HttpCodesEnum.OK);
     const body = JSON.parse(result.body) as UserIdentityResponse;
     expect(body).toStrictEqual({
-      vot: "P2",
+      vot: "P3",
       content: { sub: "user-sub", vot: "P2", vtm: "https://oidc.account.gov.uk/trustmark" },
       expired: false,
       isValid: true,
@@ -499,7 +492,7 @@ describe("user-identity-handler expired", () => {
     expect(result.statusCode).toBe(HttpCodesEnum.OK);
     const body = JSON.parse(result.body) as UserIdentityResponse;
     expect(body).toStrictEqual({
-      vot: "P2",
+      vot: "P3",
       content: {
         sub: "user-sub",
         vot: "P2",
@@ -539,7 +532,7 @@ describe("user-identity-handler isValid", () => {
     expect(result.statusCode).toBe(HttpCodesEnum.OK);
     const body = JSON.parse(result.body) as UserIdentityResponse;
     expect(body).toStrictEqual({
-      vot: "P2",
+      vot: "P3",
       content: {
         sub: "user-sub",
         vot: "P2",
@@ -574,7 +567,7 @@ describe("user-identity-handler isValid", () => {
     expect(result.statusCode).toBe(HttpCodesEnum.OK);
     const body = JSON.parse(result.body) as UserIdentityResponse;
     expect(body).toStrictEqual({
-      vot: "P2",
+      vot: "P3",
       content: {
         sub: "user-sub",
         vot: "P2",
@@ -675,7 +668,7 @@ const createCredentialStoreIdentityResponseWithStates = async (
     si: {
       vc: await sign(header, storedIdentity),
       metadata: null,
-      unsignedVot: "P2",
+      unsignedVot: "P3",
     },
     vcs: evcsVcs,
   };
