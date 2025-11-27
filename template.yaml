@@ -1158,7 +1158,7 @@ Resources:
     DependsOn:
       - PrivateRestApiStage # This resource is created as part of the PrivateRestApi resource
     Properties:
-      Name: !Sub "${AWS::StackName}-IpvCorePrivateApiKey-v1"
+      Name: !Sub "${AWS::StackName}-IpvCorePrivateApiKey-v2"
       Description: !Sub >-
         API Key for IPV Core.
         N.B. Does not auto-update if secret (/${AWS::StackName}/Config/PrivateAPI/Key/IPVCore) has changed!
