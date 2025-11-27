@@ -1,0 +1,96 @@
+name: Delete deployment
+
+
+on:
+  schedule:
+    # Every weekday at 10am UTC
+    - cron: '0 10 * * 1-5'
+  pull_request:
+    types: [ closed ]
+
+concurrency:
+  group: deploy-${{ github.head_ref || github.ref_name }}
+
+permissions: read-all
+
+jobs:
+  delete-deployment:
+    name: Delete stack
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: development
+    env:
+      AWS_REGION: eu-west-2
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Pull repository
+        uses: actions/checkout@v6
+
+      - name: Assume AWS Role
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # pin@v5.1.1
+        with:
+          role-to-assume: ${{ secrets.GHA_AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get stack name
+        id: get-stack-name
+        if: ${{ github.event_name != 'schedule' }}
+        uses: govuk-one-login/github-actions/beautify-branch-name@f5362528578198e7851e96e0594f593beff0162e
+        with:
+          usage: Stack name
+          branch-name: preview-pr-${{ github.event.pull_request.number }}
+          length-limit: ${{ env.STACK_NAME_LENGTH }}
+
+      - name: Check stack exists
+        if: ${{ github.event_name != 'schedule' }}
+        id: check-stack-exists
+        uses: govuk-one-login/github-actions/sam/check-stacks-exist@f5362528578198e7851e96e0594f593beff0162e
+        with:
+          stack-names: ${{ steps.get-stack-name.outputs.pretty-branch-name }}
+          set-env-var: STACKS_TO_DELETE
+          verbose: true
+
+      - name: Get stale preview stacks
+        if: ${{ github.event_name == 'schedule' }}
+        uses: govuk-one-login/github-actions/sam/get-stale-stacks@f5362528578198e7851e96e0594f593beff0162e
+        with:
+          threshold-days: 30
+          stack-name-filter: preview
+          stack-tag-filters: DeploymentSource="GitHub Actions" | StackType=Preview | Project="ipv-identity-reuse-service"
+          env-var-name: STACKS_TO_DELETE
+          description: preview
+
+      - name: Get stale manual stacks
+        if: ${{ github.event_name == 'schedule' }}
+        uses: govuk-one-login/github-actions/sam/get-stale-stacks@f5362528578198e7851e96e0594f593beff0162e
+        with:
+          threshold-days: 30
+          stack-tag-filters: DeploymentSource=Manual | StackType=Dev | Project=ipv-identity-reuse-service
+          env-var-name: STACKS_TO_DELETE
+          description: manual
+
+      - name: Delete stacks
+        if: ${{ env.STACKS_TO_DELETE}}
+        uses: govuk-one-login/github-actions/sam/delete-stacks@f5362528578198e7851e96e0594f593beff0162e
+        with:
+          stack-names: ${{ env.STACKS_TO_DELETE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Notify on failure
+        if: ${{ failure() && endsWith(github.ref, 'main') }}
+        id: slack
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # pin@v2.1.1
+        with:
+          webhook-type: incoming-webhook
+          webhook: ${{ secrets.ERROR_SLACK_WEBHOOK }}
+          payload: |
+            {
+              "channel_id": "${{ secrets.ERROR_SLACK_WEBHOOK_CHANNEL_ID }}",
+              "github_repo": "${{ github.repository }}",
+              "message": "Delete ipv-identity-reuse-service deployment ${{ github.actor }} has failed.",
+              "aws_account": "N/A",
+              "level": "ERROR"
+            }
