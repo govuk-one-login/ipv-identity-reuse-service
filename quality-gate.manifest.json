@@ -1,0 +1,96 @@
+{
+  "$schema": "https://raw.githubusercontent.com/govuk-one-login/quality-gates/refs/tags/v0.1.0/schemas/schema.json",
+  "services": [
+    {
+      "quality-gates": [
+        {
+          "check-types": [
+            "unit",
+            "code style and linting"
+          ],
+          "config": {
+            "file": ".github/workflows/post-merge.yml",
+            "name": "run-tests",
+            "path": "jobs.run-tests"
+          },
+          "phase": "pre-upload",
+          "provider": "GitHub"
+        },
+        {
+          "check-types": [
+            "contract"
+          ],
+          "config": {
+            "file": ".github/workflows/post-merge.yml",
+            "name": "run-pact-tests",
+            "path": "jobs.run-pact-tests"
+          },
+          "phase": "pre-upload",
+          "provider": "GitHub"
+        },
+        {
+          "check-types": [
+            "integration"
+          ],
+          "config": {
+            "file": ".github/workflows/post-merge.yml",
+            "name": "acceptance-test",
+            "path": "jobs.acceptance-test"
+          },
+          "phase": "pre-upload",
+          "provider": "GitHub"
+        },
+        {
+          "check-types": [
+            "unit",
+            "code style and linting"
+          ],
+          "config": {
+            "file": ".github/workflows/pre-merge-checks.yml",
+            "name": "run-tests",
+            "path": "jobs.run-tests"
+          },
+          "phase": "pre-merge",
+          "provider": "GitHub"
+        },
+        {
+          "check-types": [
+            "contract"
+          ],
+          "config": {
+            "file": ".github/workflows/pre-merge-checks.yml",
+            "name": "run-pact-tests",
+            "path": "jobs.run-pact-tests"
+          },
+          "phase": "pre-merge",
+          "provider": "GitHub"
+        },
+        {
+          "check-types": [
+            "code style and linting"
+          ],
+          "config": {
+            "file": ".github/workflows/pre-merge-checks.yml",
+            "name": "pre-commit",
+            "path": "jobs.pre-commit"
+          },
+          "phase": "pre-merge",
+          "provider": "GitHub"
+        },
+        {
+          "check-types": [
+            "integration"
+          ],
+          "config": {
+            "file": ".github/workflows/pre-merge-checks.yml",
+            "name": "acceptance-test",
+            "path": "jobs.acceptance-test"
+          },
+          "phase": "pre-merge",
+          "provider": "GitHub"
+        }
+      ],
+      "service-tag": "ipv-identity-reuse-service"
+    }
+  ]
+}
