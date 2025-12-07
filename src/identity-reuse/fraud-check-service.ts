@@ -22,9 +22,7 @@ export const hasFraudCheckExpired = (
   }
 
   if (isIdentityCheckCredential(fraudVc)) {
-    if (hasFailedFraudCheck(fraudVc, "applicable_authoritative_source")) {
-      return false;
-    } else if (hasFailedFraudCheck(fraudVc, "available_authoritative_source")) {
+    if (hasFailedFraudCheck(fraudVc, "available_authoritative_source")) {
       return true;
     }
   }

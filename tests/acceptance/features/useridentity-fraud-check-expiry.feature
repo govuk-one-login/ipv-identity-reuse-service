@@ -33,7 +33,7 @@ Feature: UserIdentity Fraud Check Expiry
     When I make a request for the users identity with a VTR "P2"
     Then the status code should be 200
     And the stored identity should be returned
-    And the stored identity expired field is false
+    And the stored identity expired field is true
     And the stored identity isValid field is true
 
   Scenario: Fraud check from Fraud Resilience forces stored identity to be expired
