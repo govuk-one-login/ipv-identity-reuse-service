@@ -69,7 +69,7 @@ describe("hasFraudCheckExpired", () => {
     expect(fraudCheckExpiredReversed).toEqual(false);
   });
 
-  it("should return false when the fraud credential has failedCheckDetails with fraudCheckType applicable_authoritative_source", async () => {
+  it("should return true when the fraud credential has failedCheckDetails with fraudCheckType applicable_authoritative_source and the nbf is more than 6 months before the current time", async () => {
     const nbfDateExpired = "2025-01-25T15:35:58.000Z";
     const vcBundle = [
       createInvalidFraudVC(nbfDateExpired, "applicable_authoritative_source"),
@@ -77,13 +77,35 @@ describe("hasFraudCheckExpired", () => {
       createRiskAssessmentCredentialJWT(),
     ];
     const fraudCheckExpired = hasFraudCheckExpired(getFraudVc(vcBundle, FRAUD_ISSUERS), VALIDITY_PERIOD);
+    expect(fraudCheckExpired).toEqual(true);
+  });
+
+  it("should return false when the fraud credential has failedCheckDetails with fraudCheckType applicable_authoritative_source and the nbf is less than 6 months before the current time", async () => {
+    const nbfDateNotExpired = "2025-08-25T15:35:58.000Z";
+    const vcBundle = [
+      createInvalidFraudVC(nbfDateNotExpired, "applicable_authoritative_source"),
+      createSecurityCheckCredentialJWT(),
+      createRiskAssessmentCredentialJWT(),
+    ];
+    const fraudCheckExpired = hasFraudCheckExpired(getFraudVc(vcBundle, FRAUD_ISSUERS), VALIDITY_PERIOD);
     expect(fraudCheckExpired).toEqual(false);
   });
 
-  it("should return true when the fraud credential has failedCheckDetails with fraudCheckType available_authoritative_source", async () => {
+  it("should return true when the fraud credential has failedCheckDetails with fraudCheckType available_authoritative_source and the nbf is less than 6 months before the current time", async () => {
     const nbfDateNotExpired = "2025-08-25T15:35:58.000Z";
     const vcBundle = [
       createInvalidFraudVC(nbfDateNotExpired, "available_authoritative_source"),
+      createSecurityCheckCredentialJWT(),
+      createRiskAssessmentCredentialJWT(),
+    ];
+    const fraudCheckExpired = hasFraudCheckExpired(getFraudVc(vcBundle, FRAUD_ISSUERS), VALIDITY_PERIOD);
+    expect(fraudCheckExpired).toEqual(true);
+  });
+
+  it("should return true when the fraud credential has failedCheckDetails with fraudCheckType available_authoritative_source and the nbf is more than 6 months before the current time", async () => {
+    const nbfDateExpired = "2025-01-25T15:35:58.000Z";
+    const vcBundle = [
+      createInvalidFraudVC(nbfDateExpired, "available_authoritative_source"),
       createSecurityCheckCredentialJWT(),
       createRiskAssessmentCredentialJWT(),
     ];
