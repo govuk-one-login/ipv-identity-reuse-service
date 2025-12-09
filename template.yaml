@@ -519,6 +519,7 @@ Resources:
       TracingEnabled: true
       MethodSettings:
         - MetricsEnabled: true
+          LoggingLevel: INFO
           ResourcePath: /*
           HttpMethod: "*"
       EndpointConfiguration:
@@ -802,6 +803,26 @@ Resources:
   #######
   # API #
   #######
+  APIGatewayAccount:
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn: !GetAtt APIGatewayExecutionLogRole.Arn
+
+  APIGatewayExecutionLogRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - >-
+          arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
   RestApi:
     Condition: IsDev
     Type: AWS::Serverless::Api
@@ -846,6 +867,10 @@ Resources:
           "apiKeyId": "$context.identity.apiKeyId"
           }
         DestinationArn: !GetAtt APIGatewayAccessLogGroup.Arn
+      MethodSettings:
+        - LoggingLevel: INFO
+          ResourcePath: '/*'
+          HttpMethod: '*'
       CacheClusterEnabled: false
       TracingEnabled: true
       EndpointConfiguration:
