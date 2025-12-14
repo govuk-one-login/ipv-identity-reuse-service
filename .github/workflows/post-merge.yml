@@ -4,6 +4,23 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - '**.md'
+      - .editorconfig
+      - .github/aws-oidc-provider/**
+      - .github/dependabot.yml
+      - .github/workflows/delete-deployment.yaml
+      - .github/workflows/error-handler.yaml
+      - .github/workflows/pre-commit.yml
+      - .github/workflows/pre-merge-checks.yml
+      - .gitignore
+      - .gitlint
+      - .pre-commit-config.yaml
+      - .prettierrc
+      - .secrets.baseline
+      - CODEOWNERS
+      - dev-deploy.sh
+      - run-acceptance-tests.sh
 
 permissions:
   contents: read
