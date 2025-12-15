@@ -54,7 +54,6 @@ repos:
         name: TypeScript compiler check
         entry: npm run type-check
         language: system
-        files: \.(ts|tsx)$
         pass_filenames: false
 
   - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
