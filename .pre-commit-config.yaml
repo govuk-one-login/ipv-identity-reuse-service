@@ -48,6 +48,15 @@ repos:
         files: ".*\\.(js|ts)"
         pass_filenames: false
 
+  - repo: local
+    hooks:
+      - id: typescript-compile
+        name: TypeScript compiler check
+        entry: npm run type-check
+        language: system
+        files: \.(ts|tsx)$
+        pass_filenames: false
+
   - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
     rev: v9.22.0
     hooks:
