@@ -1,6 +1,6 @@
 ---
 default_stages: [ pre-commit ]
-
+exclude: '^dist/'
 repos:
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -45,7 +45,7 @@ repos:
         name: Run lint
         language: system
         entry: bash -c 'npm ci --dev && npm run lint "$@"' --
-        files: ".*\\.(js|ts)"
+        files: "^(src|tests|openAPI|shared-test).*\\.(js|ts)"
         pass_filenames: false
 
   - repo: local
