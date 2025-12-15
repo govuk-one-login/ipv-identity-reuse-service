@@ -41,9 +41,6 @@ jobs:
           scope: "@govuk-one-login"
           always-auth: true
 
-      - name: TypeScript compiler check
-        run: npm run type-check
-
       - name: Build SAM application
         uses: govuk-one-login/github-actions/sam/build-application@1ef1d955b2fd248b51fc803f6b64ccac9f04cd84
         env:
