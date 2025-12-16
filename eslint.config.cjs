@@ -16,7 +16,7 @@ const compat = new FlatCompat({
 
 module.exports = defineConfig([
   {
-    ignores: [".aws-sam/**", "eslint.config.cjs", "dist/"],
+    ignores: [".aws-sam/**", "eslint.config.cjs"],
 
     languageOptions: {
       globals: {
