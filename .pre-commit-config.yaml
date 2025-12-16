@@ -45,9 +45,9 @@ repos:
         name: Run lint
         language: system
         entry: bash -c 'npm ci --dev && npm run lint "$@"' --
-        files: "^(src|tests|openAPI|shared-test).*\\.(js|ts)"
+        files: ".*\\.(js|ts)"
         pass_filenames: false
-
+# "^(src|tests|openAPI|shared-test).*\\.(js|ts)"
   - repo: local
     hooks:
       - id: typescript-compile
