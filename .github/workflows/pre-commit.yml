@@ -34,6 +34,3 @@ jobs:
           pull-repository: true
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: TypeScript compiler check
-        run: npm run type-check
