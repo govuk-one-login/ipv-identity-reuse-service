@@ -69,7 +69,8 @@
     "test:acceptance": "cucumber-js",
     "test:consumer": "jest --config src/tests/contract-tests/jest.config.ts --selectProjects consumer",
     "test:provider": "jest --config src/tests/contract-tests/jest.config.ts --selectProjects provider",
-    "test:unit": "test"
+    "test:unit": "test",
+    "type-check": "tsc --noEmit"
   },
   "version": "0.0.1"
 }

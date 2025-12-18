@@ -1,6 +1,6 @@
 ---
 default_stages: [ pre-commit ]
-
+exclude: '^dist/'
 repos:
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -46,6 +46,14 @@ repos:
         language: system
         entry: bash -c 'npm ci --dev && npm run lint "$@"' --
         files: ".*\\.(js|ts)"
+        pass_filenames: false
+# "^(src|tests|openAPI|shared-test).*\\.(js|ts)"
+  - repo: local
+    hooks:
+      - id: typescript-compile
+        name: TypeScript compiler check
+        entry: npm run type-check
+        language: system
         pass_filenames: false
 
   - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
