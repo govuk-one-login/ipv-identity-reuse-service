@@ -3,15 +3,17 @@ import { Verifier, type VerifierOptions } from "@pact-foundation/pact";
 import type { Server } from "node:http";
 import path from "node:path";
 import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utils";
-import * as AuditModule from "../../../commons/audit";
-import type { Configuration } from "../../../commons/configuration";
-import * as ConfigurationModule from "../../../commons/configuration";
-import { CredentialStoreErrorResponse } from "../../../credential-store/credential-store-error-response";
-import type { CredentialStoreIdentityResponse } from "../../../credential-store/credential-store-identity-response";
-import { StoredIdentityJWT } from "../../../handlers/user-identity/stored-identity-jwt";
-import * as FraudCheckService from "../../../identity-reuse/fraud-check-service";
-import type { VerifiableCredentialJWT } from "../../../identity-reuse/verifiable-credential-jwt";
+import * as AuditModule from "../../../services/audit";
+import type { Configuration } from "../../../services/configuration";
+import * as ConfigurationModule from "../../../services/configuration";
+import { StoredIdentityJWT } from "../../../commons/stored-identity-jwt";
 import { createServer as createProviderServer } from "./sis-provider-app";
+import * as FraudCheckService from "../../../handlers/user-identity/identity-reuse/fraud-check-service";
+import type {
+  CredentialStoreErrorResponse,
+  CredentialStoreIdentityResponse,
+} from "../../../services/encrypted-credential-store";
+import { VerifiableCredentialJWT } from "../../../commons/verifiable-credential-jwt";
 
 const PORT = 8080;
 

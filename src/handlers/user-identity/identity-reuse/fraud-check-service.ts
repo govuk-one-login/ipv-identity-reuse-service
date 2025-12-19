@@ -1,6 +1,6 @@
-import logger from "../commons/logger";
+import logger from "../../../commons/logger";
 import { FraudCheckType, IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials";
-import { VerifiableCredentialJWT } from "./verifiable-credential-jwt";
+import { VerifiableCredentialJWT } from "../../../commons/verifiable-credential-jwt";
 
 export const getFraudVc = (
   vcBundle: VerifiableCredentialJWT[],

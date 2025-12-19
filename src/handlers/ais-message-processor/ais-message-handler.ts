@@ -4,12 +4,14 @@ import { SQSEvent, SQSRecord } from "aws-lambda";
 import { MetricDimension, MetricName } from "../../commons/metric-enum";
 import { isAisMessage, AisMessage } from "./ais-message";
 
-import { getConfiguration, type Configuration } from "../../commons/configuration";
+import { getConfiguration, type Configuration } from "../../services/configuration";
 import { isStringWithLength } from "../../commons/string-utils";
 import logger from "../../commons/logger";
-import { isCredentialStoreErrorResponse } from "../../credential-store/credential-store-error-response";
-import { auditIdentityRecordInvalidated } from "../../commons/audit";
-import { invalidateIdentityInCredentialStore } from "../../credential-store/encrypted-credential-store";
+import { auditIdentityRecordInvalidated } from "../../services/audit";
+import {
+  invalidateIdentityInCredentialStore,
+  isCredentialStoreErrorResponse,
+} from "../../services/encrypted-credential-store";
 
 const metrics = new Metrics();
 

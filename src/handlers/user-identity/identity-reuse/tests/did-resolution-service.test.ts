@@ -1,4 +1,4 @@
-import { did, didDocument, publicKeyJwk, verificationMethodId } from "../../../shared-test/jwt-utils";
+import { did, didDocument, publicKeyJwk, verificationMethodId } from "../../../../../shared-test/jwt-utils";
 import {
   clearCache,
   getDidWebController,
@@ -8,7 +8,7 @@ import {
 } from "../did-resolution-service";
 import { DIDDocument, DIDResolutionResult } from "did-resolver";
 
-jest.mock("../../commons/logger");
+jest.mock("../../../../commons/logger");
 
 describe("isValidDidWeb", () => {
   it.each([

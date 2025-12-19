@@ -1,8 +1,38 @@
-import { getConfiguration, getServiceApiKey } from "../commons/configuration";
-import { CredentialStoreIdentityResponse } from "./credential-store-identity-response";
-import { VerifiableCredentialJWT } from "../identity-reuse/verifiable-credential-jwt";
+import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
 import { getJwtBody } from "../commons/jwt-utils";
 import logger from "../commons/logger";
+import { getConfiguration, getServiceApiKey } from "./configuration";
+import { VerifiableCredentialJWT } from "../commons/verifiable-credential-jwt";
+
+export type CredentialStoreIdentityResponse = {
+  si: StoredIdentityObject;
+  vcs: VerifiableCredentialObject[];
+  afterKey?: string;
+};
+
+export interface StoredIdentityObject {
+  vc: string;
+  metadata: Metadata | null | string;
+  unsignedVot: IdentityVectorOfTrust;
+}
+
+export interface VerifiableCredentialObject {
+  state: string;
+  vc: string;
+  metadata: Metadata | null | string;
+  signature?: string;
+}
+
+interface Metadata {
+  [key: string]: unknown;
+}
+
+export type CredentialStoreErrorResponse = {
+  message: string;
+};
+
+export const isCredentialStoreErrorResponse = (message: unknown): message is CredentialStoreErrorResponse =>
+  !!message && typeof message === "object" && (message as Record<string, never>).message;
 
 export const getIdentityFromCredentialStore = async (authorizationToken: string): Promise<Response> => {
   const configuration = await getConfiguration();

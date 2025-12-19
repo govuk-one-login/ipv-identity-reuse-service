@@ -1,7 +1,9 @@
 import path from "path";
 import { PactV4, SpecificationVersion, MatchersV3 } from "@pact-foundation/pact";
-import type { UserIdentityResponse } from "../../../handlers/user-identity/user-identity-response";
-import { UserIdentityErrorResponse } from "../../../handlers/user-identity/user-identity-error-response";
+import type {
+  UserIdentityErrorResponse,
+  UserIdentityResponse,
+} from "../../../handlers/user-identity/user-identity-handler";
 
 const { like } = MatchersV3;
 

@@ -1,7 +1,7 @@
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
-import { StoredIdentityJWT } from "../handlers/user-identity/stored-identity-jwt";
-import logger from "../commons/logger";
-import { StoredIdentityVectorOfTrust } from "../handlers/user-identity/user-identity-response";
+import { StoredIdentityJWT } from "../../../commons/stored-identity-jwt";
+import logger from "../../../commons/logger";
+import { StoredIdentityVectorOfTrust } from "../user-identity-handler";
 
 export const calculateVot = (
   content: StoredIdentityJWT,
