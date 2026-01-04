@@ -100,7 +100,7 @@ export STACK_NAME="<your_stack_name>"
 aws sso login --profile $AWS_PROFILE
 
 # Takes ~5 minutes to complete
-./dev-deploy.sh -s $STACK_NAME
+./deploy-to-dev.sh -s $STACK_NAME
 ```
 
 3. To verify the deployment, you can pick either one of the following options:
@@ -118,7 +118,7 @@ When you have finished testing, you'll need to manually delete the stack you cre
 
 ```sh
 # Takes ~5 minutes to complete
-./dev-deploy.sh -s $STACK_NAME -d
+./deploy-to-dev.sh -s $STACK_NAME -d
 ```
 
 ## Interact with the deployed service in development

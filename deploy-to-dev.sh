@@ -8,6 +8,7 @@ usage() {
 This script deploys the Identity Reuse Service SAM template. For use in dev.
 
 Usage:
+    -a      --aws-profile       The AWS profile to deploy to. (optional)
     -s      --stack-name        The name of your stack.
     -e      --environment       Environment that the stack is being deployed to. (default = 'local')
     -f      --force-build       Forces a build instead of using the build cache. (optional)
@@ -26,13 +27,17 @@ CONFIRM_CHANGES=true
 BUILD_CACHE="--cached"
 OPERATION="deploy"
 ENVIRONMENT="local"
-PROFILE="sis-dev"
+AWS_PROFILE="sis-dev"
 
 while [[ -n "$1" ]]; do
   case $1 in
     -s | --stack-name)
       shift
       STACK_NAME=$1
+      ;;
+    -a | --aws-profile)
+      shift
+      export AWS_PROFILE=$1
       ;;
     -e | --environment)
       shift
@@ -90,7 +95,7 @@ fi
 
 export AWS_DEFAULT_REGION=eu-west-2
 echo "Environment: $ENVIRONMENT"
-echo "Profile:     $PROFILE"
+echo "Profile:     $AWS_PROFILE"
 echo "Stack Name:  $STACK_NAME"
 echo
 
@@ -99,7 +104,7 @@ case $OPERATION in
     echo "Validating template..."
     $SAM_CMD validate \
       --template-file template.yaml \
-      --profile "$PROFILE"
+      --profile "$AWS_PROFILE"
     echo
 
     echo "Building template..."
@@ -115,7 +120,7 @@ case $OPERATION in
       $CONFIRM_CHANGES_PARAM \
       --capabilities CAPABILITY_NAMED_IAM \
       --no-fail-on-empty-changeset \
-      --profile "$PROFILE" \
+      --profile "$AWS_PROFILE" \
       --tags DeploymentSource=Manual StackType=Dev Project="ipv-identity-reuse-service" \
       --parameter-overrides Environment="$ENVIRONMENT"
     echo
@@ -124,7 +129,7 @@ case $OPERATION in
     echo "Destroying stack $STACK_NAME..."
     $SAM_CMD delete \
       --stack-name "$STACK_NAME" \
-      --profile "$PROFILE"
+      --profile "$AWS_PROFILE"
     echo
     ;;
   *)
