@@ -19,7 +19,7 @@ on:
       - '.prettierrc'
       - '.secrets.baseline'
       - 'CODEOWNERS'
-      - 'dev-deploy.sh'
+      - 'deploy-to-dev.sh'
       - 'run-acceptance-tests.sh'
 
 permissions:

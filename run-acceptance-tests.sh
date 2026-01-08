@@ -8,7 +8,7 @@ usage() {
 This script runs internal acceptance tests against a deployed stack.
 
 Usage:
-    -a      --aws-account       The AWS account to deploy to. (optional)
+    -a      --aws-profile      The AWS profile to deploy to. (optional)
     -s      --stack-name        The name of your stack.
     -d      --docker            Run the tests using Docker and the acceptance testing image
     -c      --shared-stack      The name of the shared configuration stack to use (defaults to reuse-identity-shared)
@@ -21,9 +21,9 @@ RUN_WITH_DOCKER=false
 SHARED_STACK_NAME=reuse-identity-shared
 while [[ "$1" != "" ]]; do
   case $1 in
-  -a | --aws-account)
+  -a | --aws-profile)
     shift
-    AWS_TARGET_ACCOUNT=$1
+    AWS_PROFILE=$1
     ;;
   -s | --stack-name)
     shift
@@ -49,12 +49,12 @@ while [[ "$1" != "" ]]; do
   shift
 done
 
-if [[ -z "$AWS_TARGET_ACCOUNT" ]]; then
+if [[ -z "$AWS_PROFILE" ]]; then
   echo "Assuming you're already signed in to the target account..."
   echo
 else
-  echo "Using the GDS cli to sign in to aws $AWS_TARGET_ACCOUNT..."
-  eval "$(gds-cli aws "$AWS_TARGET_ACCOUNT" -e)"
+  echo "Using AWS SSO to sign in to aws $AWS_PROFILE..."
+  eval "$(aws configure export-credentials --profile "${AWS_PROFILE}" --format env)"
   echo
 fi
 
@@ -68,21 +68,27 @@ export TEST_ENVIRONMENT="dev"
 export SHARED_STACK_NAME
 export SAM_STACK_NAME
 if $RUN_WITH_DOCKER; then
-  docker build \
-    -t acceptance-test-runner \
-    --secret id=npmrc,src=$HOME/.npmrc \
-    -f tests/acceptance/Dockerfile .
+  if [[ "$AWS_PROFILE" != "" ]]; then
+    docker build \
+      -t acceptance-test-runner \
+      --secret id=npmrc,src=$HOME/.npmrc \
+      -f tests/acceptance/Dockerfile .
 
-  docker run -ti --rm \
-    -e AWS_REGION="eu-west-2" \
-    -e AWS_DEFAULT_REGION="eu-west-2" \
-    -e AWS_ACCESS_KEY_ID \
-    -e AWS_SECRET_ACCESS_KEY \
-    -e AWS_SESSION_TOKEN \
-    -e SAM_STACK_NAME \
-    -e TEST_ENVIRONMENT \
-    -e SHARED_STACK_NAME \
-    acceptance-test-runner
+    docker run -ti --rm \
+      -e AWS_REGION="eu-west-2" \
+      -e AWS_DEFAULT_REGION="eu-west-2" \
+      -e AWS_ACCESS_KEY_ID \
+      -e AWS_SECRET_ACCESS_KEY \
+      -e AWS_SESSION_TOKEN \
+      -e SAM_STACK_NAME \
+      -e TEST_ENVIRONMENT \
+      -e SHARED_STACK_NAME \
+      acceptance-test-runner
+  else
+    echo "Please specify the AWS_PROFILE"
+    usage
+    exit 1
+  fi
 else
   npm run test:acceptance -- --format html:test-reports/acceptance.html
 fi
