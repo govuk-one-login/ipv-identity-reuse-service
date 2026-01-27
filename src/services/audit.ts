@@ -4,7 +4,7 @@ import {
   TxmaSisIdentityRecordInvalidated,
   TxmaSisStoredIdentityReadEvent,
   TxmaSisStoredIdentityReturnedEvent,
-} from "./audit-events";
+} from "../commons/audit-events";
 
 const sqsClient = new SQSClient({});
 

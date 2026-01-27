@@ -1,25 +1,43 @@
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
 import { jwtVerify } from "jose";
-import { auditIdentityRecordRead, auditIdentityRecordReturned } from "../../commons/audit";
-import { getConfiguration } from "../../commons/configuration";
+import { auditIdentityRecordRead, auditIdentityRecordReturned } from "../../services/audit";
+import { getConfiguration } from "../../services/configuration";
 import { HttpCodesEnum } from "../../commons/constants";
 import { getJwtBody, getJwtHeader } from "../../commons/jwt-utils";
 import logger from "../../commons/logger";
-import { CredentialStoreIdentityResponse } from "../../credential-store/credential-store-identity-response";
 import {
+  CredentialStoreIdentityResponse,
   getIdentityFromCredentialStore,
   parseCurrentVerifiableCredentials,
-} from "../../credential-store/encrypted-credential-store";
-import { calculateVot } from "../../identity-reuse/calculate-vot";
-import * as didResolutionService from "../../identity-reuse/did-resolution-service";
-import { getFraudVc, hasFraudCheckExpired } from "../../identity-reuse/fraud-check-service";
-import { validateStoredIdentityCredentials } from "../../identity-reuse/stored-identity-validator";
-import { VerifiableCredentialJWT } from "../../identity-reuse/verifiable-credential-jwt";
-import { UserIdentityErrorResponse } from "./user-identity-error-response";
-import { UserIdentityRequest } from "./user-identity-request";
-import { StoredIdentityJWT } from "./stored-identity-jwt";
-import { StoredIdentityVectorOfTrust, UserIdentityResponse } from "./user-identity-response";
+} from "../../services/encrypted-credential-store";
+import { calculateVot } from "./identity-reuse/calculate-vot";
+import * as didResolutionService from "./identity-reuse/did-resolution-service";
+import { getFraudVc, hasFraudCheckExpired } from "./identity-reuse/fraud-check-service";
+import { validateStoredIdentityCredentials } from "./identity-reuse/stored-identity-validator";
+import { VerifiableCredentialJWT } from "../../commons/verifiable-credential-jwt";
+import { StoredIdentityJWT } from "../../commons/stored-identity-jwt";
+
+export type UserIdentityRequest = {
+  vtr: IdentityVectorOfTrust[];
+  govukSigninJourneyId: string;
+};
+
+export type StoredIdentityVectorOfTrust = IdentityVectorOfTrust | "P0";
+
+export type UserIdentityResponse = {
+  content: StoredIdentityJWT<StoredIdentityVectorOfTrust>;
+  isValid: boolean;
+  expired: boolean;
+  vot: IdentityVectorOfTrust;
+  kidValid: boolean;
+  signatureValid: boolean;
+};
+
+export type UserIdentityErrorResponse = {
+  error: string;
+  error_description: string;
+};
 
 export const handler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
   const request = event.body ? (JSON.parse(event.body) as UserIdentityRequest) : undefined;

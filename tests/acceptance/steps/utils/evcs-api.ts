@@ -4,7 +4,7 @@ import type { Response } from "superagent";
 import type { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
 import { getAppConfig } from "@aws-lambda-powertools/parameters/appconfig";
 import { getString } from "../../../../src/commons/string-utils";
-import { Configuration } from "../../../../src/commons/configuration";
+import { Configuration } from "../../../../src/services/configuration";
 import { WorldDefinition } from "../base-verbs.step";
 import { CloudFormationOutputs, getCloudFormationOutput } from "./cloudformation";
 import { getEvcsApiKey } from "./ssm-utils";

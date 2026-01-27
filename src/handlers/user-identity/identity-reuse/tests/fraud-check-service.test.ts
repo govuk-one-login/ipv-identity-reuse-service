@@ -6,8 +6,8 @@ import {
   RiskAssessmentCredentialJWTClass,
   SecurityCheckCredentialJWTClass,
 } from "@govuk-one-login/data-vocab/credentials";
-import * as configuration from "../../commons/configuration";
-import { Configuration } from "../../commons/configuration";
+import * as configuration from "../../../../services/configuration";
+import { Configuration } from "../../../../services/configuration";
 
 const mockSuccessfulEvidence: IdentityCheckClass = {
   checkDetails: [
@@ -20,7 +20,7 @@ const mockSuccessfulEvidence: IdentityCheckClass = {
 const VALIDITY_PERIOD = 4320;
 const FRAUD_ISSUERS = ["fraudCRI"];
 
-jest.mock("../../commons/logger");
+jest.mock("../../../../commons/logger");
 
 describe("hasFraudCheckExpired", () => {
   beforeEach(() => {

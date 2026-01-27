@@ -1,6 +1,6 @@
-import { StoredIdentityJWT } from "../handlers/user-identity/stored-identity-jwt";
-import { getJwtSignature } from "../commons/jwt-utils";
-import logger from "../commons/logger";
+import { StoredIdentityJWT } from "../../../commons/stored-identity-jwt";
+import { getJwtSignature } from "../../../commons/jwt-utils";
+import logger from "../../../commons/logger";
 
 export const validateStoredIdentityCredentials = (
   storedIdentityRecord: StoredIdentityJWT,

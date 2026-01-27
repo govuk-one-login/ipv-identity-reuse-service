@@ -1,7 +1,7 @@
 import { getAppConfig } from "@aws-lambda-powertools/parameters/appconfig";
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
-import { getString } from "./string-utils";
-import logger from "./logger";
+import { getString } from "../commons/string-utils";
+import logger from "../commons/logger";
 
 export type Configuration = {
   evcsApiUrl: string;

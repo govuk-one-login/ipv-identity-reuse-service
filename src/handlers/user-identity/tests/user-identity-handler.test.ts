@@ -1,23 +1,21 @@
 import { APIGatewayProxyEvent, Context } from "aws-lambda";
-import { handler } from "../user-identity-handler";
+import { handler, UserIdentityRequest, UserIdentityResponse } from "../user-identity-handler";
 import { HttpCodesEnum } from "../../../commons/constants";
-import { Configuration } from "../../../commons/configuration";
-import * as configuration from "../../../commons/configuration";
-import { CredentialStoreIdentityResponse } from "../../../credential-store/credential-store-identity-response";
-import { UserIdentityResponse } from "../user-identity-response";
-import { UserIdentityRequest } from "../user-identity-request";
-import * as fraudCheckService from "../../../identity-reuse/fraud-check-service";
-import * as storedIdentityValidator from "../../../identity-reuse/stored-identity-validator";
+import { Configuration } from "../../../services/configuration";
+import * as configuration from "../../../services/configuration";
+import * as fraudCheckService from "../identity-reuse/fraud-check-service";
+import * as storedIdentityValidator from "../identity-reuse/stored-identity-validator";
 import { IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials";
 
-import * as AuditModule from "../../../commons/audit";
-import * as DidResolutionService from "../../../identity-reuse/did-resolution-service";
+import * as AuditModule from "../../../services/audit";
+import * as DidResolutionService from "../identity-reuse/did-resolution-service";
 import { TxmaEvent } from "../../../commons/audit-events";
 import { SendMessageCommandOutput } from "@aws-sdk/client-sqs";
 import { JWTHeaderParameters } from "jose";
 import { getJwtSignature } from "../../../commons/jwt-utils";
 import { publicKeyJwk, getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utils";
 import logger from "../../../commons/logger";
+import { CredentialStoreIdentityResponse } from "../../../services/encrypted-credential-store";
 
 jest.mock("../../../commons/logger");
 

@@ -1,10 +1,10 @@
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
 import { calculateVot } from "../calculate-vot";
-import { StoredIdentityVectorOfTrust } from "../../handlers/user-identity/user-identity-response";
-import { StoredIdentityJWT } from "../../handlers/user-identity/stored-identity-jwt";
-import logger from "../../commons/logger";
+import logger from "../../../../commons/logger";
+import { StoredIdentityVectorOfTrust } from "../../user-identity-handler";
+import { StoredIdentityJWT } from "../../../../commons/stored-identity-jwt";
 
-jest.mock("../../commons/logger");
+jest.mock("../../../../commons/logger");
 
 const mockedLogger = logger as jest.Mocked<typeof logger>;
 
