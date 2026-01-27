@@ -429,12 +429,6 @@ Resources:
               - Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
           - Effect: Allow
             Action:
-              - "appconfig:StartConfigurationSession"
-              - "appconfig:GetLatestConfiguration"
-            Resource:
-              - !Sub "arn:aws:appconfig:${AWS::Region}:${AWS::AccountId}:application/*"
-          - Effect: Allow
-            Action:
               - sqs:SendMessage
             Resource: !GetAtt AuditEventQueue.Arn
       Roles:
@@ -773,12 +767,6 @@ Resources:
             Action:
               - "kms:*"
             Resource: "*"
-          - Effect: Allow
-            Action:
-              - "appconfig:StartConfigurationSession"
-              - "appconfig:GetLatestConfiguration"
-            Resource:
-              - !Sub "arn:aws:appconfig:${AWS::Region}:${AWS::AccountId}:application/*"
       Roles:
         - !Ref MessageProcessorLambdaTriggerRole
 
