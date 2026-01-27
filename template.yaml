@@ -113,6 +113,11 @@ Parameters:
     Type: String
     Default: identity-reuse-service-main
 
+  AppConfigStackName:
+    Description: The name of the App Config stack
+    Type: String
+    Default: sis-app-config-deploy
+
 Mappings:
   EnvironmentMap:
     "local":
@@ -392,6 +397,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+        - Fn::ImportValue: !Sub "${AppConfigStackName}-AppConfigClientPolicyArn"
       Tags:
         - Key: Product
           Value: !Ref ProductTagValue
@@ -715,6 +721,7 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+        - Fn::ImportValue: !Sub "${AppConfigStackName}-AppConfigClientPolicyArn"
       Tags:
         - Key: Product
           Value: !Ref ProductTagValue
