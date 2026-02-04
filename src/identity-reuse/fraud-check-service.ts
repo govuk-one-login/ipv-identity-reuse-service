@@ -30,9 +30,11 @@ export const hasFraudCheckExpired = (
   return hasNbfExpired(fraudVc.nbf!, fraudValidityPeriod);
 };
 
-const hasNbfExpired = (nbf: number, validityPeriodHours: number): boolean => {
-  const expiredTimeMilliSeconds = (nbf + validityPeriodHours * 3600) * 1000;
-  return expiredTimeMilliSeconds <= Date.now();
+const hasNbfExpired = (nbf: number, validityPeriodDays: number): boolean => {
+  const nbfDate = new Date(nbf * 1000);
+  nbfDate.setUTCHours(0, 0, 0, 0);
+  const endOfValidity = nbfDate.setUTCDate(nbfDate.getUTCDate() + validityPeriodDays);
+  return endOfValidity <= Date.now();
 };
 
 const isIdentityCheckCredential = (object: VerifiableCredentialJWT): object is IdentityCheckCredentialJWTClass =>

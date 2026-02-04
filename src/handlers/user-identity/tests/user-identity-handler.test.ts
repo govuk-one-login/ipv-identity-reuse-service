@@ -27,7 +27,7 @@ const TEST_USER = "urn:fdc:gov.uk:2022:TEST_USER-S7jcrHLGBj-2kgB-8-cYhVrMdo3CV0L
 const FRAUD_ISSUER = "fraudCRI";
 const PASSPORT_ISSUER = "passportCRI";
 
-const TEST_FRAUD_VALIDITY_HOURS: number = 4320; // ~6 months
+const TEST_FRAUD_VALIDITY_DAYS: number = 180; // ~6 months
 
 const event = () => {
   return {
@@ -77,7 +77,7 @@ beforeEach(() => {
     evcsApiUrl: "https://evcs.gov.uk",
     controllerAllowList: [ALLOWED_CONTROLLER],
     fraudIssuer: [FRAUD_ISSUER],
-    fraudValidityPeriod: TEST_FRAUD_VALIDITY_HOURS,
+    fraudValidityPeriod: TEST_FRAUD_VALIDITY_DAYS,
   } as Configuration);
   jest.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
   jest.spyOn(storedIdentityValidator, "validateStoredIdentityCredentials").mockReturnValue(true);
@@ -447,7 +447,7 @@ describe("user-identity-handler authorization", () => {
 
 describe("user-identity-handler expired", () => {
   const NOW: string = "2025-08-24T15:35:58.000Z";
-  const NOT_EXPIRED_NBF: string = "2025-05-15T16:30:04.000Z";
+  const NOT_EXPIRED_NBF: string = "2025-02-26T16:30:04.000Z";
   const EXPIRED_NBF: string = "2025-01-12T10:02:54.000Z";
   const RANDOM_NBF: string = "2023-04-25T15:01:36.000Z";
 

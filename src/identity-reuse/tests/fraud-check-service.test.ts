@@ -17,7 +17,7 @@ const mockSuccessfulEvidence: IdentityCheckClass = {
   ],
 };
 
-const VALIDITY_PERIOD = 4320;
+const VALIDITY_PERIOD = 180;
 const FRAUD_ISSUERS = ["fraudCRI"];
 
 jest.mock("../../commons/logger");
@@ -27,17 +27,19 @@ describe("hasFraudCheckExpired", () => {
     jest.clearAllMocks();
     jest
       .spyOn(configuration, "getConfiguration")
-      .mockResolvedValue({ fraudIssuer: ["fraudCRI"], fraudValidityPeriod: 4320 } as Configuration);
+      .mockResolvedValue({ fraudIssuer: ["fraudCRI"], fraudValidityPeriod: 180 } as Configuration);
   });
 
   it.each([
     [false, "2025-02-25T15:35:58.000Z", "2025-08-23T15:35:58.000Z"],
     [true, "2025-02-25T15:35:58.000Z", "2025-08-25T15:35:58.000Z"],
-    [false, "2025-02-25T15:35:58.000Z", "2025-08-24T15:35:57.000Z"],
-    [true, "2025-02-25T15:35:58.000Z", "2025-08-24T15:35:59.000Z"],
-    [false, "2025-02-25T15:35:58.000Z", "2025-08-24T15:35:59.000+01:00"],
+    [true, "2025-02-25T14:35:58.000Z", "2025-08-24T15:35:57.000Z"],
+    [true, "2025-02-25T16:35:58.000Z", "2025-08-24T15:35:57.000Z"],
+    [false, "2025-02-25T15:35:58.000Z", "2025-08-23T23:00:00.000+01:00"],
+    [false, "2025-02-25T15:35:58.000Z", "2025-08-23T11:59:59.000Z"],
+    [true, "2025-02-25T15:35:58.000Z", "2025-08-24T12:00:00.000Z"],
   ])(
-    "should return %s with fraud check nbf of %s, validity period of 4320 hours, and current dateTime of %s",
+    "should return %s with fraud check nbf of %s, validity period of 180 days, and current dateTime of %s",
     async (expiryResult: boolean, fraudNbfDate: string, mockSystemDate: string) => {
       const vcBundle = [
         createValidFraudVC(fraudNbfDate),
