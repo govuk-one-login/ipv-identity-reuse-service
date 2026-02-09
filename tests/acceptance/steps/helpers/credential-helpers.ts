@@ -4,6 +4,8 @@ import { IdentityCheckCredentialJWTClass, FraudCheckType } from "@govuk-one-logi
 import { evcsPostCredentials } from "../utils/evcs-api";
 import assert from "assert";
 
+const DCMAW_ISSUER = "https://www.review-b.dev.account.gov.uk";
+
 export const createAndPostCredentials = async (credentials: number, userId: string): Promise<string[]> => {
   const credentialJwts = [];
   const header: JWTHeaderParameters = getDefaultJwtHeader();
@@ -78,4 +80,82 @@ export const createAndPostFraudCheckCredential = async (
   assert.equal(result.status, 202);
 
   return fraudCheckJwt;
+};
+
+export const createAndPostDcmawDrivingPermitCredential = async (
+  userId: string,
+  vcNbfDate: Date,
+  licenceExpiryDate: string
+): Promise<string> => {
+  const header: JWTHeaderParameters = getDefaultJwtHeader();
+
+  const credentialPayload: IdentityCheckCredentialJWTClass = {
+    sub: userId,
+    iss: DCMAW_ISSUER,
+    nbf: Math.floor(vcNbfDate.getTime() / 1000),
+    vc: {
+      type: ["VerifiableCredential", "IdentityCheckCredential"],
+      evidence: [
+        {
+          checkDetails: [
+            {
+              checkMethod: "data" as const,
+            },
+          ],
+        },
+      ],
+      credentialSubject: {
+        drivingPermit: [
+          {
+            expiryDate: licenceExpiryDate,
+            personalNumber: "123",
+            issuedBy: "DVLA",
+          },
+        ],
+      },
+    },
+  };
+
+  const dcmawJwt = await sign(header, credentialPayload);
+  const result = await evcsPostCredentials(userId, [{ vc: dcmawJwt, state: "CURRENT" }]);
+  assert.equal(result.status, 202);
+
+  return dcmawJwt;
+};
+
+export const createAndPostDcmawPassportCredential = async (userId: string, vcNbfDate: Date): Promise<string> => {
+  const header: JWTHeaderParameters = getDefaultJwtHeader();
+
+  const credentialPayload: IdentityCheckCredentialJWTClass = {
+    sub: userId,
+    iss: DCMAW_ISSUER,
+    nbf: Math.floor(vcNbfDate.getTime() / 1000),
+    vc: {
+      type: ["VerifiableCredential", "IdentityCheckCredential"],
+      evidence: [
+        {
+          checkDetails: [
+            {
+              checkMethod: "data" as const,
+            },
+          ],
+        },
+      ],
+      credentialSubject: {
+        passport: [
+          {
+            documentNumber: "123456789",
+            expiryDate: "2030-01-01",
+            icaoIssuerCode: "GBR",
+          },
+        ],
+      },
+    },
+  };
+
+  const dcmawJwt = await sign(header, credentialPayload);
+  const result = await evcsPostCredentials(userId, [{ vc: dcmawJwt, state: "CURRENT" }]);
+  assert.equal(result.status, 202);
+
+  return dcmawJwt;
 };

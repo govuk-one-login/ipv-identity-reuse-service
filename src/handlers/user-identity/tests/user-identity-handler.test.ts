@@ -6,6 +6,7 @@ import * as configuration from "../../../commons/configuration";
 import { CredentialStoreIdentityResponse } from "../../../credential-store/credential-store-identity-response";
 import { UserIdentityResponse } from "../user-identity-response";
 import { UserIdentityRequest } from "../user-identity-request";
+import * as drivingLicenceExpiryService from "../../../identity-reuse/driving-licence-expiry-service";
 import * as fraudCheckService from "../../../identity-reuse/fraud-check-service";
 import * as storedIdentityValidator from "../../../identity-reuse/stored-identity-validator";
 import { IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials";
@@ -504,6 +505,81 @@ describe("user-identity-handler expired", () => {
       kidValid: true,
       signatureValid: true,
     });
+  });
+});
+
+describe("user-identity-handler driving licence expiry", () => {
+  const DCMAW_ISSUER = ["https://www.review-b.dev.account.gov.uk"];
+
+  beforeEach(() => {
+    jest.spyOn(configuration, "getConfiguration").mockResolvedValue({
+      evcsApiUrl: "https://evcs.gov.uk",
+      controllerAllowList: [ALLOWED_CONTROLLER],
+      fraudIssuer: [FRAUD_ISSUER],
+      fraudValidityPeriod: TEST_FRAUD_VALIDITY_DAYS,
+      enableDrivingLicenceExpiryCheck: true,
+      dcmawIssuer: DCMAW_ISSUER,
+      drivingLicenceValidityPeriod: 180,
+    } as Configuration);
+  });
+
+  it("should set expired to true when driving licence expiry check returns true", async () => {
+    jest.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired").mockReturnValue(true);
+
+    const { mockEVCSData } = await createCredentialStoreIdentityResponse([
+      await createSignedIdentityCheckCredentialJWT(PASSPORT_ISSUER),
+      await createSignedIdentityCheckCredentialJWT(FRAUD_ISSUER),
+    ]);
+    mockEVCSResponse(mockEVCSData);
+
+    const result = await handler(newEvent, {} as Context);
+
+    expect(result.statusCode).toBe(HttpCodesEnum.OK);
+    const body = JSON.parse(result.body) as UserIdentityResponse;
+    expect(body.expired).toBe(true);
+  });
+
+  it("should set expired to false when driving licence expiry check returns null", async () => {
+    jest.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired").mockReturnValue(null);
+
+    const { mockEVCSData } = await createCredentialStoreIdentityResponse([
+      await createSignedIdentityCheckCredentialJWT(PASSPORT_ISSUER),
+      await createSignedIdentityCheckCredentialJWT(FRAUD_ISSUER),
+    ]);
+    mockEVCSResponse(mockEVCSData);
+
+    const result = await handler(newEvent, {} as Context);
+
+    expect(result.statusCode).toBe(HttpCodesEnum.OK);
+    const body = JSON.parse(result.body) as UserIdentityResponse;
+    expect(body.expired).toBe(false);
+  });
+
+  it("should not check driving licence expiry when feature flag is disabled", async () => {
+    jest.spyOn(configuration, "getConfiguration").mockResolvedValue({
+      evcsApiUrl: "https://evcs.gov.uk",
+      controllerAllowList: [ALLOWED_CONTROLLER],
+      fraudIssuer: [FRAUD_ISSUER],
+      fraudValidityPeriod: TEST_FRAUD_VALIDITY_DAYS,
+      enableDrivingLicenceExpiryCheck: false,
+      dcmawIssuer: DCMAW_ISSUER,
+      drivingLicenceValidityPeriod: 180,
+    } as Configuration);
+
+    const mockDlCheck = jest.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired");
+
+    const { mockEVCSData } = await createCredentialStoreIdentityResponse([
+      await createSignedIdentityCheckCredentialJWT(PASSPORT_ISSUER),
+      await createSignedIdentityCheckCredentialJWT(FRAUD_ISSUER),
+    ]);
+    mockEVCSResponse(mockEVCSData);
+
+    const result = await handler(newEvent, {} as Context);
+
+    expect(result.statusCode).toBe(HttpCodesEnum.OK);
+    const body = JSON.parse(result.body) as UserIdentityResponse;
+    expect(body.expired).toBe(false);
+    expect(mockDlCheck).not.toHaveBeenCalled();
   });
 });
 

@@ -1,6 +1,6 @@
 import logger from "../commons/logger";
 import { FraudCheckType, IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials";
-import { VerifiableCredentialJWT } from "./verifiable-credential-jwt";
+import { VerifiableCredentialJWT, isIdentityCheckCredential } from "./verifiable-credential-jwt";
 
 export const getFraudVc = (
   vcBundle: VerifiableCredentialJWT[],
@@ -30,15 +30,12 @@ export const hasFraudCheckExpired = (
   return hasNbfExpired(fraudVc.nbf!, fraudValidityPeriod);
 };
 
-const hasNbfExpired = (nbf: number, validityPeriodDays: number): boolean => {
+export const hasNbfExpired = (nbf: number, validityPeriodDays: number): boolean => {
   const nbfDate = new Date(nbf * 1000);
   nbfDate.setUTCHours(0, 0, 0, 0);
   const endOfValidity = nbfDate.setUTCDate(nbfDate.getUTCDate() + validityPeriodDays);
   return endOfValidity <= Date.now();
 };
-
-const isIdentityCheckCredential = (object: VerifiableCredentialJWT): object is IdentityCheckCredentialJWTClass =>
-  !!object.vc.type?.includes("IdentityCheckCredential");
 
 const hasFailedFraudCheck = (fraudVc: IdentityCheckCredentialJWTClass, fraudCheckType: FraudCheckType): boolean =>
   fraudVc.vc.evidence.some((evidence) =>

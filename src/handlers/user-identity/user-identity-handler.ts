@@ -13,6 +13,7 @@ import {
 } from "../../credential-store/encrypted-credential-store";
 import { calculateVot } from "../../identity-reuse/calculate-vot";
 import * as didResolutionService from "../../identity-reuse/did-resolution-service";
+import { hasDrivingLicenceExpired } from "../../identity-reuse/driving-licence-expiry-service";
 import { getFraudVc, hasFraudCheckExpired } from "../../identity-reuse/fraud-check-service";
 import { validateStoredIdentityCredentials } from "../../identity-reuse/stored-identity-validator";
 import { VerifiableCredentialJWT } from "../../identity-reuse/verifiable-credential-jwt";
@@ -112,11 +113,28 @@ const createSuccessResponse = async (
 
   delete content.max_vot;
 
+  const fraudExpired = hasFraudCheckExpired(fraudVc, configuration.fraudValidityPeriod);
+
+  let drivingLicenceExpired: boolean | null = null;
+  if (
+    configuration.enableDrivingLicenceExpiryCheck &&
+    configuration.dcmawIssuer !== undefined &&
+    configuration.drivingLicenceValidityPeriod !== undefined
+  ) {
+    drivingLicenceExpired = hasDrivingLicenceExpired(
+      currentVcs,
+      configuration.dcmawIssuer,
+      configuration.drivingLicenceValidityPeriod
+    );
+  }
+
+  const expired = fraudExpired || drivingLicenceExpired === true;
+
   const successResponse: UserIdentityResponse = {
     content: { ...content, vot, vtm },
     vot: maxVot,
     isValid: validateStoredIdentityCredentials(content, currentVcsEncoded),
-    expired: hasFraudCheckExpired(fraudVc, configuration.fraudValidityPeriod),
+    expired,
     ...validationResults,
   };
 
