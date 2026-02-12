@@ -3,25 +3,54 @@ import { IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/cre
 import { hasNbfExpired } from "./fraud-check-service";
 import { VerifiableCredentialJWT, isIdentityCheckCredential } from "./verifiable-credential-jwt";
 
-export const getDcmawVc = (
-  vcBundle: VerifiableCredentialJWT[],
-  dcmawIssuers: string[]
-): IdentityCheckCredentialJWTClass | undefined => {
-  const dcmawVcs = vcBundle.filter((vc): vc is IdentityCheckCredentialJWTClass => {
-    const hasValidIssuer = vc.iss !== undefined && dcmawIssuers.includes(vc.iss);
-    return hasValidIssuer && isIdentityCheckCredential(vc);
-  });
-
-  if (dcmawVcs.length > 1) {
-    logger.warn("Multiple DCMAW VCs found in credential bundle, using the first");
-  }
-
-  return dcmawVcs.at(0);
-};
-
 export const hasDrivingPermit = (vc: IdentityCheckCredentialJWTClass): boolean => {
   const drivingPermits = vc.vc?.credentialSubject?.drivingPermit;
   return Array.isArray(drivingPermits) && drivingPermits.length > 0;
+};
+
+export const isDcmawVcSuccessful = (vc: IdentityCheckCredentialJWTClass): boolean => {
+  const evidenceItems = vc.vc?.evidence;
+  if (!evidenceItems || evidenceItems.length === 0) {
+    return false;
+  }
+
+  return evidenceItems.every((evidenceItem) => {
+    if (!evidenceItem.strengthScore) {
+      return false;
+    }
+
+    if (!evidenceItem.validityScore) {
+      return false;
+    }
+
+    const checkDetails = evidenceItem.checkDetails;
+    if (!checkDetails || checkDetails.length === 0) {
+      return false;
+    }
+
+    return checkDetails.some((detail) => {
+      const biometricLevel = detail.biometricVerificationProcessLevel;
+      return biometricLevel !== undefined && biometricLevel > 0;
+    });
+  });
+};
+
+export const getDcmawDrivingPermitVc = (
+  vcBundle: VerifiableCredentialJWT[],
+  dcmawIssuers: string[]
+): IdentityCheckCredentialJWTClass | undefined => {
+  const matchingVcs = vcBundle.filter((vc): vc is IdentityCheckCredentialJWTClass => {
+    if (!vc.iss || !dcmawIssuers.includes(vc.iss)) return false;
+    if (!isIdentityCheckCredential(vc)) return false;
+
+    return hasDrivingPermit(vc) && isDcmawVcSuccessful(vc);
+  });
+
+  if (matchingVcs.length > 1) {
+    logger.warn("Multiple successful DCMAW driving permit VCs found, using the first");
+  }
+
+  return matchingVcs.at(0);
 };
 
 const normaliseToStartOfDay = (date: Date): Date => {
@@ -57,12 +86,8 @@ export const hasDrivingLicenceExpired = (
   dcmawIssuers: string[],
   validityPeriodDays: number
 ): boolean | null => {
-  const dcmawVc = getDcmawVc(vcBundle, dcmawIssuers);
+  const dcmawVc = getDcmawDrivingPermitVc(vcBundle, dcmawIssuers);
   if (!dcmawVc) {
-    return null;
-  }
-
-  if (!hasDrivingPermit(dcmawVc)) {
     return null;
   }
 

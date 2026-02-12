@@ -97,6 +97,52 @@ export const createAndPostDcmawDrivingPermitCredential = async (
       type: ["VerifiableCredential", "IdentityCheckCredential"],
       evidence: [
         {
+          strengthScore: 3,
+          validityScore: 2,
+          checkDetails: [
+            {
+              checkMethod: "data" as const,
+              biometricVerificationProcessLevel: 2,
+            },
+          ],
+        },
+      ],
+      credentialSubject: {
+        drivingPermit: [
+          {
+            expiryDate: licenceExpiryDate,
+            personalNumber: "123",
+            issuedBy: "DVLA",
+          },
+        ],
+      },
+    },
+  };
+
+  const dcmawJwt = await sign(header, credentialPayload);
+  const result = await evcsPostCredentials(userId, [{ vc: dcmawJwt, state: "CURRENT" }]);
+  assert.equal(result.status, 202);
+
+  return dcmawJwt;
+};
+
+export const createAndPostFailedDcmawDrivingPermitCredential = async (
+  userId: string,
+  vcNbfDate: Date,
+  licenceExpiryDate: string
+): Promise<string> => {
+  const header: JWTHeaderParameters = getDefaultJwtHeader();
+
+  const credentialPayload: IdentityCheckCredentialJWTClass = {
+    sub: userId,
+    iss: DCMAW_ISSUER,
+    nbf: Math.floor(vcNbfDate.getTime() / 1000),
+    vc: {
+      type: ["VerifiableCredential", "IdentityCheckCredential"],
+      evidence: [
+        {
+          strengthScore: 0,
+          validityScore: 0,
           checkDetails: [
             {
               checkMethod: "data" as const,
@@ -134,9 +180,12 @@ export const createAndPostDcmawPassportCredential = async (userId: string, vcNbf
       type: ["VerifiableCredential", "IdentityCheckCredential"],
       evidence: [
         {
+          strengthScore: 4,
+          validityScore: 2,
           checkDetails: [
             {
               checkMethod: "data" as const,
+              biometricVerificationProcessLevel: 2,
             },
           ],
         },

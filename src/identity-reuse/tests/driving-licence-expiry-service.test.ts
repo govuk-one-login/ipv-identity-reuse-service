@@ -1,6 +1,7 @@
 import {
-  getDcmawVc,
+  getDcmawDrivingPermitVc,
   hasDrivingPermit,
+  isDcmawVcSuccessful,
   wasDrivingLicenceExpiredAtIssuance,
   hasDrivingLicenceExpired,
 } from "../driving-licence-expiry-service";
@@ -23,39 +24,167 @@ describe("driving-licence-expiry-service", () => {
     jest.useRealTimers();
   });
 
-  describe("getDcmawVc", () => {
-    it("should return DCMAW VC when present", () => {
+  describe("getDcmawDrivingPermitVc", () => {
+    it("should return successful DCMAW driving permit VC", () => {
       const dcmawVc = createDcmawDrivingPermitVc("2026-06-01", "2026-02-01T10:00:00Z");
-      const result = getDcmawVc([dcmawVc], DCMAW_ISSUER);
+      const result = getDcmawDrivingPermitVc([dcmawVc], DCMAW_ISSUER);
       expect(result).toBeDefined();
       expect(result?.iss).toBe(DCMAW_ISSUER[0]);
     });
 
     it("should return undefined when no DCMAW VC", () => {
       const fraudVc = createFraudVc();
-      const result = getDcmawVc([fraudVc], DCMAW_ISSUER);
+      const result = getDcmawDrivingPermitVc([fraudVc], DCMAW_ISSUER);
       expect(result).toBeUndefined();
     });
 
     it("should return undefined when VC issuer not in DCMAW list", () => {
       const vc = createDcmawDrivingPermitVc("2026-06-01", "2026-02-01T10:00:00Z");
-      const result = getDcmawVc([vc], ["https://other-issuer.gov.uk"]);
+      const result = getDcmawDrivingPermitVc([vc], ["https://other-issuer.gov.uk"]);
       expect(result).toBeUndefined();
     });
 
-    it("should warn when multiple DCMAW VCs are present", () => {
-      const vc1 = createDcmawDrivingPermitVc("2026-06-01", "2026-02-01T10:00:00Z");
-      const vc2 = createDcmawDrivingPermitVc("2026-09-01", "2026-03-01T10:00:00Z");
-      const result = getDcmawVc([vc1, vc2], DCMAW_ISSUER);
-      expect(result).toBe(vc1);
-      expect(logger.warn).toHaveBeenCalledWith("Multiple DCMAW VCs found in credential bundle, using the first");
+    it("should skip DCMAW passport VC and find DCMAW driving permit VC", () => {
+      const passportVc = createDcmawPassportVc();
+      const drivingPermitVc = createDcmawDrivingPermitVc("2026-06-01", "2026-02-01T10:00:00Z");
+      const result = getDcmawDrivingPermitVc([passportVc, drivingPermitVc], DCMAW_ISSUER);
+      expect(result).toBe(drivingPermitVc);
     });
 
-    it("should not warn when only one DCMAW VC is present", () => {
+    it("should skip failed DCMAW VC and find successful one", () => {
+      const failedVc = createDcmawDrivingPermitVc("2026-06-01", "2026-02-01T10:00:00Z");
+      failedVc.vc.evidence = [
+        {
+          strengthScore: 0,
+          validityScore: 2,
+          checkDetails: [
+            {
+              biometricVerificationProcessLevel: 2,
+            },
+          ],
+        },
+      ];
+
+      const successfulVc = createDcmawDrivingPermitVc("2026-09-01", "2026-03-01T10:00:00Z");
+      const result = getDcmawDrivingPermitVc([failedVc, successfulVc], DCMAW_ISSUER);
+      expect(result).toBe(successfulVc);
+    });
+
+    it("should return undefined when all DCMAW driving permit VCs are failed", () => {
+      const failedVc = createDcmawDrivingPermitVc("2026-06-01", "2026-02-01T10:00:00Z");
+      failedVc.vc.evidence = [{ strengthScore: 0, validityScore: 0 }];
+      const result = getDcmawDrivingPermitVc([failedVc], DCMAW_ISSUER);
+      expect(result).toBeUndefined();
+    });
+
+    it("should warn when multiple successful DCMAW driving permit VCs are present", () => {
+      const vc1 = createDcmawDrivingPermitVc("2026-06-01", "2026-02-01T10:00:00Z");
+      const vc2 = createDcmawDrivingPermitVc("2026-09-01", "2026-03-01T10:00:00Z");
+      const result = getDcmawDrivingPermitVc([vc1, vc2], DCMAW_ISSUER);
+      expect(result).toBe(vc1);
+      expect(logger.warn).toHaveBeenCalledWith("Multiple successful DCMAW driving permit VCs found, using the first");
+    });
+
+    it("should not warn when only one successful DCMAW driving permit VC is present", () => {
       const dcmawVc = createDcmawDrivingPermitVc("2026-06-01", "2026-02-01T10:00:00Z");
       const fraudVc = createFraudVc();
-      getDcmawVc([dcmawVc, fraudVc], DCMAW_ISSUER);
+      getDcmawDrivingPermitVc([dcmawVc, fraudVc], DCMAW_ISSUER);
       expect(logger.warn).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("isDcmawVcSuccessful", () => {
+    it("should return true when VC has valid strength, validity and biometric scores", () => {
+      const vc = createDcmawDrivingPermitVc("2026-06-01", "2026-02-01T10:00:00Z");
+      expect(isDcmawVcSuccessful(vc)).toBe(true);
+    });
+
+    it("should return false when strengthScore is 0", () => {
+      const vc = createDcmawDrivingPermitVc("2026-06-01", "2026-02-01T10:00:00Z");
+      vc.vc.evidence = [
+        {
+          strengthScore: 0,
+          validityScore: 2,
+          checkDetails: [{ biometricVerificationProcessLevel: 2 }],
+        },
+      ];
+      expect(isDcmawVcSuccessful(vc)).toBe(false);
+    });
+
+    it("should return false when strengthScore is missing", () => {
+      const vc = createDcmawDrivingPermitVc("2026-06-01", "2026-02-01T10:00:00Z");
+      vc.vc.evidence = [
+        {
+          validityScore: 2,
+          checkDetails: [{ biometricVerificationProcessLevel: 2 }],
+        },
+      ];
+      expect(isDcmawVcSuccessful(vc)).toBe(false);
+    });
+
+    it("should return false when validityScore is 0", () => {
+      const vc = createDcmawDrivingPermitVc("2026-06-01", "2026-02-01T10:00:00Z");
+      vc.vc.evidence = [
+        {
+          strengthScore: 3,
+          validityScore: 0,
+          checkDetails: [{ biometricVerificationProcessLevel: 2 }],
+        },
+      ];
+      expect(isDcmawVcSuccessful(vc)).toBe(false);
+    });
+
+    it("should return false when validityScore is missing", () => {
+      const vc = createDcmawDrivingPermitVc("2026-06-01", "2026-02-01T10:00:00Z");
+      vc.vc.evidence = [
+        {
+          strengthScore: 3,
+          checkDetails: [{ biometricVerificationProcessLevel: 2 }],
+        },
+      ];
+      expect(isDcmawVcSuccessful(vc)).toBe(false);
+    });
+
+    it("should return false when biometricVerificationProcessLevel is 0", () => {
+      const vc = createDcmawDrivingPermitVc("2026-06-01", "2026-02-01T10:00:00Z");
+      vc.vc.evidence = [
+        {
+          strengthScore: 3,
+          validityScore: 2,
+          checkDetails: [{ biometricVerificationProcessLevel: 0 }],
+        },
+      ];
+      expect(isDcmawVcSuccessful(vc)).toBe(false);
+    });
+
+    it("should return false when biometricVerificationProcessLevel is missing", () => {
+      const vc = createDcmawDrivingPermitVc("2026-06-01", "2026-02-01T10:00:00Z");
+      vc.vc.evidence = [
+        {
+          strengthScore: 3,
+          validityScore: 2,
+          checkDetails: [{ checkMethod: "data" }],
+        },
+      ];
+      expect(isDcmawVcSuccessful(vc)).toBe(false);
+    });
+
+    it("should return false when checkDetails is empty", () => {
+      const vc = createDcmawDrivingPermitVc("2026-06-01", "2026-02-01T10:00:00Z");
+      vc.vc.evidence = [
+        {
+          strengthScore: 3,
+          validityScore: 2,
+          checkDetails: [],
+        },
+      ];
+      expect(isDcmawVcSuccessful(vc)).toBe(false);
+    });
+
+    it("should return false when evidence is empty", () => {
+      const vc = createDcmawDrivingPermitVc("2026-06-01", "2026-02-01T10:00:00Z");
+      vc.vc.evidence = [];
+      expect(isDcmawVcSuccessful(vc)).toBe(false);
     });
   });
 
@@ -124,7 +253,7 @@ describe("driving-licence-expiry-service", () => {
   });
 
   describe("hasDrivingLicenceExpired", () => {
-    it("should return null when no DCMAW VC", () => {
+    it("should return null when no DCMAW driving permit VC", () => {
       const fraudVc = createFraudVc();
       const result = hasDrivingLicenceExpired([fraudVc], DCMAW_ISSUER, 180);
       expect(result).toBeNull();
@@ -132,6 +261,19 @@ describe("driving-licence-expiry-service", () => {
 
     it("should return null when DCMAW VC uses passport", () => {
       const vc = createDcmawPassportVc();
+      const result = hasDrivingLicenceExpired([vc], DCMAW_ISSUER, 180);
+      expect(result).toBeNull();
+    });
+
+    it("should return null when DCMAW driving permit VC is failed", () => {
+      const vc = createDcmawDrivingPermitVc("2026-01-01", "2026-02-01T10:00:00Z");
+      vc.vc.evidence = [
+        {
+          strengthScore: 0,
+          validityScore: 2,
+          checkDetails: [{ biometricVerificationProcessLevel: 2 }],
+        },
+      ];
       const result = hasDrivingLicenceExpired([vc], DCMAW_ISSUER, 180);
       expect(result).toBeNull();
     });
@@ -162,6 +304,16 @@ describe("driving-licence-expiry-service", () => {
       const result = hasDrivingLicenceExpired([vc], DCMAW_ISSUER, 180);
       expect(result).toBe(false);
     });
+
+    it("should skip failed DCMAW VC and check successful one", () => {
+      jest.setSystemTime(new Date("2026-09-01T12:00:00Z"));
+      const failedVc = createDcmawDrivingPermitVc("2026-01-01", "2026-02-01T10:00:00Z");
+      failedVc.vc.evidence = [{ strengthScore: 0, validityScore: 0 }];
+
+      const successfulVc = createDcmawDrivingPermitVc("2026-01-01", "2026-02-01T10:00:00Z");
+      const result = hasDrivingLicenceExpired([failedVc, successfulVc], DCMAW_ISSUER, 180);
+      expect(result).toBe(true);
+    });
   });
 });
 
@@ -175,7 +327,13 @@ function createDcmawDrivingPermitVc(
     sub: "test-user-123",
     vc: {
       type: ["VerifiableCredential", "IdentityCheckCredential"],
-      evidence: [{ checkDetails: [{ checkMethod: "data" }] }],
+      evidence: [
+        {
+          strengthScore: 3,
+          validityScore: 2,
+          checkDetails: [{ biometricVerificationProcessLevel: 2 }],
+        },
+      ],
       credentialSubject: {
         drivingPermit: [
           {
@@ -198,11 +356,9 @@ function createDcmawPassportVc(): IdentityCheckCredentialJWTClass {
       type: ["VerifiableCredential", "IdentityCheckCredential"],
       evidence: [
         {
-          checkDetails: [
-            {
-              checkMethod: "data",
-            },
-          ],
+          strengthScore: 4,
+          validityScore: 2,
+          checkDetails: [{ biometricVerificationProcessLevel: 2 }],
         },
       ],
       credentialSubject: {

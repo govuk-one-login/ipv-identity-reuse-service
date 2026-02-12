@@ -511,16 +511,18 @@ describe("user-identity-handler expired", () => {
 describe("user-identity-handler driving licence expiry", () => {
   const DCMAW_ISSUER = ["https://www.review-b.dev.account.gov.uk"];
 
+  const TEST_DL_CONFIGURATION = {
+    evcsApiUrl: "https://evcs.gov.uk",
+    controllerAllowList: [ALLOWED_CONTROLLER],
+    fraudIssuer: [FRAUD_ISSUER],
+    fraudValidityPeriod: TEST_FRAUD_VALIDITY_DAYS,
+    enableDrivingLicenceExpiryCheck: true,
+    dcmawIssuer: DCMAW_ISSUER,
+    drivingLicenceValidityPeriod: 180,
+  } as Configuration;
+
   beforeEach(() => {
-    jest.spyOn(configuration, "getConfiguration").mockResolvedValue({
-      evcsApiUrl: "https://evcs.gov.uk",
-      controllerAllowList: [ALLOWED_CONTROLLER],
-      fraudIssuer: [FRAUD_ISSUER],
-      fraudValidityPeriod: TEST_FRAUD_VALIDITY_DAYS,
-      enableDrivingLicenceExpiryCheck: true,
-      dcmawIssuer: DCMAW_ISSUER,
-      drivingLicenceValidityPeriod: 180,
-    } as Configuration);
+    jest.spyOn(configuration, "getConfiguration").mockResolvedValue(TEST_DL_CONFIGURATION);
   });
 
   it("should set expired to true when driving licence expiry check returns true", async () => {
@@ -557,14 +559,9 @@ describe("user-identity-handler driving licence expiry", () => {
 
   it("should not check driving licence expiry when feature flag is disabled", async () => {
     jest.spyOn(configuration, "getConfiguration").mockResolvedValue({
-      evcsApiUrl: "https://evcs.gov.uk",
-      controllerAllowList: [ALLOWED_CONTROLLER],
-      fraudIssuer: [FRAUD_ISSUER],
-      fraudValidityPeriod: TEST_FRAUD_VALIDITY_DAYS,
+      ...TEST_DL_CONFIGURATION,
       enableDrivingLicenceExpiryCheck: false,
-      dcmawIssuer: DCMAW_ISSUER,
-      drivingLicenceValidityPeriod: 180,
-    } as Configuration);
+    });
 
     const mockDlCheck = jest.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired");
 

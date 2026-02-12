@@ -5,6 +5,7 @@ import {
   createAndPostCredentials,
   createAndPostFraudCheckCredential,
   createAndPostDcmawDrivingPermitCredential,
+  createAndPostFailedDcmawDrivingPermitCredential,
   createAndPostDcmawPassportCredential,
 } from "./helpers/credential-helpers";
 
@@ -83,6 +84,21 @@ Given<WorldDefinition>(
     const licenceExpiryString = licenceExpiryDate.toISOString().split("T")[0];
 
     const dcmawJwt = await createAndPostDcmawDrivingPermitCredential(this.userId, vcNbfDate, licenceExpiryString);
+    this.credentialJwts.push(dcmawJwt);
+  }
+);
+
+Given<WorldDefinition>(
+  "the user has a failed DCMAW driving permit credential with licence expired before VC issuance and VC nbf {int} months ago",
+  async function (months: number) {
+    const vcNbfDate = new Date();
+    vcNbfDate.setDate(vcNbfDate.getDate() - months * 30);
+
+    const licenceExpiryDate = new Date(vcNbfDate);
+    licenceExpiryDate.setDate(licenceExpiryDate.getDate() - 30);
+    const licenceExpiryString = licenceExpiryDate.toISOString().split("T")[0];
+
+    const dcmawJwt = await createAndPostFailedDcmawDrivingPermitCredential(this.userId, vcNbfDate, licenceExpiryString);
     this.credentialJwts.push(dcmawJwt);
   }
 );
