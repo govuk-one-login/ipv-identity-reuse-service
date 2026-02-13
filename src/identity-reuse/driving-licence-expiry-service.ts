@@ -1,6 +1,6 @@
 import logger from "../commons/logger";
+import { hasNbfExpired, normaliseToStartOfDay } from "../commons/date-utils";
 import { IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials";
-import { hasNbfExpired } from "./fraud-check-service";
 import { VerifiableCredentialJWT, isIdentityCheckCredential } from "./verifiable-credential-jwt";
 
 export const hasDrivingPermit = (vc: IdentityCheckCredentialJWTClass): boolean => {
@@ -53,12 +53,6 @@ export const getDcmawDrivingPermitVc = (
   return matchingVcs.at(0);
 };
 
-const normaliseToStartOfDay = (date: Date): Date => {
-  const normalised = new Date(date);
-  normalised.setUTCHours(0, 0, 0, 0);
-  return normalised;
-};
-
 export const wasDrivingLicenceExpiredAtIssuance = (vc: IdentityCheckCredentialJWTClass): boolean => {
   const drivingPermits = vc.vc?.credentialSubject?.drivingPermit;
   if (!drivingPermits || drivingPermits.length === 0) {
@@ -100,5 +94,9 @@ export const hasDrivingLicenceExpired = (
     return false;
   }
 
-  return hasNbfExpired(dcmawVc.nbf, validityPeriodDays);
+  const expired = hasNbfExpired(dcmawVc.nbf, validityPeriodDays);
+  if (expired) {
+    logger.info("Driving licence expiry check returned expired");
+  }
+  return expired;
 };

@@ -163,7 +163,7 @@ describe("driving-licence-expiry-service", () => {
         {
           strengthScore: 3,
           validityScore: 2,
-          checkDetails: [{ checkMethod: "data" }],
+          checkDetails: [{ checkMethod: "bvr" }],
         },
       ];
       expect(isDcmawVcSuccessful(vc)).toBe(false);
@@ -331,7 +331,7 @@ function createDcmawDrivingPermitVc(
         {
           strengthScore: 3,
           validityScore: 2,
-          checkDetails: [{ biometricVerificationProcessLevel: 2 }],
+          checkDetails: [{ checkMethod: "vcrypt" }, { checkMethod: "bvr", biometricVerificationProcessLevel: 2 }],
         },
       ],
       credentialSubject: {
@@ -358,7 +358,7 @@ function createDcmawPassportVc(): IdentityCheckCredentialJWTClass {
         {
           strengthScore: 4,
           validityScore: 2,
-          checkDetails: [{ biometricVerificationProcessLevel: 2 }],
+          checkDetails: [{ checkMethod: "vcrypt" }, { checkMethod: "bvr", biometricVerificationProcessLevel: 2 }],
         },
       ],
       credentialSubject: {

@@ -100,8 +100,9 @@ export const createAndPostDcmawDrivingPermitCredential = async (
           strengthScore: 3,
           validityScore: 2,
           checkDetails: [
+            { checkMethod: "vcrypt" as const },
             {
-              checkMethod: "data" as const,
+              checkMethod: "bvr" as const,
               biometricVerificationProcessLevel: 2,
             },
           ],
@@ -141,11 +142,10 @@ export const createAndPostFailedDcmawDrivingPermitCredential = async (
       type: ["VerifiableCredential", "IdentityCheckCredential"],
       evidence: [
         {
-          strengthScore: 0,
-          validityScore: 0,
-          checkDetails: [
+          failedCheckDetails: [
             {
-              checkMethod: "data" as const,
+              checkMethod: "bvr" as const,
+              biometricVerificationProcessLevel: 3,
             },
           ],
         },
@@ -183,8 +183,9 @@ export const createAndPostDcmawPassportCredential = async (userId: string, vcNbf
           strengthScore: 4,
           validityScore: 2,
           checkDetails: [
+            { checkMethod: "vcrypt" as const },
             {
-              checkMethod: "data" as const,
+              checkMethod: "bvr" as const,
               biometricVerificationProcessLevel: 2,
             },
           ],

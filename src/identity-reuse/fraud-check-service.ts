@@ -1,4 +1,5 @@
 import logger from "../commons/logger";
+import { hasNbfExpired } from "../commons/date-utils";
 import { FraudCheckType, IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials";
 import { VerifiableCredentialJWT, isIdentityCheckCredential } from "./verifiable-credential-jwt";
 
@@ -27,14 +28,11 @@ export const hasFraudCheckExpired = (
     }
   }
 
-  return hasNbfExpired(fraudVc.nbf!, fraudValidityPeriod);
-};
-
-export const hasNbfExpired = (nbf: number, validityPeriodDays: number): boolean => {
-  const nbfDate = new Date(nbf * 1000);
-  nbfDate.setUTCHours(0, 0, 0, 0);
-  const endOfValidity = nbfDate.setUTCDate(nbfDate.getUTCDate() + validityPeriodDays);
-  return endOfValidity <= Date.now();
+  const expired = hasNbfExpired(fraudVc.nbf!, fraudValidityPeriod);
+  if (expired) {
+    logger.info("Fraud check expiry returned expired");
+  }
+  return expired;
 };
 
 const hasFailedFraudCheck = (fraudVc: IdentityCheckCredentialJWTClass, fraudCheckType: FraudCheckType): boolean =>
