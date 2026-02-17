@@ -9,6 +9,9 @@ export type Configuration = {
   fraudIssuer: string[];
   fraudValidityPeriod: number;
   controllerAllowList: string[];
+  enableDrivingLicenceExpiryCheck?: boolean;
+  drivingLicenceValidityPeriod?: number;
+  dcmawIssuer?: string[];
 };
 
 export const getConfiguration = async (): Promise<Configuration> => {

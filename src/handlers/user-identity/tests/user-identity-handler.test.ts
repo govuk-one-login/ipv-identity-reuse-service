@@ -6,7 +6,7 @@ import * as configuration from "../../../commons/configuration";
 import { CredentialStoreIdentityResponse } from "../../../credential-store/credential-store-identity-response";
 import { UserIdentityResponse } from "../user-identity-response";
 import { UserIdentityRequest } from "../user-identity-request";
-import * as fraudCheckService from "../../../identity-reuse/fraud-check-service";
+import * as identityExpiryService from "../../../identity-reuse/identity-expiry-service";
 import * as storedIdentityValidator from "../../../identity-reuse/stored-identity-validator";
 import { IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials";
 
@@ -79,7 +79,7 @@ beforeEach(() => {
     fraudIssuer: [FRAUD_ISSUER],
     fraudValidityPeriod: TEST_FRAUD_VALIDITY_DAYS,
   } as Configuration);
-  jest.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
+  jest.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue(false);
   jest.spyOn(storedIdentityValidator, "validateStoredIdentityCredentials").mockReturnValue(true);
   jest.spyOn(DidResolutionService, "getPublicKeyJwkForKid").mockResolvedValue(publicKeyJwk);
   jest.spyOn(DidResolutionService, "isValidDidWeb").mockReturnValue(true);
@@ -452,7 +452,7 @@ describe("user-identity-handler expired", () => {
   const RANDOM_NBF: string = "2023-04-25T15:01:36.000Z";
 
   beforeEach(() => {
-    jest.spyOn(fraudCheckService, "hasFraudCheckExpired").mockRestore();
+    jest.spyOn(identityExpiryService, "hasIdentityExpired").mockRestore();
     jest.setSystemTime(new Date(NOW));
   });
 
@@ -504,6 +504,40 @@ describe("user-identity-handler expired", () => {
       kidValid: true,
       signatureValid: true,
     });
+  });
+});
+
+describe("user-identity-handler expired field", () => {
+  it("should set expired to true when hasIdentityExpired returns true", async () => {
+    jest.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue(true);
+
+    const { mockEVCSData } = await createCredentialStoreIdentityResponse([
+      await createSignedIdentityCheckCredentialJWT(PASSPORT_ISSUER),
+      await createSignedIdentityCheckCredentialJWT(FRAUD_ISSUER),
+    ]);
+    mockEVCSResponse(mockEVCSData);
+
+    const result = await handler(newEvent, {} as Context);
+
+    expect(result.statusCode).toBe(HttpCodesEnum.OK);
+    const body = JSON.parse(result.body) as UserIdentityResponse;
+    expect(body.expired).toBe(true);
+  });
+
+  it("should set expired to false when hasIdentityExpired returns false", async () => {
+    jest.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue(false);
+
+    const { mockEVCSData } = await createCredentialStoreIdentityResponse([
+      await createSignedIdentityCheckCredentialJWT(PASSPORT_ISSUER),
+      await createSignedIdentityCheckCredentialJWT(FRAUD_ISSUER),
+    ]);
+    mockEVCSResponse(mockEVCSData);
+
+    const result = await handler(newEvent, {} as Context);
+
+    expect(result.statusCode).toBe(HttpCodesEnum.OK);
+    const body = JSON.parse(result.body) as UserIdentityResponse;
+    expect(body.expired).toBe(false);
   });
 });
 

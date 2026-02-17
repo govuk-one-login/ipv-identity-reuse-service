@@ -13,7 +13,8 @@ import {
 } from "../../credential-store/encrypted-credential-store";
 import { calculateVot } from "../../identity-reuse/calculate-vot";
 import * as didResolutionService from "../../identity-reuse/did-resolution-service";
-import { getFraudVc, hasFraudCheckExpired } from "../../identity-reuse/fraud-check-service";
+import { getFraudVc } from "../../identity-reuse/fraud-check-service";
+import { hasIdentityExpired } from "../../identity-reuse/identity-expiry-service";
 import { validateStoredIdentityCredentials } from "../../identity-reuse/stored-identity-validator";
 import { VerifiableCredentialJWT } from "../../identity-reuse/verifiable-credential-jwt";
 import { UserIdentityErrorResponse } from "./user-identity-error-response";
@@ -112,11 +113,13 @@ const createSuccessResponse = async (
 
   delete content.max_vot;
 
+  const expired = hasIdentityExpired(currentVcs, configuration);
+
   const successResponse: UserIdentityResponse = {
     content: { ...content, vot, vtm },
     vot: maxVot,
     isValid: validateStoredIdentityCredentials(content, currentVcsEncoded),
-    expired: hasFraudCheckExpired(fraudVc, configuration.fraudValidityPeriod),
+    expired,
     ...validationResults,
   };
 
