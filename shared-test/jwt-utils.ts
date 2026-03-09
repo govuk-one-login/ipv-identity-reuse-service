@@ -1,4 +1,4 @@
-import { DIDDocument } from "did-resolver";
+import { DIDDocument, JsonWebKey as DidJsonWebKey } from "did-resolver";
 import { CompactJWSHeaderParameters, CompactSign, importJWK, JWK, JWTHeaderParameters } from "jose";
 import { signKms } from "../tests/acceptance/steps/utils/kms-utils";
 
@@ -29,7 +29,7 @@ export const didDocument: DIDDocument = {
       id: verificationMethodId,
       type: "JsonWebKey2020",
       controller: did,
-      publicKeyJwk,
+      publicKeyJwk: publicKeyJwk as DidJsonWebKey,
     },
   ],
 };
