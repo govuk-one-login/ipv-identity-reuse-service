@@ -7,11 +7,11 @@ const config: Config = {
   coverageProvider: "v8",
   reporters: ["default"],
   setupFiles: ["./setup-jest.ts"],
-  testPathIgnorePatterns: ["pact\\.(test|spec)"],
-  transformIgnorePatterns: ["node_modules/(?!jose/)"],
   transform: {
-    "^.+\\.[tj]sx?$": ["ts-jest", { tsconfig: { allowJs: true } }],
+    "^.+\\.[jt]sx?$": ["ts-jest", { tsconfig: { allowJs: true } }],
   },
+  transformIgnorePatterns: ["node_modules/(?!jose/)"],
+  testPathIgnorePatterns: ["pact\\.(test|spec)"],
 };
 
 export default config;
