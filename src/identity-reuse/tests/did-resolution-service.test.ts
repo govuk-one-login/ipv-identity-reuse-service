@@ -6,7 +6,7 @@ import {
   isValidDidWeb,
   resolver,
 } from "../did-resolution-service";
-import { DIDDocument, DIDResolutionResult } from "did-resolver";
+import { DIDDocument, DIDResolutionResult, JsonWebKey as DidJsonWebKey } from "did-resolver";
 
 jest.mock("../../commons/logger");
 
@@ -79,7 +79,7 @@ describe("getPublicKeyJwkForKid", () => {
           id: verificationMethodId,
           type: "JsonWebKey2020",
           controller: did,
-          publicKeyJwk,
+          publicKeyJwk: publicKeyJwk as DidJsonWebKey,
         },
       ],
       assertionMethod: [verificationMethodId],
