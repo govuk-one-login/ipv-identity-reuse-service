@@ -7,8 +7,9 @@ import {
   resolver,
 } from "../did-resolution-service";
 import { DIDDocument, DIDResolutionResult, JsonWebKey as DidJsonWebKey } from "did-resolver";
+import { vi, describe, it, beforeEach, expect } from "vitest";
 
-jest.mock("../../commons/logger");
+vi.mock("../../commons/logger");
 
 describe("isValidDidWeb", () => {
   it.each([
@@ -44,7 +45,7 @@ describe("getPublicKeyJwkForKid", () => {
   const DEFAULT_DID_RESOLUTION_RESPONSE = { didDocument } as DIDResolutionResult;
 
   beforeEach(() => {
-    resolver.resolve = jest.fn().mockResolvedValue(DEFAULT_DID_RESOLUTION_RESPONSE);
+    resolver.resolve = vi.fn().mockResolvedValue(DEFAULT_DID_RESOLUTION_RESPONSE);
     clearCache();
   });
 
@@ -85,7 +86,7 @@ describe("getPublicKeyJwkForKid", () => {
       assertionMethod: [verificationMethodId],
     };
 
-    resolver.resolve = jest.fn().mockResolvedValue({ didDocument: badDidDocument });
+    resolver.resolve = vi.fn().mockResolvedValue({ didDocument: badDidDocument });
     await expect(getPublicKeyJwkForKid(verificationMethodId)).rejects.toThrow(
       "Assertion method as string not supported"
     );

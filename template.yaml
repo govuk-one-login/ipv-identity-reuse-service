@@ -697,6 +697,12 @@ Resources:
         Sourcemap: true
         SourcesContent: false
         Target: "es2024"
+        Format: esm
+        Platform: node
+        OutExtension:
+          - .js=.mjs
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
 
   MessageProcessorLambdaTriggerRole:
     Type: AWS::IAM::Role
@@ -813,13 +819,13 @@ Resources:
             Principal:
               Service:
                 - apigateway.amazonaws.com
-            Action: 'sts:AssumeRole'
+            Action: "sts:AssumeRole"
       Path: /
       ManagedPolicyArns:
         - >-
           arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
 
-      PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
+      PermissionsBoundary: !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
       Tags:
         - Key: Product
           Value: !Ref ProductTagValue
@@ -880,8 +886,8 @@ Resources:
         DestinationArn: !GetAtt APIGatewayAccessLogGroup.Arn
       MethodSettings:
         - LoggingLevel: INFO
-          ResourcePath: '/*'
-          HttpMethod: '*'
+          ResourcePath: "/*"
+          HttpMethod: "*"
       CacheClusterEnabled: false
       TracingEnabled: true
       EndpointConfiguration:

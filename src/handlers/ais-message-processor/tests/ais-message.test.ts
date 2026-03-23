@@ -1,4 +1,5 @@
 import { isAisMessage } from "../ais-message";
+import { describe, it, expect } from "vitest";
 
 describe("isTxmaMessage", () => {
   it("should return true when required fields present", () => {

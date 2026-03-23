@@ -8,6 +8,7 @@ import {
 } from "@govuk-one-login/data-vocab/credentials";
 import * as configuration from "../../commons/configuration";
 import { Configuration } from "../../commons/configuration";
+import { vi, describe, it, beforeEach, expect } from "vitest";
 
 const mockSuccessfulEvidence: IdentityCheckClass = {
   checkDetails: [
@@ -20,14 +21,15 @@ const mockSuccessfulEvidence: IdentityCheckClass = {
 const VALIDITY_PERIOD = 180;
 const FRAUD_ISSUERS = ["fraudCRI"];
 
-jest.mock("../../commons/logger");
+vi.mock("../../commons/logger");
 
 describe("hasFraudCheckExpired", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    jest
-      .spyOn(configuration, "getConfiguration")
-      .mockResolvedValue({ fraudIssuer: ["fraudCRI"], fraudValidityPeriod: 180 } as Configuration);
+    vi.clearAllMocks();
+    vi.spyOn(configuration, "getConfiguration").mockResolvedValue({
+      fraudIssuer: ["fraudCRI"],
+      fraudValidityPeriod: 180,
+    } as Configuration);
   });
 
   it.each([
@@ -121,8 +123,8 @@ const getDateSeconds = (date: Date): number => {
 };
 
 const fakeSystemTime = (date: Date): void => {
-  jest.useFakeTimers();
-  jest.setSystemTime(date);
+  vi.useFakeTimers();
+  vi.setSystemTime(date);
 };
 
 const createValidFraudVC = (nbfDate: string): IdentityCheckCredentialJWTClass =>

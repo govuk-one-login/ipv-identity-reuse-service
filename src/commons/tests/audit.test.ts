@@ -1,20 +1,21 @@
 import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
 import { mockClient } from "aws-sdk-client-mock";
-import "aws-sdk-client-mock-jest";
 import { auditIdentityRecordInvalidated } from "../audit";
 import { TxmaSisIdentityRecordInvalidated } from "../audit-events";
+import { vi, beforeAll, afterAll, it, expect } from "vitest";
+import "aws-sdk-client-mock-vitest/extend";
 
 const sqsClientMock = mockClient(SQSClient);
 sqsClientMock.on(SendMessageCommand).resolves({});
 
 beforeAll(() => {
-  jest.useFakeTimers({
+  vi.useFakeTimers({
     now: 1753094598807,
   });
 });
 
 afterAll(() => {
-  jest.useRealTimers();
+  vi.useRealTimers();
 });
 
 it("should send the message using the defined specification", async () => {

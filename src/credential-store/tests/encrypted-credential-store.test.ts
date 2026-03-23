@@ -2,6 +2,7 @@ import { CredentialStoreIdentityResponse, VerifiableCredentialObject } from "../
 import { IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials";
 import { getDefaultJwtHeader, sign } from "../../../shared-test/jwt-utils";
 import { parseCurrentVerifiableCredentials } from "../encrypted-credential-store";
+import { describe, it, expect } from "vitest";
 
 describe("parseCurrentVerifiableCredentials", () => {
   it("should return verifiable credentials with CURRENT state only", async () => {

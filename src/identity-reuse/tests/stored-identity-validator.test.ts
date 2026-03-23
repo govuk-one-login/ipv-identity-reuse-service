@@ -1,7 +1,8 @@
 import { StoredIdentityJWT } from "../../handlers/user-identity/stored-identity-jwt";
 import { validateStoredIdentityCredentials } from "../stored-identity-validator";
+import { vi, describe, it, expect } from "vitest";
 
-jest.mock("../../commons/logger");
+vi.mock("../../commons/logger");
 
 describe("validateStoredIdentityCredentials", () => {
   it("should return true when signatures in stored identity match credentials", () => {
