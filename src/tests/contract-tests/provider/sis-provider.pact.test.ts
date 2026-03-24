@@ -12,10 +12,11 @@ import { StoredIdentityJWT } from "../../../handlers/user-identity/stored-identi
 import * as FraudCheckService from "../../../identity-reuse/fraud-check-service";
 import type { VerifiableCredentialJWT } from "../../../identity-reuse/verifiable-credential-jwt";
 import { createServer as createProviderServer } from "./sis-provider-app";
+import { vi, describe, it, beforeAll, beforeEach, afterAll } from "vitest";
+
+vi.mock("../../../commons/audit");
 
 const PORT = 8080;
-
-jest.setTimeout(10000);
 
 const validateEnvironment = () => {
   const environmentType = (process.env.PACT_TYPE || "file").toLowerCase();
@@ -46,7 +47,7 @@ const mockEVCSResponse = (
   response: CredentialStoreIdentityResponse | CredentialStoreErrorResponse,
   status: number = 200
 ) => {
-  jest.spyOn(globalThis, "fetch").mockResolvedValue(
+  vi.spyOn(globalThis, "fetch").mockResolvedValue(
     new Response(JSON.stringify(response), {
       status,
       headers: { "content-type": "application/json" },
@@ -63,13 +64,13 @@ describe("Sis Pact Verification", () => {
   });
 
   beforeEach(() => {
-    jest.spyOn(ConfigurationModule, "getConfiguration").mockResolvedValue({
+    vi.spyOn(ConfigurationModule, "getConfiguration").mockResolvedValue({
       evcsApiUrl: "https://evcs.gov.uk",
       controllerAllowList: ["did:web:api.identity.dev.account.gov.uk"],
     } as Configuration);
-    jest.spyOn(ConfigurationModule, "getServiceApiKey").mockResolvedValue("an-api-key");
-    jest.spyOn(FraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
-    jest.spyOn(AuditModule, "sendAuditMessage").mockImplementation(async () => ({}) as SendMessageCommandOutput);
+    vi.spyOn(ConfigurationModule, "getServiceApiKey").mockResolvedValue("an-api-key");
+    vi.spyOn(FraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
+    vi.spyOn(AuditModule, "sendAuditMessage").mockImplementation(async () => ({}) as SendMessageCommandOutput);
   });
 
   afterAll(() => {
@@ -136,7 +137,7 @@ describe("Sis Pact Verification", () => {
 
     await new Verifier(options).verifyProvider();
   });
-});
+}, 10000);
 
 const createCredentialStoreIdentityResponse = async (
   verifiableCredentialStates: { vc: VerifiableCredentialJWT; state: string }[] = []

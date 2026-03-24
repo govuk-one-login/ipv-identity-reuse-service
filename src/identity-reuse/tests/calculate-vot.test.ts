@@ -3,14 +3,15 @@ import { calculateVot } from "../calculate-vot";
 import { StoredIdentityVectorOfTrust } from "../../handlers/user-identity/user-identity-response";
 import { StoredIdentityJWT } from "../../handlers/user-identity/stored-identity-jwt";
 import logger from "../../commons/logger";
+import { vi, describe, it, afterEach, expect, Mocked } from "vitest";
 
-jest.mock("../../commons/logger");
+vi.mock("../../commons/logger");
 
-const mockedLogger = logger as jest.Mocked<typeof logger>;
+const mockedLogger = logger as Mocked<typeof logger>;
 
 describe("calculate-vot", () => {
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it.each<[StoredIdentityVectorOfTrust, IdentityVectorOfTrust[], IdentityVectorOfTrust]>([

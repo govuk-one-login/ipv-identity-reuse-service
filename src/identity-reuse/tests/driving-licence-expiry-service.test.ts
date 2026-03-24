@@ -8,20 +8,22 @@ import {
 import { IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials";
 import { VerifiableCredentialJWT } from "../verifiable-credential-jwt";
 import logger from "../../commons/logger";
+import { vi, describe, it, beforeEach, afterEach, expect } from "vitest";
 
-jest.mock("../../commons/logger");
+vi.mock("../../commons/logger");
 
 const DCMAW_ISSUER = ["https://www.review-b.dev.account.gov.uk"];
 const FRAUD_ISSUER = "https://review-f.dev.account.gov.uk";
 
 describe("driving-licence-expiry-service", () => {
   beforeEach(() => {
-    jest.useFakeTimers();
-    jest.setSystemTime(new Date("2026-08-01T12:00:00Z"));
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-01T12:00:00Z"));
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
+    vi.resetAllMocks();
   });
 
   describe("getDcmawDrivingPermitVc", () => {
@@ -285,14 +287,14 @@ describe("driving-licence-expiry-service", () => {
     });
 
     it("should return false when licence was expired at issuance but VC within 180 days", () => {
-      jest.setSystemTime(new Date("2026-07-01T12:00:00Z"));
+      vi.setSystemTime(new Date("2026-07-01T12:00:00Z"));
       const vc = createDcmawDrivingPermitVc("2026-01-01", "2026-02-01T10:00:00Z");
       const result = hasDrivingLicenceExpired([vc], DCMAW_ISSUER, 180);
       expect(result).toBe(false);
     });
 
     it("should return true when licence was expired at issuance and VC older than 180 days", () => {
-      jest.setSystemTime(new Date("2026-09-01T12:00:00Z"));
+      vi.setSystemTime(new Date("2026-09-01T12:00:00Z"));
       const vc = createDcmawDrivingPermitVc("2026-01-01", "2026-02-01T10:00:00Z");
       const result = hasDrivingLicenceExpired([vc], DCMAW_ISSUER, 180);
       expect(result).toBe(true);
@@ -306,7 +308,7 @@ describe("driving-licence-expiry-service", () => {
     });
 
     it("should skip failed DCMAW VC and check successful one", () => {
-      jest.setSystemTime(new Date("2026-09-01T12:00:00Z"));
+      vi.setSystemTime(new Date("2026-09-01T12:00:00Z"));
       const failedVc = createDcmawDrivingPermitVc("2026-01-01", "2026-02-01T10:00:00Z");
       failedVc.vc.evidence = [{ strengthScore: 0, validityScore: 0 }];
 

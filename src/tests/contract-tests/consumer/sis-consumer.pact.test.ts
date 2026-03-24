@@ -1,7 +1,7 @@
 import path from "path";
 import { PactV4, SpecificationVersion, MatchersV3 } from "@pact-foundation/pact";
-import type { UserIdentityResponse } from "../../../handlers/user-identity/user-identity-response";
 import { UserIdentityErrorResponse } from "../../../handlers/user-identity/user-identity-error-response";
+import { describe, beforeEach, it, expect } from "vitest";
 
 const { like } = MatchersV3;
 
@@ -71,7 +71,7 @@ describe("SIS Consumer", () => {
       })
       .executeTest(async (mockServer) => {
         const result = await executeTest(mockServer, govukSigninJourneyId);
-        await expect(result.json()).resolves.toMatchObject<UserIdentityResponse>({
+        await expect(result.json()).resolves.toMatchObject({
           content: {
             sub: "user-sub",
             vot: "P2",
@@ -112,7 +112,7 @@ describe("SIS Consumer", () => {
       })
       .executeTest(async (mockServer) => {
         const result = await executeTest(mockServer, govukSigninJourneyId);
-        await expect(result.json()).resolves.toMatchObject<UserIdentityErrorResponse>({
+        await expect(result.json()).resolves.toMatchObject({
           error: "no_record",
           error_description: "No Stored Identity exists for this user or Stored Identity has been invalidated",
         });
@@ -143,7 +143,7 @@ describe("SIS Consumer", () => {
       })
       .executeTest(async (mockServer) => {
         const result = await executeTest(mockServer, govukSigninJourneyId);
-        await expect(result.json()).resolves.toMatchObject<UserIdentityErrorResponse>({
+        await expect(result.json()).resolves.toMatchObject({
           error: "invalid_token",
           error_description: "Bearer token is missing or invalid",
         });
@@ -174,7 +174,7 @@ describe("SIS Consumer", () => {
       })
       .executeTest(async (mockServer) => {
         const result = await executeTest(mockServer, govukSigninJourneyId);
-        await expect(result.json()).resolves.toMatchObject<UserIdentityErrorResponse>({
+        await expect(result.json()).resolves.toMatchObject({
           error: "forbidden",
           error_description: "Access token expired or not permitted",
         });
@@ -205,7 +205,7 @@ describe("SIS Consumer", () => {
       })
       .executeTest(async (mockServer) => {
         const result = await executeTest(mockServer, govukSigninJourneyId);
-        await expect(result.json()).resolves.toMatchObject<UserIdentityErrorResponse>({
+        await expect(result.json()).resolves.toMatchObject({
           error: "server_error",
           error_description: "Unable to retrieve data",
         });

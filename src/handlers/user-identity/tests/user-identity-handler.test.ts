@@ -12,14 +12,15 @@ import { IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/cre
 
 import * as AuditModule from "../../../commons/audit";
 import * as DidResolutionService from "../../../identity-reuse/did-resolution-service";
-import { TxmaEvent } from "../../../commons/audit-events";
-import { SendMessageCommandOutput } from "@aws-sdk/client-sqs";
 import { JWTHeaderParameters } from "jose";
 import { getJwtSignature } from "../../../commons/jwt-utils";
 import { publicKeyJwk, getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utils";
 import logger from "../../../commons/logger";
+import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
+import { LogKeys } from "@aws-lambda-powertools/logger/lib/cjs/types/logKeys";
 
-jest.mock("../../../commons/logger");
+vi.mock("../../../commons/logger");
+vi.mock("../../../commons/audit");
 
 const CURRENT = "CURRENT";
 const HISTORIC = "HISTORIC";
@@ -50,7 +51,7 @@ const event = () => {
 };
 
 const mockEVCSResponse = (response: CredentialStoreIdentityResponse) => {
-  (global.fetch as jest.Mock) = jest.fn().mockResolvedValue(
+  (globalThis.fetch as Mock) = vi.fn().mockResolvedValue(
     new Response(JSON.stringify(response), {
       status: 200,
       headers: { "content-type": "application/json" },
@@ -59,33 +60,27 @@ const mockEVCSResponse = (response: CredentialStoreIdentityResponse) => {
 };
 
 let newEvent: APIGatewayProxyEvent;
-let mockSendTxmaEvent: jest.SpyInstance<
-  Promise<SendMessageCommandOutput>,
-  [event: TxmaEvent<string, object | undefined, object | undefined>],
-  unknown
->;
-let mockLoggerAppendKeys: jest.SpyInstance;
+let mockLoggerAppendKeys: Mock<(attributes: LogKeys) => void>;
 
 const ALLOWED_CONTROLLER = "api.identity.dev.account.gov.uk";
 
 beforeEach(() => {
-  jest.useFakeTimers({ now: 1759240815925 });
-  jest.clearAllMocks();
+  vi.useFakeTimers({ now: 1759240815925 });
+  vi.clearAllMocks();
   newEvent = event();
-  jest.spyOn(configuration, "getServiceApiKey").mockResolvedValue("an-api-key");
-  jest.spyOn(configuration, "getConfiguration").mockResolvedValue({
+  vi.spyOn(configuration, "getServiceApiKey").mockResolvedValue("an-api-key");
+  vi.spyOn(configuration, "getConfiguration").mockResolvedValue({
     evcsApiUrl: "https://evcs.gov.uk",
     controllerAllowList: [ALLOWED_CONTROLLER],
     fraudIssuer: [FRAUD_ISSUER],
     fraudValidityPeriod: TEST_FRAUD_VALIDITY_DAYS,
   } as Configuration);
-  jest.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue(false);
-  jest.spyOn(storedIdentityValidator, "validateStoredIdentityCredentials").mockReturnValue(true);
-  jest.spyOn(DidResolutionService, "getPublicKeyJwkForKid").mockResolvedValue(publicKeyJwk);
-  jest.spyOn(DidResolutionService, "isValidDidWeb").mockReturnValue(true);
-  jest.spyOn(DidResolutionService, "getDidWebController").mockReturnValue(ALLOWED_CONTROLLER);
-  mockSendTxmaEvent = jest.spyOn(AuditModule, "sendAuditMessage").mockResolvedValue({ $metadata: {} });
-  mockLoggerAppendKeys = jest.spyOn(logger, "appendKeys").mockImplementation();
+  vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue(false);
+  vi.spyOn(storedIdentityValidator, "validateStoredIdentityCredentials").mockReturnValue(true);
+  vi.spyOn(DidResolutionService, "getPublicKeyJwkForKid").mockResolvedValue(publicKeyJwk);
+  vi.spyOn(DidResolutionService, "isValidDidWeb").mockReturnValue(true);
+  vi.spyOn(DidResolutionService, "getDidWebController").mockReturnValue(ALLOWED_CONTROLLER);
+  mockLoggerAppendKeys = vi.spyOn(logger, "appendKeys").mockImplementation(vi.fn());
 });
 
 describe("user-identity-handler authorization", () => {
@@ -95,6 +90,9 @@ describe("user-identity-handler authorization", () => {
       await createSignedIdentityCheckCredentialJWT(FRAUD_ISSUER),
     ]);
     mockEVCSResponse(mockEVCSData);
+
+    const auditIdentityRecordReadSpy = vi.spyOn(AuditModule, "auditIdentityRecordRead");
+    const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
 
     const result = await handler(newEvent, {} as Context);
 
@@ -113,42 +111,30 @@ describe("user-identity-handler authorization", () => {
       kidValid: true,
       signatureValid: true,
     });
-    expect(mockSendTxmaEvent).toHaveBeenCalledWith({
-      component_id: "https://identity.local.account.gov.uk/sis",
-      event_name: "SIS_STORED_IDENTITY_READ",
-      event_timestamp_ms: 1759240815925,
-      timestamp: 1759240815,
-      extensions: {
+    expect(auditIdentityRecordReadSpy).toHaveBeenCalledWith(
+      {
         max_vot: "P3",
         retrieval_outcome: "success",
       },
-      restricted: {
+      {
         stored_identity_jwt: mockEVCSData.si.vc,
       },
-      user: {
-        user_id: TEST_USER,
-        govuk_signin_journey_id: "govuk_signin_journey_id",
-      },
-    });
-    expect(mockSendTxmaEvent).toHaveBeenCalledWith({
-      component_id: "https://identity.local.account.gov.uk/sis",
-      event_name: "SIS_STORED_IDENTITY_RETURNED",
-      event_timestamp_ms: 1759240815925,
-      timestamp: 1759240815,
-      extensions: {
+      TEST_USER,
+      "govuk_signin_journey_id"
+    );
+    expect(auditIdentityRecordReturnedSpy).toHaveBeenCalledWith(
+      {
         response_outcome: "returned",
         is_valid: true,
         expired: false,
         vot: "P2",
       },
-      restricted: {
+      {
         response_body: JSON.stringify(body),
       },
-      user: {
-        user_id: TEST_USER,
-        govuk_signin_journey_id: "govuk_signin_journey_id",
-      },
-    });
+      TEST_USER,
+      "govuk_signin_journey_id"
+    );
   });
 
   it("should append govuk_signin_journey_id to logger, given a valid request", async () => {
@@ -187,7 +173,7 @@ describe("user-identity-handler authorization", () => {
   });
 
   it("kidValid should be false, given an invalid kid claim", async () => {
-    jest.spyOn(DidResolutionService, "isValidDidWeb").mockReturnValue(false);
+    vi.spyOn(DidResolutionService, "isValidDidWeb").mockReturnValue(false);
     const { mockEVCSData } = await createCredentialStoreIdentityResponse(
       [],
       getDefaultJwtHeader("ES256", "did:invalid-did")
@@ -209,8 +195,8 @@ describe("user-identity-handler authorization", () => {
   });
 
   it("kidValid should be false, given non allow listed did controller header", async () => {
-    jest.spyOn(DidResolutionService, "isValidDidWeb").mockReturnValue(true);
-    jest.spyOn(DidResolutionService, "getDidWebController").mockReturnValue("DISALLOWED.CONTROLLER");
+    vi.spyOn(DidResolutionService, "isValidDidWeb").mockReturnValue(true);
+    vi.spyOn(DidResolutionService, "getDidWebController").mockReturnValue("DISALLOWED.CONTROLLER");
 
     const { mockEVCSData } = await createCredentialStoreIdentityResponse(
       [],
@@ -261,7 +247,10 @@ describe("user-identity-handler authorization", () => {
   });
 
   it("should return 403 given EVCS API responded with Forbidden", async () => {
-    (global.fetch as jest.Mock) = jest.fn().mockResolvedValue(
+    const auditIdentityRecordReadSpy = vi.spyOn(AuditModule, "auditIdentityRecordRead");
+    const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
+
+    (globalThis.fetch as Mock) = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({}), {
         status: HttpCodesEnum.FORBIDDEN,
         headers: { "content-type": "application/json" },
@@ -272,41 +261,31 @@ describe("user-identity-handler authorization", () => {
       statusCode: HttpCodesEnum.FORBIDDEN,
       body: JSON.stringify({ error: "forbidden", error_description: "Access token expired or not permitted" }),
     });
-    expect(mockSendTxmaEvent).toHaveBeenCalledWith({
-      component_id: "https://identity.local.account.gov.uk/sis",
-      event_name: "SIS_STORED_IDENTITY_READ",
-      event_timestamp_ms: 1759240815925,
-      timestamp: 1759240815,
-      extensions: {
+    expect(auditIdentityRecordReadSpy).toHaveBeenCalledWith(
+      {
         retrieval_outcome: "service_error",
       },
-      restricted: undefined,
-      user: {
-        user_id: TEST_USER,
-        govuk_signin_journey_id: "govuk_signin_journey_id",
-      },
-    });
-    expect(mockSendTxmaEvent).toHaveBeenCalledWith({
-      component_id: "https://identity.local.account.gov.uk/sis",
-      event_name: "SIS_STORED_IDENTITY_RETURNED",
-      event_timestamp_ms: 1759240815925,
-      timestamp: 1759240815,
-      extensions: {
+      undefined,
+      TEST_USER,
+      "govuk_signin_journey_id"
+    );
+    expect(auditIdentityRecordReturnedSpy).toHaveBeenCalledWith(
+      {
         response_outcome: "error",
         error_code: "forbidden",
       },
-      restricted: {
+      {
         response_body: '{"error":"forbidden","error_description":"Access token expired or not permitted"}',
       },
-      user: {
-        user_id: TEST_USER,
-        govuk_signin_journey_id: "govuk_signin_journey_id",
-      },
-    });
+      TEST_USER,
+      "govuk_signin_journey_id"
+    );
   });
 
   it("should return 401 given EVCS API responded with Unauthorized", async () => {
-    (global.fetch as jest.Mock) = jest.fn().mockResolvedValue(
+    const auditIdentityRecordReadSpy = vi.spyOn(AuditModule, "auditIdentityRecordRead");
+    const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
+    (globalThis.fetch as Mock) = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({}), {
         status: HttpCodesEnum.UNAUTHORIZED,
         headers: { "content-type": "application/json" },
@@ -317,41 +296,31 @@ describe("user-identity-handler authorization", () => {
       statusCode: HttpCodesEnum.UNAUTHORIZED,
       body: JSON.stringify({ error: "invalid_token", error_description: "Bearer token is missing or invalid" }),
     });
-    expect(mockSendTxmaEvent).toHaveBeenCalledWith({
-      component_id: "https://identity.local.account.gov.uk/sis",
-      event_name: "SIS_STORED_IDENTITY_READ",
-      event_timestamp_ms: 1759240815925,
-      timestamp: 1759240815,
-      extensions: {
+    expect(auditIdentityRecordReadSpy).toHaveBeenCalledWith(
+      {
         retrieval_outcome: "service_error",
       },
-      restricted: undefined,
-      user: {
-        user_id: TEST_USER,
-        govuk_signin_journey_id: "govuk_signin_journey_id",
-      },
-    });
-    expect(mockSendTxmaEvent).toHaveBeenCalledWith({
-      component_id: "https://identity.local.account.gov.uk/sis",
-      event_name: "SIS_STORED_IDENTITY_RETURNED",
-      event_timestamp_ms: 1759240815925,
-      timestamp: 1759240815,
-      extensions: {
+      undefined,
+      TEST_USER,
+      "govuk_signin_journey_id"
+    );
+    expect(auditIdentityRecordReturnedSpy).toHaveBeenCalledWith(
+      {
         response_outcome: "error",
         error_code: "authentication_failure",
       },
-      restricted: {
+      {
         response_body: '{"error":"invalid_token","error_description":"Bearer token is missing or invalid"}',
       },
-      user: {
-        user_id: TEST_USER,
-        govuk_signin_journey_id: "govuk_signin_journey_id",
-      },
-    });
+      TEST_USER,
+      "govuk_signin_journey_id"
+    );
   });
 
   it("should return 500 given EVCS API responded with Internal Server Error", async () => {
-    (global.fetch as jest.Mock) = jest.fn().mockResolvedValue(
+    const auditIdentityRecordReadSpy = vi.spyOn(AuditModule, "auditIdentityRecordRead");
+    const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
+    (globalThis.fetch as Mock) = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({}), {
         status: HttpCodesEnum.INTERNAL_SERVER_ERROR,
         headers: { "content-type": "application/json" },
@@ -362,41 +331,31 @@ describe("user-identity-handler authorization", () => {
       statusCode: HttpCodesEnum.INTERNAL_SERVER_ERROR,
       body: JSON.stringify({ error: "server_error", error_description: "Unable to retrieve data" }),
     });
-    expect(mockSendTxmaEvent).toHaveBeenCalledWith({
-      component_id: "https://identity.local.account.gov.uk/sis",
-      event_name: "SIS_STORED_IDENTITY_READ",
-      event_timestamp_ms: 1759240815925,
-      timestamp: 1759240815,
-      extensions: {
+    expect(auditIdentityRecordReadSpy).toHaveBeenCalledWith(
+      {
         retrieval_outcome: "service_error",
       },
-      restricted: undefined,
-      user: {
-        user_id: TEST_USER,
-        govuk_signin_journey_id: "govuk_signin_journey_id",
-      },
-    });
-    expect(mockSendTxmaEvent).toHaveBeenCalledWith({
-      component_id: "https://identity.local.account.gov.uk/sis",
-      event_name: "SIS_STORED_IDENTITY_RETURNED",
-      event_timestamp_ms: 1759240815925,
-      timestamp: 1759240815,
-      extensions: {
+      undefined,
+      TEST_USER,
+      "govuk_signin_journey_id"
+    );
+    expect(auditIdentityRecordReturnedSpy).toHaveBeenCalledWith(
+      {
         response_outcome: "error",
         error_code: "service_error",
       },
-      restricted: {
+      {
         response_body: '{"error":"server_error","error_description":"Unable to retrieve data"}',
       },
-      user: {
-        user_id: TEST_USER,
-        govuk_signin_journey_id: "govuk_signin_journey_id",
-      },
-    });
+      TEST_USER,
+      "govuk_signin_journey_id"
+    );
   });
 
   it("should return 404 given EVCS API responded with Not Found", async () => {
-    (global.fetch as jest.Mock) = jest.fn().mockResolvedValue(
+    const auditIdentityRecordReadSpy = vi.spyOn(AuditModule, "auditIdentityRecordRead");
+    const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
+    (globalThis.fetch as Mock) = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({}), {
         status: HttpCodesEnum.NOT_FOUND,
         headers: { "content-type": "application/json" },
@@ -410,38 +369,26 @@ describe("user-identity-handler authorization", () => {
         error_description: "No Stored Identity exists for this user or Stored Identity has been invalidated",
       }),
     });
-    expect(mockSendTxmaEvent).toHaveBeenCalledWith({
-      component_id: "https://identity.local.account.gov.uk/sis",
-      event_name: "SIS_STORED_IDENTITY_READ",
-      event_timestamp_ms: 1759240815925,
-      timestamp: 1759240815,
-      extensions: {
+    expect(auditIdentityRecordReadSpy).toHaveBeenCalledWith(
+      {
         retrieval_outcome: "no_record",
       },
-      restricted: undefined,
-      user: {
-        user_id: TEST_USER,
-        govuk_signin_journey_id: "govuk_signin_journey_id",
-      },
-    });
-    expect(mockSendTxmaEvent).toHaveBeenCalledWith({
-      component_id: "https://identity.local.account.gov.uk/sis",
-      event_name: "SIS_STORED_IDENTITY_RETURNED",
-      event_timestamp_ms: 1759240815925,
-      timestamp: 1759240815,
-      extensions: {
+      undefined,
+      TEST_USER,
+      "govuk_signin_journey_id"
+    );
+    expect(auditIdentityRecordReturnedSpy).toHaveBeenCalledWith(
+      {
         response_outcome: "error",
         error_code: "no_record",
       },
-      restricted: {
+      {
         response_body:
           '{"error":"not_found","error_description":"No Stored Identity exists for this user or Stored Identity has been invalidated"}',
       },
-      user: {
-        user_id: TEST_USER,
-        govuk_signin_journey_id: "govuk_signin_journey_id",
-      },
-    });
+      TEST_USER,
+      "govuk_signin_journey_id"
+    );
   });
 });
 
@@ -452,8 +399,8 @@ describe("user-identity-handler expired", () => {
   const RANDOM_NBF: string = "2023-04-25T15:01:36.000Z";
 
   beforeEach(() => {
-    jest.spyOn(identityExpiryService, "hasIdentityExpired").mockRestore();
-    jest.setSystemTime(new Date(NOW));
+    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockRestore();
+    vi.setSystemTime(new Date(NOW));
   });
 
   it.each([
@@ -509,7 +456,7 @@ describe("user-identity-handler expired", () => {
 
 describe("user-identity-handler expired field", () => {
   it("should set expired to true when hasIdentityExpired returns true", async () => {
-    jest.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue(true);
+    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue(true);
 
     const { mockEVCSData } = await createCredentialStoreIdentityResponse([
       await createSignedIdentityCheckCredentialJWT(PASSPORT_ISSUER),
@@ -525,7 +472,7 @@ describe("user-identity-handler expired field", () => {
   });
 
   it("should set expired to false when hasIdentityExpired returns false", async () => {
-    jest.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue(false);
+    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue(false);
 
     const { mockEVCSData } = await createCredentialStoreIdentityResponse([
       await createSignedIdentityCheckCredentialJWT(PASSPORT_ISSUER),
@@ -543,7 +490,7 @@ describe("user-identity-handler expired field", () => {
 
 describe("user-identity-handler isValid", () => {
   beforeEach(() => {
-    jest.spyOn(storedIdentityValidator, "validateStoredIdentityCredentials").mockRestore();
+    vi.spyOn(storedIdentityValidator, "validateStoredIdentityCredentials").mockRestore();
   });
 
   it("should set isValid to false if stored identity record is missing credential signature", async () => {

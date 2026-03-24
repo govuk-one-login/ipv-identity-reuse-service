@@ -3,8 +3,9 @@ import { Configuration } from "../../commons/configuration";
 import * as fraudCheckService from "../fraud-check-service";
 import * as drivingLicenceExpiryService from "../driving-licence-expiry-service";
 import { VerifiableCredentialJWT } from "../verifiable-credential-jwt";
+import { vi, describe, it, beforeEach, expect } from "vitest";
 
-jest.mock("../../commons/logger");
+vi.mock("../../commons/logger");
 
 const FRAUD_ISSUER = ["fraudCRI"];
 const DCMAW_ISSUER = ["https://www.review-b.dev.account.gov.uk"];
@@ -30,52 +31,52 @@ const createMockVc = (issuer: string): VerifiableCredentialJWT =>
 
 describe("identity-expiry-service", () => {
   beforeEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("should return false when neither fraud nor driving licence has expired", () => {
-    jest.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
-    jest.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired").mockReturnValue(false);
+    vi.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
+    vi.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired").mockReturnValue(false);
 
     const result = hasIdentityExpired([createMockVc("fraudCRI")], BASE_CONFIGURATION);
     expect(result).toBe(false);
   });
 
   it("should return true when fraud check has expired", () => {
-    jest.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(true);
-    jest.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired").mockReturnValue(false);
+    vi.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(true);
+    vi.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired").mockReturnValue(false);
 
     const result = hasIdentityExpired([createMockVc("fraudCRI")], BASE_CONFIGURATION);
     expect(result).toBe(true);
   });
 
   it("should return true when driving licence has expired", () => {
-    jest.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
-    jest.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired").mockReturnValue(true);
+    vi.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
+    vi.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired").mockReturnValue(true);
 
     const result = hasIdentityExpired([createMockVc("fraudCRI")], BASE_CONFIGURATION);
     expect(result).toBe(true);
   });
 
   it("should return true when both fraud and driving licence have expired", () => {
-    jest.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(true);
-    jest.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired").mockReturnValue(true);
+    vi.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(true);
+    vi.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired").mockReturnValue(true);
 
     const result = hasIdentityExpired([createMockVc("fraudCRI")], BASE_CONFIGURATION);
     expect(result).toBe(true);
   });
 
   it("should return false when driving licence expiry check returns null", () => {
-    jest.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
-    jest.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired").mockReturnValue(null);
+    vi.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
+    vi.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired").mockReturnValue(null);
 
     const result = hasIdentityExpired([createMockVc("fraudCRI")], BASE_CONFIGURATION);
     expect(result).toBe(false);
   });
 
   it("should not check driving licence expiry when feature flag is disabled", () => {
-    jest.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
-    const mockDlCheck = jest.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired");
+    vi.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
+    const mockDlCheck = vi.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired");
 
     const configuration = { ...BASE_CONFIGURATION, enableDrivingLicenceExpiryCheck: false };
     const result = hasIdentityExpired([createMockVc("fraudCRI")], configuration);
@@ -85,8 +86,8 @@ describe("identity-expiry-service", () => {
   });
 
   it("should not check driving licence expiry when dcmawIssuer is undefined", () => {
-    jest.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
-    const mockDlCheck = jest.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired");
+    vi.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
+    const mockDlCheck = vi.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired");
 
     const configuration = { ...BASE_CONFIGURATION, dcmawIssuer: undefined };
     const result = hasIdentityExpired([createMockVc("fraudCRI")], configuration);
@@ -96,8 +97,8 @@ describe("identity-expiry-service", () => {
   });
 
   it("should not check driving licence expiry when drivingLicenceValidityPeriod is undefined", () => {
-    jest.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
-    const mockDlCheck = jest.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired");
+    vi.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
+    const mockDlCheck = vi.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired");
 
     const configuration = { ...BASE_CONFIGURATION, drivingLicenceValidityPeriod: undefined };
     const result = hasIdentityExpired([createMockVc("fraudCRI")], configuration);
@@ -107,8 +108,8 @@ describe("identity-expiry-service", () => {
   });
 
   it("should pass correct arguments to hasDrivingLicenceExpired", () => {
-    jest.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
-    const mockDlCheck = jest.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired").mockReturnValue(false);
+    vi.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
+    const mockDlCheck = vi.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired").mockReturnValue(false);
 
     const vcs = [createMockVc("fraudCRI")];
     hasIdentityExpired(vcs, BASE_CONFIGURATION);

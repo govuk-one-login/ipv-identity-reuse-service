@@ -3,7 +3,7 @@ const { defineConfig } = require("eslint/config");
 const globals = require("globals");
 const tsParser = require("@typescript-eslint/parser");
 const typescriptEslint = require("@typescript-eslint/eslint-plugin");
-const jest = require("eslint-plugin-jest");
+const vitest = require("@vitest/eslint-plugin");
 const js = require("@eslint/js");
 
 const { FlatCompat } = require("@eslint/eslintrc");
@@ -68,31 +68,10 @@ module.exports = defineConfig([
   {
     files: ["tests/**/*.test.ts"],
 
-    plugins: {
-      jest,
-    },
-
-    extends: compat.extends("plugin:jest/recommended", "plugin:jest/style"),
+    plugins: ["@vitest"],
 
     rules: {
-      "jest/consistent-test-it": [
-        "error",
-        {
-          fn: "it",
-        },
-      ],
-
-      "jest/prefer-hooks-in-order": ["error"],
-      "jest/prefer-hooks-on-top": ["error"],
-
-      "jest/prefer-lowercase-title": [
-        "error",
-        {
-          ignore: ["describe"],
-        },
-      ],
-
-      "jest/prefer-strict-equal": ["error"],
+      ...vitest.configs.recommended.rules,
     },
   },
 ]);

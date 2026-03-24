@@ -1,5 +1,6 @@
 import { isIdentityCheckCredential } from "../verifiable-credential-jwt";
 import { IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials";
+import { describe, it, expect } from "vitest";
 
 describe("isIdentityCheckCredential", () => {
   it("should return true when vc.type includes IdentityCheckCredential", () => {

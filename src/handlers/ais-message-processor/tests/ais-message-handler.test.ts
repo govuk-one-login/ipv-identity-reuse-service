@@ -15,8 +15,10 @@ import { MetricDimension, MetricName } from "../../../commons/metric-enum";
 import { AisMessage } from "../ais-message";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
+import { describe, beforeAll, afterEach, it, expect, vi } from "vitest";
+import "aws-sdk-client-mock-vitest/extend";
 
-jest.mock("../../../commons/logger");
+vi.mock("../../../commons/logger");
 
 const createTestSQSEvent = <T extends object>(...events: T[]): SQSEvent => ({
   Records: events.map((event) => ({ body: JSON.stringify(event) }) as never as SQSRecord),
@@ -58,10 +60,12 @@ describe("txma-message-processor", () => {
 
     const sqsClientMock = mockClient(SQSClient);
     sqsClientMock.on(SendMessageCommand).resolves({});
+
+    vi.spyOn(console, "log").mockImplementation(vi.fn());
   });
 
   afterEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   it("should accept an array of empty records", async () => {
@@ -112,7 +116,7 @@ describe("txma-message-processor", () => {
   );
 
   it("should only invalidate records which have the intervention code", async () => {
-    const mockFetch = jest.spyOn(global, "fetch").mockResolvedValue({
+    const mockFetch = vi.spyOn(global, "fetch").mockResolvedValue({
       ok: true,
       status: 200,
       json: () => Promise.resolve(""),
@@ -198,7 +202,7 @@ describe("txma-message-processor", () => {
   });
 
   it("should record if the identity does not exist", async () => {
-    const mockFetch = jest.spyOn(global, "fetch").mockResolvedValue({
+    const mockFetch = vi.spyOn(global, "fetch").mockResolvedValue({
       ok: false,
       status: 404,
       json: () => ({ message: "Identity does not exist" }),
@@ -249,7 +253,7 @@ describe("txma-message-processor", () => {
   });
 
   it("should throw an error on identity service error", async () => {
-    const mockFetch = jest.spyOn(global, "fetch").mockResolvedValue({
+    const mockFetch = vi.spyOn(global, "fetch").mockResolvedValue({
       ok: false,
       status: 500,
       json: () => ({ message: "Internal server error" }),
