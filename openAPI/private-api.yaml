@@ -1,0 +1,94 @@
+---
+openapi: 3.0.3
+info:
+  title: "SIS Private – Stored Identity"
+  description: "Private API for retrieving a user’s stored identity record"
+  version: "1.0.0"
+paths:
+  /token:
+    post:
+      summary: "Exchange an authorization code for an access token"
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/TokenRequestBody"
+      responses:
+        200:
+          description: "The access token"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponseBody"
+        400:
+          description: "Bad request - e.g. an malformed request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OAuthError"
+        401:
+          description: "Unauthorized - e.g. bad client authentication"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OAuthError"
+        500:
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OAuthError"
+      x-amazon-apigateway-request-validator: ParamsAndHeaders
+      x-amazon-apigateway-integration:
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TokenFunction.Arn}:live/invocations
+        credentials:
+          Fn::GetAtt: TokenFunctionRestApiRole.Arn
+        passthroughBehavior: never
+        type: AWS_PROXY
+
+components:
+  schemas:
+    TokenRequestBody:
+      type: object
+      properties:
+        grant_type:
+          type: string
+          enum: ["authorization_code"]
+        code:
+          type: string
+    TokenResponseBody:
+      type: object
+      properties:
+        access_token:
+          type: string
+        scope:
+          type: string
+        token_type:
+          type: string
+        expires_in:
+          type: number
+      required:
+        - access_token
+        - scope
+        - token_type
+        - expires_in
+      additionalProperties: false
+    OAuthError:
+      type: object
+      properties:
+        error:
+          type: string
+        error_description:
+          type: string
+      required:
+        - error
+      additionalProperties: false
+
+x-amazon-apigateway-request-validators:
+  ParamsAndHeaders:
+    validateRequestBody: false
+    validateRequestParameters: true
+    validateRequestHeaders: true

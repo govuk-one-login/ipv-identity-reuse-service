@@ -3,7 +3,7 @@ version = 0.1
 [default.deploy.parameters]
 resolve_s3 = true
 region = "eu-west-2"
-confirm_changeset = true
+confirm_changeset = false
 capabilities = "CAPABILITY_NAMED_IAM"
 disable_rollback = true
 parameter_overrides = "VpcStackName=\"vpc\" LogGroupRetentionInDays=\"30\""
