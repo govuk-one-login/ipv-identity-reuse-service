@@ -375,7 +375,7 @@ Resources:
         Sourcemap: true
         SourcesContent: false
         EntryPoints:
-          - src/handlers/authorize/authorize-handler.ts
+          - src/handlers/authorize-handler/authorize-handler.ts
         Format: esm
         Platform: node
         OutExtension:
@@ -534,7 +534,7 @@ Resources:
         Sourcemap: true
         SourcesContent: false
         EntryPoints:
-          - src/handlers/token/token-handler.ts
+          - src/handlers/token-handler/token-handler.ts
         Format: esm
         Platform: node
         OutExtension:
@@ -675,6 +675,183 @@ Resources:
       SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PrivateApiDev}/${ApiStageName}/POST/*"
 
   ################################
+  # POST USER IDENTITY FEATURE  #
+  ################################
+  UserIdentityHandlerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-UserIdentityHandlerFunction"
+      Description: "A lambda function that queues SIS data for processing"
+      Handler: user-identity-handler.handler
+      Role: !GetAtt UserIdentityHandlerFunctionRole.Arn
+      KmsKeyArn: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
+      VpcConfig: !If
+        - UseVpc
+        - SecurityGroupIds:
+            - Fn::ImportValue: !Sub "${VpcStackName}-AWSServicesEndpointSecurityGroupId"
+          SubnetIds:
+            - Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdA"
+            - Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdB"
+        - !Ref "AWS::NoValue"
+      Environment:
+        Variables:
+          METRIC_SERVICE_NAME: "UserIdentityHandlerFunction"
+          EVCS_API_KEY_SECRET_ARN:
+            Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
+          POWERTOOLS_METRICS_NAMESPACE:
+            !If [IsDev, !Sub "${AWS::StackName}-UserIdentityHandlerFunction", "UserIdentityHandlerFunction"]
+          POWERTOOLS_SERVICE_NAME: "UserIdentityHandlerFunction"
+          ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
+          APP_CONFIG_NAME: !Ref ApplicationConfigName
+          APP_CONFIG_APPLICATION: !Ref ApplicationName
+          SQS_AUDIT_EVENT_QUEUE_URL: !Ref AuditEventQueue
+          COMPONENT_ID: !Ref ComponentId
+      CodeSigningConfigArn: !If
+        - UseCodeSigning
+        - !Ref CodeSigningConfigArn
+        - !Ref AWS::NoValue
+      Tags:
+        Product: !Ref ProductTagValue
+        System: !Ref SystemTagValue
+        Environment: !Ref Environment
+        Owner: !Ref OwnerTagValue
+        Source: !Ref SourceTagValue
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        UseNpmCi: True
+        Minify: true
+        Target: es2022
+        Sourcemap: true
+        SourcesContent: false
+        EntryPoints:
+          - src/handlers/user-identity-handler/user-identity-handler.ts
+        Format: esm
+        Platform: node
+        OutExtension:
+          - .js=.mjs
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
+
+  UserIdentityHandlerFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-UserIdentityHandlerFunctionRole"
+      Description: !Sub "The role assumed by ${AWS::StackName}-UserIdentityHandlerFunction"
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+        - Fn::ImportValue: !Sub "${AppConfigStackName}-AppConfigClientPolicyArn"
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+
+  UserIdentityHandlerFunctionPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-UserIdentityHandlerFunctionPolicy"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - kms:Decrypt
+              - kms:GenerateDataKey
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - "secretsmanager:GetSecretValue" #pragma: allowlist secret
+            Resource:
+              - Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
+          - Effect: Allow
+            Action:
+              - sqs:SendMessage
+            Resource: !GetAtt AuditEventQueue.Arn
+      Roles:
+        - !Ref UserIdentityHandlerFunctionRole
+
+  UserIdentityHandlerRestApiRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-UserIdentityHandlerRestApiRole"
+      Description: !Sub "Update User identity Function related permissions for the ${AWS::StackName}-RestApi Gateway IAM role"
+      PermissionsBoundary: !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+
+  UserIdentityHandlerRestApiPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-UserIdentityHandlerRestApiPolicy"
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "lambda:InvokeFunction"
+            Resource:
+              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-UserIdentityHandlerFunction:*"
+      Roles:
+        - !Ref UserIdentityHandlerRestApiRole
+
+  UserIdentityHandlerFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${UserIdentityHandlerFunction}"
+      RetentionInDays: 30
+      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "/aws/lambda/${UserIdentityHandlerFunction}"
+
+  ################################
   # PUBLIC API API GATEWAY       #
   ################################
   PublicApi:
@@ -697,14 +874,6 @@ Resources:
             Location: "openAPI/public-api.yaml"
       Description: "Stored Identity Service Public Authorization API"
       StageName: !Ref ApiStageName
-      # Auth:
-      #   ResourcePolicy:
-      #     IntrinsicVpcWhitelist:
-      #       - !If
-      #         - IsDevOrBuild
-      #         - Fn::ImportValue: !Sub "${VpcStackName}-VpcId"
-      #         - !Ref AWS::NoValue
-      #       - !FindInMap [EnvironmentMap, !Ref Environment, IPVCoreVPCID]
       AccessLogSetting:
         Format: >-
           {
