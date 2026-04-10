@@ -328,6 +328,7 @@ Resources:
   ################################
   # AUTHORIZATION LAMBDA         #
   ################################
+
   AuthorizationFunction:
     Type: AWS::Serverless::Function
     Condition: IsNotProduction
@@ -447,7 +448,7 @@ Resources:
     Condition: IsNotProduction
     Properties:
       RoleName: !Sub "${AWS::StackName}-AuthorizationFunctionRestApiRole"
-      Description: !Sub "Update User identity Function related permissions for the ${AWS::StackName}-RestApi Gateway IAM role" # TODO
+      Description: !Sub "Roles for the AuthorizationFunction"
       PermissionsBoundary: !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -485,9 +486,30 @@ Resources:
       Roles:
         - !Ref AuthorizationFunctionRestApiRole
 
+  AuthorizationFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-AuthorizationFunction"
+      RetentionInDays: 30
+      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "/aws/lambda/${AWS::StackName}-AuthorizationFunction"
+
   ################################
   # AUTHORIZATION LAMBDA         #
   ################################
+
   TokenFunction:
     Type: AWS::Serverless::Function
     Condition: IsNotProduction
@@ -606,7 +628,7 @@ Resources:
     Condition: IsNotProduction
     Properties:
       RoleName: !Sub "${AWS::StackName}-TokenFunctionRestApiRole"
-      Description: !Sub "Update User identity Function related permissions for the ${AWS::StackName}-RestApi Gateway IAM role" # TODO
+      Description: !Sub "Roles for the TokenFunction"
       PermissionsBoundary: !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -644,6 +666,26 @@ Resources:
       Roles:
         - !Ref TokenFunctionRestApiRole
 
+  TokenFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-TokenFunction"
+      RetentionInDays: 30
+      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "/aws/lambda/${AWS::StackName}-TokenFunction"
+
   PrivateApiTokenFunctionResourcePolicy:
     DependsOn: TokenFunctionAliaslive
     Condition: IsNotProduction
@@ -661,7 +703,7 @@ Resources:
 
   PrivateApiDevTokenFunctionResourcePolicy:
     DependsOn: TokenFunctionAliaslive
-    Condition: IsNotProduction
+    Condition: IsDev
     Type: AWS::Lambda::Permission
     Properties:
       FunctionName: !Join
@@ -2458,7 +2500,10 @@ Outputs:
     Description: "URL for the Stored Identity Service Private API"
     Value: !Sub "https://${PrivateApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"
 
-  SisPrivateApiDev:
-    Condition: IsDev
+  SisPrivateApiAcceptanceTest:
+    Condition: IsDevOrBuild
     Description: "URL for the Stored Identity Service Private API (development)"
-    Value: !Sub "https://${PrivateApiDev}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"
+    Value: !If
+      - IsDev
+      - !Sub "https://${PrivateApiDev}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"
+      - !Sub "https://${PrivateApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"

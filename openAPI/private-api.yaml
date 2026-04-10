@@ -1,7 +1,7 @@
 ---
 openapi: 3.0.3
 info:
-  title: "SIS Private – Stored Identity"
+  title: "SIS Private API"
   description: "Private API for retrieving a user’s stored identity record"
   version: "1.0.0"
 paths:

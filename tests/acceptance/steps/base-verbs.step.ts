@@ -2,6 +2,7 @@ import { setDefaultTimeout, Before, defineParameterType } from "@cucumber/cucumb
 import { Response } from "superagent";
 import { randomString } from "../../../shared-test/string-utils";
 import { getDidControllerName, getSigningKeyId } from "./utils/ssm-utils";
+import { AuthorizationResponse, OAuthBadRequest, TokenResponse } from "./utils/auth-api";
 
 export type WorldDefinition = {
   testDidController: string;
@@ -12,6 +13,8 @@ export type WorldDefinition = {
   govukSigninJourneyId: string;
   credentialJwts: string[];
   userIdentityPostResponse?: Response;
+  authorizationResponse?: AuthorizationResponse | OAuthBadRequest;
+  tokenResponse?: TokenResponse | OAuthBadRequest;
 };
 
 setDefaultTimeout(20000);
@@ -29,6 +32,8 @@ Before<WorldDefinition>(async function () {
   this.credentialJwts = [];
   this.testDidController = await getDidControllerName();
   this.keyId = await getSigningKeyId();
+  this.authorizationResponse = undefined;
+  this.tokenResponse = undefined;
 });
 
 function generateRandomTestUserId() {
