@@ -8,6 +8,7 @@ it("should return 302 status code on a successful request", async () => {
       client_id: "sample",
       response_type: "code",
       redirect_uri: "https://api.example.com/callback",
+      state: "test-state",
     } satisfies AuthorizationQueryStringParameters,
   });
 
@@ -16,7 +17,7 @@ it("should return 302 status code on a successful request", async () => {
     statusCode: 302,
     body: "",
     headers: {
-      Location: "https://api.example.com/callback?code=SplxlOBeZQQYbYS6WxSbIA",
+      Location: "https://api.example.com/callback?code=SplxlOBeZQQYbYS6WxSbIA&state=test-state",
     },
   });
 });
@@ -27,6 +28,7 @@ it("should return 302 status code on a successful request and handle URL encoded
       client_id: "sample",
       response_type: "code",
       redirect_uri: "https%3A%2F%2Fapi.example.com%2Fcallback",
+      state: "test-state",
     } satisfies AuthorizationQueryStringParameters,
   });
 
@@ -35,44 +37,8 @@ it("should return 302 status code on a successful request and handle URL encoded
     statusCode: 302,
     body: "",
     headers: {
-      Location: "https://api.example.com/callback?code=SplxlOBeZQQYbYS6WxSbIA",
+      Location: "https://api.example.com/callback?code=SplxlOBeZQQYbYS6WxSbIA&state=test-state",
     },
-  });
-});
-
-it("should return 302 status code on a successful request and include the scope", async () => {
-  const event = createMockAPIGatewayProxyEvent({
-    queryStringParameters: {
-      client_id: "sample",
-      response_type: "code",
-      redirect_uri: "https://api.example.com/callback",
-      scope: "example-scope",
-    } satisfies AuthorizationQueryStringParameters,
-  });
-
-  const response = await handler(event, {} as Context);
-  expect(response).toStrictEqual({
-    statusCode: 302,
-    body: "",
-    headers: {
-      Location: "https://api.example.com/callback?code=SplxlOBeZQQYbYS6WxSbIA&scope=example-scope",
-    },
-  });
-});
-
-it("should reject if the response_type is not code", async () => {
-  const event = createMockAPIGatewayProxyEvent({
-    queryStringParameters: {
-      client_id: "sample",
-      response_type: "raw",
-      redirect_uri: "https://api.example.com/callback",
-    } satisfies AuthorizationQueryStringParameters,
-  });
-
-  const response = await handler(event, {} as Context);
-  expect(response).toStrictEqual({
-    statusCode: 400,
-    body: '{"message":"Request parameter [response_type] must be of type \'code\'"}',
   });
 });
 

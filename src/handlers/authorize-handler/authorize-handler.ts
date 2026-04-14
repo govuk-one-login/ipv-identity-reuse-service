@@ -12,31 +12,17 @@ export type AuthorizationQueryStringParameters = {
   response_type: string;
   redirect_uri: string;
   scope?: string;
+  state: string;
 };
 
 export const handler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
   logger.addContext(context);
 
-  const {
-    redirect_uri: redirectUri,
-    response_type: responseType,
-    scope,
-  } = event.queryStringParameters as AuthorizationQueryStringParameters;
-
-  if (responseType !== "code") {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({
-        message: "Request parameter [response_type] must be of type 'code'",
-      }),
-    };
-  }
+  const { redirect_uri: redirectUri, state } = event.queryStringParameters as AuthorizationQueryStringParameters;
 
   const url = new URL(decodeURIComponent(redirectUri));
   url.searchParams.append("code", "SplxlOBeZQQYbYS6WxSbIA");
-  if (scope) {
-    url.searchParams.append("scope", scope);
-  }
+  url.searchParams.append("state", state);
 
   return {
     statusCode: 302,

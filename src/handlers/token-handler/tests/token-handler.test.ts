@@ -11,7 +11,7 @@ it("should return an error if the content-type is not application/x-www-form-url
   const response = await handler(event, {} as Context);
   expect(response).toStrictEqual({
     statusCode: 400,
-    body: '{"error":"invalid_type","error_description":"\'content-type\' is \'application/json\' but should be \'application/x-www-form-urlencoded\'"}',
+    body: '{"error":"invalid_request","error_description":"\'content-type\' is \'application/json\' but should be \'application/x-www-form-urlencoded\'"}',
   });
 });
 
@@ -22,7 +22,7 @@ it("should return an error if the content-type is unknown", async () => {
   const response = await handler(event, {} as Context);
   expect(response).toStrictEqual({
     statusCode: 400,
-    body: '{"error":"invalid_type","error_description":"\'content-type\' is \'undefined\' but should be \'application/x-www-form-urlencoded\'"}',
+    body: '{"error":"invalid_request","error_description":"\'content-type\' is \'undefined\' but should be \'application/x-www-form-urlencoded\'"}',
   });
 });
 
@@ -35,7 +35,7 @@ it("should return an error if the grant_type is not authorization_code", async (
   const response = await handler(event, {} as Context);
   expect(response).toStrictEqual({
     statusCode: 400,
-    body: '{"error":"invalid_field","error_description":"\'grant_type\' is not supported, must be [authorization_code]"}',
+    body: '{"error":"invalid_grant","error_description":"\'grant_type\' is not supported, must be [authorization_code]"}',
   });
 });
 
@@ -49,7 +49,7 @@ it("should return an error if the code is missing", async () => {
   const response = await handler(event, {} as Context);
   expect(response).toStrictEqual({
     statusCode: 400,
-    body: '{"error":"invalid_field","error_description":"missing field [code]"}',
+    body: '{"error":"invalid_grant","error_description":"missing field [code]"}',
   });
 });
 
@@ -63,7 +63,7 @@ it("should return an error if the code is too short", async () => {
   const response = await handler(event, {} as Context);
   expect(response).toStrictEqual({
     statusCode: 400,
-    body: '{"error":"invalid_field","error_description":"missing field [code]"}',
+    body: '{"error":"invalid_grant","error_description":"missing field [code]"}',
   });
 });
 
@@ -77,7 +77,7 @@ it("should return return a valid token", async () => {
   const response = await handler(event, {} as Context);
   expect(response).toStrictEqual({
     statusCode: 200,
-    body: '{"access_token":"a35b81a7d7927b70ec99270dd2362b88580a28574af812f2c02f56469579186f","scope":"unknown","token_type":"example","expires_in":0}',
+    body: '{"access_token":"a35b81a7d7927b70ec99270dd2362b88580a28574af812f2c02f56469579186f","token_type":"Bearer","expires_in":0}',
   });
 });
 

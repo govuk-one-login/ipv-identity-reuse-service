@@ -10,11 +10,12 @@ export type AuthorizationParams = {
   client_id: string;
   redirect_uri: string;
   scope?: string;
-  state?: string;
+  state: string;
 };
 
 export type AuthorizationResponse = {
-  code: string;
+  origin: string;
+  code: string | null;
 };
 
 export type OAuthBadRequest = {
@@ -42,20 +43,11 @@ export type AwsError = {
   message: string;
 };
 
-export const isOAuthBadRequest = (response: unknown): response is OAuthBadRequest => {
-  return !!response && typeof response === "object" && "error" in response && "error_description" in response;
-};
-
-export const isAuthorizationResponse = (response: unknown): response is AuthorizationResponse => {
-  return !!response && typeof response === "object" && "code" in response;
-};
-
 export const isTokenResponse = (response: unknown): response is TokenResponse => {
   return (
     !!response &&
     typeof response === "object" &&
     "access_token" in response &&
-    "scope" in response &&
     "token_type" in response &&
     "expires_in" in response
   );
@@ -65,6 +57,9 @@ export const isAwsError = (response: unknown): response is AwsError => {
   return !!response && typeof response === "object" && "message" in response;
 };
 
+export const isAuthorizationResponse = (response: unknown): response is AuthorizationResponse =>
+  !!response && typeof response === "object" && "origin" in response && "code" in response;
+
 export const authorize = async (params: AuthorizationParams): Promise<AuthorizationResponse | OAuthBadRequest> => {
   const publicApi = await getCloudFormationOutput(CloudFormationOutputs.SisPublicApi);
 
@@ -73,12 +68,15 @@ export const authorize = async (params: AuthorizationParams): Promise<Authorizat
     return { error: "error", error_description: response.body.message };
   }
 
-  const code = /https:.*code=(.*)/.exec(response.header["location"]);
-  if (code) {
-    return { code: code[1] };
-  } else {
-    return { error: "invalid", error_description: "Invalid code returned" };
+  if (response.statusCode === 302) {
+    const { origin, search } = new URL(response.header["location"]);
+    return {
+      origin,
+      code: new URLSearchParams(search).get("code"),
+    };
   }
+
+  return response.body;
 };
 
 export const token = async (params: TokenRequest): Promise<TokenResponse | OAuthBadRequest> => {

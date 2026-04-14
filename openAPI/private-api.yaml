@@ -49,30 +49,21 @@ paths:
         passthroughBehavior: never
         type: AWS_PROXY
   /user-identity:
-    post:
+    get:
       summary: "Retrieve the user’s stored identity record"
       description: >
-        Returns the signed Stored Identity JWT and associated metadata
-        indicating whether the record is still valid, whether it has expired,
-        and the stored vector of trust (VOT).
+        Returns the signed Stored Identity JWT and stored vector of trust (VOT).
       security:
         - bearerAuth: []
       tags:
         - Stored Identity
-      requestBody:
-        description: User Input containing Vtr and govuk signin ID.
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UserIdentityInput"
       responses:
         "200":
           description: "Stored identity record returned"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/StoredIdentityResponse"
+                $ref: "#/components/schemas/UserIdentityDataType"
         "401":
           description: "Unauthorized – e.g. missing or invalid access token"
           content:
@@ -81,12 +72,6 @@ paths:
                 $ref: "#/components/schemas/OAuthError"
         "403":
           description: "Forbidden – e.g. expired access token"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/OAuthError"
-        "404":
-          description: "Not Found – No Stored Identity exists for this user or Stored Identity has been invalidated"
           content:
             application/json:
               schema:
@@ -145,54 +130,6 @@ components:
       required:
         - error
       additionalProperties: false
-    UserIdentityInput:
-      description: |-
-        The input parameters passed into the request .
-      type: object
-      properties:
-        vtr:
-          type: array
-          items:
-            type: string
-            enum:
-              - P1
-              - P2
-              - P3
-              - P4
-        govukSigninJourneyId:
-          type: string
-          description: "Unique journey identifier"
-      required:
-        - vtr
-        - govukSigninJourneyId
-    StoredIdentityResponse:
-      type: object
-      properties:
-        content:
-          $ref: "#/components/schemas/UserIdentityDataType"
-          description: "The expanded body of the signed Stored Identity JWT"
-        isValid:
-          type: boolean
-          description: "Indicates whether SIS considers the stored record still usable"
-        kidValid:
-          type: boolean
-          description: "Indicates whether kid values are verified"
-        signatureValid:
-          type: boolean
-          description: "Indicates whether the kid was valid and signature was verified successfully "
-        expired:
-          type: boolean
-          description: "Indicates whether SIS considers the stored record past its expiry window"
-        vot:
-          type: string
-          description: "The vector of trust that was stored with the record"
-      required:
-        - content
-        - isValid
-        - expired
-        - vot
-        - kidValid
-        - signatureValid
     UserIdentityDataType:
       type: object
       properties:

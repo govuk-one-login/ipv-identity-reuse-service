@@ -7,7 +7,7 @@ info:
 paths:
   /authorize:
     get:
-      summary: Authorization Endpoint
+      summary: Get an authorization grant
       description: |
         The authorization endpoint is used to interact with the resource owner
         and obtain an authorization grant.
@@ -22,8 +22,6 @@ paths:
       responses:
         "302":
           $ref: "#/components/responses/AuthorizationRedirect"
-        "400":
-          $ref: "#/components/responses/OAuthBadRequest"
       x-amazon-apigateway-request-validator: ALL
       x-amazon-apigateway-integration:
         httpMethod: POST
@@ -77,7 +75,7 @@ components:
     StateParam:
       in: query
       name: state
-      required: false
+      required: true
       description: |
         This value is used to validate the response sent to the redirect URI.  This value will be
         returned to the client in the authentication response.
@@ -95,21 +93,6 @@ components:
             type: string
             format: uri
             example: https://orch.stubs.account.gov.uk/callback?code=SplxlOBeZQQYbYS6WxSbIA&state=xyz
-    OAuthBadRequest:
-      description: |
-        Invalid Request. The request is missing a required parameter, includes an
-        invalid parameter value, or is otherwise malformed (e.g., invalid `client_id`).
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: invalid_request
-              error_description:
-                type: string
-                example: The request is missing a required parameter 'client_id'.
 
 x-amazon-apigateway-request-validators:
   ALL:

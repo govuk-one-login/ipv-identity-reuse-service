@@ -9,7 +9,7 @@ import {
   TokenGrantType,
 } from "./utils/auth-api";
 import assert from "node:assert";
-import { sisPostUserIdentityHandler } from "./utils/sis-api";
+import { sisGetUserIdentityHandler } from "./utils/sis-api";
 
 Given<WorldDefinition>("I have a user profile", function () {
   // Do nothing, this is currently a placeholder with a verb to make it clear
@@ -17,18 +17,23 @@ Given<WorldDefinition>("I have a user profile", function () {
   // user credentials.
 });
 
-When<WorldDefinition>("I call the authorize endpoint", async function () {
+When<WorldDefinition>("I call the authorize endpoint, to redirect to {string}", async function (redirectUri: string) {
   this.authorizationResponse = await authorize({
     client_id: "acceptance-tests",
+    state: "acceptance-tests",
     response_type: AuthorizationResponseType.code,
-    redirect_uri: "https://api.example.com",
+    redirect_uri: redirectUri,
   });
 });
 
-Then<WorldDefinition>("I will be issued with an authorization code and redirected to the endpoint", function () {
-  assert.ok(isAuthorizationResponse(this.authorizationResponse));
-  assert.ok(this.authorizationResponse.code);
-});
+Then<WorldDefinition>(
+  "I will be issued with an authorization code and redirected to {string}",
+  function (redirectUri: string) {
+    assert.ok(isAuthorizationResponse(this.authorizationResponse));
+    assert.ok(this.authorizationResponse.code);
+    assert.equal(this.authorizationResponse.origin, redirectUri);
+  }
+);
 
 When<WorldDefinition>("I call the token endpoint with the authorization code", async function () {
   assert.ok(isAuthorizationResponse(this.authorizationResponse));
@@ -43,12 +48,13 @@ When<WorldDefinition>("I call the token endpoint with the authorization code", a
 Then<WorldDefinition>("I will be issued with an authorization token", function () {
   assert.ok(isTokenResponse(this.tokenResponse));
   assert.ok(this.tokenResponse.access_token);
+  assert.equal(this.tokenResponse.token_type, "Bearer");
 });
 
 When<WorldDefinition>("I call the user-identity endpoint", async function () {
   assert.ok(isTokenResponse(this.tokenResponse));
 
-  this.userIdentityPostResponse = await sisPostUserIdentityHandler(
+  this.userIdentityPostResponse = await sisGetUserIdentityHandler(
     {
       vtr: this.requestedVtr,
       govukSigninJourneyId: this.govukSigninJourneyId,
@@ -59,5 +65,11 @@ When<WorldDefinition>("I call the user-identity endpoint", async function () {
 
 Then<WorldDefinition>("I will be issued with my user-identity", function () {
   assert.ok(this.userIdentityPostResponse);
-  assert.deepEqual(this.userIdentityPostResponse.body, {});
+  assert.deepEqual(this.userIdentityPostResponse.body, {
+    sub: "urn:fdc:gov.uk:2022:TEST_USER-7B96ScRg2a-k7fN-u-sZbEjbB3hQ6gf6SM0x",
+    iss: "http://api.example.com",
+    credentials: ["sample-credential-id"],
+    vot: "P2",
+    vtm: "https://oidc.account.gov.uk/trustmark",
+  });
 });

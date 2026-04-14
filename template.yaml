@@ -127,6 +127,7 @@ Mappings:
       messageQueueKeyArn: "unused"
       ApiRateLimit: 5 # allowed requests per second
       ApiBurstLimit: 5 # requests the API can handle concurrently
+      DevOrchestrationVPCID: vpc-0ef7e5d033cabd99f
       PerformanceTestApiRateLimit: 0 # not used in this environment
       PerformanceTestApiBurstLimit: 0 # not used in this environment
       IPVCoreVPCID: none # Not used in dev
@@ -139,6 +140,7 @@ Mappings:
       messageQueueKeyArn: "unused"
       ApiRateLimit: 5 # allowed requests per second
       ApiBurstLimit: 5 # requests the API can handle concurrently
+      DevOrchestrationVPCID: vpc-0ef7e5d033cabd99f
       PerformanceTestApiRateLimit: 0 # not used in this environment
       PerformanceTestApiBurstLimit: 0 # not used in this environment
       IPVCoreVPCID: none # Not used in dev
@@ -151,6 +153,7 @@ Mappings:
       messageQueueKeyArn: "unused"
       ApiRateLimit: 5 # allowed requests per second
       ApiBurstLimit: 5 # requests the API can handle concurrently
+      DevOrchestrationVPCID: vpc-00e8a85efc283fe6f
       PerformanceTestApiRateLimit: 2000 # allowed requests per second
       PerformanceTestApiBurstLimit: 2000 # requests the API can handle concurrently
       IPVCoreVPCID: vpc-02e4eb3b0cffc08b0 # This is performance testing VPC ID
@@ -1010,6 +1013,10 @@ Resources:
             - !If
               - IsDevOrBuild
               - Fn::ImportValue: !Sub "${VpcStackName}-VpcId"
+              - !Ref AWS::NoValue
+            - !If
+              - IsDevOrBuild
+              - !FindInMap [EnvironmentMap, !Ref Environment, DevOrchestrationVPCID]
               - !Ref AWS::NoValue
             - !FindInMap [EnvironmentMap, !Ref Environment, IPVCoreVPCID]
       AccessLogSetting:

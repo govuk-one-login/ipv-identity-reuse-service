@@ -13,7 +13,7 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
     return {
       statusCode: 400,
       body: JSON.stringify({
-        error: "invalid_type",
+        error: "invalid_request",
         error_description: `'content-type' is '${event.headers["content-type"]}' but should be 'application/x-www-form-urlencoded'`,
       }),
     };
@@ -24,7 +24,7 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
     return {
       statusCode: 400,
       body: JSON.stringify({
-        error: "invalid_field",
+        error: "invalid_grant",
         error_description: "'grant_type' is not supported, must be [authorization_code]",
       }),
     };
@@ -35,7 +35,7 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
     return {
       statusCode: 400,
       body: JSON.stringify({
-        error: "invalid_field",
+        error: "invalid_grant",
         error_description: `missing field [code]`,
       }),
     };
@@ -45,8 +45,7 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
     statusCode: 200,
     body: JSON.stringify({
       access_token: createHash("sha256").update(code).digest("hex"),
-      scope: "unknown",
-      token_type: "example",
+      token_type: "Bearer",
       expires_in: 0,
     }),
   };

@@ -21,15 +21,13 @@ export async function sisPostUserIdentity(data: SisPostBody, bearerToken?: strin
   return await requestOperation;
 }
 
-export async function sisPostUserIdentityHandler(data: SisPostBody, bearerToken?: string): Promise<Response> {
+export async function sisGetUserIdentityHandler(data: SisPostBody, bearerToken?: string): Promise<Response> {
   const requestOperation = request(await getCloudFormationOutput(CloudFormationOutputs.SisPrivateApiAcceptanceTest))
-    .post("/user-identity")
-    .send(JSON.stringify(data))
-    .set("Accept", "*/*")
-    .set("Content-Type", "application/json");
+    .get("/user-identity")
+    .set("Accept", "*/*");
 
   if (bearerToken) {
-    requestOperation.set("Authorization", bearerToken);
+    requestOperation.set("Authorization", `Bearer ${bearerToken}`);
   }
 
   return await requestOperation;
