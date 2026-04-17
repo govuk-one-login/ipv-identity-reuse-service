@@ -127,6 +127,7 @@ Mappings:
       messageQueueKeyArn: "unused"
       ApiRateLimit: 5 # allowed requests per second
       ApiBurstLimit: 5 # requests the API can handle concurrently
+      DevOrchestrationVPCID: vpc-0ef7e5d033cabd99f
       PerformanceTestApiRateLimit: 0 # not used in this environment
       PerformanceTestApiBurstLimit: 0 # not used in this environment
       IPVCoreVPCID: none # Not used in dev
@@ -139,6 +140,7 @@ Mappings:
       messageQueueKeyArn: "unused"
       ApiRateLimit: 5 # allowed requests per second
       ApiBurstLimit: 5 # requests the API can handle concurrently
+      DevOrchestrationVPCID: vpc-0ef7e5d033cabd99f
       PerformanceTestApiRateLimit: 0 # not used in this environment
       PerformanceTestApiBurstLimit: 0 # not used in this environment
       IPVCoreVPCID: none # Not used in dev
@@ -151,6 +153,7 @@ Mappings:
       messageQueueKeyArn: "unused"
       ApiRateLimit: 5 # allowed requests per second
       ApiBurstLimit: 5 # requests the API can handle concurrently
+      DevOrchestrationVPCID: vpc-00e8a85efc283fe6f
       PerformanceTestApiRateLimit: 2000 # allowed requests per second
       PerformanceTestApiBurstLimit: 2000 # requests the API can handle concurrently
       IPVCoreVPCID: vpc-02e4eb3b0cffc08b0 # This is performance testing VPC ID
@@ -237,6 +240,13 @@ Conditions:
       - !Ref Environment
       - "build"
 
+  IsNotProduction:
+    Fn::Or:
+      - Fn::Equals: [!Ref Environment, "local"]
+      - Fn::Equals: [!Ref Environment, "dev"]
+      - Fn::Equals: [!Ref Environment, "build"]
+      - Fn::Equals: [!Ref Environment, "staging"]
+
   UseVpc:
     Fn::Not:
       - Fn::Equals: [!Ref VpcStackName, "none"]
@@ -318,6 +328,854 @@ Globals:
           - - !Ref "AWS::NoValue"
 
 Resources:
+  ################################
+  # AUTHORIZATION LAMBDA         #
+  ################################
+
+  AuthorizationFunction:
+    Type: AWS::Serverless::Function
+    Condition: IsNotProduction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-AuthorizationFunction"
+      Description: "A lambda function that performs OAuth"
+      Handler: authorize-handler.handler
+      Role: !GetAtt AuthorizationFunctionRole.Arn
+      KmsKeyArn: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
+      VpcConfig: !If
+        - UseVpc
+        - SecurityGroupIds:
+            - Fn::ImportValue: !Sub "${VpcStackName}-AWSServicesEndpointSecurityGroupId"
+          SubnetIds:
+            - Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdA"
+            - Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdB"
+        - !Ref "AWS::NoValue"
+      Environment:
+        Variables:
+          METRIC_SERVICE_NAME: "AuthorizationFunction"
+          POWERTOOLS_METRICS_NAMESPACE:
+            !If [IsDev, !Sub "${AWS::StackName}-AuthorizationFunction", "AuthorizationFunction"]
+          POWERTOOLS_SERVICE_NAME: "AuthorizationFunction"
+          ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
+          APP_CONFIG_NAME: !Ref ApplicationConfigName
+          APP_CONFIG_APPLICATION: !Ref ApplicationName
+          SQS_AUDIT_EVENT_QUEUE_URL: !Ref AuditEventQueue
+          COMPONENT_ID: !Ref ComponentId
+      CodeSigningConfigArn: !If
+        - UseCodeSigning
+        - !Ref CodeSigningConfigArn
+        - !Ref AWS::NoValue
+      Tags:
+        Product: !Ref ProductTagValue
+        System: !Ref SystemTagValue
+        Environment: !Ref Environment
+        Owner: !Ref OwnerTagValue
+        Source: !Ref SourceTagValue
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        UseNpmCi: True
+        Minify: true
+        Target: es2022
+        Sourcemap: true
+        SourcesContent: false
+        EntryPoints:
+          - src/handlers/authorize-handler/authorize-handler.ts
+        Format: esm
+        Platform: node
+        OutExtension:
+          - .js=.mjs
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
+
+  AuthorizationFunctionRole:
+    Type: AWS::IAM::Role
+    Condition: IsNotProduction
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-AuthorizationFunctionRole"
+      Description: !Sub "The role assumed by ${AWS::StackName}-AuthorizationFunction"
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+        - Fn::ImportValue: !Sub "${AppConfigStackName}-AppConfigClientPolicyArn"
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+
+  AuthorizationFunctionPolicy:
+    Type: AWS::IAM::Policy
+    Condition: IsNotProduction
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-AuthorizationFunctionPolicy"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - kms:Decrypt
+              - kms:GenerateDataKey
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - "secretsmanager:GetSecretValue" #pragma: allowlist secret
+            Resource:
+              - Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
+          - Effect: Allow
+            Action:
+              - sqs:SendMessage
+            Resource: !GetAtt AuditEventQueue.Arn
+      Roles:
+        - !Ref AuthorizationFunctionRole
+
+  AuthorizationFunctionRestApiRole:
+    Type: AWS::IAM::Role
+    Condition: IsNotProduction
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-AuthorizationFunctionRestApiRole"
+      Description: !Sub "Roles for the AuthorizationFunction"
+      PermissionsBoundary: !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+
+  AuthorizationFunctionRestApiPolicy:
+    Type: AWS::IAM::Policy
+    Condition: IsNotProduction
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-AuthorizationFunctionRestApiPolicy"
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "lambda:InvokeFunction"
+            Resource:
+              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-AuthorizationFunction:*"
+      Roles:
+        - !Ref AuthorizationFunctionRestApiRole
+
+  AuthorizationFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-AuthorizationFunction"
+      RetentionInDays: 30
+      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "/aws/lambda/${AWS::StackName}-AuthorizationFunction"
+
+  ################################
+  # AUTHORIZATION LAMBDA         #
+  ################################
+
+  TokenFunction:
+    Type: AWS::Serverless::Function
+    Condition: IsNotProduction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-TokenFunction"
+      Description: "A lambda function that performs OAuth"
+      Handler: token-handler.handler
+      Role: !GetAtt TokenFunctionRole.Arn
+      KmsKeyArn: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
+      VpcConfig: !If
+        - UseVpc
+        - SecurityGroupIds:
+            - Fn::ImportValue: !Sub "${VpcStackName}-AWSServicesEndpointSecurityGroupId"
+          SubnetIds:
+            - Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdA"
+            - Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdB"
+        - !Ref "AWS::NoValue"
+      Environment:
+        Variables:
+          METRIC_SERVICE_NAME: "TokenFunction"
+          POWERTOOLS_METRICS_NAMESPACE: !If [IsDev, !Sub "${AWS::StackName}-TokenFunction", "TokenFunction"]
+          POWERTOOLS_SERVICE_NAME: "TokenFunction"
+          ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
+          APP_CONFIG_NAME: !Ref ApplicationConfigName
+          APP_CONFIG_APPLICATION: !Ref ApplicationName
+          SQS_AUDIT_EVENT_QUEUE_URL: !Ref AuditEventQueue
+          COMPONENT_ID: !Ref ComponentId
+      CodeSigningConfigArn: !If
+        - UseCodeSigning
+        - !Ref CodeSigningConfigArn
+        - !Ref AWS::NoValue
+      Tags:
+        Product: !Ref ProductTagValue
+        System: !Ref SystemTagValue
+        Environment: !Ref Environment
+        Owner: !Ref OwnerTagValue
+        Source: !Ref SourceTagValue
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        UseNpmCi: True
+        Minify: true
+        Target: es2022
+        Sourcemap: true
+        SourcesContent: false
+        EntryPoints:
+          - src/handlers/token-handler/token-handler.ts
+        Format: esm
+        Platform: node
+        OutExtension:
+          - .js=.mjs
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
+
+  TokenFunctionRole:
+    Type: AWS::IAM::Role
+    Condition: IsNotProduction
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-TokenFunctionRole"
+      Description: !Sub "The role assumed by ${AWS::StackName}-TokenFunction"
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+        - Fn::ImportValue: !Sub "${AppConfigStackName}-AppConfigClientPolicyArn"
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+
+  TokenFunctionPolicy:
+    Type: AWS::IAM::Policy
+    Condition: IsNotProduction
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-TokenFunctionPolicy"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - kms:Decrypt
+              - kms:GenerateDataKey
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - "secretsmanager:GetSecretValue" #pragma: allowlist secret
+            Resource:
+              - Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
+          - Effect: Allow
+            Action:
+              - sqs:SendMessage
+            Resource: !GetAtt AuditEventQueue.Arn
+      Roles:
+        - !Ref TokenFunctionRole
+
+  TokenFunctionRestApiRole:
+    Type: AWS::IAM::Role
+    Condition: IsNotProduction
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-TokenFunctionRestApiRole"
+      Description: !Sub "Roles for the TokenFunction"
+      PermissionsBoundary: !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+
+  TokenFunctionRestApiPolicy:
+    Type: AWS::IAM::Policy
+    Condition: IsNotProduction
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-TokenFunctionRestApiPolicy"
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "lambda:InvokeFunction"
+            Resource:
+              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-TokenFunction:*"
+      Roles:
+        - !Ref TokenFunctionRestApiRole
+
+  TokenFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-TokenFunction"
+      RetentionInDays: 30
+      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "/aws/lambda/${AWS::StackName}-TokenFunction"
+
+  PrivateApiTokenFunctionResourcePolicy:
+    DependsOn: TokenFunctionAliaslive
+    Condition: IsNotProduction
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Join
+        - ":"
+        - - "function"
+          - !Select [6, !Split [":", !GetAtt TokenFunction.Arn]]
+          - "live"
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PrivateApi}/${ApiStageName}/POST/*"
+
+  PrivateApiDevTokenFunctionResourcePolicy:
+    DependsOn: TokenFunctionAliaslive
+    Condition: IsDev
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Join
+        - ":"
+        - - "function"
+          - !Select [6, !Split [":", !GetAtt TokenFunction.Arn]]
+          - "live"
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PrivateApiDev}/${ApiStageName}/POST/*"
+
+  ################################
+  # POST USER IDENTITY FEATURE  #
+  ################################
+  UserIdentityHandlerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-UserIdentityHandlerFunction"
+      Description: "A lambda function that queues SIS data for processing"
+      Handler: user-identity-handler.handler
+      Role: !GetAtt UserIdentityHandlerFunctionRole.Arn
+      KmsKeyArn: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
+      VpcConfig: !If
+        - UseVpc
+        - SecurityGroupIds:
+            - Fn::ImportValue: !Sub "${VpcStackName}-AWSServicesEndpointSecurityGroupId"
+          SubnetIds:
+            - Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdA"
+            - Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdB"
+        - !Ref "AWS::NoValue"
+      Environment:
+        Variables:
+          METRIC_SERVICE_NAME: "UserIdentityHandlerFunction"
+          EVCS_API_KEY_SECRET_ARN:
+            Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
+          POWERTOOLS_METRICS_NAMESPACE:
+            !If [IsDev, !Sub "${AWS::StackName}-UserIdentityHandlerFunction", "UserIdentityHandlerFunction"]
+          POWERTOOLS_SERVICE_NAME: "UserIdentityHandlerFunction"
+          ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
+          APP_CONFIG_NAME: !Ref ApplicationConfigName
+          APP_CONFIG_APPLICATION: !Ref ApplicationName
+          SQS_AUDIT_EVENT_QUEUE_URL: !Ref AuditEventQueue
+          COMPONENT_ID: !Ref ComponentId
+      CodeSigningConfigArn: !If
+        - UseCodeSigning
+        - !Ref CodeSigningConfigArn
+        - !Ref AWS::NoValue
+      Tags:
+        Product: !Ref ProductTagValue
+        System: !Ref SystemTagValue
+        Environment: !Ref Environment
+        Owner: !Ref OwnerTagValue
+        Source: !Ref SourceTagValue
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        UseNpmCi: True
+        Minify: true
+        Target: es2022
+        Sourcemap: true
+        SourcesContent: false
+        EntryPoints:
+          - src/handlers/user-identity-handler/user-identity-handler.ts
+        Format: esm
+        Platform: node
+        OutExtension:
+          - .js=.mjs
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
+
+  UserIdentityHandlerFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-UserIdentityHandlerFunctionRole"
+      Description: !Sub "The role assumed by ${AWS::StackName}-UserIdentityHandlerFunction"
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+        - Fn::ImportValue: !Sub "${AppConfigStackName}-AppConfigClientPolicyArn"
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+
+  UserIdentityHandlerFunctionPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-UserIdentityHandlerFunctionPolicy"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - kms:Decrypt
+              - kms:GenerateDataKey
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - "secretsmanager:GetSecretValue" #pragma: allowlist secret
+            Resource:
+              - Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
+          - Effect: Allow
+            Action:
+              - sqs:SendMessage
+            Resource: !GetAtt AuditEventQueue.Arn
+      Roles:
+        - !Ref UserIdentityHandlerFunctionRole
+
+  UserIdentityHandlerRestApiRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-UserIdentityHandlerRestApiRole"
+      Description: !Sub "Update User identity Function related permissions for the ${AWS::StackName}-RestApi Gateway IAM role"
+      PermissionsBoundary: !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+
+  UserIdentityHandlerRestApiPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-UserIdentityHandlerRestApiPolicy"
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "lambda:InvokeFunction"
+            Resource:
+              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-UserIdentityHandlerFunction:*"
+      Roles:
+        - !Ref UserIdentityHandlerRestApiRole
+
+  UserIdentityHandlerFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${UserIdentityHandlerFunction}"
+      RetentionInDays: 30
+      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "/aws/lambda/${UserIdentityHandlerFunction}"
+
+  ################################
+  # PUBLIC API API GATEWAY       #
+  ################################
+  PublicApi:
+    Type: AWS::Serverless::Api
+    Condition: IsNotProduction
+    Properties:
+      # checkov:skip=CKV_AWS_120: API Gateway caching not enabled
+      Name: !Sub "${AWS::StackName}-PublicApi"
+      AlwaysDeploy: true
+      OpenApiVersion: 3.0.3
+      PropagateTags: true
+      DefinitionBody:
+        openapi: "3.0.3" # workaround to get `sam validate` to work
+        paths: # workaround to get `sam validate` to work
+          /never-created:
+            options: {} # workaround to get `sam validate` to work
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: "openAPI/public-api.yaml"
+      Description: "Stored Identity Service Public Authorization API"
+      StageName: !Ref ApiStageName
+      AccessLogSetting:
+        Format: >-
+          {
+          "requestId": "$context.requestId",
+          "requestTime": "$context.requestTime",
+          "requestTimeEpoch": "$context.requestTimeEpoch",
+          "httpMethod": "$context.httpMethod",
+          "domainName": "$context.domainName",
+          "path": "$context.path",
+          "routeKey": "$context.routeKey",
+          "protocol": "$context.protocol",
+          "status": "$context.status",
+          "responseLength": "$context.responseLength",
+          "responseLatency": "$context.responseLatency",
+          "authorizerLatency": "$context.authorizer.latency",
+          "integrationStatus": "$context.integrationStatus",
+          "integrationLatency": "$context.integrationLatency",
+          "integrationErrorMessage": "$context.integrationErrorMessage",
+          "errorMessage": "$context.error.message",
+          "errorResponseType": "$context.error.responseType",
+          "validationErrorString": "$context.error.validationErrorString",
+          "xrayTraceId": "$context.xrayTraceId",
+          "apiKeyId": "$context.identity.apiKeyId"
+          }
+        DestinationArn: !GetAtt PublicAPIGatewayAccessLogGroup.Arn
+      CacheClusterEnabled: false
+      TracingEnabled: true
+      MethodSettings:
+        - MetricsEnabled: true
+          LoggingLevel: INFO
+          ResourcePath: /*
+          HttpMethod: "*"
+      EndpointConfiguration:
+        Type: REGIONAL
+      Tags:
+        CheckovRulesToSkip: CKV_AWS_120
+        Product: !Ref ProductTagValue
+        System: !Ref SystemTagValue
+        Environment: !Ref Environment
+        Owner: !Ref OwnerTagValue
+        Source: !Ref SourceTagValue
+        FMSRegionalPolicy: false
+        CustomPolicy: idpublicapi
+
+  PublicAPIGatewayAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: IsNotProduction
+    Properties:
+      LogGroupName: !Sub "/aws/apigateway/${AWS::StackName}-PublicApi/${ApiStageName}"
+      RetentionInDays: 30
+      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "/aws/apigateway/${AWS::StackName}-PublicApi/${ApiStageName}"
+
+  ################################
+  # PRIVATE API API GATEWAY       #
+  ################################
+  PrivateApi:
+    Type: AWS::Serverless::Api
+    Condition: IsNotProduction
+    Properties:
+      # checkov:skip=CKV_AWS_120: API Gateway caching not enabled
+      Name: !Sub "${AWS::StackName}-PrivateApi"
+      AlwaysDeploy: true
+      OpenApiVersion: 3.0.3
+      PropagateTags: true
+      DefinitionBody:
+        openapi: "3.0.3" # workaround to get `sam validate` to work
+        paths: # workaround to get `sam validate` to work
+          /never-created:
+            options: {} # workaround to get `sam validate` to work
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: "openAPI/private-api.yaml"
+      Description: "Stored Identity Service Private API"
+      StageName: !Ref ApiStageName
+      Auth:
+        ResourcePolicy:
+          IntrinsicVpcWhitelist:
+            - !If
+              - IsDevOrBuild
+              - Fn::ImportValue: !Sub "${VpcStackName}-VpcId"
+              - !Ref AWS::NoValue
+            - !If
+              - IsDevOrBuild
+              - !FindInMap [EnvironmentMap, !Ref Environment, DevOrchestrationVPCID]
+              - !Ref AWS::NoValue
+            - !FindInMap [EnvironmentMap, !Ref Environment, IPVCoreVPCID]
+      AccessLogSetting:
+        Format: >-
+          {
+          "requestId": "$context.requestId",
+          "requestTime": "$context.requestTime",
+          "requestTimeEpoch": "$context.requestTimeEpoch",
+          "httpMethod": "$context.httpMethod",
+          "domainName": "$context.domainName",
+          "path": "$context.path",
+          "routeKey": "$context.routeKey",
+          "protocol": "$context.protocol",
+          "status": "$context.status",
+          "responseLength": "$context.responseLength",
+          "responseLatency": "$context.responseLatency",
+          "authorizerLatency": "$context.authorizer.latency",
+          "integrationStatus": "$context.integrationStatus",
+          "integrationLatency": "$context.integrationLatency",
+          "integrationErrorMessage": "$context.integrationErrorMessage",
+          "errorMessage": "$context.error.message",
+          "errorResponseType": "$context.error.responseType",
+          "validationErrorString": "$context.error.validationErrorString",
+          "xrayTraceId": "$context.xrayTraceId",
+          "apiKeyId": "$context.identity.apiKeyId"
+          }
+        DestinationArn: !GetAtt PrivateAPIAccessLogGroup.Arn
+      CacheClusterEnabled: false
+      TracingEnabled: true
+      MethodSettings:
+        - MetricsEnabled: true
+          LoggingLevel: INFO
+          ResourcePath: /*
+          HttpMethod: "*"
+      EndpointConfiguration:
+        Type: PRIVATE
+        VpcEndpointIds: !If
+          - IsDev
+          - []
+          - !Split [",", !FindInMap [EnvironmentMap, !Ref Environment, UniqueVPCEndpointIDs]]
+      Tags:
+        CheckovRulesToSkip: CKV_AWS_120
+        Product: !Ref ProductTagValue
+        System: !Ref SystemTagValue
+        Environment: !Ref Environment
+        Owner: !Ref OwnerTagValue
+        Source: !Ref SourceTagValue
+        FMSRegionalPolicy: false
+        CustomPolicy: idprivateapi
+
+  PrivateAPIAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: IsNotProduction
+    Properties:
+      LogGroupName: !Sub "/aws/apigateway/${AWS::StackName}-PrivateApi/${ApiStageName}"
+      RetentionInDays: 30
+      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "/aws/apigateway/${AWS::StackName}-PrivateApi/${ApiStageName}"
+
+  ################################
+  # PRIVATE API API GATEWAY       #
+  ################################
+  PrivateApiDev:
+    Type: AWS::Serverless::Api
+    Condition: IsDev
+    Properties:
+      # checkov:skip=CKV_AWS_120: API Gateway caching not enabled
+      Name: !Sub "${AWS::StackName}-PrivateApiDev"
+      AlwaysDeploy: true
+      OpenApiVersion: 3.0.3
+      PropagateTags: true
+      DefinitionBody:
+        openapi: "3.0.3" # workaround to get `sam validate` to work
+        paths: # workaround to get `sam validate` to work
+          /never-created:
+            options: {} # workaround to get `sam validate` to work
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: "openAPI/private-api.yaml"
+      Description: "Stored Identity Service Private API (development)"
+      StageName: !Ref ApiStageName
+      AccessLogSetting:
+        Format: >-
+          {
+          "requestId": "$context.requestId",
+          "requestTime": "$context.requestTime",
+          "requestTimeEpoch": "$context.requestTimeEpoch",
+          "httpMethod": "$context.httpMethod",
+          "domainName": "$context.domainName",
+          "path": "$context.path",
+          "routeKey": "$context.routeKey",
+          "protocol": "$context.protocol",
+          "status": "$context.status",
+          "responseLength": "$context.responseLength",
+          "responseLatency": "$context.responseLatency",
+          "authorizerLatency": "$context.authorizer.latency",
+          "integrationStatus": "$context.integrationStatus",
+          "integrationLatency": "$context.integrationLatency",
+          "integrationErrorMessage": "$context.integrationErrorMessage",
+          "errorMessage": "$context.error.message",
+          "errorResponseType": "$context.error.responseType",
+          "validationErrorString": "$context.error.validationErrorString",
+          "xrayTraceId": "$context.xrayTraceId",
+          "apiKeyId": "$context.identity.apiKeyId"
+          }
+        DestinationArn: !GetAtt PrivateApiDevAccessLogGroup.Arn
+      CacheClusterEnabled: false
+      TracingEnabled: true
+      MethodSettings:
+        - MetricsEnabled: true
+          LoggingLevel: INFO
+          ResourcePath: /*
+          HttpMethod: "*"
+      EndpointConfiguration:
+        Type: REGIONAL
+      Tags:
+        CheckovRulesToSkip: CKV_AWS_120
+        Product: !Ref ProductTagValue
+        System: !Ref SystemTagValue
+        Environment: !Ref Environment
+        Owner: !Ref OwnerTagValue
+        Source: !Ref SourceTagValue
+        FMSRegionalPolicy: false
+        CustomPolicy: idprivateapiDev
+
+  PrivateApiDevAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: IsDev
+    Properties:
+      LogGroupName: !Sub "/aws/apigateway/${AWS::StackName}-PrivateApiDev/${ApiStageName}"
+      RetentionInDays: 30
+      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "/aws/apigateway/${AWS::StackName}-PrivateApiDev/${ApiStageName}"
+
   ################################
   # POST USER IDENTITY FEATURE  #
   ################################
@@ -447,7 +1305,7 @@ Resources:
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
       SourceAccount: !Ref AWS::AccountId
-      SourceArn: !Sub "arn:aws:apigateway:${AWS::Region}::/restapis/${RestApi}/${ApiStageName}"
+      SourceArn: !Sub "arn:aws:apigateway:${AWS::Region}::/restapis/${DevPrivateRestApi}/${ApiStageName}"
 
   PrivateGatewayUserIdentityFunctionResourcePolicy:
     DependsOn: UserIdentityFunctionAliaslive
@@ -463,6 +1321,9 @@ Resources:
       SourceAccount: !Ref AWS::AccountId
       SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PrivateRestApi}/${ApiStageName}/POST/*"
 
+  ################################
+  # PRIVATE REST API             #
+  ################################
   PrivateRestApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -588,7 +1449,7 @@ Resources:
       Type: String
       Value: !If
         - IsDev
-        - !Sub /aws/apigateway/${RestApi}/${ApiStageName}
+        - !Sub /aws/apigateway/${DevPrivateRestApi}/${ApiStageName}
         - !Sub /aws/apigateway/${PrivateRestApi}/${ApiStageName}
       Tags:
         Environment: !Ref Environment
@@ -840,12 +1701,12 @@ Resources:
         - Key: Name
           Value: !Sub "${AWS::StackName}-APIGatewayExecutionLogRole"
 
-  RestApi:
+  DevPrivateRestApi:
     Condition: IsDev
     Type: AWS::Serverless::Api
     Properties:
       # checkov:skip=CKV_AWS_120: API Gateway caching not enabled
-      Name: !Sub "${AWS::StackName}-RestApi"
+      Name: !Sub "${AWS::StackName}-DevPrivateRestApi"
       AlwaysDeploy: true
       OpenApiVersion: 3.0.3
       DefinitionBody:
@@ -857,7 +1718,7 @@ Resources:
           Name: AWS::Include
           Parameters:
             Location: "openAPI/api.yaml"
-      Description: "Regional REST API that provides method to interact with the UserIdentity function"
+      Description: "Regional Development API for the Private REST API that provides method to interact with post user identity"
       StageName: !Ref ApiStageName
       AccessLogSetting:
         Format: >-
@@ -907,7 +1768,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Condition: IsDev
     Properties:
-      LogGroupName: !Sub "/aws/apigateway/${RestApi}/${ApiStageName}"
+      LogGroupName: !Sub "/aws/apigateway/${DevPrivateRestApi}/${ApiStageName}"
       RetentionInDays: 30
       KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
@@ -922,7 +1783,7 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
         - Key: Name
-          Value: !Sub "/aws/apigateway/${RestApi}/${ApiStageName}"
+          Value: !Sub "/aws/apigateway/${DevPrivateRestApi}/${ApiStageName}"
 
   ########################
   # IPV Core Usage Plans #
@@ -931,12 +1792,12 @@ Resources:
     Type: AWS::ApiGateway::UsagePlan
     Condition: IsDev
     DependsOn:
-      - RestApiStage # This resource is created as part of the RestApi resource
+      - DevPrivateRestApiStage # This resource is created as part of the DevPrivateRestApi resource
     Properties:
       UsagePlanName: !Sub "${AWS::StackName}-IPV Core"
       Description: "Usage plan to limit and throttle call made by IPV Core"
       ApiStages:
-        - ApiId: !Ref RestApi
+        - ApiId: !Ref DevPrivateRestApi
           Stage: !Ref ApiStageName
           Throttle:
             "/user-identity/POST":
@@ -964,14 +1825,14 @@ Resources:
     Type: AWS::ApiGateway::ApiKey
     Condition: IsDev
     DependsOn:
-      - RestApiStage # This resource is created as part of the RestApi resource
+      - DevPrivateRestApiStage # This resource is created as part of the RestApi resource
     Properties:
       Description: !Sub >-
         API Key for IPV Core.
         N.B. Does not auto-update if secret (/${AWS::StackName}/Config/API/Key/IPVCore) has changed!
       Enabled: true
       StageKeys:
-        - RestApiId: !Ref RestApi
+        - RestApiId: !Ref DevPrivateRestApi
           StageName: !Ref ApiStageName
       # WARNING - does not get updated if IPVCoreApiKeySecret is updated - manual step in console
       # see https://repost.aws/knowledge-center/cloudformation-stack-update-secrets
@@ -1067,7 +1928,7 @@ Resources:
     Type: AWS::ApiGateway::UsagePlan
     Condition: IsBuild
     DependsOn:
-      - PrivateRestApiStage # This resource is created as part of the RestApi resource
+      - PrivateRestApiStage
     Properties:
       UsagePlanName: !Sub "${AWS::StackName}-PerformanceTesting"
       Description: "Usage plan to limit and throttle call made by Performance Testing"
@@ -1611,7 +2472,7 @@ Outputs:
     Description: The URL of the Stored Identity Service API
     Value: !If
       - IsDev
-      - !Sub "https://${RestApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"
+      - !Sub "https://${DevPrivateRestApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"
       - !Sub "https://${PrivateRestApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"
 
   ApiKeyPath:
@@ -1635,3 +2496,21 @@ Outputs:
     Condition: IsDevOrBuild
     Description: App Config environment - used for testing.
     Value: !Ref Environment
+
+  SisPublicApi:
+    Condition: IsNotProduction
+    Description: "URL for the Stored Identity Service Public API"
+    Value: !Sub "https://${PublicApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"
+
+  SisPrivateApi:
+    Condition: IsNotProduction
+    Description: "URL for the Stored Identity Service Private API"
+    Value: !Sub "https://${PrivateApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"
+
+  SisPrivateApiAcceptanceTest:
+    Condition: IsDevOrBuild
+    Description: "URL for the Stored Identity Service Private API (development)"
+    Value: !If
+      - IsDev
+      - !Sub "https://${PrivateApiDev}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"
+      - !Sub "https://${PrivateApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"

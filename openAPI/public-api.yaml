@@ -1,0 +1,101 @@
+---
+openapi: 3.0.3
+info:
+  title: "SIS Public API"
+  description: "Public API for the Stored Identity Service"
+  version: "1.0.0"
+paths:
+  /authorize:
+    get:
+      summary: Get an authorization grant
+      description: |
+        The authorization endpoint is used to interact with the resource owner
+        and obtain an authorization grant.
+      tags:
+        - Authorization
+      parameters:
+        - $ref: "#/components/parameters/ResponseTypeParam"
+        - $ref: "#/components/parameters/ClientIdParam"
+        - $ref: "#/components/parameters/RedirectUriParam"
+        - $ref: "#/components/parameters/ScopeParam"
+        - $ref: "#/components/parameters/StateParam"
+      responses:
+        "302":
+          $ref: "#/components/responses/AuthorizationRedirect"
+      x-amazon-apigateway-request-validator: ALL
+      x-amazon-apigateway-integration:
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AuthorizationFunction.Arn}:live/invocations
+        credentials:
+          Fn::GetAtt: AuthorizationFunctionRestApiRole.Arn
+        passthroughBehavior: NEVER
+        contentHandling: CONVERT_TO_TEXT
+        type: AWS_PROXY
+
+components:
+  parameters:
+    ResponseTypeParam:
+      in: query
+      name: response_type
+      required: true
+      description: The response type. This value currently needs to be set to the value `code`.
+      schema:
+        type: string
+        enum:
+          - code
+    ClientIdParam:
+      in: query
+      name: client_id
+      required: true
+      description: |
+        This value is the client id the Relying Party service was provided with for identification upon
+        registration. Internal system requests will use an internal client id.
+      schema:
+        type: string
+    RedirectUriParam:
+      in: query
+      name: redirect_uri
+      required: true
+      description: |
+        This value must exactly match one of the redirect uris registered by the Relying Party service and must be
+        URL-encoded.
+      schema:
+        type: string
+        format: uri
+    ScopeParam:
+      in: query
+      name: scope
+      required: false
+      description: |
+        A space-separated list of scopes which must include the `openid` value. Other options are `email`, `phone`
+        and `offline_access` (returns a refresh token).  Other custom scopes are available for internal requests.
+      schema:
+        type: string
+    StateParam:
+      in: query
+      name: state
+      required: true
+      description: |
+        This value is used to validate the response sent to the redirect URI.  This value will be
+        returned to the client in the authentication response.
+      schema:
+        type: string
+  responses:
+    AuthorizationRedirect:
+      description: |
+        Successful authorization. The server redirects the user-agent back to the
+        client's `redirect_uri` with the authorization `code` and the `state`.
+      headers:
+        Location:
+          description: The redirect URL containing the code and state as query parameters.
+          schema:
+            type: string
+            format: uri
+            example: https://orch.stubs.account.gov.uk/callback?code=SplxlOBeZQQYbYS6WxSbIA&state=xyz
+
+x-amazon-apigateway-request-validators:
+  ALL:
+    validateRequestBody: true
+    validateRequestParameters: true
+    validateRequestHeaders: true

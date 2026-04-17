@@ -12,6 +12,9 @@ export const CloudFormationOutputs = {
   AppConfigApplication: "AppConfigApplication",
   AppConfigEnvironment: "AppConfigEnvironment",
   AppConfigName: "AppConfigName",
+  SisPublicApi: "SisPublicApi",
+  SisPrivateApi: "SisPrivateApi",
+  SisPrivateApiAcceptanceTest: "SisPrivateApiAcceptanceTest",
 } as const;
 
 export type CloudFormationOutputsType = keyof typeof CloudFormationOutputs;

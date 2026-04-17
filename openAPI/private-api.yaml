@@ -1,121 +1,136 @@
 ---
 openapi: 3.0.3
 info:
-  title: "SIS External – Stored Identity"
-  description: "External API for retrieving a user’s stored identity record"
+  title: "SIS Private API"
+  description: "Private API for retrieving a user’s stored identity record"
   version: "1.0.0"
 paths:
-  /user-identity:
+  /token:
     post:
+      summary: "Exchange an authorization code for an access token"
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/TokenRequestBody"
+      responses:
+        200:
+          description: "The access token"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponseBody"
+        400:
+          description: "Bad request - e.g. an malformed request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OAuthError"
+        401:
+          description: "Unauthorized - e.g. bad client authentication"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OAuthError"
+        500:
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OAuthError"
+      x-amazon-apigateway-request-validator: ParamsAndHeaders
+      x-amazon-apigateway-integration:
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${TokenFunction.Arn}:live/invocations
+        credentials:
+          Fn::GetAtt: TokenFunctionRestApiRole.Arn
+        passthroughBehavior: never
+        type: AWS_PROXY
+  /user-identity:
+    get:
       summary: "Retrieve the user’s stored identity record"
       description: >
-        Returns the signed Stored Identity JWT and associated metadata
-        indicating whether the record is still valid, whether it has expired,
-        and the stored vector of trust (VOT).
+        Returns the signed Stored Identity JWT and stored vector of trust (VOT).
       security:
         - bearerAuth: []
       tags:
         - Stored Identity
-      requestBody:
-        description: User Input containing Vtr and govuk signin ID.
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/userIdentityInput"
       responses:
         "200":
           description: "Stored identity record returned"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/storedIdentityResponse"
+                $ref: "#/components/schemas/UserIdentityDataType"
         "401":
           description: "Unauthorized – e.g. missing or invalid access token"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/oauthError"
+                $ref: "#/components/schemas/OAuthError"
         "403":
           description: "Forbidden – e.g. expired access token"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/oauthError"
-        "404":
-          description: "Not Found – No Stored Identity exists for this user or Stored Identity has been invalidated"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/oauthError"
+                $ref: "#/components/schemas/OAuthError"
         "500":
           description: "Internal server error"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/oauthError"
+                $ref: "#/components/schemas/OAuthError"
       x-amazon-apigateway-request-validator: ALL
       x-amazon-apigateway-integration:
         httpMethod: POST
         uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UserIdentityFunction.Arn}:live/invocations
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UserIdentityHandlerFunction.Arn}:live/invocations
         credentials:
-          Fn::GetAtt: UserIdentityRestApiRole.Arn
+          Fn::GetAtt: UserIdentityHandlerRestApiRole.Arn
         passthroughBehavior: NEVER
         contentHandling: CONVERT_TO_TEXT
         type: AWS_PROXY
 
 components:
   schemas:
-    userIdentityInput:
-      description: |-
-        The input parameters passed into the request .
+    TokenRequestBody:
       type: object
       properties:
-        vtr:
-          type: array
-          items:
-            type: string
-            enum:
-              - P1
-              - P2
-              - P3
-              - P4
-        govukSigninJourneyId:
+        grant_type:
           type: string
-          description: "Unique journey identifier"
-      required:
-        - vtr
-        - govukSigninJourneyId
-    storedIdentityResponse:
+          enum: ["authorization_code"]
+        code:
+          type: string
+    TokenResponseBody:
       type: object
       properties:
-        content:
-          $ref: "#/components/schemas/userIdentityDataType"
-          description: "The expanded body of the signed Stored Identity JWT"
-        isValid:
-          type: boolean
-          description: "Indicates whether SIS considers the stored record still usable"
-        kidValid:
-          type: boolean
-          description: "Indicates whether kid values are verified"
-        signatureValid:
-          type: boolean
-          description: "Indicates whether the kid was valid and signature was verified successfully "
-        expired:
-          type: boolean
-          description: "Indicates whether SIS considers the stored record past its expiry window"
-        vot:
+        access_token:
           type: string
-          description: "The vector of trust that was stored with the record"
+        scope:
+          type: string
+        token_type:
+          type: string
+        expires_in:
+          type: number
       required:
-        - content
-        - isValid
-        - expired
-        - vot
-        - kidValid
-        - signatureValid
-    userIdentityDataType:
+        - access_token
+        - scope
+        - token_type
+        - expires_in
+      additionalProperties: false
+    OAuthError:
+      type: object
+      properties:
+        error:
+          type: string
+        error_description:
+          type: string
+      required:
+        - error
+      additionalProperties: false
+    UserIdentityDataType:
       type: object
       properties:
         sub:
@@ -188,23 +203,12 @@ components:
         - vtm
         - credentials
       additionalProperties: false
-    oauthError:
-      type: object
-      properties:
-        error:
-          type: string
-        error_description:
-          type: string
-      required:
-        - error
-      additionalProperties: false
-
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
 
 x-amazon-apigateway-request-validators:
+  ParamsAndHeaders:
+    validateRequestBody: false
+    validateRequestParameters: true
+    validateRequestHeaders: true
   ALL:
     validateRequestBody: true
     validateRequestParameters: true
