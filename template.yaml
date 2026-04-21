@@ -36,6 +36,11 @@ Parameters:
     Type: String
     Default: https://identity.account.gov.uk/sis
 
+  DnsStackName:
+    Description: The name of the DNS stack
+    Type: String
+    Default: reuse-identity-dns
+
   OwnerTagValue:
     Description: Value for the Owner Tag
     Type: String
@@ -246,6 +251,11 @@ Conditions:
       - Fn::Equals: [!Ref Environment, "dev"]
       - Fn::Equals: [!Ref Environment, "build"]
       - Fn::Equals: [!Ref Environment, "staging"]
+
+  IsMainStack:
+    Fn::Equals:
+      - !Ref AWS::StackName
+      - "id-reuse-storage-main"
 
   UseVpc:
     Fn::Not:
@@ -1175,6 +1185,68 @@ Resources:
           Value: !Ref SourceTagValue
         - Key: Name
           Value: !Sub "/aws/apigateway/${AWS::StackName}-PrivateApiDev/${ApiStageName}"
+
+  ################################
+  # Hosted Zone                  #
+  ################################
+  ReuseIdentityDomain:
+    Type: AWS::SSM::Parameter
+    Condition: IsNotProduction
+    Properties:
+      Name: !Sub "/${AWS::StackName}/DomainName"
+      Type: "String"
+      Value: !If
+        - IsDev
+        - !If
+          - IsMainStack
+          - !Sub "reuse-identity.dev.account.gov.uk"
+          - !Sub "${AWS::StackName}.reuse-identity.dev.account.gov.uk"
+        - !Sub "reuse-identity.${Environment}.account.gov.uk"
+
+  ReuseIdentityCredentialStoreSSLCert:
+    Type: AWS::CertificateManager::Certificate
+    Condition: IsNotProduction
+    Properties:
+      DomainName: !GetAtt ReuseIdentityDomain.Value
+      DomainValidationOptions:
+        - DomainName: !GetAtt ReuseIdentityDomain.Value
+          HostedZoneId:
+            Fn::ImportValue: !Sub "${DnsStackName}-ReuseIdentityServiceHostedZoneId"
+      ValidationMethod: DNS
+
+  ReuseIdentityCustomDomain:
+    Type: AWS::ApiGateway::DomainName
+    Condition: IsNotProduction
+    Properties:
+      DomainName: !GetAtt ReuseIdentityDomain.Value
+      RegionalCertificateArn: !Ref ReuseIdentityCredentialStoreSSLCert
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      SecurityPolicy: TLS_1_2
+
+  ApiRecord:
+    Type: AWS::Route53::RecordSet
+    Condition: IsNotProduction
+    Properties:
+      Name: !Ref ReuseIdentityCustomDomain
+      Type: A
+      HostedZoneId:
+        Fn::ImportValue: !Sub "${DnsStackName}-ReuseIdentityServiceHostedZoneId"
+      AliasTarget:
+        DNSName: !GetAtt ReuseIdentityCustomDomain.RegionalDomainName
+        HostedZoneId: !GetAtt ReuseIdentityCustomDomain.RegionalHostedZoneId
+        EvaluateTargetHealth: false
+
+  ApiMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Condition: IsNotProduction
+    Properties:
+      DomainName: !Ref ReuseIdentityCustomDomain
+      RestApiId: !Ref PublicApi
+      Stage: !Ref ApiStageName
+    DependsOn:
+      - PublicApiStage
 
   ################################
   # POST USER IDENTITY FEATURE  #
@@ -2500,7 +2572,9 @@ Outputs:
   SisPublicApi:
     Condition: IsNotProduction
     Description: "URL for the Stored Identity Service Public API"
-    Value: !Sub "https://${PublicApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"
+    Value: !Sub
+      - "https://${Url}"
+      - Url: !GetAtt ReuseIdentityDomain.Value
 
   SisPrivateApi:
     Condition: IsNotProduction

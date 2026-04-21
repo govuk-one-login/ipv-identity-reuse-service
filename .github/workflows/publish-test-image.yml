@@ -11,8 +11,10 @@ on:
       aws-role-arn:
         required: true
         description: >
-          The Amazon Resource Name (ARN) of the role to assume. Use the provided credentials to assume an IAM role and
-          configure the Actions environment with the assumed role credentials rather than with the provided credentials.
+          The Amazon Resource Name (ARN) of the role to assume. Use the provided
+          credentials to assume an IAM role and configure the Actions
+          environment with the assumed role credentials rather than with the
+          provided credentials.
       ecr-repository:
         required: true
         description: >
@@ -55,20 +57,16 @@ jobs:
         with:
           node-version-file: ".nvmrc"
           cache: npm
-          registry-url: "https://npm.pkg.github.com"
-          scope: "@govuk-one-login"
-          always-auth: true
 
       - name: Set Build Environment Variables
-        run:
-          echo "BUILD_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"" >> $GITHUB_ENV
+        run: echo "BUILD_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"" >> $GITHUB_ENV
 
       - name: Build
         uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
         with:
           platforms: linux/amd64
           file: tests/acceptance/Dockerfile
-          push: 'true'
+          push: "true"
           tags: ${{ secrets.ecr-repository }}:latest
           secrets: | # pragma: allowlist secret
             node-auth-token=${{ secrets.GITHUB_TOKEN }}

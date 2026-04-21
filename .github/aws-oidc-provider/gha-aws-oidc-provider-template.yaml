@@ -272,6 +272,30 @@ Resources:
                   - appconfig:GetLatestConfiguration
 
               - Effect: Allow
+                Resource: !Sub arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/*
+                Action:
+                  - acm:AddTagsToCertificate
+                  - acm:DeleteCertificate
+                  - acm:DescribeCertificate
+                  - acm:RequestCertificate
+
+              - Effect: Allow
+                Resource:
+                  - !Sub arn:aws:route53:::change/*
+                  - !Sub arn:aws:route53:::hostedzone/*
+                Action:
+                  - route53:ChangeResourceRecordSets
+                  - route53:ChangeTagsForResource
+                  - route53:DeleteHostedZone
+                  - route53:GetChange
+                  - route53:GetHostedZone
+                  - route53:ListQueryLoggingConfigs
+                  - route53:ListResourceRecordSets
+                  - route53:ListTagsForResource
+                  - route53:ListTagsForResources
+                  - route53:UpdateHostedZoneComment
+
+              - Effect: Allow
                 Resource:
                   - !Sub arn:aws:codedeploy:${AWS::Region}:${AWS::AccountId}:*
                 Action:
