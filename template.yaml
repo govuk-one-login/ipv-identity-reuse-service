@@ -258,7 +258,7 @@ Conditions:
   IsMainStack:
     Fn::Equals:
       - !Ref AWS::StackName
-      - "id-reuse-storage-main"
+      - "preview-main"
 
   UseVpc:
     Fn::Not:
