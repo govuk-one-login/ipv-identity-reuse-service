@@ -171,6 +171,7 @@ Mappings:
       messageQueueKeyArn: "arn:aws:kms:eu-west-2:178023842775:key/325458a5-de28-4c28-aaf0-678ebefb35ac"
       ApiRateLimit: 5 # allowed requests per second
       ApiBurstLimit: 5 # requests the API can handle concurrently
+      DevOrchestrationVPCID: none
       PerformanceTestApiRateLimit: 0 # not used in this environment
       PerformanceTestApiBurstLimit: 0 # not used in this environment
       IPVCoreVPCID: vpc-039e664a2b3abb03e # ID Reuse Service Staging VPC ID
@@ -183,6 +184,7 @@ Mappings:
       messageQueueKeyArn: "arn:aws:kms:eu-west-2:729485541398:key/c199c69c-7ce7-4a82-b5a7-b344c7ac04f5"
       ApiRateLimit: 2000 # allowed requests per second
       ApiBurstLimit: 2000 # requests the API can handle concurrently
+      DevOrchestrationVPCID: none
       PerformanceTestApiRateLimit: 0 # not used in this environment
       PerformanceTestApiBurstLimit: 0 # not used in this environment
       IPVCoreVPCID: vpc-0a9e773e1f32b6697 # ID Reuse Service Integration VPC ID
@@ -195,6 +197,7 @@ Mappings:
       messageQueueKeyArn: "arn:aws:kms:eu-west-2:451773080033:key/5b5d3a8e-cf70-49ca-bec8-b3a2e61ce770"
       ApiRateLimit: 2000 # allowed requests per second
       ApiBurstLimit: 2000 # requests the API can handle concurrently
+      DevOrchestrationVPCID: none
       PerformanceTestApiRateLimit: 0 # not used in this environment
       PerformanceTestApiBurstLimit: 0 # not used in this environment
       IPVCoreVPCID: vpc-0274d75007239691f # IPV Reuse Seruice Production VPC ID
