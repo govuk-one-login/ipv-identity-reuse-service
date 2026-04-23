@@ -20,9 +20,11 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
 
   const { redirect_uri: redirectUri, state } = event.queryStringParameters as AuthorizationQueryStringParameters;
 
-  const url = new URL(decodeURIComponent(redirectUri));
+  const domainName = process.env.DOMAIN_NAME || "";
+  const url = new URL(`https://${domainName}/confirm-details`);
   url.searchParams.append("code", "SplxlOBeZQQYbYS6WxSbIA");
   url.searchParams.append("state", state);
+  url.searchParams.append("redirect_uri", redirectUri);
 
   return {
     statusCode: 302,

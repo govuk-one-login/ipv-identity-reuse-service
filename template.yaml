@@ -373,6 +373,7 @@ Resources:
           APP_CONFIG_APPLICATION: !Ref ApplicationName
           SQS_AUDIT_EVENT_QUEUE_URL: !Ref AuditEventQueue
           COMPONENT_ID: !Ref ComponentId
+          DOMAIN_NAME: !Ref ReuseIdentityCustomDomain
       CodeSigningConfigArn: !If
         - UseCodeSigning
         - !Ref CodeSigningConfigArn
@@ -996,6 +997,168 @@ Resources:
           Value: !Ref SourceTagValue
         - Key: Name
           Value: !Sub "/aws/apigateway/${AWS::StackName}-PublicApi/${ApiStageName}"
+
+  GovUKFrontEndLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub "${AWS::StackName}-govuk-frontend-resources-layer"
+      ContentUri: ./lambda-layers
+    Metadata:
+      BuildMethod: makefile
+
+  UploadGovUKFrontEndResourcesResource:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt UploadGovUKFrontEndResourcesLambda.Arn
+      ServiceTimeout: 30
+      LayerVersion: !Ref GovUKFrontEndLayer
+      LambdaVersion: !Ref UploadGovUKFrontEndResourcesLambda.Version
+      Bucket: !Ref GovUKAssetsBucket
+
+  UploadGovUKFrontEndResourcesLambda:
+    # checkov:skip=CKV_AWS_115: We do not have enough data to allocate the concurrent execution allowance per function.
+    # checkov:skip=CKV_AWS_116: DLQs are not used for synchronous invocations.
+    # checkov:skip=CKV_AWS_173: Check encryption settings for Lambda environmental variable
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-UploadGovUKFrontEndResourcesLambda"
+      Handler: govuk-resources-uploader.handler
+      Timeout: 30
+      Environment:
+        Variables:
+          NODE_OPTIONS: "--enable-source-maps"
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref GovUKAssetsBucket
+      Layers:
+        - !Ref GovUKFrontEndLayer
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        UseNpmCi: True
+        EntryPoints:
+          - src/handlers/govuk-resources-uploader/govuk-resources-uploader.ts
+        Sourcemap: true
+        Target: "es2020"
+
+  GovUKAssetsBucket:
+    # checkov:skip=CKV_AWS_18: "Ensure the S3 bucket has access logging enabled"
+    # checkov:skip=CKV_AWS_53: "Ensure S3 bucket has block public ACLs enabled"
+    # checkov:skip=CKV_AWS_54: "Ensure S3 bucket has block public policy enabled"
+    # checkov:skip=CKV_AWS_21: "Ensure the S3 bucket has versioning enabled"
+    # checkov:skip=CKV_AWS_55: "Ensure S3 bucket has ignore public ACLs enabled"
+    # checkov:skip=CKV_AWS_56: "Ensure S3 bucket has RestrictPublicBuckets enabled"
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub govuk-frontend-assets-${Environment}-${AWS::StackName}
+
+  AssetsResourceS3Role:
+    Type: AWS::IAM::Role
+    Properties:
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+
+  ConfirmDetailsRole:
+    # checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
+    Type: AWS::IAM::Role
+    Properties:
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+
+  ConfirmDetailsLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-ConfirmDetailsLambda"
+      Handler: confirm-details-handler.lambdaHandler
+      Role: !GetAtt ConfirmDetailsRole.Arn
+      Environment:
+        Variables:
+          NODE_OPTIONS: "--enable-source-maps"
+      Layers:
+        - !Ref GovUKFrontEndLayer
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+          - src/handlers/confirm-details/confirm-details-handler.ts
+        Target: es2022
+        Minify: true
+        Sourcemap: true
+        Loader:
+          - .njk=file
+        External:
+          - govuk-frontend
+
+  ConfirmDetailsLambdaRestApiRole:
+    Type: AWS::IAM::Role
+    Condition: IsNotProduction
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-ConfirmDetailsLambdaRestApiRole"
+      Description: !Sub "Roles for the ConfirmDetailsLambda"
+      PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+
+  ConfirmDetailsLambdaRestApiPolicy:
+    Type: AWS::IAM::Policy
+    Condition: IsNotProduction
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-ConfirmDetailsLambdaRestApiPolicy"
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "lambda:InvokeFunction"
+            Resource:
+              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-ConfirmDetailsLambda:*"
+              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-ConfirmDetailsSubmissionLambda:*"
+      Roles:
+        - !Ref ConfirmDetailsLambdaRestApiRole
 
   ################################
   # PRIVATE API API GATEWAY       #
