@@ -48,6 +48,6 @@ jobs:
           aws-region: ${{ inputs.aws-region }}
           upload-artifact: true
           artifact-name: ${{ inputs.artifact-name }}
-          sam-version: 1.136.0
+          sam-version: 1.155.2
           additional-artifact-paths: |
             openAPI/
