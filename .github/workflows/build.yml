@@ -38,6 +38,10 @@ jobs:
           node-version-file: ".nvmrc"
           cache: npm
 
+      - name: Install Dependencies
+        working-directory: ./
+        run: npm ci
+
       - name: Build SAM application
         uses: govuk-one-login/github-actions/sam/build-application@1ef1d955b2fd248b51fc803f6b64ccac9f04cd84
         env:

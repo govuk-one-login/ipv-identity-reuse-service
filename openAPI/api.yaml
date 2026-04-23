@@ -64,7 +64,6 @@ paths:
         passthroughBehavior: NEVER
         contentHandling: CONVERT_TO_TEXT
         type: AWS_PROXY
-
 components:
   schemas:
     userIdentityInput:

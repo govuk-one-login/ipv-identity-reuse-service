@@ -2,6 +2,8 @@ import { APIGatewayEventRequestContextWithAuthorizer, APIGatewayProxyEvent, Cont
 import { expect, it } from "vitest";
 import { AuthorizationQueryStringParameters, handler } from "../authorize-handler";
 
+process.env.DOMAIN_NAME = "test-domain";
+
 it("should return 302 status code on a successful request", async () => {
   const event = createMockAPIGatewayProxyEvent({
     queryStringParameters: {
@@ -17,7 +19,8 @@ it("should return 302 status code on a successful request", async () => {
     statusCode: 302,
     body: "",
     headers: {
-      Location: "https://api.example.com/callback?code=SplxlOBeZQQYbYS6WxSbIA&state=test-state",
+      Location:
+        "https://test-domain/confirm-details?code=SplxlOBeZQQYbYS6WxSbIA&state=test-state&redirect_uri=https%3A%2F%2Fapi.example.com%2Fcallback",
     },
   });
 });
@@ -37,7 +40,8 @@ it("should return 302 status code on a successful request and handle URL encoded
     statusCode: 302,
     body: "",
     headers: {
-      Location: "https://api.example.com/callback?code=SplxlOBeZQQYbYS6WxSbIA&state=test-state",
+      Location:
+        "https://test-domain/confirm-details?code=SplxlOBeZQQYbYS6WxSbIA&state=test-state&redirect_uri=https%253A%252F%252Fapi.example.com%252Fcallback",
     },
   });
 });
