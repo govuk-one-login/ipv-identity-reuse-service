@@ -1116,6 +1116,24 @@ Resources:
         External:
           - govuk-frontend
 
+  ConfirmDetailsSubmissionLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-ConfirmDetailsSubmissionLambda"
+      Handler: confirm-details-submission-handler.lambdaHandler
+      Role: !GetAtt ConfirmDetailsRole.Arn
+      Environment:
+        Variables:
+          NODE_OPTIONS: "--enable-source-maps"
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+          - src/handlers/confirm-details/confirm-details-submission-handler.ts
+        Target: es2022
+        Minify: true
+        Sourcemap: true
+
   ConfirmDetailsLambdaRestApiRole:
     Type: AWS::IAM::Role
     Condition: IsNotProduction
