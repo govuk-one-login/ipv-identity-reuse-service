@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import nunjucks from "nunjucks";
 import confirmDetailsTemplate from "./index.njk";
-import fs from "fs";
+import fs from "node:fs";
 import logger from "../../commons/logger";
 
 nunjucks.configure([require.resolve("govuk-frontend").replace(/\/dist\/govuk.*/, "/dist")]);
@@ -15,7 +15,7 @@ export type ConfirmDetailsQueryStringParameters = {
 };
 
 export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  const { code: code, redirect_uri, state } = event.queryStringParameters as ConfirmDetailsQueryStringParameters;
+  const { code, redirect_uri, state } = event.queryStringParameters as ConfirmDetailsQueryStringParameters;
   try {
     return {
       statusCode: 200,
