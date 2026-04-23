@@ -3,8 +3,8 @@ version = 0.1
 [default.deploy.parameters]
 resolve_s3 = true
 region = "eu-west-2"
-confirm_changeset = true
+confirm_changeset = false
 capabilities = "CAPABILITY_NAMED_IAM"
-disable_rollback = true
+disable_rollback = false
 parameter_overrides = "VpcStackName=\"vpc\" LogGroupRetentionInDays=\"30\""
 image_repositories = []
