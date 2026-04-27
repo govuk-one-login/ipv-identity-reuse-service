@@ -115,6 +115,7 @@ describe("user-identity-handler authorization", () => {
       {
         max_vot: "P3",
         retrieval_outcome: "success",
+        timestamp_fraud_check_nbf: 1759240815,
       },
       {
         stored_identity_jwt: mockEVCSData.si.vc,

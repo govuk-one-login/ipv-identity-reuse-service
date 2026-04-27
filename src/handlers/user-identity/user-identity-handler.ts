@@ -102,7 +102,7 @@ const createSuccessResponse = async (
     {
       retrieval_outcome: "success",
       max_vot: maxVot,
-      ...(fraudVc ? { timestamp_fraud_check_iat: fraudVc?.iat } : {}),
+      ...(fraudVc ? { timestamp_fraud_check_nbf: fraudVc?.nbf } : {}),
     },
     {
       stored_identity_jwt: identityResponse.si.vc,
