@@ -25,7 +25,7 @@ export type TxmaSisStoredIdentityReadEvent = TxmaEvent<
   | {
       retrieval_outcome: "success";
       max_vot: IdentityVectorOfTrust | "P0";
-      timestamp_fraud_check_iat?: number;
+      timestamp_fraud_check_nbf?: number;
     }
   | {
       retrieval_outcome: "no_record" | "service_error";
