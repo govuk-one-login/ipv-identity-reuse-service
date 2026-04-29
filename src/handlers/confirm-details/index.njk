@@ -1,6 +1,5 @@
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/input/macro.njk" import govukInput %}
-{% from "govuk/components/radios/macro.njk" import govukRadios %}
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "govuk/components/panel/macro.njk" import govukPanel %}
 {% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
@@ -54,9 +53,24 @@
         {% else %}
             <div class="govuk-grid-column-two-thirds">
                 <form id="submitForm" action="/confirm-details" method="post">
-                    <input type="hidden" id="redirectUri" name="redirectUri" value="{{redirect_uri}}""></input>
-                    <input type="hidden" id="code" name="code" value="{{code}}""></input>
-                    <input type="hidden" id="state" name="state" value="{{state}}""></input>
+                    {{ govukInput({
+                      type: "hidden",
+                      id: "redirectUri",
+                      name: "redirectUri",
+                      value: redirect_uri
+                    }) }}
+                    {{ govukInput({
+                      type: "hidden",
+                      id: "code",
+                      name: "code",
+                      value: code
+                    }) }}
+                    {{ govukInput({
+                      type: "hidden",
+                      id: "state",
+                      name: "state",
+                      value: state
+                    }) }}
                     {{ govukButton({
                     text: "Continue"
                     }) }}

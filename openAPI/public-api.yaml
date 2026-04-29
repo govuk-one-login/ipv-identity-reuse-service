@@ -59,7 +59,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        "302":
           description: OK
           content:
             text/html:
@@ -108,7 +108,6 @@ paths:
               method.response.header.Timestamp: integration.response.header.Date
         requestParameters:
           integration.request.path.item: method.request.path.item
-        # passthroughBehavior: when_no_match
         type: aws
 
 components:

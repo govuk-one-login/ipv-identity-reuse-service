@@ -1000,6 +1000,7 @@ Resources:
 
   GovUKFrontEndLayer:
     Type: AWS::Serverless::LayerVersion
+    Condition: IsNotProduction
     Properties:
       LayerName: !Sub "${AWS::StackName}-govuk-frontend-resources-layer"
       ContentUri: ./lambda-layers
@@ -1008,6 +1009,7 @@ Resources:
 
   UploadGovUKFrontEndResourcesResource:
     Type: AWS::CloudFormation::CustomResource
+    Condition: IsNotProduction
     Properties:
       ServiceToken: !GetAtt UploadGovUKFrontEndResourcesLambda.Arn
       ServiceTimeout: 30
@@ -1020,6 +1022,7 @@ Resources:
     # checkov:skip=CKV_AWS_116: DLQs are not used for synchronous invocations.
     # checkov:skip=CKV_AWS_173: Check encryption settings for Lambda environmental variable
     Type: AWS::Serverless::Function
+    Condition: IsNotProduction
     Properties:
       FunctionName: !Sub "${AWS::StackName}-UploadGovUKFrontEndResourcesLambda"
       Handler: govuk-resources-uploader.handler
@@ -1039,10 +1042,11 @@ Resources:
         EntryPoints:
           - src/handlers/govuk-resources-uploader/govuk-resources-uploader.ts
         Sourcemap: true
-        Target: "es2020"
+        Target: "es2022"
 
   UploadGovUKFrontEndResourcesFunctionLogGroup:
     Type: AWS::Logs::LogGroup
+    Condition: IsNotProduction
     Properties:
       LogGroupName: !Sub "/aws/lambda/${UploadGovUKFrontEndResourcesLambda}"
       RetentionInDays: 30
@@ -1063,17 +1067,21 @@ Resources:
 
   GovUKAssetsBucket:
     # checkov:skip=CKV_AWS_18: "Ensure the S3 bucket has access logging enabled"
-    # checkov:skip=CKV_AWS_53: "Ensure S3 bucket has block public ACLs enabled"
-    # checkov:skip=CKV_AWS_54: "Ensure S3 bucket has block public policy enabled"
-    # checkov:skip=CKV_AWS_21: "Ensure the S3 bucket has versioning enabled"
-    # checkov:skip=CKV_AWS_55: "Ensure S3 bucket has ignore public ACLs enabled"
-    # checkov:skip=CKV_AWS_56: "Ensure S3 bucket has RestrictPublicBuckets enabled"
     Type: AWS::S3::Bucket
+    Condition: IsNotProduction
     Properties:
       BucketName: !Sub govuk-frontend-assets-${Environment}-${AWS::StackName}
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
 
   AssetsResourceS3Role:
     Type: AWS::IAM::Role
+    Condition: IsNotProduction
     Properties:
       PermissionsBoundary: !If
         - UsePermissionsBoundary
@@ -1095,6 +1103,7 @@ Resources:
   ConfirmDetailsRole:
     # checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
     Type: AWS::IAM::Role
+    Condition: IsNotProduction
     Properties:
       PermissionsBoundary: !If
         - UsePermissionsBoundary
@@ -1114,6 +1123,7 @@ Resources:
 
   ConfirmDetailsLambda:
     Type: AWS::Serverless::Function
+    Condition: IsNotProduction
     Properties:
       FunctionName: !Sub "${AWS::StackName}-ConfirmDetailsLambda"
       Handler: confirm-details-handler.lambdaHandler
@@ -1126,6 +1136,13 @@ Resources:
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
+        UseNpmCi: True
+        Format: esm
+        Platform: node
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
+        OutExtension:
+          - .js=.mjs
         EntryPoints:
           - src/handlers/confirm-details/confirm-details-handler.ts
         Target: es2022
@@ -1138,6 +1155,7 @@ Resources:
 
   ConfirmDetailsSubmissionLambda:
     Type: AWS::Serverless::Function
+    Condition: IsNotProduction
     Properties:
       FunctionName: !Sub "${AWS::StackName}-ConfirmDetailsSubmissionLambda"
       Handler: confirm-details-submission-handler.lambdaHandler
@@ -1200,6 +1218,7 @@ Resources:
 
   ConfirmDetailsFunctionLogGroup:
     Type: AWS::Logs::LogGroup
+    Condition: IsNotProduction
     Properties:
       LogGroupName: !Sub "/aws/lambda/${ConfirmDetailsLambda}"
       RetentionInDays: 30
@@ -1220,6 +1239,7 @@ Resources:
 
   ConfirmDetailsSubmissionFunctionLogGroup:
     Type: AWS::Logs::LogGroup
+    Condition: IsNotProduction
     Properties:
       LogGroupName: !Sub "/aws/lambda/${ConfirmDetailsSubmissionLambda}"
       RetentionInDays: 30

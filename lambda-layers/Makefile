@@ -11,7 +11,7 @@ PROJECT_ROOT := $(strip $(call find-up,$(TARGET_DIR),$(MAKEFILE_LIST)))
 
 build-GovUKFrontEndLayer:
 	@if [ ! -n "$(PROJECT_ROOT)" ]; then \
-		echo "The node_modules folder was no found."; \
+		echo "The node_modules folder was not found."; \
 		exit 1; \
 	fi
 

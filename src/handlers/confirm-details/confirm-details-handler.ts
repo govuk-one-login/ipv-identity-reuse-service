@@ -16,6 +16,9 @@ export type ConfirmDetailsQueryStringParameters = {
 
 export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const { code, redirect_uri, state } = event.queryStringParameters as ConfirmDetailsQueryStringParameters;
+  if (code == null || redirect_uri == null || state === "") {
+    throw new Error("One or more required query string parameters are undefined");
+  }
   try {
     return {
       statusCode: 200,
@@ -28,7 +31,6 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
       }),
       headers: {
         "content-type": "text/html",
-        code: code,
       },
     };
   } catch (err) {
