@@ -269,7 +269,7 @@ Globals:
     MemorySize: 1024
     Timeout: 30
     CodeUri: ./
-    Runtime: nodejs24.x
+    Runtime: nodejs22.x
     Architectures:
       - arm64
     Environment:
@@ -1078,6 +1078,25 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
+
+  GovUkAssetsBucketPolicy:
+    Condition: IsNotProduction
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref GovUKAssetsBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: MustUseSecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !Sub "${GovUKAssetsBucket.Arn}"
+              - !Sub "${GovUKAssetsBucket.Arn}/*"
+            Condition:
+              Bool:
+                "aws:SecureTransport": false
 
   AssetsResourceS3Role:
     Type: AWS::IAM::Role

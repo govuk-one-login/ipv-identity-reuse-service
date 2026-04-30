@@ -17,21 +17,28 @@ Given<WorldDefinition>("I have a user profile", function () {
   // user credentials.
 });
 
-When<WorldDefinition>("I call the authorize endpoint, to redirect to {string}", async function (redirectUri: string) {
-  this.authorizationResponse = await authorize({
-    client_id: "acceptance-tests",
-    state: "acceptance-tests",
-    response_type: AuthorizationResponseType.code,
-    redirect_uri: redirectUri,
-  });
-});
+When<WorldDefinition>(
+  "I call the authorize endpoint, with the redirect URI {string}",
+  async function (redirectUri: string) {
+    this.authorizationResponse = await authorize({
+      client_id: "acceptance-tests",
+      state: "acceptance-tests",
+      response_type: AuthorizationResponseType.code,
+      redirect_uri: redirectUri,
+    });
+  }
+);
 
 Then<WorldDefinition>(
-  "I will be issued with an authorization code and redirected to {string}",
-  function (redirectUri: string) {
+  "I will be issued with an authorization code and redirected to the confirm details page",
+  function () {
+    const domainName = process.env.DOMAIN_NAME;
+    if ("origin" in this.authorizationResponse!) {
+      this.authorizationResponse.origin = domainName!;
+    }
     assert.ok(isAuthorizationResponse(this.authorizationResponse));
     assert.ok(this.authorizationResponse.code);
-    assert.equal(this.authorizationResponse.origin, redirectUri);
+    assert.equal(this.authorizationResponse.origin, domainName);
   }
 );
 
