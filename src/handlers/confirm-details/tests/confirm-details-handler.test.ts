@@ -1,16 +1,12 @@
 import { afterEach, beforeAll, expect, it, vitest } from "vitest";
 import { lambdaHandler } from "../confirm-details-handler";
 import { APIGatewayProxyEvent } from "aws-lambda";
-import nunjucks from "nunjucks";
-import confirmDetailsPageTemplate from "../index.njk";
-import fs from "node:fs";
 
-const confirmDetailsPageTemplateContents = fs.readFileSync(confirmDetailsPageTemplate, "utf8");
+const mockRender = vitest.hoisted(() => vitest.fn().mockReturnValue("Rendered Confirm Details Screen"));
 
 vitest.mock("nunjucks", () => ({
   default: {
-    configure: vitest.fn(),
-    renderString: vitest.fn().mockReturnValue("Rendered Confirm Details Screen"),
+    configure: vitest.fn(() => ({ render: mockRender })),
   },
 }));
 
@@ -23,7 +19,6 @@ afterEach(() => {
 });
 
 it("should show the confirm details screen", async () => {
-  const renderString = vitest.spyOn(nunjucks, "renderString");
   const result = await lambdaHandler({
     queryStringParameters: {
       redirect_uri: "https://example.com",
@@ -32,7 +27,7 @@ it("should show the confirm details screen", async () => {
     },
   } as never as APIGatewayProxyEvent);
 
-  expect(renderString).toHaveBeenCalledExactlyOnceWith(confirmDetailsPageTemplateContents, {
+  expect(mockRender).toHaveBeenCalledExactlyOnceWith("index.njk", {
     assetPath: "./assets",
     redirect_uri: "https://example.com",
     code: "1234",

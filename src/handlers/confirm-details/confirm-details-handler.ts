@@ -1,12 +1,10 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import nunjucks from "nunjucks";
-import confirmDetailsTemplate from "./index.njk";
-import fs from "node:fs";
+import path from "node:path";
 import logger from "../../commons/logger";
 
-nunjucks.configure([require.resolve("govuk-frontend").replace(/\/dist\/govuk.*/, "/dist")]);
-
-const confirmDetailsTemplateContents = fs.readFileSync(confirmDetailsTemplate, "utf8");
+const govukFrontendDist = path.join(path.dirname(require.resolve("govuk-frontend/package.json")), "dist");
+const nunjucksEnv = nunjucks.configure([__dirname, govukFrontendDist]);
 
 export type ConfirmDetailsQueryStringParameters = {
   code: string;
@@ -22,7 +20,7 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
   try {
     return {
       statusCode: 200,
-      body: nunjucks.renderString(confirmDetailsTemplateContents, {
+      body: nunjucksEnv.render("index.njk", {
         assetPath: "./assets",
         rootPath: ".",
         code,

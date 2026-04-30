@@ -1134,24 +1134,7 @@ Resources:
       Layers:
         - !Ref GovUKFrontEndLayer
     Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        UseNpmCi: True
-        Format: esm
-        Platform: node
-        Banner:
-          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
-        OutExtension:
-          - .js=.mjs
-        EntryPoints:
-          - src/handlers/confirm-details/confirm-details-handler.ts
-        Target: es2022
-        Minify: true
-        Sourcemap: true
-        Loader:
-          - .njk=file
-        External:
-          - govuk-frontend
+      BuildMethod: makefile
 
   ConfirmDetailsSubmissionLambda:
     Type: AWS::Serverless::Function
