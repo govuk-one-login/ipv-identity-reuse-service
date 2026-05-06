@@ -32,6 +32,83 @@ paths:
         passthroughBehavior: NEVER
         contentHandling: CONVERT_TO_TEXT
         type: AWS_PROXY
+  /confirm-details:
+    get:
+      parameters:
+        - $ref: "#/components/parameters/RedirectUriParam"
+        - $ref: "#/components/parameters/StateParam"
+        - $ref: "#/components/parameters/AuthCodeParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            text/html:
+              schema:
+                type: string
+      x-amazon-apigateway-integration:
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ConfirmDetailsLambda.Arn}:live/invocations
+        credentials:
+          Fn::GetAtt: ConfirmDetailsLambdaRestApiRole.Arn
+        type: aws_proxy
+    post:
+      parameters:
+        - in: query
+          name: redirect_uri
+          schema:
+            type: string
+      responses:
+        "302":
+          description: OK
+          content:
+            text/html:
+              schema:
+                type: string
+      x-amazon-apigateway-integration:
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ConfirmDetailsSubmissionLambda.Arn}:live/invocations
+        credentials:
+          Fn::GetAtt: ConfirmDetailsLambdaRestApiRole.Arn
+        type: aws_proxy
+  /{item+}:
+    get:
+      parameters:
+        - name: item
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 200 response
+          headers:
+            Cache-Control:
+              type: string
+            Content-Length:
+              type: string
+            Timestamp:
+              type: string
+            Content-Type:
+              type: string
+      x-amazon-apigateway-integration:
+        credentials:
+          Fn::GetAtt: AssetsResourceS3Role.Arn
+        httpMethod: GET
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:s3:path/govuk-frontend-assets-${Environment}-${AWS::StackName}/{item}
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Cache-Control: "'public, max-age=10'"
+              method.response.header.Content-Type: integration.response.header.Content-Type
+              method.response.header.Content-Length: integration.response.header.Content-Length
+              method.response.header.Timestamp: integration.response.header.Date
+        requestParameters:
+          integration.request.path.item: method.request.path.item
+        type: aws
 
 components:
   parameters:
@@ -79,6 +156,14 @@ components:
       description: |
         This value is used to validate the response sent to the redirect URI.  This value will be
         returned to the client in the authentication response.
+      schema:
+        type: string
+    AuthCodeParam:
+      in: query
+      name: code
+      required: true
+      description: |
+        The auth code.
       schema:
         type: string
   responses:

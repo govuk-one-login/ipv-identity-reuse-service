@@ -1,0 +1,90 @@
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/input/macro.njk" import govukInput %}
+{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
+{% from "govuk/components/panel/macro.njk" import govukPanel %}
+{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+
+{% extends "govuk/template.njk" %}
+{% block head %}
+    <link rel="stylesheet" href="{{ rootPath | default("", true) }}/govuk-frontend.min.css">
+    <base href="./confirm-details" />
+{% endblock %}
+{% block content %}
+    {% if errors and errors.length > 0 %}
+        {{ govukErrorSummary({
+            "titleText": "Error",
+            "errorList":  errors
+        }) }}
+    {% endif %}
+
+    <h1 class="govuk-heading-l">You have already proved your identity</h1>
+
+    <div class="govuk-grid-row">
+        {% if messageId %}
+            <div class="govuk-grid-column-two-thirds">
+                {% set messageIdHtml = 'MessageId<br><strong>' + messageId + '</strong>' %}
+                {{ govukPanel({
+                    titleText: "You have already proved your identity",
+                    html: messageIdHtml
+                }) }}
+                {{ govukSummaryList({
+                    rows: [
+                        {
+                            classes: "govuk-summary-list__row--no-actions",
+                            key: {
+                                text: "MD5OfMessageBody"
+                            },
+                            value: {
+                                text: md5OfMessageBody
+                            }
+                        },
+                        {
+                            classes: "govuk-summary-list__row--no-actions",
+                            key: {
+                                text: "Message"
+                            },
+                            value: {
+                                text: message
+                            }
+                        }
+                    ]
+                }) }}
+            </div>
+        {% else %}
+            <div class="govuk-grid-column-two-thirds">
+                <form id="submitForm" action="/confirm-details" method="post">
+                    {{ govukInput({
+                      type: "hidden",
+                      id: "redirectUri",
+                      name: "redirectUri",
+                      value: redirect_uri
+                    }) }}
+                    {{ govukInput({
+                      type: "hidden",
+                      id: "code",
+                      name: "code",
+                      value: code
+                    }) }}
+                    {{ govukInput({
+                      type: "hidden",
+                      id: "state",
+                      name: "state",
+                      value: state
+                    }) }}
+                    {{ govukButton({
+                    text: "Continue"
+                    }) }}
+                </form>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block bodyEnd %}
+{# Run JavaScript at end of the <body>, to avoid blocking the initial render. #}
+<script type="module" src="{{ rootPath | default("", true) }}/govuk-frontend.min.js"></script>
+<script type="module">
+    import { initAll } from '{{ rootPath | default("", true) }}/govuk-frontend.min.js'
+    initAll()
+</script>
+{% endblock %}
