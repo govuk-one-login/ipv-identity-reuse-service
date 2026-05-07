@@ -1048,7 +1048,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Condition: IsNotProduction
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${UploadGovUKFrontEndResourcesLambda}"
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-UploadGovUKFrontEndResourcesLambda"
       RetentionInDays: 30
       KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
