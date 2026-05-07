@@ -98,7 +98,7 @@ Resources:
                   - s3:DeleteObject
 
               - Effect: Allow
-                Resource: 'arn:aws:s3:::govuk-frontend-assets*'
+                Resource: 'arn:aws:s3:::sis-govuk-frontend-assets*'
                 Action:
                   - s3:GetObject
                   - s3:PutObject
