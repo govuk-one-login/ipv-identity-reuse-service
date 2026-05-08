@@ -1057,6 +1057,10 @@ Resources:
             BucketName: !Ref GovUKAssetsBucket
       Layers:
         - !Ref GovUKFrontEndLayer
+        - !If
+          - DynaTraceEnabled
+          - !Ref DynatraceNodeLayerArn
+          - !Ref AWS::NoValue
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
