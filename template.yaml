@@ -1017,12 +1017,34 @@ Resources:
       LambdaVersion: !Ref UploadGovUKFrontEndResourcesLambda.Version
       Bucket: !Ref GovUKAssetsBucket
 
+  UploadGovUKFrontEndResourcesFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: IsNotProduction
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-UploadGovUKFrontEndResourcesLambda"
+      RetentionInDays: 30
+      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "/aws/lambda/${AWS::StackName}-UploadGovUKFrontEndResourcesLambda"
+
   UploadGovUKFrontEndResourcesLambda:
     # checkov:skip=CKV_AWS_115: We do not have enough data to allocate the concurrent execution allowance per function.
     # checkov:skip=CKV_AWS_116: DLQs are not used for synchronous invocations.
     # checkov:skip=CKV_AWS_173: Check encryption settings for Lambda environmental variable
     Type: AWS::Serverless::Function
     Condition: IsNotProduction
+    DependsOn: UploadGovUKFrontEndResourcesFunctionLogGroup
     Properties:
       FunctionName: !Sub "${AWS::StackName}-UploadGovUKFrontEndResourcesLambda"
       Handler: govuk-resources-uploader.handler
@@ -1043,27 +1065,6 @@ Resources:
           - src/handlers/govuk-resources-uploader/govuk-resources-uploader.ts
         Sourcemap: true
         Target: "es2022"
-
-  UploadGovUKFrontEndResourcesFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Condition: IsNotProduction
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-UploadGovUKFrontEndResourcesLambda"
-      RetentionInDays: 30
-      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
-      Tags:
-        - Key: Product
-          Value: !Ref ProductTagValue
-        - Key: System
-          Value: !Ref SystemTagValue
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Owner
-          Value: !Ref OwnerTagValue
-        - Key: Source
-          Value: !Ref SourceTagValue
-        - Key: Name
-          Value: !Sub "/aws/lambda/${UploadGovUKFrontEndResourcesLambda}"
 
   GovUKAssetsBucket:
     # checkov:skip=CKV_AWS_18: "Ensure the S3 bucket has access logging enabled"
