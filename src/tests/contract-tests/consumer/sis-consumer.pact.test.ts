@@ -1,20 +1,11 @@
 import path from "path";
 import { PactV4, SpecificationVersion, MatchersV3 } from "@pact-foundation/pact";
 import { UserIdentityErrorResponse } from "../../../handlers/user-identity/user-identity-error-response";
-import { describe, beforeEach, it, expect } from "vitest";
+import { describe, beforeEach, it, expect, beforeAll } from "vitest";
 
 const { like } = MatchersV3;
 
 const USER_IDENTITY_ENDPOINT = "/user-identity";
-
-const provider = new PactV4({
-  consumer: "SisConsumerTests",
-  provider: "StoredIdentityService",
-  logLevel: "warn",
-  dir: path.resolve(process.cwd(), "pacts"),
-  spec: SpecificationVersion.SPECIFICATION_VERSION_V4,
-  host: "127.0.0.1",
-});
 
 const executeTest = async (mockServer: MatchersV3.V3MockServer, govukSigninJourneyId: string): Promise<Response> => {
   return await fetch(`${mockServer.url}${USER_IDENTITY_ENDPOINT}`, {
@@ -32,6 +23,18 @@ const executeTest = async (mockServer: MatchersV3.V3MockServer, govukSigninJourn
 
 describe("SIS Consumer", () => {
   let govukSigninJourneyId: string;
+  let provider: PactV4;
+
+  beforeAll(() => {
+    provider = new PactV4({
+      consumer: "SisConsumerTests",
+      provider: "StoredIdentityService",
+      logLevel: process.env.CI ? "debug" : "warn",
+      dir: path.resolve(process.cwd(), "pacts"),
+      spec: SpecificationVersion.SPECIFICATION_VERSION_V4,
+      host: "127.0.0.1",
+    });
+  });
 
   beforeEach(() => {
     govukSigninJourneyId = "Test-" + Date.now();
@@ -71,7 +74,8 @@ describe("SIS Consumer", () => {
       })
       .executeTest(async (mockServer) => {
         const result = await executeTest(mockServer, govukSigninJourneyId);
-        await expect(result.json()).resolves.toMatchObject({
+        const body = await result.json();
+        expect(body).toMatchObject({
           content: {
             sub: "user-sub",
             vot: "P2",
@@ -112,7 +116,8 @@ describe("SIS Consumer", () => {
       })
       .executeTest(async (mockServer) => {
         const result = await executeTest(mockServer, govukSigninJourneyId);
-        await expect(result.json()).resolves.toMatchObject({
+        const body = await result.json();
+        expect(body).toMatchObject({
           error: "no_record",
           error_description: "No Stored Identity exists for this user or Stored Identity has been invalidated",
         });
@@ -143,7 +148,8 @@ describe("SIS Consumer", () => {
       })
       .executeTest(async (mockServer) => {
         const result = await executeTest(mockServer, govukSigninJourneyId);
-        await expect(result.json()).resolves.toMatchObject({
+        const body = await result.json();
+        expect(body).toMatchObject({
           error: "invalid_token",
           error_description: "Bearer token is missing or invalid",
         });
@@ -174,7 +180,8 @@ describe("SIS Consumer", () => {
       })
       .executeTest(async (mockServer) => {
         const result = await executeTest(mockServer, govukSigninJourneyId);
-        await expect(result.json()).resolves.toMatchObject({
+        const body = await result.json();
+        expect(body).toMatchObject({
           error: "forbidden",
           error_description: "Access token expired or not permitted",
         });
@@ -205,7 +212,8 @@ describe("SIS Consumer", () => {
       })
       .executeTest(async (mockServer) => {
         const result = await executeTest(mockServer, govukSigninJourneyId);
-        await expect(result.json()).resolves.toMatchObject({
+        const body = await result.json();
+        expect(body).toMatchObject({
           error: "server_error",
           error_description: "Unable to retrieve data",
         });
