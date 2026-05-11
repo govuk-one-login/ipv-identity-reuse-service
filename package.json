@@ -34,7 +34,7 @@
     "@cucumber/pretty-formatter": "3.3.0",
     "@eslint/eslintrc": "3.3.5",
     "@eslint/js": "10.0.1",
-    "@pact-foundation/pact": "16.3.0",
+    "@pact-foundation/pact": "16.2.0",
     "@types/aws-lambda": "8.10.161",
     "@types/cfn-response-promise": "1.1.4",
     "@types/express": "5.0.6",

@@ -13,6 +13,8 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-patch"]
+      - dependency-name: "@pact-foundation/pact"
+        versions: ["v16.4.0", "v16.3.1", "v16.3.0"]
     open-pull-requests-limit: 5
     pull-request-branch-name:
       separator: "-"
