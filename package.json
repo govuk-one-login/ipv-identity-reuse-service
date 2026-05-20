@@ -15,7 +15,7 @@
     "@govuk-one-login/data-vocab": "2.0.2",
     "@types/aws-lambda": "8.10.161",
     "cfn-response-promise": "1.1.0",
-    "did-resolver": "4.1.0",
+    "did-resolver": "5.0.1",
     "esbuild": "0.27.3",
     "fast-glob": "3.3.3",
     "govuk-frontend": "6.1.0",
