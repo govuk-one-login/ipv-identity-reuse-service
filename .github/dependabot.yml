@@ -8,8 +8,6 @@ updates:
       interval: weekly
       day: monday
       time: "06:00"
-    allow:
-      - dependency-type: "direct"
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-patch"]
@@ -19,29 +17,14 @@ updates:
     pull-request-branch-name:
       separator: "-"
     groups:
-      aws-dependencies:
+      production-dependencies:
+        dependency-type: "production"
         patterns:
-          - "@aws-sdk/*"
-          - "@aws-lambda-powertools/*"
-          - "@types/aws-lambda"
-      test-dependencies:
+          - "*"
+      development-dependencies:
+        dependency-type: "development"
         patterns:
-          - "@types/jest"
-          - "@typescript-eslint/*"
-          - "ts-jest"
-          - "jest"
-          - "@cucumber/*"
-      build-dependencies:
-        patterns:
-          - "@babel/*"
-          - "@tsconfig/*"
-          - "@types/node"
-          - "esbuild"
-          - "typescript"
-          - "eslint*"
-          - "@eslint/*"
-          - "lint-staged"
-          - "prettier"
+          - "*"
 
   - package-ecosystem: "github-actions"
     # Workflow files stored in the default location of `.github/workflows`
