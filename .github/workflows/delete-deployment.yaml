@@ -11,7 +11,9 @@ on:
 concurrency:
   group: deploy-${{ github.head_ref || github.ref_name }}
 
-permissions: read-all
+permissions: 
+  contents: read
+  id-token: write
 
 jobs:
   delete-deployment:
