@@ -1,0 +1,96 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: Common OAuth components for the Identity Reuse Service
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues:
+      - local
+      - dev
+      - build
+      - staging
+      - integration
+      - production
+    Default: local
+
+  AuditComponentId:
+    Description: The component ID used in audit events
+    Type: String
+    Default: https://identity.account.gov.uk/sis
+
+  AuditEventNamePrefix:
+    Description: The prefix used for the event name of an audit event
+    Type: String
+    Default: SIS
+
+  CSLSSubscriptionEndpointArn:
+    Type: String
+    Description: CSLS Subscription endpoint
+    Default: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
+
+  MetricsNamespace:
+    Type: String
+    Description: The namespace used for powertools metrics
+    Default: sis
+
+  SisStackName:
+    Description: The name of the main SIS stack
+    Type: String
+
+Mappings:
+  EnvironmentMap:
+    "local":
+      OrchestrationJwksEndpoint: "https://orch.reuse.dev.stubs.account.gov.uk/well-known/jwks.json"
+      OrchestrationRedirectURI: "https://orch.reuse.dev.stubs.account.gov.uk"
+    "dev":
+      OrchestrationJwksEndpoint: "https://orch.reuse.dev.stubs.account.gov.uk/well-known/jwks.json"
+      OrchestrationRedirectURI: "https://orch.reuse.dev.stubs.account.gov.uk"
+    "build":
+      OrchestrationJwksEndpoint: "https://orch.reuse.stubs.account.gov.uk/well-known/jwks.json"
+      OrchestrationRedirectURI: "https://orch.reuse.stubs.account.gov.uk"
+    "staging":
+      OrchestrationRedirectURI: none
+    "integration":
+      OrchestrationRedirectURI: none
+    "production":
+      OrchestrationRedirectURI: none
+
+Conditions:
+  IsDev:
+    Fn::Or:
+      - Fn::Equals: [ !Ref Environment, "local" ]
+      - Fn::Equals: [ !Ref Environment, "dev" ]
+
+  IsNotProduction:
+    Fn::Or:
+      - Fn::Equals: [ !Ref Environment, "local" ]
+      - Fn::Equals: [ !Ref Environment, "dev" ]
+      - Fn::Equals: [ !Ref Environment, "build" ]
+      - Fn::Equals: [ !Ref Environment, "staging" ]
+
+Resources:
+  OAuthCommon:
+    Type: AWS::Serverless::Application
+    Condition: IsNotProduction
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-2:667736788427:applications/di-ipv-cri-oauth-common
+        SemanticVersion: 0.4.0
+      Parameters:
+        AuditEventNamePrefix: !Ref AuditEventNamePrefix
+        AuditTxmaStackName: TODO
+        CSLSDestinationArn: !Ref CSLSSubscriptionEndpointArn
+        CriIdentifier: !Ref MetricsNamespace # Seems to be used for metrics namespace and service names only
+        CriAudience:
+          - Fn::ImportValue: !Sub "${SisStackName}-SisPublicApi"
+        CriVcIssuer: !Ref AuditComponentId # TODO is this required for anything other than the component ID in audit events?
+        CriPrivateApiGwName: TODO
+        CriPublicApiGwName: TODO
+        DbCustomerManagedKey: "false" # TODO create key and set to true
+        Environment: !Ref Environment
+        IPVCoreRedirectURI: !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationRedirectURI ]
+        IPVCoreStubJwksEndpoint: !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationJwksEndpoint ]
+        LambdaCodeSigningConfigArn: none # TODO when the pipeline is available
+        LambdaVpcConfiguration: "di-devplatform-deploy" # TODO this is probably going to fail as it assumes the VPC stack name if "cri-vpc" but for us the VPC stack name is "vpc". Need OAuth Common to have configurable VPC stack name.
+        PermissionsBoundary: none # TODO probably only required when we do the pipeline work

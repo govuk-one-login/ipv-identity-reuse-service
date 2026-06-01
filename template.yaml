@@ -2573,11 +2573,12 @@ Outputs:
     Value: !Ref Environment
 
   SisPublicApi:
-    Condition: IsNotProduction
     Description: "URL for the Stored Identity Service Public API"
     Value: !Sub
       - "https://${Url}"
       - Url: !GetAtt ReuseIdentityDomain.Value
+    Export:
+      Name: !Sub ${AWS::StackName}-SisPublicApi
 
   SisPrivateApi:
     Condition: IsNotProduction
