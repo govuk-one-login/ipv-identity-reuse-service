@@ -1,0 +1,120 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: Common OAuth components for the Identity Reuse Service
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues:
+      - local
+      - dev
+      - build
+      - staging
+      - integration
+      - production
+    Default: local
+
+  AuditComponentId:
+    Description: The component ID used for audit events
+    Type: String
+    Default: https://identity.account.gov.uk/sis
+
+  AuditEventNamePrefix:
+    Description: The prefix used for the event name of an audit event
+    Type: String
+    Default: SIS
+
+  CodeSigningConfigArn:
+    Description: The ARN of the Code Signing Config to use, provided by the deployment pipeline
+    Type: String
+    Default: none
+
+  CSLSSubscriptionEndpointArn:
+    Description: CSLS Subscription endpoint
+    Type: String
+    Default: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
+
+  MainCloudWatchMetricNamespace:
+    Description: The name of the metric namespace
+    Type: String
+    Default: IdentityReuseService
+
+  PermissionsBoundary:
+    Description: The ARN of the permissions boundary to apply to any role created by the template
+    Type: String
+    Default: none
+
+  SisStackName:
+    Description: The name of the main SIS stack containing audit queue infrastructure
+    Type: String
+
+  VpcStackName:
+    Description: The name of the stack containing VPC infrastructure
+    Type: String
+    Default: vpc
+
+Mappings:
+  EnvironmentMap:
+    "local":
+      OrchestrationJwksEndpoint: "https://orch.reuse.dev.stubs.account.gov.uk/.well-known/jwks.json"
+      OrchestrationRedirectURI: "https://orch.reuse.dev.stubs.account.gov.uk"
+      SISAudience: "https://reuse-identity.dev.account.gov.uk"
+    "dev":
+      OrchestrationJwksEndpoint: "https://orch.reuse.dev.stubs.account.gov.uk/.well-known/jwks.json"
+      OrchestrationRedirectURI: "https://orch.reuse.dev.stubs.account.gov.uk"
+      SISAudience: "https://reuse-identity.dev.account.gov.uk"
+    "build":
+      OrchestrationJwksEndpoint: "https://orch.reuse.stubs.account.gov.uk/.well-known/jwks.json"
+      OrchestrationRedirectURI: "https://orch.reuse.stubs.account.gov.uk"
+      SISAudience: "https://reuse-identity.build.account.gov.uk"
+    "staging":
+      OrchestrationJwksEndpoint: none
+      OrchestrationRedirectURI: none
+      SISAudience: "https://reuse-identity.staging.account.gov.uk"
+    "integration":
+      OrchestrationJwksEndpoint: none
+      OrchestrationRedirectURI: none
+      SISAudience: "https://reuse-identity.integration.account.gov.uk"
+    "production":
+      OrchestrationJwksEndpoint: none
+      OrchestrationRedirectURI: none
+      SISAudience: "https://reuse-identity.account.gov.uk"
+
+Conditions:
+  IsDev:
+    Fn::Or:
+      - Fn::Equals: [ !Ref Environment, "local" ]
+      - Fn::Equals: [ !Ref Environment, "dev" ]
+
+  IsNotProduction:
+    Fn::Or:
+      - Fn::Equals: [ !Ref Environment, "local" ]
+      - Fn::Equals: [ !Ref Environment, "dev" ]
+      - Fn::Equals: [ !Ref Environment, "build" ]
+      - Fn::Equals: [ !Ref Environment, "staging" ]
+
+Resources:
+  OAuthCommon:
+    Type: AWS::Serverless::Application
+    Condition: IsNotProduction
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:eu-west-2:667736788427:applications/di-ipv-cri-oauth-common
+        SemanticVersion: 0.5.0
+      Parameters:
+        AuditEventNamePrefix: !Ref AuditEventNamePrefix
+        AuditTxmaStackName: !Ref SisStackName # TXMA infrastructure lives in the identity-reuse-service stack
+        CSLSDestinationArn: !Ref CSLSSubscriptionEndpointArn
+        CriIdentifier: !Ref MainCloudWatchMetricNamespace # Used for the metrics namespace and metrics service names only
+        CriAudience: !FindInMap [ EnvironmentMap, !Ref Environment, SISAudience ] # Sets the Audience value for the SIS OAuth 2.0 server
+        CriVcIssuer: !Ref AuditComponentId # Used for the component ID in audit events only
+        CriPrivateApiGwName: TODO
+        CriPublicApiGwName: TODO
+        Environment: !If [IsDev, dev, !Ref Environment ]
+        IPVCoreRedirectURI: !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationRedirectURI ] # The expected client redirect URI (used in staging upwards)
+        IPVCoreStubJwksEndpoint: !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationJwksEndpoint ] # The expected client JWKS endpoint (used in non-prod)
+        IsCredentialIssuer: "false"
+        LambdaCodeSigningConfigArn: !Ref CodeSigningConfigArn
+        LambdaVpcConfiguration: "di-devplatform-deploy"
+        PermissionsBoundaryArn: !Ref PermissionsBoundary
+        VpcStackNameOverride: !Ref VpcStackName
