@@ -79,7 +79,7 @@ Resources:
         SemanticVersion: 0.4.0
       Parameters:
         AuditEventNamePrefix: !Ref AuditEventNamePrefix
-        AuditTxmaStackName: TODO
+        AuditTxmaStackName: !Ref SisStackName
         CSLSDestinationArn: !Ref CSLSSubscriptionEndpointArn
         CriIdentifier: !Ref MetricsNamespace # Seems to be used for metrics namespace and service names only
         CriAudience:
