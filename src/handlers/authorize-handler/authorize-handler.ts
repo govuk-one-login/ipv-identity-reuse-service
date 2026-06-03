@@ -13,6 +13,7 @@ export type AuthorizationQueryStringParameters = {
   redirect_uri: string;
   scope?: string;
   state: string;
+  request?: string;
 };
 
 export const handler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
