@@ -19,6 +19,7 @@ paths:
         - $ref: "#/components/parameters/RedirectUriParam"
         - $ref: "#/components/parameters/ScopeParam"
         - $ref: "#/components/parameters/StateParam"
+        - $ref: "#/components/parameters/RequestParam"
       responses:
         "302":
           $ref: "#/components/responses/AuthorizationRedirect"
@@ -164,6 +165,13 @@ components:
       required: true
       description: |
         The auth code.
+      schema:
+        type: string
+    RequestParam:
+      in: query
+      name: request
+      required: false
+      description: This value would be a JAR, passed in as a query parameter
       schema:
         type: string
   responses:

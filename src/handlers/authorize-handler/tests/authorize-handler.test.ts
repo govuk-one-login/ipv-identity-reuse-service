@@ -11,6 +11,7 @@ it("should return 302 status code on a successful request", async () => {
       response_type: "code",
       redirect_uri: "https://api.example.com/callback",
       state: "test-state",
+      request: "test.1234.5678",
     } satisfies AuthorizationQueryStringParameters,
   });
 
