@@ -5,6 +5,7 @@ on:
     workflows:
       - acceptance-tests
       - build
+      - delete-deployment
       - deploy-to-aws
       - pact-tests
       - post-merge
