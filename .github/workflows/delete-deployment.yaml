@@ -1,5 +1,4 @@
-name: Delete deployment
-
+name: delete-deployment
 
 on:
   schedule:
