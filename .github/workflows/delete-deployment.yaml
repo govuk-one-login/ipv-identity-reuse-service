@@ -93,6 +93,7 @@ jobs:
               "channel_id": "${{ secrets.ERROR_SLACK_WEBHOOK_CHANNEL_ID }}",
               "github_repo": "${{ github.repository }}",
               "message": "Delete ipv-identity-reuse-service deployment ${{ github.actor }} has failed.",
-              "aws_account": "N/A",
-              "level": "ERROR"
+              "level": "ERROR",
+              "logs": "${{ github.event.workflow_run.html_url }}",
+              "workflow_name": "${{ github.event.workflow.name }}"
             }
