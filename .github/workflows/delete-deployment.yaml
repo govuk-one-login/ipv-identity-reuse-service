@@ -80,20 +80,3 @@ jobs:
         with:
           stack-names: ${{ env.STACKS_TO_DELETE }}
           aws-region: ${{ env.AWS_REGION }}
-
-      - name: Notify on failure
-        if: ${{ failure() && endsWith(github.ref, 'main') }}
-        id: slack
-        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # pin@v3.0.3
-        with:
-          webhook-type: incoming-webhook
-          webhook: ${{ secrets.ERROR_SLACK_WEBHOOK }}
-          payload: |
-            {
-              "channel_id": "${{ secrets.ERROR_SLACK_WEBHOOK_CHANNEL_ID }}",
-              "github_repo": "${{ github.repository }}",
-              "message": "Delete ipv-identity-reuse-service deployment ${{ github.actor }} has failed.",
-              "level": "ERROR",
-              "logs": "${{ github.event.workflow_run.html_url }}",
-              "workflow_name": "${{ github.event.workflow.name }}"
-            }
