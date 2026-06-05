@@ -24,7 +24,7 @@ function toHaveEmittedEMFWith(this: MatcherState, received: MockInstance, expect
   }
 
   const calls = received.mock.calls;
-  const messages = new Array(calls.length);
+  const messages = Array.from({ length: calls.length });
   if (calls.length === 0) {
     return {
       message: () => "Expected function to have emitted EMF with provided object",
@@ -33,14 +33,14 @@ function toHaveEmittedEMFWith(this: MatcherState, received: MockInstance, expect
       expected,
     };
   }
-  for (const [idx, call] of calls.entries()) {
+  for (const [index, call] of calls.entries()) {
     const [rawMessage] = call;
     try {
-      messages[idx] = JSON.parse(rawMessage);
+      messages[index] = JSON.parse(rawMessage);
     } catch {
-      messages[idx] = rawMessage;
+      messages[index] = rawMessage;
     }
-    if (this.equals(messages[idx], expected)) {
+    if (this.equals(messages[index], expected)) {
       return {
         message: () => "",
         pass: true,
@@ -71,14 +71,14 @@ function toHaveEmittedMetricWith(this: MatcherState, received: MockInstance, exp
       expected,
     };
   }
-  for (const [idx, call] of calls.entries()) {
+  for (const [index, call] of calls.entries()) {
     const [rawMessage] = call;
     try {
-      emfs[idx] = JSON.parse(rawMessage);
+      emfs[index] = JSON.parse(rawMessage);
     } catch {
-      emfs[idx] = rawMessage;
+      emfs[index] = rawMessage;
     }
-    const metrics = emfs[idx]._aws.CloudWatchMetrics;
+    const metrics = emfs[index]._aws.CloudWatchMetrics;
     if (metrics) {
       for (const metric of metrics) {
         if (this.equals(metric, expected)) {

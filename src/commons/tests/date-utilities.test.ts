@@ -1,4 +1,4 @@
-import { normaliseToStartOfDay, hasNbfExpired } from "../date-utils";
+import { normaliseToStartOfDay, hasNbfExpired } from "../date-utilities";
 import { vi, describe, beforeEach, afterEach, it, expect } from "vitest";
 
 describe("date-utils", () => {

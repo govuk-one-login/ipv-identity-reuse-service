@@ -2,7 +2,7 @@ import { SendMessageCommandOutput } from "@aws-sdk/client-sqs";
 import { Verifier, type VerifierOptions } from "@pact-foundation/pact";
 import type { Server } from "node:http";
 import path from "node:path";
-import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utils";
+import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utilities";
 import * as AuditModule from "../../../commons/audit";
 import type { Configuration } from "../../../commons/configuration";
 import * as ConfigurationModule from "../../../commons/configuration";
@@ -12,7 +12,7 @@ import { StoredIdentityJWT } from "../../../handlers/user-identity/stored-identi
 import * as FraudCheckService from "../../../identity-reuse/fraud-check-service";
 import type { VerifiableCredentialJWT } from "../../../identity-reuse/verifiable-credential-jwt";
 import { createServer as createProviderServer } from "./sis-provider-app";
-import { vi, describe, it, beforeAll, beforeEach, afterAll } from "vitest";
+import { vi, describe, it, beforeAll, beforeEach, afterAll, expect } from "vitest";
 
 vi.mock("../../../commons/audit");
 
@@ -21,7 +21,7 @@ const PORT = 8080;
 const validateEnvironment = () => {
   const environmentType = (process.env.PACT_TYPE || "file").toLowerCase();
   switch (environmentType) {
-    case "server":
+    case "server": {
       if (!process.env.PACT_URL) {
         throw new Error("Environment variable PACT_URL must be defined for server");
       }
@@ -35,11 +35,14 @@ const validateEnvironment = () => {
         throw new Error("Environment variable PACT_BROKER_SOURCE_SECRET must be defined for server");
       }
       break;
-    case "file":
+    }
+    case "file": {
       // Nothing required
       break;
-    default:
+    }
+    default: {
       throw new Error(`Environment variable PACT_TYPE can only be 'file' or 'server'`);
+    }
   }
 };
 
@@ -48,7 +51,7 @@ const mockEVCSResponse = (
   status: number = 200
 ) => {
   vi.spyOn(globalThis, "fetch").mockResolvedValue(
-    new Response(JSON.stringify(response), {
+    Response.json(response, {
       status,
       headers: { "content-type": "application/json" },
     })
@@ -135,9 +138,9 @@ describe("Sis Pact Verification", () => {
       },
     };
 
-    await new Verifier(options).verifyProvider();
+    await expect(new Verifier(options).verifyProvider()).resolves.toBeDefined();
   });
-}, 10000);
+}, 10_000);
 
 const createCredentialStoreIdentityResponse = async (
   verifiableCredentialStates: { vc: VerifiableCredentialJWT; state: string }[] = []
@@ -155,12 +158,12 @@ const createCredentialStoreIdentityResponse = async (
   return {
     si: {
       vc: await sign(defaultStoredIdentityHeader, storedIdentity),
-      metadata: null,
+      metadata: undefined,
       unsignedVot: storedIdentity.max_vot || storedIdentity.vot,
     },
     vcs: await Promise.all(
       verifiableCredentialStates.map(async (vcState) => {
-        return { state: vcState.state, vc: await sign(defaultStoredIdentityHeader, vcState.vc), metadata: null };
+        return { state: vcState.state, vc: await sign(defaultStoredIdentityHeader, vcState.vc), metadata: undefined };
       })
     ),
   };

@@ -5,7 +5,7 @@ import { MetricDimension, MetricName } from "../../commons/metric-enum";
 import { isAisMessage, AisMessage } from "./ais-message";
 
 import { getConfiguration, type Configuration } from "../../commons/configuration";
-import { isStringWithLength } from "../../commons/string-utils";
+import { isStringWithLength } from "../../commons/string-utilities";
 import logger from "../../commons/logger";
 import { isCredentialStoreErrorResponse } from "../../credential-store/credential-store-error-response";
 import { auditIdentityRecordInvalidated } from "../../commons/audit";
@@ -59,11 +59,11 @@ const invalidateUser = async (userId: string, interventionCode: string) => {
         throw new Error("Call to invalidation endpoint failed");
       }
     }
-  } catch (e) {
-    if (e instanceof TypeError) {
-      logger.error("Error calling service to invalidate user", { cause: e.cause, message: e.message });
+  } catch (error) {
+    if (error instanceof TypeError) {
+      logger.error("Error calling service to invalidate user", { cause: error.cause, message: error.message });
     }
-    throw e;
+    throw error;
   }
 };
 
@@ -73,9 +73,9 @@ const parseSQSRecords = (records: SQSRecord[]): AisMessage[] =>
       throw new Error(`SQS record ${index} does not have a body`);
     }
 
-    const recordObj = JSON.parse(record.body);
-    if (isAisMessage(recordObj)) {
-      return recordObj;
+    const recordObject = JSON.parse(record.body);
+    if (isAisMessage(recordObject)) {
+      return recordObject;
     }
 
     throw new Error(`SQS record ${index} does not have required fields`);

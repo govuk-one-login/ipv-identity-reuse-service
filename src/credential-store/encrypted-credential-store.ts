@@ -1,7 +1,7 @@
 import { getConfiguration, getServiceApiKey } from "../commons/configuration";
 import { CredentialStoreIdentityResponse } from "./credential-store-identity-response";
 import { VerifiableCredentialJWT } from "../identity-reuse/verifiable-credential-jwt";
-import { getJwtBody } from "../commons/jwt-utils";
+import { getJwtBody } from "../commons/jwt-utilities";
 import logger from "../commons/logger";
 
 export const getIdentityFromCredentialStore = async (authorizationToken: string): Promise<Response> => {

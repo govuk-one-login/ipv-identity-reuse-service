@@ -1,6 +1,6 @@
 import { CredentialStoreIdentityResponse, VerifiableCredentialObject } from "../credential-store-identity-response";
 import { IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials";
-import { getDefaultJwtHeader, sign } from "../../../shared-test/jwt-utils";
+import { getDefaultJwtHeader, sign } from "../../../shared-test/jwt-utilities";
 import { parseCurrentVerifiableCredentials } from "../encrypted-credential-store";
 import { describe, it, expect } from "vitest";
 
@@ -9,7 +9,7 @@ describe("parseCurrentVerifiableCredentials", () => {
     const identityResponse: CredentialStoreIdentityResponse = {
       si: {
         vc: "jwtString",
-        metadata: null,
+        metadata: undefined,
         unsignedVot: "P2",
       },
       vcs: [
@@ -34,7 +34,7 @@ const createVerifiableCredentialWithState = async (
   return {
     state: state,
     vc: await sign(getDefaultJwtHeader(), getVerifiableCredential(issuer)),
-    metadata: null,
+    metadata: undefined,
   };
 };
 

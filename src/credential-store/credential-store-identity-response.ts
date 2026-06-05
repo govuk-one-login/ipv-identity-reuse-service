@@ -8,14 +8,14 @@ export type CredentialStoreIdentityResponse = {
 
 export interface StoredIdentityObject {
   vc: string;
-  metadata: Metadata | null | string;
+  metadata: Metadata | string | undefined;
   unsignedVot: IdentityVectorOfTrust;
 }
 
 export interface VerifiableCredentialObject {
   state: string;
   vc: string;
-  metadata: Metadata | null | string;
+  metadata: Metadata | string | undefined;
   signature?: string;
 }
 

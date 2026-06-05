@@ -4,7 +4,7 @@ import { jwtVerify } from "jose";
 import { auditIdentityRecordRead, auditIdentityRecordReturned } from "../../commons/audit";
 import { getConfiguration } from "../../commons/configuration";
 import { HttpCodesEnum } from "../../commons/constants";
-import { getJwtBody, getJwtHeader } from "../../commons/jwt-utils";
+import { getJwtBody, getJwtHeader } from "../../commons/jwt-utilities";
 import logger from "../../commons/logger";
 import { CredentialStoreIdentityResponse } from "../../credential-store/credential-store-identity-response";
 import {
@@ -75,10 +75,10 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
   }
 };
 
-const getProperty = <T extends Record<string, unknown>>(obj: T, property: string): string | undefined => {
+const getProperty = <T extends Record<string, unknown>>(object: T, property: string): string | undefined => {
   const propertyLowerCase = property.toLowerCase();
-  const foundKey = Object.keys(obj).find((k) => k.toLowerCase() === propertyLowerCase);
-  return foundKey && typeof obj[foundKey] === "string" ? obj[foundKey] : undefined;
+  const foundKey = Object.keys(object).find((k) => k.toLowerCase() === propertyLowerCase);
+  return foundKey && typeof object[foundKey] === "string" ? object[foundKey] : undefined;
 };
 
 const createSuccessResponse = async (
@@ -144,25 +144,30 @@ const createErrorResponse = (errorCode: HttpCodesEnum): APIGatewayProxyResult =>
   let error;
   let error_description;
   switch (errorCode) {
-    case HttpCodesEnum.BAD_REQUEST:
+    case HttpCodesEnum.BAD_REQUEST: {
       error = "bad_request";
       error_description = "Bad request from client";
       break;
-    case HttpCodesEnum.NOT_FOUND:
+    }
+    case HttpCodesEnum.NOT_FOUND: {
       error = "not_found";
       error_description = "No Stored Identity exists for this user or Stored Identity has been invalidated";
       break;
-    case HttpCodesEnum.UNAUTHORIZED:
+    }
+    case HttpCodesEnum.UNAUTHORIZED: {
       error = "invalid_token";
       error_description = "Bearer token is missing or invalid";
       break;
-    case HttpCodesEnum.FORBIDDEN:
+    }
+    case HttpCodesEnum.FORBIDDEN: {
       error = "forbidden";
       error_description = "Access token expired or not permitted";
       break;
-    default:
+    }
+    default: {
       error = "server_error";
       error_description = "Unable to retrieve data";
+    }
   }
   return {
     statusCode: errorCode,
@@ -173,17 +178,21 @@ const createErrorResponse = (errorCode: HttpCodesEnum): APIGatewayProxyResult =>
 const generateErrorCodeDescription = async (errorCode: HttpCodesEnum): Promise<string> => {
   let error_code_description;
   switch (errorCode) {
-    case HttpCodesEnum.NOT_FOUND:
+    case HttpCodesEnum.NOT_FOUND: {
       error_code_description = "no_record";
       break;
-    case HttpCodesEnum.UNAUTHORIZED:
+    }
+    case HttpCodesEnum.UNAUTHORIZED: {
       error_code_description = "authentication_failure";
       break;
-    case HttpCodesEnum.FORBIDDEN:
+    }
+    case HttpCodesEnum.FORBIDDEN: {
       error_code_description = "forbidden";
       break;
-    default:
+    }
+    default: {
       error_code_description = "service_error";
+    }
   }
   return error_code_description;
 };

@@ -41,7 +41,7 @@ describe("validateStoredIdentityCredentials", () => {
   });
 
   it("should return false when stored identity has zero signatures and there are no credentials", () => {
-    const storedIdentityRecord: StoredIdentityJWT = createStoredIdentityRecord(...[]);
+    const storedIdentityRecord: StoredIdentityJWT = createStoredIdentityRecord();
     const encodedCredentialJwts: string[] = [];
 
     expect(validateStoredIdentityCredentials(storedIdentityRecord, encodedCredentialJwts)).toBe(false);

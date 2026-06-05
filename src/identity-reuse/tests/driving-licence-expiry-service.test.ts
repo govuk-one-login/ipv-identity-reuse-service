@@ -255,19 +255,19 @@ describe("driving-licence-expiry-service", () => {
   });
 
   describe("hasDrivingLicenceExpired", () => {
-    it("should return null when no DCMAW driving permit VC", () => {
+    it("should return undefined when no DCMAW driving permit VC", () => {
       const fraudVc = createFraudVc();
       const result = hasDrivingLicenceExpired([fraudVc], DCMAW_ISSUER, 180);
-      expect(result).toBeNull();
+      expect(result).toBeUndefined();
     });
 
-    it("should return null when DCMAW VC uses passport", () => {
+    it("should return undefined when DCMAW VC uses passport", () => {
       const vc = createDcmawPassportVc();
       const result = hasDrivingLicenceExpired([vc], DCMAW_ISSUER, 180);
-      expect(result).toBeNull();
+      expect(result).toBeUndefined();
     });
 
-    it("should return null when DCMAW driving permit VC is failed", () => {
+    it("should return undefined when DCMAW driving permit VC is failed", () => {
       const vc = createDcmawDrivingPermitVc("2026-01-01", "2026-02-01T10:00:00Z");
       vc.vc.evidence = [
         {
@@ -277,7 +277,7 @@ describe("driving-licence-expiry-service", () => {
         },
       ];
       const result = hasDrivingLicenceExpired([vc], DCMAW_ISSUER, 180);
-      expect(result).toBeNull();
+      expect(result).toBeUndefined();
     });
 
     it("should return false when licence was valid at issuance", () => {

@@ -37,9 +37,13 @@ const createMockAPIGatewayProxyEvent = (event: Partial<APIGatewayProxyEvent>, bo
   httpMethod: "POST",
   isBase64Encoded: false,
   path: "/",
+  // eslint-disable-next-line unicorn/no-null -- Required to create valid APIGatewayProxyEvent
   pathParameters: null,
+  // eslint-disable-next-line unicorn/no-null -- Required to create valid APIGatewayProxyEvent
   queryStringParameters: null,
+  // eslint-disable-next-line unicorn/no-null -- Required to create valid APIGatewayProxyEvent
   multiValueQueryStringParameters: null,
+  // eslint-disable-next-line unicorn/no-null -- Required to create valid APIGatewayProxyEvent
   stageVariables: null,
   requestContext: {} as APIGatewayEventRequestContextWithAuthorizer<never>,
   resource: "/",

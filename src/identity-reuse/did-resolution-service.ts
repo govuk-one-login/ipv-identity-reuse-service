@@ -18,7 +18,9 @@ export const getPublicKeyJwkForKid = async (kid: string): Promise<JWK> => {
   logger.info("Resolving public key JWK");
   const didResolution = await resolver.resolve(kid);
   const webKeys = didResolution.didDocument?.assertionMethod;
-  const verificationMethod = webKeys?.map(extractAssertionVerificationMethod).find((key) => key.id == kid);
+  const verificationMethod = webKeys
+    ?.map((method) => extractAssertionVerificationMethod(method))
+    .find((key) => key.id == kid);
   if (verificationMethod) {
     const publicKeyJwk = verificationMethod.publicKeyJwk as JWK;
     cache.set(kid, publicKeyJwk);

@@ -1,8 +1,9 @@
-import { isStringWithLength } from "../string-utils";
+import { isStringWithLength } from "../string-utilities";
 import { describe, it, expect } from "vitest";
 
 describe("isStringWithLength", () => {
   it("should return false if value is undefined", () => {
+    // eslint-disable-next-line unicorn/no-useless-undefined -- Parameter required
     expect(isStringWithLength(undefined)).toEqual(false);
   });
 

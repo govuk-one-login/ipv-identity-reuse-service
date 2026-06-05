@@ -3,11 +3,11 @@ import request from "supertest";
 import type { Response } from "superagent";
 import type { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
 import { getAppConfig } from "@aws-lambda-powertools/parameters/appconfig";
-import { getString } from "../../../../src/commons/string-utils";
+import { getString } from "../../../../src/commons/string-utilities";
 import { Configuration } from "../../../../src/commons/configuration";
 import { WorldDefinition } from "../base-verbs.step";
 import { CloudFormationOutputs, getCloudFormationOutput } from "./cloudformation";
-import { getEvcsApiKey } from "./ssm-utils";
+import { getEvcsApiKey } from "./ssm-utilities";
 
 export const EvcsEndpoints = {
   BuildStubBaseUrl: "https://evcs.reuse.stubs.account.gov.uk",

@@ -1,15 +1,15 @@
 import { JWTHeaderParameters } from "jose";
-import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utils";
+import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utilities";
 import { IdentityCheckCredentialJWTClass, FraudCheckType } from "@govuk-one-login/data-vocab/credentials";
 import { evcsPostCredentials } from "../utils/evcs-api";
-import assert from "assert";
+import assert from "node:assert";
 
 const DCMAW_ISSUER = "https://www.review-b.dev.account.gov.uk";
 
 export const createAndPostCredentials = async (credentials: number, userId: string): Promise<string[]> => {
   const credentialJwts = [];
   const header: JWTHeaderParameters = getDefaultJwtHeader();
-  for (let i = 0; i < credentials; i++) {
+  for (let index = 0; index < credentials; index++) {
     const credentialPayload: IdentityCheckCredentialJWTClass = {
       sub: userId,
       iss: "http://cri.example.com",
@@ -21,7 +21,7 @@ export const createAndPostCredentials = async (credentials: number, userId: stri
     credentialJwts.push(await sign(header, credentialPayload));
   }
 
-  if (credentialJwts.length) {
+  if (credentialJwts.length > 0) {
     const result = await evcsPostCredentials(
       userId,
       credentialJwts.map((jwt) => {
@@ -41,29 +41,26 @@ export const createAndPostFraudCheckCredential = async (
 ): Promise<string> => {
   const header: JWTHeaderParameters = getDefaultJwtHeader();
 
-  let evidence;
-  if (fraudCheckType) {
-    evidence = [
-      {
-        failedCheckDetails: [
-          {
-            checkMethod: "data" as const,
-            fraudCheck: fraudCheckType as FraudCheckType,
-          },
-        ],
-      },
-    ];
-  } else {
-    evidence = [
-      {
-        checkDetails: [
-          {
-            checkMethod: "data" as const,
-          },
-        ],
-      },
-    ];
-  }
+  const evidence = fraudCheckType
+    ? [
+        {
+          failedCheckDetails: [
+            {
+              checkMethod: "data" as const,
+              fraudCheck: fraudCheckType as FraudCheckType,
+            },
+          ],
+        },
+      ]
+    : [
+        {
+          checkDetails: [
+            {
+              checkMethod: "data" as const,
+            },
+          ],
+        },
+      ];
 
   const credentialPayload: IdentityCheckCredentialJWTClass = {
     sub: userId,

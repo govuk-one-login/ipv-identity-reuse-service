@@ -1,6 +1,6 @@
 import { Then } from "@cucumber/cucumber";
 import { WorldDefinition } from "./base-verbs.step";
-import assert from "assert";
+import assert from "node:assert";
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
 
 Then<WorldDefinition>("the status code should be {int}", function (statusCode: number) {

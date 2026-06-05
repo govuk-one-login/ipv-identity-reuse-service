@@ -1,5 +1,5 @@
 import { StoredIdentityJWT } from "../handlers/user-identity/stored-identity-jwt";
-import { getJwtSignature } from "../commons/jwt-utils";
+import { getJwtSignature } from "../commons/jwt-utilities";
 import logger from "../commons/logger";
 
 export const validateStoredIdentityCredentials = (
@@ -35,9 +35,9 @@ export const validateStoredIdentityCredentials = (
   return validationResult;
 };
 
-const hasSameElements = <T>(arr1: T[], arr2: T[]): boolean => {
-  if (arr1.length !== arr2.length) return false;
-  const set1 = new Set(arr1);
-  const set2 = new Set(arr2);
+const hasSameElements = <T>(array1: T[], array2: T[]): boolean => {
+  if (array1.length !== array2.length) return false;
+  const set1 = new Set(array1);
+  const set2 = new Set(array2);
   return set1.size === set2.size && [...set1].every((item) => set2.has(item));
 };
