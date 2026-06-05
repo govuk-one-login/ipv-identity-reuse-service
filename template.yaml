@@ -1157,6 +1157,10 @@ Resources:
           NODE_OPTIONS: "--enable-source-maps"
       Layers:
         - !Ref GovUKFrontEndLayer
+        - !If
+          - DynaTraceEnabled
+          - !Ref DynatraceNodeLayerArn
+          - !Ref AWS::NoValue
     Metadata:
       BuildMethod: makefile
 
