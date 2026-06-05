@@ -16,7 +16,6 @@ const BASE_CONFIGURATION: Configuration = {
   fraudIssuer: FRAUD_ISSUER,
   fraudValidityPeriod: 180,
   controllerAllowList: [],
-  enableDrivingLicenceExpiryCheck: true,
   dcmawIssuer: DCMAW_ISSUER,
   drivingLicenceValidityPeriod: 180,
 };
@@ -72,17 +71,6 @@ describe("identity-expiry-service", () => {
 
     const result = hasIdentityExpired([createMockVc("fraudCRI")], BASE_CONFIGURATION);
     expect(result).toBe(false);
-  });
-
-  it("should not check driving licence expiry when feature flag is disabled", () => {
-    vi.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
-    const mockDlCheck = vi.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired");
-
-    const configuration = { ...BASE_CONFIGURATION, enableDrivingLicenceExpiryCheck: false };
-    const result = hasIdentityExpired([createMockVc("fraudCRI")], configuration);
-
-    expect(result).toBe(false);
-    expect(mockDlCheck).not.toHaveBeenCalled();
   });
 
   it("should not check driving licence expiry when dcmawIssuer is undefined", () => {
