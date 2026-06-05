@@ -1,7 +1,7 @@
 import { setDefaultTimeout, Before, defineParameterType } from "@cucumber/cucumber";
 import { Response } from "superagent";
-import { randomString } from "../../../shared-test/string-utils";
-import { getDidControllerName, getSigningKeyId } from "./utils/ssm-utils";
+import { randomString } from "../../../shared-test/string-utilities";
+import { getDidControllerName, getSigningKeyId } from "./utils/ssm-utilities";
 import { AuthorizationResponse, OAuthBadRequest, TokenResponse } from "./utils/auth-api";
 
 export type WorldDefinition = {
@@ -17,7 +17,7 @@ export type WorldDefinition = {
   tokenResponse?: TokenResponse | OAuthBadRequest;
 };
 
-setDefaultTimeout(20000);
+setDefaultTimeout(20_000);
 
 defineParameterType({
   name: "boolean",

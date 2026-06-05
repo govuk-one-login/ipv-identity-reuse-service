@@ -68,7 +68,7 @@ describe("identity-expiry-service", () => {
 
   it("should return false when driving licence expiry check returns null", () => {
     vi.spyOn(fraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);
-    vi.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired").mockReturnValue(null);
+    vi.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired").mockImplementation(vi.fn());
 
     const result = hasIdentityExpired([createMockVc("fraudCRI")], BASE_CONFIGURATION);
     expect(result).toBe(false);

@@ -16,6 +16,7 @@ export const calculateVot = (
 
   const foundVot: IdentityVectorOfTrust | undefined = vtr
     .map((s) => s.trim())
+    // eslint-disable-next-line unicorn/no-array-sort -- toSorted not supported by current configuration
     .sort((a, b) => (a < b ? 1 : -1))
     .find((s): s is IdentityVectorOfTrust => s <= vot);
 

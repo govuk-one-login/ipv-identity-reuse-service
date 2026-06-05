@@ -1,12 +1,12 @@
 import { Given, When } from "@cucumber/cucumber";
 import { sisPostUserIdentity } from "./utils/sis-api";
 import { getBearerToken } from "./utils/get-bearer-token";
-import assert from "assert";
+import assert from "node:assert";
 import { WorldDefinition } from "./base-verbs.step";
 import { evcsPostIdentity } from "./utils/evcs-api";
 import { JWTHeaderParameters, JWTPayload } from "jose";
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
-import { getDefaultJwtHeader, sign, renderDid } from "../../../shared-test/jwt-utils";
+import { getDefaultJwtHeader, sign, renderDid } from "../../../shared-test/jwt-utilities";
 
 Given<WorldDefinition>("I have a user without a stored identity", async function () {
   this.bearerToken = await getBearerToken(this.userId);

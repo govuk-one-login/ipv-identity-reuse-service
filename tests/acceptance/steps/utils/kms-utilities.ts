@@ -1,27 +1,27 @@
 import { CompactJWSHeaderParameters } from "jose";
 import { KMSClient, SignCommand, SigningAlgorithmSpec } from "@aws-sdk/client-kms";
-import { getDidSigningKeyAlias } from "./ssm-utils";
+import { getDidSigningKeyAlias } from "./ssm-utilities";
 
 const kmsClient = new KMSClient({ region: process.env.AWS_REGION });
 
 const b64u = (v: Uint8Array | string) =>
   Buffer.from(typeof v === "string" ? v : v)
     .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/g, "");
+    .replaceAll("+", "-")
+    .replaceAll("/", "_")
+    .replaceAll(/=+$/g, "");
 
 const derToJose = (der: Uint8Array, size: number) => {
   let o = 0;
   if (der[o++] !== 0x30) throw new Error("bad der");
   o++;
   if (der[o++] !== 0x02) throw new Error("bad der r");
-  const rLen = der[o++];
-  let r = der.slice(o, o + rLen);
-  o += rLen;
+  const rLength = der[o++];
+  let r = der.slice(o, o + rLength);
+  o += rLength;
   if (der[o++] !== 0x02) throw new Error("bad der s");
-  const sLen = der[o++];
-  let s = der.slice(o, o + sLen);
+  const sLength = der[o++];
+  let s = der.slice(o, o + sLength);
   if (r[0] === 0x00 && r.length > 1) r = r.slice(1);
   if (s[0] === 0x00 && s.length > 1) s = s.slice(1);
   if (r.length > size || s.length > size) throw new Error("bad len");

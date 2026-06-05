@@ -1,6 +1,6 @@
 import { getAppConfig } from "@aws-lambda-powertools/parameters/appconfig";
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
-import { getString } from "./string-utils";
+import { getString } from "./string-utilities";
 import logger from "./logger";
 
 export type Configuration = {

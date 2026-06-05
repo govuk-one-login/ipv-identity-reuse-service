@@ -116,7 +116,7 @@ describe("txma-message-processor", () => {
   );
 
   it("should only invalidate records which have the intervention code", async () => {
-    const mockFetch = vi.spyOn(global, "fetch").mockResolvedValue({
+    const mockFetch = vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: true,
       status: 200,
       json: () => Promise.resolve(""),
@@ -125,27 +125,27 @@ describe("txma-message-processor", () => {
     const sqsEvent = createTestSQSEvent<AisMessage>(
       {
         user_id: "bob.smith-12345",
-        timestamp: 1752755394,
+        timestamp: 1_752_755_394,
         intervention_code: "01",
       },
       {
         user_id: "jane.smith-12345",
-        timestamp: 1752755454,
+        timestamp: 1_752_755_454,
         intervention_code: "12",
       },
       {
         user_id: "cyril.jones-12345",
-        timestamp: 1752755496,
+        timestamp: 1_752_755_496,
         intervention_code: "23",
       },
       {
         user_id: "helen.jones-12345",
-        timestamp: 1752755496,
+        timestamp: 1_752_755_496,
         intervention_code: "34",
       },
       {
         user_id: "helen.jones-12345",
-        timestamp: 1752755496,
+        timestamp: 1_752_755_496,
       }
     );
 
@@ -202,7 +202,7 @@ describe("txma-message-processor", () => {
   });
 
   it("should record if the identity does not exist", async () => {
-    const mockFetch = vi.spyOn(global, "fetch").mockResolvedValue({
+    const mockFetch = vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: false,
       status: 404,
       json: () => ({ message: "Identity does not exist" }),
@@ -210,7 +210,7 @@ describe("txma-message-processor", () => {
 
     const sqsEvent = createTestSQSEvent<AisMessage>({
       user_id: "jane.smith-12345",
-      timestamp: 1752755454,
+      timestamp: 1_752_755_454,
       intervention_code: "12",
     });
 
@@ -253,7 +253,7 @@ describe("txma-message-processor", () => {
   });
 
   it("should throw an error on identity service error", async () => {
-    const mockFetch = vi.spyOn(global, "fetch").mockResolvedValue({
+    const mockFetch = vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: false,
       status: 500,
       json: () => ({ message: "Internal server error" }),
@@ -261,7 +261,7 @@ describe("txma-message-processor", () => {
 
     const sqsEvent = createTestSQSEvent<AisMessage>({
       user_id: "jane.smith-12345",
-      timestamp: 1752755454,
+      timestamp: 1_752_755_454,
       intervention_code: "12",
     });
 

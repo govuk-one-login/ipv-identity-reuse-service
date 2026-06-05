@@ -13,11 +13,10 @@ import { IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/cre
 import * as AuditModule from "../../../commons/audit";
 import * as DidResolutionService from "../../../identity-reuse/did-resolution-service";
 import { JWTHeaderParameters } from "jose";
-import { getJwtSignature } from "../../../commons/jwt-utils";
-import { publicKeyJwk, getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utils";
+import { getJwtSignature } from "../../../commons/jwt-utilities";
+import { publicKeyJwk, getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utilities";
 import logger from "../../../commons/logger";
 import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
-import { LogKeys } from "@aws-lambda-powertools/logger/lib/cjs/types/logKeys";
 
 vi.mock("../../../commons/logger");
 vi.mock("../../../commons/audit");
@@ -52,7 +51,7 @@ const event = () => {
 
 const mockEVCSResponse = (response: CredentialStoreIdentityResponse) => {
   (globalThis.fetch as Mock) = vi.fn().mockResolvedValue(
-    new Response(JSON.stringify(response), {
+    Response.json(response, {
       status: 200,
       headers: { "content-type": "application/json" },
     })
@@ -60,12 +59,12 @@ const mockEVCSResponse = (response: CredentialStoreIdentityResponse) => {
 };
 
 let newEvent: APIGatewayProxyEvent;
-let mockLoggerAppendKeys: Mock<(attributes: LogKeys) => void>;
+let mockLoggerAppendKeys: Mock;
 
 const ALLOWED_CONTROLLER = "api.identity.dev.account.gov.uk";
 
 beforeEach(() => {
-  vi.useFakeTimers({ now: 1759240815925 });
+  vi.useFakeTimers({ now: 1_759_240_815_925 });
   vi.clearAllMocks();
   newEvent = event();
   vi.spyOn(configuration, "getServiceApiKey").mockResolvedValue("an-api-key");
@@ -115,7 +114,7 @@ describe("user-identity-handler authorization", () => {
       {
         max_vot: "P3",
         retrieval_outcome: "success",
-        timestamp_fraud_check_nbf: 1759240815,
+        timestamp_fraud_check_nbf: 1_759_240_815,
       },
       {
         stored_identity_jwt: mockEVCSData.si.vc,
@@ -252,10 +251,13 @@ describe("user-identity-handler authorization", () => {
     const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
 
     (globalThis.fetch as Mock) = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({}), {
-        status: HttpCodesEnum.FORBIDDEN,
-        headers: { "content-type": "application/json" },
-      })
+      Response.json(
+        {},
+        {
+          status: HttpCodesEnum.FORBIDDEN,
+          headers: { "content-type": "application/json" },
+        }
+      )
     );
     const result = handler(newEvent, {} as Context);
     await expect(result).resolves.toEqual({
@@ -287,10 +289,13 @@ describe("user-identity-handler authorization", () => {
     const auditIdentityRecordReadSpy = vi.spyOn(AuditModule, "auditIdentityRecordRead");
     const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
     (globalThis.fetch as Mock) = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({}), {
-        status: HttpCodesEnum.UNAUTHORIZED,
-        headers: { "content-type": "application/json" },
-      })
+      Response.json(
+        {},
+        {
+          status: HttpCodesEnum.UNAUTHORIZED,
+          headers: { "content-type": "application/json" },
+        }
+      )
     );
     const result = handler(newEvent, {} as Context);
     await expect(result).resolves.toEqual({
@@ -322,10 +327,13 @@ describe("user-identity-handler authorization", () => {
     const auditIdentityRecordReadSpy = vi.spyOn(AuditModule, "auditIdentityRecordRead");
     const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
     (globalThis.fetch as Mock) = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({}), {
-        status: HttpCodesEnum.INTERNAL_SERVER_ERROR,
-        headers: { "content-type": "application/json" },
-      })
+      Response.json(
+        {},
+        {
+          status: HttpCodesEnum.INTERNAL_SERVER_ERROR,
+          headers: { "content-type": "application/json" },
+        }
+      )
     );
     const result = handler(newEvent, {} as Context);
     await expect(result).resolves.toEqual({
@@ -357,10 +365,13 @@ describe("user-identity-handler authorization", () => {
     const auditIdentityRecordReadSpy = vi.spyOn(AuditModule, "auditIdentityRecordRead");
     const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
     (globalThis.fetch as Mock) = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({}), {
-        status: HttpCodesEnum.NOT_FOUND,
-        headers: { "content-type": "application/json" },
-      })
+      Response.json(
+        {},
+        {
+          status: HttpCodesEnum.NOT_FOUND,
+          headers: { "content-type": "application/json" },
+        }
+      )
     );
     const result = handler(newEvent, {} as Context);
     await expect(result).resolves.toEqual({
@@ -576,7 +587,7 @@ describe("user-identity-handler max_vot", () => {
     const mockEVCSData: CredentialStoreIdentityResponse = {
       si: {
         vc: storedIdentityRecordJwt,
-        metadata: null,
+        metadata: undefined,
         unsignedVot: "P3",
       },
       vcs: [],
@@ -602,7 +613,7 @@ describe("user-identity-handler max_vot", () => {
     const mockEVCSData: CredentialStoreIdentityResponse = {
       si: {
         vc: storedIdentityRecordJwt,
-        metadata: null,
+        metadata: undefined,
         unsignedVot: "P4", //setting this to something different to maxVot to test it gets the right value
       },
       vcs: [],
@@ -639,7 +650,7 @@ const createCredentialStoreIdentityResponseWithStates = async (
   forcedCredentialSignatures?: string[]
 ): Promise<StoredIdentityResponse> => {
   const evcsVcs = credentialsAndStates.map((vcState) => {
-    return { state: vcState.state, vc: vcState.signedVc, metadata: null };
+    return { state: vcState.state, vc: vcState.signedVc, metadata: undefined };
   });
 
   const credentialSignatures =
@@ -649,7 +660,7 @@ const createCredentialStoreIdentityResponseWithStates = async (
   const response: CredentialStoreIdentityResponse = {
     si: {
       vc: await sign(header, storedIdentity),
-      metadata: null,
+      metadata: undefined,
       unsignedVot: "P3",
     },
     vcs: evcsVcs,

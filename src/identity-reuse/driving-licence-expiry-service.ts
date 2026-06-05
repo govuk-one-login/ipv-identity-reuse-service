@@ -1,5 +1,5 @@
 import logger from "../commons/logger";
-import { hasNbfExpired, normaliseToStartOfDay } from "../commons/date-utils";
+import { hasNbfExpired, normaliseToStartOfDay } from "../commons/date-utilities";
 import { IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials";
 import { VerifiableCredentialJWT, isIdentityCheckCredential } from "./verifiable-credential-jwt";
 
@@ -79,10 +79,10 @@ export const hasDrivingLicenceExpired = (
   vcBundle: VerifiableCredentialJWT[],
   dcmawIssuers: string[],
   validityPeriodDays: number
-): boolean | null => {
+): boolean | undefined => {
   const dcmawVc = getDcmawDrivingPermitVc(vcBundle, dcmawIssuers);
   if (!dcmawVc) {
-    return null;
+    return;
   }
 
   if (!dcmawVc.nbf) {

@@ -6,7 +6,7 @@ describe("isTxmaMessage", () => {
     expect(
       isAisMessage({
         user_id: "jane.smith-12345",
-        timestamp: 1752755454,
+        timestamp: 1_752_755_454,
         intervention_code: "12",
       })
     ).toEqual(true);
@@ -16,7 +16,7 @@ describe("isTxmaMessage", () => {
     expect(
       isAisMessage({
         user_id: "jane.smith-12345",
-        timestamp: 1752755454,
+        timestamp: 1_752_755_454,
         intervention_code: "12",
         event_id: 345,
       })
@@ -26,7 +26,7 @@ describe("isTxmaMessage", () => {
   it("should return false when user_id missing", () => {
     expect(
       isAisMessage({
-        timestamp: 1752755454,
+        timestamp: 1_752_755_454,
         intervention_code: "12",
       })
     ).toEqual(false);
@@ -45,7 +45,7 @@ describe("isTxmaMessage", () => {
     expect(
       isAisMessage({
         user_id: "jane.smith-12345",
-        timestamp: 1752755454,
+        timestamp: 1_752_755_454,
       })
     ).toEqual(true);
   });
@@ -54,7 +54,7 @@ describe("isTxmaMessage", () => {
     expect(
       isAisMessage({
         user_id: "",
-        timestamp: 1752755454,
+        timestamp: 1_752_755_454,
         intervention_code: "12",
       })
     ).toEqual(false);

@@ -18,15 +18,20 @@ it("should return an empty response", async () => {
 });
 
 const createMockAPIGatewayProxyEvent = (event?: Partial<APIGatewayProxyEvent>): APIGatewayProxyEvent => ({
+  // eslint-disable-next-line unicorn/no-null -- Required to create value APIGatewayProxyEvent object
   body: null,
   headers: {},
   multiValueHeaders: {},
   httpMethod: "GET",
   isBase64Encoded: false,
   path: "/",
+  // eslint-disable-next-line unicorn/no-null -- Required to create value APIGatewayProxyEvent object
   pathParameters: null,
+  // eslint-disable-next-line unicorn/no-null -- Required to create value APIGatewayProxyEvent object
   queryStringParameters: null,
+  // eslint-disable-next-line unicorn/no-null -- Required to create value APIGatewayProxyEvent object
   multiValueQueryStringParameters: null,
+  // eslint-disable-next-line unicorn/no-null -- Required to create value APIGatewayProxyEvent object
   stageVariables: null,
   requestContext: {} as APIGatewayEventRequestContextWithAuthorizer<never>,
   resource: "/",

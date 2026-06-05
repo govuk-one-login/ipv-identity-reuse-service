@@ -19,8 +19,8 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
     };
   }
 
-  const searchParams = new URLSearchParams(event.body || "");
-  if (searchParams.get("grant_type") !== "authorization_code") {
+  const searchParameters = new URLSearchParams(event.body || "");
+  if (searchParameters.get("grant_type") !== "authorization_code") {
     return {
       statusCode: 400,
       body: JSON.stringify({
@@ -30,7 +30,7 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
     };
   }
 
-  const code = searchParams.get("code");
+  const code = searchParameters.get("code");
   if (!code || code.length <= 0) {
     return {
       statusCode: 400,

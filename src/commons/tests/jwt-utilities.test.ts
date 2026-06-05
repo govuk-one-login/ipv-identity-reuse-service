@@ -1,5 +1,5 @@
-import { getDefaultJwtHeader, sign } from "../../../shared-test/jwt-utils";
-import { getJwtBody, getJwtHeader, getJwtSignature } from "../jwt-utils";
+import { getDefaultJwtHeader, sign } from "../../../shared-test/jwt-utilities";
+import { getJwtBody, getJwtHeader, getJwtSignature } from "../jwt-utilities";
 import { describe, it, expect } from "vitest";
 
 const validJwtBody = {

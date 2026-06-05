@@ -7,7 +7,7 @@ export const hasIdentityExpired = (currentVcs: VerifiableCredentialJWT[], config
   const fraudVc = getFraudVc(currentVcs, configuration.fraudIssuer);
   const fraudExpired = hasFraudCheckExpired(fraudVc, configuration.fraudValidityPeriod);
 
-  let drivingLicenceExpired: boolean | null = null;
+  let drivingLicenceExpired: boolean | undefined = undefined;
   if (
     configuration.enableDrivingLicenceExpiryCheck &&
     configuration.dcmawIssuer !== undefined &&

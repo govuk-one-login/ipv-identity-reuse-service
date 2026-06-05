@@ -24,8 +24,8 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
         Location: url.href,
       },
     };
-  } catch (err) {
-    logger.error(`Error in lambdaHandler event: ${err}`);
+  } catch (error) {
+    logger.error(`Error in lambdaHandler event: ${error}`);
     return {
       statusCode: 500,
       body: "",

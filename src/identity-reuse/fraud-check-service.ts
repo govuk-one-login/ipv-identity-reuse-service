@@ -1,5 +1,5 @@
 import logger from "../commons/logger";
-import { hasNbfExpired } from "../commons/date-utils";
+import { hasNbfExpired } from "../commons/date-utilities";
 import { FraudCheckType, IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials";
 import { VerifiableCredentialJWT, isIdentityCheckCredential } from "./verifiable-credential-jwt";
 
@@ -7,10 +7,13 @@ export const getFraudVc = (
   vcBundle: VerifiableCredentialJWT[],
   fraudIssuers: string[]
 ): VerifiableCredentialJWT | undefined => {
-  return vcBundle
-    .filter((vc) => vc.iss !== undefined && fraudIssuers.includes(vc.iss) && vc.nbf !== undefined)
-    .sort((vc1, vc2) => vc1.nbf! - vc2.nbf!)
-    .pop();
+  return (
+    vcBundle
+      .filter((vc) => vc.iss !== undefined && fraudIssuers.includes(vc.iss) && vc.nbf !== undefined)
+      // eslint-disable-next-line unicorn/no-array-sort -- toSorted not supported by current configuration
+      .sort((vc1, vc2) => vc1.nbf! - vc2.nbf!)
+      .pop()
+  );
 };
 
 export const hasFraudCheckExpired = (
@@ -22,10 +25,8 @@ export const hasFraudCheckExpired = (
     return true;
   }
 
-  if (isIdentityCheckCredential(fraudVc)) {
-    if (hasFailedFraudCheck(fraudVc, "available_authoritative_source")) {
-      return true;
-    }
+  if (isIdentityCheckCredential(fraudVc) && hasFailedFraudCheck(fraudVc, "available_authoritative_source")) {
+    return true;
   }
 
   const expired = hasNbfExpired(fraudVc.nbf!, fraudValidityPeriod);

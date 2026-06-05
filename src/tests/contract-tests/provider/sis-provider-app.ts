@@ -1,5 +1,5 @@
 import express, { type Request } from "express";
-import type { Server } from "http";
+import type { Server } from "node:http";
 import { handler } from "../../../handlers/user-identity/user-identity-handler";
 import {
   APIGatewayEventRequestContextWithAuthorizer,
@@ -8,7 +8,7 @@ import {
   Context,
 } from "aws-lambda";
 import { middleware as OpenApiValidatorMiddleware } from "express-openapi-validator";
-import path from "path";
+import path from "node:path";
 
 const TEST_VALID_TOKEN =
   "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6ImVjS2lkMTIzIn0.eyJzdWIiOiJ1cm46ZmRjOmdvdi51azoyMDIyOlRFU1RfVVNFUi1TN2pjckhMR0JqLTJrZ0ItOC1jWWhWck1kbzNDVjBMbEQ3QW4iLCJleHAiOjE3NTczMjQyMTcsImlhdCI6MTc1NzMyMzkxNywiaXNzIjoiaHR0cHM6Ly9tb2NrLmNyZWRlbnRpYWwtc3RvcmUuYnVpbGQuYWNjb3VudC5nb3YudWsvb3JjaGVzdHJhdGlvbiIsImF1ZCI6Imh0dHBzOi8vY3JlZGVudGlhbC1zdG9yZS5idWlsZC5hY2NvdW50Lmdvdi51ayIsInNjb3BlIjoicHJvdmluZyJ9.Sj-2jA6mLdfkU1ryoBCNHxpBCT49o9qfqpKPMLkKwY1D6V6SvVIERGbC0X-fh8SYk2z-strc9vahvacvkrNDUQ"; // pragma: allowlist secret
@@ -50,9 +50,13 @@ export const expressRequestToAPIGateway = (
   httpMethod: "POST",
   isBase64Encoded: false,
   path: request.path,
+  // eslint-disable-next-line unicorn/no-null -- Required to create value APIGatewayProxyEvent object
   pathParameters: null,
+  // eslint-disable-next-line unicorn/no-null -- Required to create value APIGatewayProxyEvent object
   queryStringParameters: null,
+  // eslint-disable-next-line unicorn/no-null -- Required to create value APIGatewayProxyEvent object
   multiValueQueryStringParameters: null,
+  // eslint-disable-next-line unicorn/no-null -- Required to create value APIGatewayProxyEvent object
   stageVariables: null,
   requestContext: {} as APIGatewayEventRequestContextWithAuthorizer<never>,
   resource: "",

@@ -3,8 +3,8 @@ import nunjucks from "nunjucks";
 import path from "node:path";
 import logger from "../../commons/logger";
 
-const govukFrontendDist = path.join(path.dirname(require.resolve("govuk-frontend/package.json")), "dist");
-const nunjucksEnv = nunjucks.configure([__dirname, govukFrontendDist]);
+const govukFrontendDistribution = path.join(path.dirname(require.resolve("govuk-frontend/package.json")), "dist");
+const nunjucksEnvironment = nunjucks.configure([__dirname, govukFrontendDistribution]);
 
 export type ConfirmDetailsQueryStringParameters = {
   code: string;
@@ -20,7 +20,7 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
   try {
     return {
       statusCode: 200,
-      body: nunjucksEnv.render("index.njk", {
+      body: nunjucksEnvironment.render("index.njk", {
         assetPath: "./assets",
         rootPath: ".",
         code,
@@ -31,8 +31,8 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
         "content-type": "text/html",
       },
     };
-  } catch (err) {
-    logger.error(`Error in lambdaHandler event: ${err}`);
+  } catch (error) {
+    logger.error(`Error in lambdaHandler event: ${error}`);
     return {
       statusCode: 500,
       body: "",

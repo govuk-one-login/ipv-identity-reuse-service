@@ -10,7 +10,7 @@ sqsClientMock.on(SendMessageCommand).resolves({});
 
 beforeAll(() => {
   vi.useFakeTimers({
-    now: 1753094598807,
+    now: 1_753_094_598_807,
   });
 });
 
@@ -24,8 +24,8 @@ it("should send the message using the defined specification", async () => {
   const identityRecordInvalidatedEvent: TxmaSisIdentityRecordInvalidated = {
     component_id: "https://identity.local.account.gov.uk/sis",
     event_name: "SIS_IDENTITY_RECORD_INVALIDATED",
-    event_timestamp_ms: 1753094598807,
-    timestamp: 1753094598,
+    event_timestamp_ms: 1_753_094_598_807,
+    timestamp: 1_753_094_598,
     user: { user_id: "bob.smith" },
     extensions: { intervention_code: "12" },
     restricted: undefined,

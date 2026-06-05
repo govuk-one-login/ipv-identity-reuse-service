@@ -32,19 +32,19 @@ interface ResourceProperties extends CloudFormationCustomResourceResourcePropert
 }
 
 const getContentType = (key: string): string | undefined => {
-  return EXTENSION_MAPPINGS.get(key.substring(key.lastIndexOf(".") + 1));
+  return EXTENSION_MAPPINGS.get(key.slice(Math.max(0, key.lastIndexOf(".") + 1)));
 };
 
 const uploadResources = async (bucket: string) => {
-  const baseDir = require.resolve("govuk-frontend").replace(/\/dist\/govuk.*/, "/dist/govuk");
+  const baseDirectory = require.resolve("govuk-frontend").replace(/\/dist\/govuk.*/, "/dist/govuk");
   const fileList = ["govuk-frontend*.{js,css}?(.map)", "assets/**"].flatMap((pattern) =>
-    globSync(pattern, { cwd: baseDir })
+    globSync(pattern, { cwd: baseDirectory })
   );
 
   const client = new S3Client({});
 
   for (const key of fileList) {
-    const stream = fs.createReadStream(`${baseDir}/${key}`);
+    const stream = fs.createReadStream(`${baseDirectory}/${key}`);
     const putCommand = new PutObjectCommand({
       Bucket: bucket,
       Key: key,
@@ -93,21 +93,27 @@ export const handler = async (
   try {
     switch (event.RequestType) {
       case "Create":
-      case "Update":
+      case "Update": {
         await uploadResources(event.ResourceProperties.Bucket);
         break;
-      case "Delete":
+      }
+      case "Delete": {
         await deleteResources(event.ResourceProperties.Bucket);
         break;
-      default:
+      }
+      default: {
         logger.error(`Request type not supported`);
         response = FAILED;
         break;
+      }
     }
-  } catch (e) {
+  } catch (error) {
     response = FAILED;
-    logger.error(`Error whilst performing ${event.RequestType} operation`, e instanceof Error ? e : (e as string));
-    throw e;
+    logger.error(
+      `Error whilst performing ${event.RequestType} operation`,
+      error instanceof Error ? error : (error as string)
+    );
+    throw error;
   } finally {
     await send(event, context, response, undefined, `${event.ResourceProperties.Bucket}Sync`);
   }
