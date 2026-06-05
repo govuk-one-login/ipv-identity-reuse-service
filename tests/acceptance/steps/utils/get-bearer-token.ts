@@ -1,7 +1,7 @@
 const getMockCredentialStorePath = () => {
   return process.env.ENVIRONMENT === "local" || process.env.ENVIRONMENT === "dev"
-    ? "credential-store.reuse.dev.stubs.account.gov.uk"
-    : "credential-store.reuse.stubs.account.gov.uk";
+    ? "token-generator.reuse.dev.stubs.account.gov.uk"
+    : "token-generator.reuse.stubs.account.gov.uk";
 };
 
 export const getBearerToken = async (sub: string): Promise<string> => {

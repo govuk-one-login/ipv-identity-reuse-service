@@ -34,7 +34,7 @@ const event = () => {
   return {
     headers: {
       accept: "*/*",
-      Host: "stack-name.credential-store.dev.account.gov.uk",
+      Host: "stack-name.token-generator.dev.account.gov.uk",
       "X-Amzn-Trace-Id": "Root=1-666bf197-43c06e88748f092a5cc812a9",
       "x-api-key": "a-pretend-api-key-value",
       "X-Forwarded-For": "123.123.123.123",
