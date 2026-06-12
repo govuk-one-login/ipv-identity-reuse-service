@@ -123,6 +123,7 @@ Resources:
                   - cloudformation:DescribeChangeSet
                   - cloudformation:GetTemplateSummary
                   - cloudformation:DescribeStackEvents
+                  - cloudformation:ListStackResources
 
               - Effect: Allow
                 Resource: [!Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/local*"]
