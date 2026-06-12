@@ -79,3 +79,4 @@ jobs:
         with:
           stack-names: ${{ env.STACKS_TO_DELETE }}
           aws-region: ${{ env.AWS_REGION }}
+          empty-buckets: 'true'
