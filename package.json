@@ -69,8 +69,8 @@
   "scripts": {
     "detect-secrets:audit": "detect-secrets audit --json .secrets.baseline",
     "detect-secrets:scan": "detect-secrets scan --baseline .secrets.baseline",
-    "lint": "eslint . --ext .ts --ignore-pattern **/coverage",
-    "lint-fix": "eslint . --ext .ts --fix --ignore-pattern **/coverage",
+    "lint": "eslint . --ext .ts --ignore-pattern **/coverage --ignore-pattern .aws-sam",
+    "lint-fix": "eslint . --ext .ts --fix --ignore-pattern **/coverage --ignore-pattern .aws-sam",
     "test": "vitest --coverage",
     "test:acceptance": "cucumber-js",
     "test:consumer": "vitest --config src/tests/contract-tests/vitest.config.ts --project consumer",
