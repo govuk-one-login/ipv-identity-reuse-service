@@ -7,8 +7,8 @@ import { FAILED, send, SUCCESS } from "cfn-response-promise";
 import {
   S3Client,
   PutObjectCommand,
-  ListObjectsCommand,
-  ListObjectsCommandOutput,
+  ListObjectVersionsCommand,
+  ListObjectVersionsCommandOutput,
   DeleteObjectsCommand,
 } from "@aws-sdk/client-s3";
 import { globSync } from "fast-glob";
@@ -61,23 +61,30 @@ const uploadResources = async (bucket: string) => {
 const deleteResources = async (bucket: string) => {
   const client = new S3Client({});
 
-  const listObjectsCommand = new ListObjectsCommand({
+  const listObjectsCommand = new ListObjectVersionsCommand({
     Bucket: bucket,
   });
 
-  const listObjectsResponse: ListObjectsCommandOutput = await client.send(listObjectsCommand);
-  const keys = listObjectsResponse.Contents?.map((contents) => ({
-    Key: contents.Key,
-  }));
+  const listObjectsResponse: ListObjectVersionsCommandOutput = await client.send(listObjectsCommand);
+
+  const objects = [...(listObjectsResponse.Versions ?? []), ...(listObjectsResponse.DeleteMarkers ?? [])].map(
+    ({ Key, VersionId }) => ({ Key, VersionId })
+  );
+
+  //  doesn't throw an error if the bucket is already empty
+  if (objects.length === 0) {
+    return;
+  }
+
   const deleteObjectsCommand = new DeleteObjectsCommand({
     Bucket: bucket,
     Delete: {
-      Objects: keys,
+      Objects: objects,
     },
   });
 
   await client.send(deleteObjectsCommand);
-  logger.info("Deleted files", { Bucket: bucket, Keys: keys });
+  logger.info("Deleted files", { Bucket: bucket, Keys: objects });
 };
 
 export const handler = async (
