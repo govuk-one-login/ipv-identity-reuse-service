@@ -5,6 +5,40 @@ info:
   description: "Public API for the Stored Identity Service"
   version: "1.0.0"
 paths:
+  /.well-known/jwks.json:
+    get:
+      responses:
+        "200":
+          description: OK
+          headers:
+            Cache-Control:
+              type: string
+          content:
+            application/jwks+json:
+              schema:
+                type: object
+        "404":
+          description: Not Found
+      x-amazon-apigateway-integration:
+        credentials:
+          Fn::GetAtt: RestOAuthDocumentResourceS3Role.Arn
+        uri:
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:s3:path/govuk-one-login-${ServiceName}-published-keys-${Environment}/jwks.json"
+        passthroughBehavior: WHEN_NO_MATCH
+        httpMethod: GET
+        type: aws
+        responses:
+          "200":
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Cache-Control: "'max-age=3600, private'"
+          "404":
+            statusCode: "404"
+            responseTemplates:
+              application/json: |
+                {
+                    "message": "Not Found"
+                }
   /authorize:
     get:
       summary: Get an authorization grant
