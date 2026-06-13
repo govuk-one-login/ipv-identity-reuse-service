@@ -1,0 +1,42 @@
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/input/macro.njk" import govukInput %}
+{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
+
+{% extends "govuk/template.njk" %}
+{% block head %}
+    <link rel="stylesheet" href="{{ rootPath | default("", true) }}/govuk-frontend.min.css">
+    <base href="./error/unrecoverable" />
+{% endblock %}
+{% block content %}
+    {% if errors and errors.length > 0 %}
+        {{ govukErrorSummary({
+            "titleText": "Error",
+            "errorList":  errors
+        }) }}
+    {% endif %}
+
+    <h1 class="govuk-heading-l">Sorry, there is a problem</h1>
+    <p class="govuk-body">We cannot confirm your identity right now.</p>
+    <h2 class="govuk-heading-m">What you can do</h2>
+    <p class="govuk-body">Go back to the service you were trying to use and start again. You can look for
+    the service using your search engine or find it from the GOV.UK homepage.</p>
+
+    {{ govukButton({
+        "text": "Go to the GOV.UK homepage",
+        "type": "Submit",
+        "href": "https://www.gov.uk/"
+      }) }}
+
+    <p class="govuk-body">
+      <a href="https://home.build.account.gov.uk/contact-gov-uk-one-login?fromUrl=https%3A%2F%2Fidentity.build.account.gov.uk%2Fdev%2Ftemplate%2Fpyi-technical%2Fen%3FisUnrecoverable%3D" target="_blank" rel="noopener noreferrer" class="govuk-link">Contact the GOV.UK One Login team (opens in a new tab)</a>
+    </p>
+{% endblock %}
+
+{% block bodyEnd %}
+{# Run JavaScript at end of the <body>, to avoid blocking the initial render. #}
+<script type="module" src="{{ rootPath | default("", true) }}/govuk-frontend.min.js"></script>
+<script type="module">
+    import { initAll } from '{{ rootPath | default("", true) }}/govuk-frontend.min.js'
+    initAll()
+</script>
+{% endblock %}
