@@ -16,7 +16,7 @@
     "@types/aws-lambda": "8.10.161",
     "cfn-response-promise": "1.1.0",
     "did-resolver": "5.0.1",
-    "esbuild": "0.28.0",
+    "esbuild": "0.28.1",
     "fast-glob": "3.3.3",
     "govuk-frontend": "6.2.0",
     "jose": "6.2.1",
