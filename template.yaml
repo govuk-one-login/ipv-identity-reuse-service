@@ -2883,6 +2883,24 @@ Outputs:
     Description: App Config environment - used for testing.
     Value: !Ref Environment
 
+  AuditEventQueueEncryptionKeyArn:
+    Description: The ARN for the key used to encrypt/decrypt audit messages on the audit queue
+    Value: !GetAtt AuditEventQueueEncryptionKey.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-AuditEventQueueEncryptionKeyArn
+
+  AuditEventQueueName:
+    Description: The name of the queue where audit messages are sent
+    Value: !GetAtt AuditEventQueue.QueueName
+    Export:
+      Name: !Sub ${AWS::StackName}-AuditEventQueueName
+
+  AuditEventQueueUrl:
+    Description: The url of the queue where audit messages are sent
+    Value: !Ref AuditEventQueue
+    Export:
+      Name: !Sub ${AWS::StackName}-AuditEventQueueUrl
+
   SisPublicApi:
     Condition: IsNotProduction
     Description: "URL for the Stored Identity Service Public API"
