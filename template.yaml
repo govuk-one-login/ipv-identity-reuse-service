@@ -1060,13 +1060,19 @@ Resources:
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref GovUKAssetsBucket
+        - Statement:
+            - Effect: Allow
+              Action: s3:ListBucketVersions
+              Resource: !GetAtt GovUKAssetsBucket.Arn
+            - Effect: Allow
+              Action: s3:DeleteObjectVersion
+              Resource: !Sub "${GovUKAssetsBucket.Arn}/*"
       Layers:
         - !Ref GovUKFrontEndLayer
         - !If
           - DynaTraceEnabled
           - !Ref DynatraceNodeLayerArn
           - !Ref AWS::NoValue
-      Role: !GetAtt AssetsResourceS3Role.Arn
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
