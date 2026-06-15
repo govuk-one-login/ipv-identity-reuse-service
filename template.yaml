@@ -1066,6 +1066,7 @@ Resources:
           - DynaTraceEnabled
           - !Ref DynatraceNodeLayerArn
           - !Ref AWS::NoValue
+      Role: !GetAtt AssetsResourceS3Role.Arn
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
