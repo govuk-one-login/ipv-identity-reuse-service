@@ -51,6 +51,11 @@ Parameters:
     Type: String
     Default: GOV.UK One Login
 
+  ServiceName:
+    Description: Service name
+    Type: String
+    Default: sis
+
   SourceTagValue:
     Description: Value for the Source Tag
     Type: String
@@ -1177,6 +1182,7 @@ Resources:
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
+        UseNpmCi: True
         EntryPoints:
           - src/handlers/confirm-details/confirm-details-submission-handler.ts
         Target: es2022
@@ -2669,6 +2675,39 @@ Resources:
       AlarmActions:
         - !ImportValue alerting-integration-AlertNotificationTopicArn
       TreatMissingData: notBreaching
+
+  ##########################
+  # .well-known resources
+  ##########################
+  RestOAuthDocumentResourceS3Role:
+    Type: AWS::IAM::Role
+    Properties:
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+      Policies:
+        - PolicyName: AccessOAuthS3Document
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "s3:GetObject"
+                  - "s3:ListBucket"
+                Resource:
+                  - !Sub "arn:aws:s3:::govuk-one-login-${ServiceName}-published-keys-${Environment}"
+                  - !Sub "arn:aws:s3:::govuk-one-login-${ServiceName}-published-keys-${Environment}/jwks.json"
+      Tags:
+        - Key: "key_consumer_type"
+          Value: "use"
 
   ########
   # KEYS #
