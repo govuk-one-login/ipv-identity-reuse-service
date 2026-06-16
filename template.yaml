@@ -1282,6 +1282,110 @@ Resources:
         - Key: Name
           Value: !Sub "/aws/lambda/${ConfirmDetailsSubmissionLambda}"
 
+  UnrecoverableErrorRole:
+    # checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
+    Type: AWS::IAM::Role
+    Condition: IsNotProduction
+    Properties:
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+
+  UnrecoverableErrorLambda:
+    Type: AWS::Serverless::Function
+    Condition: IsNotProduction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-UnrecoverableErrorLambda"
+      Handler: unrecoverable-error-handler.lambdaHandler
+      Role: !GetAtt UnrecoverableErrorRole.Arn
+      Environment:
+        Variables:
+          NODE_OPTIONS: "--enable-source-maps"
+      Layers:
+        - !Ref GovUKFrontEndLayer
+        - !If
+          - DynaTraceEnabled
+          - !Ref DynatraceNodeLayerArn
+          - !Ref AWS::NoValue
+    Metadata:
+      BuildMethod: makefile
+
+  UnrecoverableErrorLambdaRestApiRole:
+    Type: AWS::IAM::Role
+    Condition: IsNotProduction
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-UnrecoverableErrorLambdaRestApiRole"
+      Description: !Sub "Role for the UnrecoverableErrorLambda"
+      PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+
+  UnrecoverableErrorLambdaRestApiPolicy:
+    Type: AWS::IAM::Policy
+    Condition: IsNotProduction
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-UnrecoverableErrorLambdaRestApiPolicy"
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "lambda:InvokeFunction"
+            Resource:
+              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-UnrecoverableErrorLambda:*"
+      Roles:
+        - !Ref UnrecoverableErrorLambdaRestApiRole
+
+  UnrecoverableErrorFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: IsNotProduction
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${UnrecoverableErrorLambda}"
+      RetentionInDays: 30
+      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "/aws/lambda/${UnrecoverableErrorLambda}"
+
   ################################
   # PRIVATE API API GATEWAY       #
   ################################

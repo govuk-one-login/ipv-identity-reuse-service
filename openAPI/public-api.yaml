@@ -107,6 +107,22 @@ paths:
         credentials:
           Fn::GetAtt: ConfirmDetailsLambdaRestApiRole.Arn
         type: aws_proxy
+  /error/unrecoverable:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            text/html:
+              schema:
+                type: string
+      x-amazon-apigateway-integration:
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UnrecoverableErrorLambda.Arn}:live/invocations
+        credentials:
+          Fn::GetAtt: UnrecoverableErrorLambdaRestApiRole.Arn
+        type: aws_proxy
   /{item+}:
     get:
       parameters:
