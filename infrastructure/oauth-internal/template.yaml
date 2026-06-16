@@ -66,6 +66,11 @@ Parameters:
     Type: String
     Default: IdentityReuseService
 
+  OAuthCommonStackName: # Temporary until we can deploy via SAR
+    Description: The name of the stack that OAuth Common is deployed to
+    Type: String
+    Default: oauth-common
+
   PermissionsBoundary:
     Description: The ARN of the permissions boundary to apply to any role created by the template
     Type: String
@@ -136,30 +141,30 @@ Conditions:
       - Fn::Equals: [ !Ref Environment, "staging" ]
 
 Resources:
-  OAuthCommon:
-    Type: AWS::Serverless::Application
-    Condition: IsNotProduction
-    Properties:
-      Location:
-        ApplicationId: arn:aws:serverlessrepo:eu-west-2:667736788427:applications/di-ipv-cri-oauth-common
-        SemanticVersion: 0.4.0
-      Parameters:
-        AuditEventNamePrefix: !Ref AuditEventNamePrefix
-        AuditTxmaStackName: !Ref SisStackName
-        CSLSDestinationArn: !Ref CSLSSubscriptionEndpointArn
-        CriIdentifier: !Ref MainCloudWatchMetricNamespace # This is used for the metrics namespace and metrics service names only
-        CriAudience: !FindInMap [ EnvironmentMap, !Ref Environment, SISAudience ]
-        CriVcIssuer: !Ref AuditComponentId # This is used for the component ID in audit events
-        CriPrivateApiGwName: !Sub "${AWS::StackName}-OAuthInternalApi"
-        CriPublicApiGwName: !Sub "${AWS::StackName}-OAuthInternalApi" # TODO this will become the external facing private API when the /token endpoint moves there
-        DbCustomerManagedKey: "true"
-        Environment: !Ref Environment
-        IPVCoreRedirectURI: !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationRedirectURI ]
-        IPVCoreStubJwksEndpoint: !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationJwksEndpoint ]
-        LambdaCodeSigningConfigArn: !Ref CodeSigningConfigArn
-        LambdaDeploymentPreference: !Ref LambdaDeploymentPreference
-        LambdaVpcConfiguration: "di-devplatform-deploy"
-        PermissionsBoundaryArn: !Ref PermissionsBoundary
+#  OAuthCommon:
+#    Type: AWS::Serverless::Application
+#    Condition: IsNotProduction
+#    Properties:
+#      Location:
+#        ApplicationId: arn:aws:serverlessrepo:eu-west-2:667736788427:applications/di-ipv-cri-oauth-common
+#        SemanticVersion: 0.4.0
+#      Parameters:
+#        AuditEventNamePrefix: !Ref AuditEventNamePrefix
+#        AuditTxmaStackName: !Ref SisStackName
+#        CSLSDestinationArn: !Ref CSLSSubscriptionEndpointArn
+#        CriIdentifier: !Ref MainCloudWatchMetricNamespace # This is used for the metrics namespace and metrics service names only
+#        CriAudience: !FindInMap [ EnvironmentMap, !Ref Environment, SISAudience ]
+#        CriVcIssuer: !Ref AuditComponentId # This is used for the component ID in audit events
+#        CriPrivateApiGwName: !Sub "${AWS::StackName}-OAuthInternalApi"
+#        CriPublicApiGwName: !Sub "${AWS::StackName}-OAuthInternalApi" # TODO this will become the external facing private API when the /token endpoint moves there
+#        DbCustomerManagedKey: "true"
+#        Environment: !Ref Environment
+#        IPVCoreRedirectURI: !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationRedirectURI ]
+#        IPVCoreStubJwksEndpoint: !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationJwksEndpoint ]
+#        LambdaCodeSigningConfigArn: !Ref CodeSigningConfigArn
+#        LambdaDeploymentPreference: !Ref LambdaDeploymentPreference
+#        LambdaVpcConfiguration: "di-devplatform-deploy"
+#        PermissionsBoundaryArn: !Ref PermissionsBoundary
 
   OAuthInternalApi:
     Type: AWS::Serverless::Api

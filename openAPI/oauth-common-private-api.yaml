@@ -46,7 +46,7 @@ paths:
         type: aws_proxy
         httpMethod: POST
         uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${OAuthCommon.Outputs.LambdaSessionFunctionName}:live/invocations
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${OAuthCommonStackName}-SessionFn:live/invocations
         passthroughBehavior: never
 
   /api/authorization:
@@ -84,7 +84,7 @@ paths:
         type: aws_proxy
         httpMethod: POST
         uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${OAuthCommon.Outputs.LambdaAuthorizationFunctionName}:live/invocations
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${OAuthCommonStackName}-AuthorizationFn:live/invocations
         passthroughBehavior: never
 
   /token:
@@ -143,7 +143,7 @@ paths:
         type: aws_proxy
         httpMethod: POST
         uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${OAuthCommon.Outputs.LambdaAccessTokenFunctionName}:live/invocations
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${OAuthCommonStackName}-AccessTokenFn:live/invocations
         passthroughBehavior: never
 
 components:
