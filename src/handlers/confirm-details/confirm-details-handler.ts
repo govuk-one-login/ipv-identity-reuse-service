@@ -2,9 +2,10 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import nunjucks from "nunjucks";
 import path from "node:path";
 import logger from "../../commons/logger";
+import mainPageTemplate from "./index.njk";
 
 const govukFrontendDistribution = path.join(path.dirname(require.resolve("govuk-frontend/package.json")), "dist");
-const nunjucksEnvironment = nunjucks.configure([__dirname, govukFrontendDistribution]);
+const nunjucksEnvironment = nunjucks.configure([process.env.LAMBDA_TASK_ROOT || "", govukFrontendDistribution]);
 
 export type ConfirmDetailsQueryStringParameters = {
   code: string;
@@ -20,7 +21,7 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
   try {
     return {
       statusCode: 200,
-      body: nunjucksEnvironment.render("index.njk", {
+      body: nunjucksEnvironment.render(mainPageTemplate, {
         assetPath: "./assets",
         rootPath: ".",
         code,

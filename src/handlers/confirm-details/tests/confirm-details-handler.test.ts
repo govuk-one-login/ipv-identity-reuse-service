@@ -27,13 +27,16 @@ it("should render the confirm details screen when all query string parameters ar
     },
   } as never as APIGatewayProxyEvent);
 
-  expect(mockRender).toHaveBeenCalledExactlyOnceWith("index.njk", {
-    assetPath: "./assets",
-    redirect_uri: "https://example.com",
-    code: "1234",
-    state: "state-id",
-    rootPath: ".",
-  });
+  expect(mockRender).toHaveBeenCalledExactlyOnceWith(
+    expect.toSatisfy((filename) => filename.endsWith("index.njk")),
+    {
+      assetPath: "./assets",
+      redirect_uri: "https://example.com",
+      code: "1234",
+      state: "state-id",
+      rootPath: ".",
+    }
+  );
 
   expect(result).toEqual({
     body: "Rendered Confirm Details Screen",

@@ -27,10 +27,13 @@ afterEach(() => {
 it("should render the error screen", async () => {
   const result = await lambdaHandler();
 
-  expect(mockRender).toHaveBeenCalledExactlyOnceWith("index.njk", {
-    assetPath: "/assets",
-    rootPath: "",
-  });
+  expect(mockRender).toHaveBeenCalledExactlyOnceWith(
+    expect.toSatisfy((filename) => filename.endsWith("index.njk")),
+    {
+      assetPath: "/assets",
+      rootPath: "",
+    }
+  );
 
   expect(result).toEqual({
     body: "Rendered Unrecoverable Error Screen",

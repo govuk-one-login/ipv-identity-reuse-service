@@ -1174,7 +1174,24 @@ Resources:
           - !Ref DynatraceNodeLayerArn
           - !Ref AWS::NoValue
     Metadata:
-      BuildMethod: makefile
+      BuildMethod: esbuild
+      BuildProperties:
+        UseNpmCi: True
+        EntryPoints:
+          - src/handlers/confirm-details/confirm-details-handler.ts
+        Sourcemap: true
+        SourcesContent: false
+        Target: "es2024"
+        Format: esm
+        Platform: node
+        OutExtension:
+          - .js=.mjs
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
+        Loader:
+          - .njk=file
+        External:
+          - govuk-frontend
 
   ConfirmDetailsSubmissionLambda:
     Type: AWS::Serverless::Function
@@ -1320,7 +1337,24 @@ Resources:
           - !Ref DynatraceNodeLayerArn
           - !Ref AWS::NoValue
     Metadata:
-      BuildMethod: makefile
+      BuildMethod: esbuild
+      BuildProperties:
+        UseNpmCi: True
+        EntryPoints:
+          - src/handlers/unrecoverable-error/unrecoverable-error-handler.ts
+        Sourcemap: true
+        SourcesContent: false
+        Target: "es2024"
+        Format: esm
+        Platform: node
+        OutExtension:
+          - .js=.mjs
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
+        Loader:
+          - .njk=file
+        External:
+          - govuk-frontend
 
   UnrecoverableErrorLambdaRestApiRole:
     Type: AWS::IAM::Role
