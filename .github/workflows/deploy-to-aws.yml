@@ -8,6 +8,12 @@ on:
           The name of the stack to deploy. If this is not provided the stack name is generated from the branch name.
         required: false
         type: string
+      oauth-stack-name:
+        description: >
+          The name of the OAuth Common stack to deploy. If this is not provided the stack name is generated from the branch name.
+        default: preview-pr-${{ github.event.pull_request.number }}-oauth"
+        required: false
+        type: string
       environment-name:
         description: >
           The name of the environment. If this is not provided it's taken from the branch name.
@@ -27,6 +33,9 @@ on:
       stack-name:
         description: The name of the deployed stack
         value: ${{ jobs.deploy.outputs.stack-name }}
+      oauth-stack-name:
+        description: The name of the deployed OAuth stack
+        value: ${{ jobs.deploy-oauth.outputs.stack-name }} #IS THIS NEEDED?
     secrets:
       aws-role-arn:
         required: true
@@ -101,10 +110,12 @@ jobs:
         env:
           STACK_NAME: ${{ inputs.stack-name }}
           ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+          OAUTH_STACK_NAME: ${{ inputs.oauth-stack-name }}
         run: |
           echo "ENVIRONMENT_NAME=${ENVIRONMENT_NAME}" >> "$GITHUB_ENV"
           echo "STACK_NAME=${STACK_NAME}" >> "$GITHUB_ENV"
           echo "S3_PREFIX=${STACK_NAME}" >> "$GITHUB_ENV"
+          echo "OAUTH_STACK_NAME=${OAUTH_STACK_NAME}" >> "$GITHUB_ENV"
 
       - name: Delete failed stack
         uses: govuk-one-login/github-actions/sam/delete-stacks@0eb1972f8c0d539b3ff4c24d78b3dba917343e7c
@@ -112,6 +123,20 @@ jobs:
           only-if-failed: true
           stack-names: ${{ env.STACK_NAME }}
           aws-region: ${{ env.AWS_REGION }}
+
+# WHAT SHOULD THIS STACK NAME BE? WILL EACH DEPLOY USE THE SAME ONE?
+      - name: Deploy OAuth Stack
+        timeout-minutes: 15
+        run: |
+          echo "$OAUTH_STACK_NAME"
+          sam deploy \
+          --stack-name "$OAUTH_STACK_NAME"
+          --region "$AWS_REGION"  \
+          --no-confirm-changeset \
+          --no-fail-on-empty-changeset \
+          --capabilities CAPABILITY_NAMED_IAM \
+          --tags DeploymentSource="GitHub Actions" StackType=Preview \
+          --parameter-overrides Environment="dev" VpcStackName=vpc
 
       - name: Deploy SAM Application
         timeout-minutes: 15
@@ -132,8 +157,8 @@ jobs:
             --parameter-overrides Environment="dev" VpcStackName=vpc
 
       - name: Report deployment
-        run: echo "Deployed stack \`$STACK_NAME\`" >> "$GITHUB_STEP_SUMMARY"
+        run: echo "Deployed stack \`$STACK_NAME\`, \`$OAUTH_STACK_NAME`\" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Output Stack Name
         id: output-stack-name
-        run: echo "STACK_NAME=$STACK_NAME" >> "$GITHUB_OUTPUT"
+        run: echo "STACK_NAME=$STACK_NAME, OAUTH_STACK_NAME=$OAUTH_STACK_NAME" >> "$GITHUB_OUTPUT"
