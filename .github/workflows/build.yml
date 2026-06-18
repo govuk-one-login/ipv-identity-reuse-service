@@ -47,7 +47,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           enable-beta-features: true
-          template: "template.yaml"
+          template: "infrastructure/identity-reuse-service/template.yaml"
           aws-region: ${{ inputs.aws-region }}
           upload-artifact: true
           artifact-name: ${{ inputs.artifact-name }}

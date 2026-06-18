@@ -28,6 +28,9 @@ BUILD_CACHE="--cached"
 OPERATION="deploy"
 ENVIRONMENT="local"
 AWS_PROFILE="sis-dev"
+TEMPLATE_PATH="infrastructure/identity-reuse-service"
+TEMPLATE_FILE="$TEMPLATE_PATH/template.yaml"
+BUILD_DIR=".aws-sam/build/identity-reuse-service"
 
 while [[ -n "$1" ]]; do
   case $1 in
@@ -68,12 +71,12 @@ while [[ -n "$1" ]]; do
   shift
 done
 
-SAM_CONFIG=$(dirname "$0")/samconfig.toml
+SAM_CONFIG="$TEMPLATE_PATH/samconfig.toml"
 [[ -e "$SAM_CONFIG" ]] || RESOLVE_S3=true
 if $RESOLVE_S3; then
-  BUCKET_PARAM=(--resolve-s3)
+  BUCKET_PARAM="--resolve-s3"
 else
-  BUCKET_PARAM=()
+  BUCKET_PARAM="--config-file ../../../$SAM_CONFIG"
 fi
 
 if $CONFIRM_CHANGES; then
@@ -103,20 +106,22 @@ case $OPERATION in
   deploy)
     echo "Validating template..."
     $SAM_CMD validate \
-      --template-file template.yaml \
+      --template-file "$TEMPLATE_FILE" \
       --profile "$AWS_PROFILE"
     echo
 
     echo "Building template..."
     $SAM_CMD build --parallel --beta-features ${BUILD_CACHE} \
-      --template-file template.yaml
+      --template-file "$TEMPLATE_FILE" \
+      --build-dir "$BUILD_DIR"
     echo
 
     echo "Deploying stack $STACK_NAME..."
     $SAM_CMD deploy \
+      --template-file "$BUILD_DIR/template.yaml" \
       --stack-name "$STACK_NAME" \
       --s3-prefix "$STACK_NAME" \
-      "${BUCKET_PARAM[@]}" \
+      $BUCKET_PARAM \
       $CONFIRM_CHANGES_PARAM \
       --capabilities CAPABILITY_NAMED_IAM \
       --no-fail-on-empty-changeset \
