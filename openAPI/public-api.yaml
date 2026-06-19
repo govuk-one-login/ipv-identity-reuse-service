@@ -148,7 +148,7 @@ paths:
           Fn::GetAtt: AssetsResourceS3Role.Arn
         httpMethod: GET
         uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:s3:path/sis-govuk-frontend-assets-${Environment}-${AWS::StackName}/{item}
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:s3:path/${GovUKAssetsBucket}/{item}
         responses:
           default:
             statusCode: "200"
