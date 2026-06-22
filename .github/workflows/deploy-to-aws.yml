@@ -124,7 +124,6 @@ jobs:
           stack-names: ${{ env.STACK_NAME }}
           aws-region: ${{ env.AWS_REGION }}
 
-# WHAT SHOULD THIS STACK NAME BE? WILL EACH DEPLOY USE THE SAME ONE?
       - name: Deploy OAuth Stack
         timeout-minutes: 15
         run: |
