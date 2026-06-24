@@ -1,6 +1,6 @@
-import { APIGatewayEventRequestContextWithAuthorizer, APIGatewayProxyEvent, Context } from "aws-lambda";
+import type { APIGatewayEventRequestContextWithAuthorizer, APIGatewayProxyEvent, Context } from "aws-lambda";
 import { expect, it } from "vitest";
-import { AuthorizationQueryStringParameters, handler } from "../authorize-handler";
+import { AuthorizationQueryStringParameters, handler } from "../get-authorize-handler";
 
 process.env.DOMAIN_NAME = "test-domain";
 
