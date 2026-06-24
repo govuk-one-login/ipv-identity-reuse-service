@@ -352,17 +352,17 @@ Globals:
 
 Resources:
   ################################
-  # AUTHORIZATION LAMBDA         #
+  # GET AUTHORIZE HANDLER        #
   ################################
 
-  AuthorizationFunction:
+  GetAuthorizeHandler:
     Type: AWS::Serverless::Function
     Condition: IsNotProduction
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-AuthorizationFunction"
-      Description: "A lambda function that performs OAuth"
-      Handler: authorize-handler.handler
-      Role: !GetAtt AuthorizationFunctionRole.Arn
+      FunctionName: !Sub "${AWS::StackName}-GetAuthorizeHandler"
+      Description: "A lambda function that handles a request to the OAuth 2.0 authorization server's authorization endpoint"
+      Handler: get-authorize-handler.handler
+      Role: !GetAtt GetAuthorizeHandlerRole.Arn
       KmsKeyArn: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
       VpcConfig: !If
         - UseVpc
@@ -374,10 +374,10 @@ Resources:
         - !Ref "AWS::NoValue"
       Environment:
         Variables:
-          METRIC_SERVICE_NAME: "AuthorizationFunction"
+          METRIC_SERVICE_NAME: "GetAuthorizeHandler"
           POWERTOOLS_METRICS_NAMESPACE:
-            !If [IsDev, !Sub "${AWS::StackName}-AuthorizationFunction", "AuthorizationFunction"]
-          POWERTOOLS_SERVICE_NAME: "AuthorizationFunction"
+            !If [IsDev, !Sub "${AWS::StackName}-GetAuthorizeHandler", "GetAuthorizeHandler"]
+          POWERTOOLS_SERVICE_NAME: "GetAuthorizeHandler"
           ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
           APP_CONFIG_NAME: !Ref ApplicationConfigName
           APP_CONFIG_APPLICATION: !Ref ApplicationName
@@ -405,7 +405,7 @@ Resources:
         Sourcemap: true
         SourcesContent: false
         EntryPoints:
-          - src/handlers/authorize-handler/authorize-handler.ts
+          - src/handlers/get-authorize-handler/get-authorize-handler.ts
         Format: esm
         Platform: node
         OutExtension:
@@ -413,12 +413,12 @@ Resources:
         Banner:
           - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
 
-  AuthorizationFunctionRole:
+  GetAuthorizeHandlerRole:
     Type: AWS::IAM::Role
     Condition: IsNotProduction
     Properties:
-      RoleName: !Sub "${AWS::StackName}-AuthorizationFunctionRole"
-      Description: !Sub "The role assumed by ${AWS::StackName}-AuthorizationFunction"
+      RoleName: !Sub "${AWS::StackName}-GetAuthorizeHandlerRole"
+      Description: !Sub "The role assumed by ${AWS::StackName}-GetAuthorizeHandler"
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -447,11 +447,11 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
 
-  AuthorizationFunctionPolicy:
+  GetAuthorizeHandlerPolicy:
     Type: AWS::IAM::Policy
     Condition: IsNotProduction
     Properties:
-      PolicyName: !Sub "${AWS::StackName}-AuthorizationFunctionPolicy"
+      PolicyName: !Sub "${AWS::StackName}-GetAuthorizeHandlerPolicy"
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -470,14 +470,14 @@ Resources:
               - sqs:SendMessage
             Resource: !GetAtt AuditEventQueue.Arn
       Roles:
-        - !Ref AuthorizationFunctionRole
+        - !Ref GetAuthorizeHandlerRole
 
-  AuthorizationFunctionRestApiRole:
+  GetAuthorizeHandlerRestApiRole:
     Type: AWS::IAM::Role
     Condition: IsNotProduction
     Properties:
-      RoleName: !Sub "${AWS::StackName}-AuthorizationFunctionRestApiRole"
-      Description: !Sub "Roles for the AuthorizationFunction"
+      RoleName: !Sub "${AWS::StackName}-GetAuthorizeHandlerRestApiRole"
+      Description: !Sub "Roles for the GetAuthorizeHandler"
       PermissionsBoundary: !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -499,11 +499,11 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
 
-  AuthorizationFunctionRestApiPolicy:
+  GetAuthorizeHandlerRestApiPolicy:
     Type: AWS::IAM::Policy
     Condition: IsNotProduction
     Properties:
-      PolicyName: !Sub "${AWS::StackName}-AuthorizationFunctionRestApiPolicy"
+      PolicyName: !Sub "${AWS::StackName}-GetAuthorizeHandlerRestApiPolicy"
       PolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -511,15 +511,15 @@ Resources:
             Action:
               - "lambda:InvokeFunction"
             Resource:
-              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-AuthorizationFunction:*"
+              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-GetAuthorizeHandler:*"
       Roles:
-        - !Ref AuthorizationFunctionRestApiRole
+        - !Ref GetAuthorizeHandlerRestApiRole
 
-  AuthorizationFunctionLogGroup:
+  GetAuthorizeHandlerLogGroup:
     Type: AWS::Logs::LogGroup
     Condition: IsNotProduction
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-AuthorizationFunction"
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-GetAuthorizeHandler"
       RetentionInDays: 30
       KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
@@ -534,7 +534,7 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
         - Key: Name
-          Value: !Sub "/aws/lambda/${AWS::StackName}-AuthorizationFunction"
+          Value: !Sub "/aws/lambda/${AWS::StackName}-GetAuthorizeHandler"
 
   ################################
   # AUTHORIZATION LAMBDA         #
