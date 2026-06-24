@@ -66,6 +66,6 @@ jobs:
       id-token: write
       contents: read
     with:
-      stack-name: ${{ needs.preview.outputs.stack-name }}
+      stack-name: ${{ needs.preview.outputs.stack-name }} # Will OAUTH stack be needed here?
     secrets:
       aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
