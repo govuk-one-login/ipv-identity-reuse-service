@@ -119,9 +119,9 @@ paths:
       x-amazon-apigateway-integration:
         httpMethod: POST
         uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UnrecoverableErrorLambda.Arn}:live/invocations
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetUnrecoverableErrorHandler.Arn}:live/invocations
         credentials:
-          Fn::GetAtt: UnrecoverableErrorLambdaRestApiRole.Arn
+          Fn::GetAtt: GetUnrecoverableErrorHandlerRestApiRole.Arn
         type: aws_proxy
   /{item+}:
     get:
