@@ -748,16 +748,16 @@ Resources:
       SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PrivateApiDev}/${ApiStageName}/POST/*"
 
   ################################
-  # POST USER IDENTITY FEATURE  #
+  # GET USER IDENTITY HANDLER    #
   ################################
-  UserIdentityHandlerFunction:
+  GetUserIdentityHandler:
     Type: AWS::Serverless::Function
     Condition: IsNotProduction
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-UserIdentityHandlerFunction"
-      Description: "A lambda function that queues SIS data for processing"
-      Handler: user-identity-handler.handler
-      Role: !GetAtt UserIdentityHandlerFunctionRole.Arn
+      FunctionName: !Sub "${AWS::StackName}-GetUserIdentityHandler"
+      Description: "A lambda function that handles a request to the OAuth 2.0 resource server's protected resource, returning a stored identity"
+      Handler: get-user-identity-handler.handler
+      Role: !GetAtt GetUserIdentityHandlerRole.Arn
       KmsKeyArn: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
       VpcConfig: !If
         - UseVpc
@@ -769,12 +769,12 @@ Resources:
         - !Ref "AWS::NoValue"
       Environment:
         Variables:
-          METRIC_SERVICE_NAME: "UserIdentityHandlerFunction"
+          METRIC_SERVICE_NAME: "GetUserIdentityHandler"
           EVCS_API_KEY_SECRET_ARN:
             Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
           POWERTOOLS_METRICS_NAMESPACE:
-            !If [IsDev, !Sub "${AWS::StackName}-UserIdentityHandlerFunction", "UserIdentityHandlerFunction"]
-          POWERTOOLS_SERVICE_NAME: "UserIdentityHandlerFunction"
+            !If [IsDev, !Sub "${AWS::StackName}-GetUserIdentityHandler", "GetUserIdentityHandler"]
+          POWERTOOLS_SERVICE_NAME: "GetUserIdentityHandler"
           ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
           APP_CONFIG_NAME: !Ref ApplicationConfigName
           APP_CONFIG_APPLICATION: !Ref ApplicationName
@@ -799,7 +799,7 @@ Resources:
         Sourcemap: true
         SourcesContent: false
         EntryPoints:
-          - src/handlers/user-identity-handler/user-identity-handler.ts
+          - src/handlers/get-user-identity-handler/get-user-identity-handler.ts
         Format: esm
         Platform: node
         OutExtension:
@@ -807,12 +807,12 @@ Resources:
         Banner:
           - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
 
-  UserIdentityHandlerFunctionRole:
+  GetUserIdentityHandlerRole:
     Type: AWS::IAM::Role
     Condition: IsNotProduction
     Properties:
-      RoleName: !Sub "${AWS::StackName}-UserIdentityHandlerFunctionRole"
-      Description: !Sub "The role assumed by ${AWS::StackName}-UserIdentityHandlerFunction"
+      RoleName: !Sub "${AWS::StackName}-GetUserIdentityHandlerRole"
+      Description: !Sub "The role assumed by ${AWS::StackName}-GetUserIdentityHandler"
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -841,11 +841,11 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
 
-  UserIdentityHandlerFunctionPolicy:
+  GetUserIdentityHandlerPolicy:
     Type: AWS::IAM::Policy
     Condition: IsNotProduction
     Properties:
-      PolicyName: !Sub "${AWS::StackName}-UserIdentityHandlerFunctionPolicy"
+      PolicyName: !Sub "${AWS::StackName}-GetUserIdentityHandlerPolicy"
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -864,14 +864,14 @@ Resources:
               - sqs:SendMessage
             Resource: !GetAtt AuditEventQueue.Arn
       Roles:
-        - !Ref UserIdentityHandlerFunctionRole
+        - !Ref GetUserIdentityHandlerRole
 
-  UserIdentityHandlerRestApiRole:
+  GetUserIdentityHandlerRestApiRole:
     Type: AWS::IAM::Role
     Condition: IsNotProduction
     Properties:
-      RoleName: !Sub "${AWS::StackName}-UserIdentityHandlerRestApiRole"
-      Description: !Sub "Update User identity Function related permissions for the ${AWS::StackName}-RestApi Gateway IAM role"
+      RoleName: !Sub "${AWS::StackName}-GetUserIdentityHandlerRestApiRole"
+      Description: !Sub "GetUserIdentityHandler related permissions for the ${AWS::StackName}-RestApi Gateway IAM role"
       PermissionsBoundary: !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -893,11 +893,11 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
 
-  UserIdentityHandlerRestApiPolicy:
+  GetUserIdentityHandlerRestApiPolicy:
     Type: AWS::IAM::Policy
     Condition: IsNotProduction
     Properties:
-      PolicyName: !Sub "${AWS::StackName}-UserIdentityHandlerRestApiPolicy"
+      PolicyName: !Sub "${AWS::StackName}-GetUserIdentityHandlerRestApiPolicy"
       PolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -905,15 +905,15 @@ Resources:
             Action:
               - "lambda:InvokeFunction"
             Resource:
-              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-UserIdentityHandlerFunction:*"
+              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-GetUserIdentityHandler:*"
       Roles:
-        - !Ref UserIdentityHandlerRestApiRole
+        - !Ref GetUserIdentityHandlerRestApiRole
 
-  UserIdentityHandlerFunctionLogGroup:
+  GetUserIdentityHandlerLogGroup:
     Type: AWS::Logs::LogGroup
     Condition: IsNotProduction
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${UserIdentityHandlerFunction}"
+      LogGroupName: !Sub "/aws/lambda/${GetUserIdentityHandler}"
       RetentionInDays: 30
       KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
@@ -928,7 +928,7 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
         - Key: Name
-          Value: !Sub "/aws/lambda/${UserIdentityHandlerFunction}"
+          Value: !Sub "/aws/lambda/${GetUserIdentityHandler}"
 
   ################################
   # PUBLIC API API GATEWAY       #
