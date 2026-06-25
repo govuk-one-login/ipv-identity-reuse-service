@@ -1272,13 +1272,13 @@ Resources:
         - Key: Name
           Value: !Sub "/aws/lambda/${AWS::StackName}-GetConfirmDetailsHandler"
 
-  ConfirmDetailsSubmissionLambda:
+  PostConfirmDetailsHandler:
     Type: AWS::Serverless::Function
     Condition: IsNotProduction
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-ConfirmDetailsSubmissionLambda"
-      Handler: confirm-details-submission-handler.lambdaHandler
-      Role: !GetAtt ConfirmDetailsSubmissionLambdaRole.Arn
+      FunctionName: !Sub "${AWS::StackName}-PostConfirmDetailsHandler"
+      Handler: post-confirm-details-handler.lambdaHandler
+      Role: !GetAtt PostConfirmDetailsHandlerRole.Arn
       Environment:
         Variables:
           NODE_OPTIONS: "--enable-source-maps"
@@ -1287,12 +1287,12 @@ Resources:
       BuildProperties:
         UseNpmCi: True
         EntryPoints:
-          - src/handlers/confirm-details-submission-handler/confirm-details-submission-handler.ts
+          - src/handlers/post-confirm-details-handler/post-confirm-details-handler.ts
         Target: es2022
         Minify: true
         Sourcemap: true
 
-  ConfirmDetailsSubmissionLambdaRole:
+  PostConfirmDetailsHandlerRole:
     # checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
     Type: AWS::IAM::Role
     Condition: IsNotProduction
@@ -1313,11 +1313,54 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
 
-  ConfirmDetailsSubmissionFunctionLogGroup:
+  PostConfirmDetailsHandlerRestApiRole:
+    Type: AWS::IAM::Role
+    Condition: IsNotProduction
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-PostConfirmDetailsHandlerRestApiRole"
+      Description: !Sub "Roles for the PostConfirmDetailsHandler"
+      PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+
+  PostConfirmDetailsHandlerRestApiPolicy:
+    Type: AWS::IAM::Policy
+    Condition: IsNotProduction
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-PostConfirmDetailsHandlerRestApiPolicy"
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "lambda:InvokeFunction"
+            Resource:
+              - !GetAtt PostConfirmDetailsHandler.Arn
+      Roles:
+        - !Ref PostConfirmDetailsHandlerRestApiRole
+
+  PostConfirmDetailsHandlerLogGroup:
     Type: AWS::Logs::LogGroup
     Condition: IsNotProduction
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${ConfirmDetailsSubmissionLambda}"
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-PostConfirmDetailsHandler"
       RetentionInDays: 30
       KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
@@ -1332,7 +1375,7 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
         - Key: Name
-          Value: !Sub "/aws/lambda/${ConfirmDetailsSubmissionLambda}"
+          Value: !Sub "/aws/lambda/${AWS::StackName}-PostConfirmDetailsHandler"
 
   UnrecoverableErrorRole:
     # checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
