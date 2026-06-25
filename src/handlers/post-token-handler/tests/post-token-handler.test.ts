@@ -1,6 +1,6 @@
 import { APIGatewayEventRequestContextWithAuthorizer, APIGatewayProxyEvent, Context } from "aws-lambda";
 import { expect, it } from "vitest";
-import { handler } from "../token-handler";
+import { handler } from "../post-token-handler";
 
 it("should return an error if the content-type is not application/x-www-form-urlencoded", async () => {
   const event = createMockAPIGatewayProxyEvent({
