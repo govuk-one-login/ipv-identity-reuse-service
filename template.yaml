@@ -532,14 +532,14 @@ Resources:
   # AUTHORIZATION LAMBDA         #
   ################################
 
-  TokenFunction:
+  PostTokenHandler:
     Type: AWS::Serverless::Function
     Condition: IsNotProduction
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-TokenFunction"
+      FunctionName: !Sub "${AWS::StackName}-PostTokenHandler"
       Description: "A lambda function that performs OAuth"
-      Handler: token-handler.handler
-      Role: !GetAtt TokenFunctionRole.Arn
+      Handler: post-token-handler.handler
+      Role: !GetAtt PostTokenHandlerRole.Arn
       KmsKeyArn: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
       VpcConfig: !If
         - UseVpc
@@ -551,9 +551,9 @@ Resources:
         - !Ref "AWS::NoValue"
       Environment:
         Variables:
-          METRIC_SERVICE_NAME: "TokenFunction"
-          POWERTOOLS_METRICS_NAMESPACE: !If [IsDev, !Sub "${AWS::StackName}-TokenFunction", "TokenFunction"]
-          POWERTOOLS_SERVICE_NAME: "TokenFunction"
+          METRIC_SERVICE_NAME: "PostTokenHandler"
+          POWERTOOLS_METRICS_NAMESPACE: !If [IsDev, !Sub "${AWS::StackName}-PostTokenHandler", "PostTokenHandler"]
+          POWERTOOLS_SERVICE_NAME: "PostTokenHandler"
           ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
           APP_CONFIG_NAME: !Ref ApplicationConfigName
           APP_CONFIG_APPLICATION: !Ref ApplicationName
@@ -578,7 +578,7 @@ Resources:
         Sourcemap: true
         SourcesContent: false
         EntryPoints:
-          - src/handlers/token-handler/token-handler.ts
+          - src/handlers/post-token-handler/post-token-handler.ts
         Format: esm
         Platform: node
         OutExtension:
@@ -586,12 +586,12 @@ Resources:
         Banner:
           - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
 
-  TokenFunctionRole:
+  PostTokenHandlerRole:
     Type: AWS::IAM::Role
     Condition: IsNotProduction
     Properties:
-      RoleName: !Sub "${AWS::StackName}-TokenFunctionRole"
-      Description: !Sub "The role assumed by ${AWS::StackName}-TokenFunction"
+      RoleName: !Sub "${AWS::StackName}-PostTokenHandlerRole"
+      Description: !Sub "The role assumed by ${AWS::StackName}-PostTokenHandler"
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -620,11 +620,11 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
 
-  TokenFunctionPolicy:
+  PostTokenHandlerPolicy:
     Type: AWS::IAM::Policy
     Condition: IsNotProduction
     Properties:
-      PolicyName: !Sub "${AWS::StackName}-TokenFunctionPolicy"
+      PolicyName: !Sub "${AWS::StackName}-PostTokenHandlerPolicy"
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -643,14 +643,14 @@ Resources:
               - sqs:SendMessage
             Resource: !GetAtt AuditEventQueue.Arn
       Roles:
-        - !Ref TokenFunctionRole
+        - !Ref PostTokenHandlerRole
 
-  TokenFunctionRestApiRole:
+  PostTokenHandlerRestApiRole:
     Type: AWS::IAM::Role
     Condition: IsNotProduction
     Properties:
-      RoleName: !Sub "${AWS::StackName}-TokenFunctionRestApiRole"
-      Description: !Sub "Roles for the TokenFunction"
+      RoleName: !Sub "${AWS::StackName}-PostTokenHandlerRestApiRole"
+      Description: !Sub "Roles for the PostTokenHandler"
       PermissionsBoundary: !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -672,11 +672,11 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
 
-  TokenFunctionRestApiPolicy:
+  PostTokenHandlerRestApiPolicy:
     Type: AWS::IAM::Policy
     Condition: IsNotProduction
     Properties:
-      PolicyName: !Sub "${AWS::StackName}-TokenFunctionRestApiPolicy"
+      PolicyName: !Sub "${AWS::StackName}-PostTokenHandlerRestApiPolicy"
       PolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -684,14 +684,14 @@ Resources:
             Action:
               - "lambda:InvokeFunction"
             Resource:
-              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-TokenFunction:*"
+              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-PostTokenHandler:*"
       Roles:
-        - !Ref TokenFunctionRestApiRole
+        - !Ref PostTokenHandlerRestApiRole
 
-  TokenFunctionLogGroup:
+  PostTokenHandlerLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-TokenFunction"
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-PostTokenHandler"
       RetentionInDays: 30
       KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
@@ -706,32 +706,32 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
         - Key: Name
-          Value: !Sub "/aws/lambda/${AWS::StackName}-TokenFunction"
+          Value: !Sub "/aws/lambda/${AWS::StackName}-PostTokenHandler"
 
-  PrivateApiTokenFunctionResourcePolicy:
-    DependsOn: TokenFunctionAliaslive
+  PrivateApiPostTokenHandlerResourcePolicy:
+    DependsOn: PostTokenHandlerAliaslive
     Condition: IsNotProduction
     Type: AWS::Lambda::Permission
     Properties:
       FunctionName: !Join
         - ":"
         - - "function"
-          - !Select [6, !Split [":", !GetAtt TokenFunction.Arn]]
+          - !Select [6, !Split [":", !GetAtt PostTokenHandler.Arn]]
           - "live"
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
       SourceAccount: !Ref AWS::AccountId
       SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PrivateApi}/${ApiStageName}/POST/*"
 
-  PrivateApiDevTokenFunctionResourcePolicy:
-    DependsOn: TokenFunctionAliaslive
+  PrivateApiDevPostTokenHandlerResourcePolicy:
+    DependsOn: PostTokenHandlerAliaslive
     Condition: IsDev
     Type: AWS::Lambda::Permission
     Properties:
       FunctionName: !Join
         - ":"
         - - "function"
-          - !Select [6, !Split [":", !GetAtt TokenFunction.Arn]]
+          - !Select [6, !Split [":", !GetAtt PostTokenHandler.Arn]]
           - "live"
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
