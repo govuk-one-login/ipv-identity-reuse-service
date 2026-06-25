@@ -1136,7 +1136,43 @@ Resources:
               - sts:AssumeRole
       Path: "/"
 
-  ConfirmDetailsRole:
+  GetConfirmDetailsLambda:
+    Type: AWS::Serverless::Function
+    Condition: IsNotProduction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-GetConfirmDetailsLambda"
+      Handler: get-confirm-details-handler.lambdaHandler
+      Role: !GetAtt GetConfirmDetailsLambdaRole.Arn
+      Environment:
+        Variables:
+          NODE_OPTIONS: "--enable-source-maps"
+      Layers:
+        - !Ref GovUKFrontEndLayer
+        - !If
+          - DynaTraceEnabled
+          - !Ref DynatraceNodeLayerArn
+          - !Ref AWS::NoValue
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        UseNpmCi: True
+        EntryPoints:
+          - src/handlers/get-confirm-details-handler/get-confirm-details-handler.ts
+        Sourcemap: true
+        SourcesContent: false
+        Target: "es2024"
+        Format: esm
+        Platform: node
+        OutExtension:
+          - .js=.mjs
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
+        Loader:
+          - .njk=file
+        External:
+          - govuk-frontend
+
+  GetConfirmDetailsLambdaRole:
     # checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
     Type: AWS::IAM::Role
     Condition: IsNotProduction
@@ -1157,68 +1193,12 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
 
-  ConfirmDetailsLambda:
-    Type: AWS::Serverless::Function
-    Condition: IsNotProduction
-    Properties:
-      FunctionName: !Sub "${AWS::StackName}-ConfirmDetailsLambda"
-      Handler: confirm-details-handler.lambdaHandler
-      Role: !GetAtt ConfirmDetailsRole.Arn
-      Environment:
-        Variables:
-          NODE_OPTIONS: "--enable-source-maps"
-      Layers:
-        - !Ref GovUKFrontEndLayer
-        - !If
-          - DynaTraceEnabled
-          - !Ref DynatraceNodeLayerArn
-          - !Ref AWS::NoValue
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        UseNpmCi: True
-        EntryPoints:
-          - src/handlers/confirm-details/confirm-details-handler.ts
-        Sourcemap: true
-        SourcesContent: false
-        Target: "es2024"
-        Format: esm
-        Platform: node
-        OutExtension:
-          - .js=.mjs
-        Banner:
-          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
-        Loader:
-          - .njk=file
-        External:
-          - govuk-frontend
-
-  ConfirmDetailsSubmissionLambda:
-    Type: AWS::Serverless::Function
-    Condition: IsNotProduction
-    Properties:
-      FunctionName: !Sub "${AWS::StackName}-ConfirmDetailsSubmissionLambda"
-      Handler: confirm-details-submission-handler.lambdaHandler
-      Role: !GetAtt ConfirmDetailsRole.Arn
-      Environment:
-        Variables:
-          NODE_OPTIONS: "--enable-source-maps"
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        UseNpmCi: True
-        EntryPoints:
-          - src/handlers/confirm-details/confirm-details-submission-handler.ts
-        Target: es2022
-        Minify: true
-        Sourcemap: true
-
-  ConfirmDetailsLambdaRestApiRole:
+  GetConfirmDetailsLambdaRestApiRole:
     Type: AWS::IAM::Role
     Condition: IsNotProduction
     Properties:
-      RoleName: !Sub "${AWS::StackName}-ConfirmDetailsLambdaRestApiRole"
-      Description: !Sub "Roles for the ConfirmDetailsLambda"
+      RoleName: !Sub "${AWS::StackName}-GetConfirmDetailsLambdaRestApiRole"
+      Description: !Sub "Roles for the GetConfirmDetailsLambda"
       PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -1240,11 +1220,11 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
 
-  ConfirmDetailsLambdaRestApiPolicy:
+  GetConfirmDetailsLambdaRestApiPolicy:
     Type: AWS::IAM::Policy
     Condition: IsNotProduction
     Properties:
-      PolicyName: !Sub "${AWS::StackName}-ConfirmDetailsLambdaRestApiPolicy"
+      PolicyName: !Sub "${AWS::StackName}-GetConfirmDetailsLambdaRestApiPolicy"
       PolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -1252,16 +1232,16 @@ Resources:
             Action:
               - "lambda:InvokeFunction"
             Resource:
-              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-ConfirmDetailsLambda:*"
+              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-GetConfirmDetailsLambda:*"
               - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-ConfirmDetailsSubmissionLambda:*"
       Roles:
-        - !Ref ConfirmDetailsLambdaRestApiRole
+        - !Ref GetConfirmDetailsLambdaRestApiRole
 
-  ConfirmDetailsFunctionLogGroup:
+  GetConfirmDetailsFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Condition: IsNotProduction
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${ConfirmDetailsLambda}"
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-GetConfirmDetailsLambda"
       RetentionInDays: 30
       KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
@@ -1276,7 +1256,48 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
         - Key: Name
-          Value: !Sub "/aws/lambda/${ConfirmDetailsLambda}"
+          Value: !Sub "/aws/lambda/${AWS::StackName}-GetConfirmDetailsLambda"
+
+  ConfirmDetailsSubmissionLambda:
+    Type: AWS::Serverless::Function
+    Condition: IsNotProduction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-ConfirmDetailsSubmissionLambda"
+      Handler: confirm-details-submission-handler.lambdaHandler
+      Role: !GetAtt ConfirmDetailsSubmissionLambdaRole.Arn
+      Environment:
+        Variables:
+          NODE_OPTIONS: "--enable-source-maps"
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        UseNpmCi: True
+        EntryPoints:
+          - src/handlers/confirm-details-submission-handler/confirm-details-submission-handler.ts
+        Target: es2022
+        Minify: true
+        Sourcemap: true
+
+  ConfirmDetailsSubmissionLambdaRole:
+    # checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
+    Type: AWS::IAM::Role
+    Condition: IsNotProduction
+    Properties:
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
 
   ConfirmDetailsSubmissionFunctionLogGroup:
     Type: AWS::Logs::LogGroup

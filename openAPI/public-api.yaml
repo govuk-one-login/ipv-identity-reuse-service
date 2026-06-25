@@ -83,9 +83,9 @@ paths:
       x-amazon-apigateway-integration:
         httpMethod: POST
         uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ConfirmDetailsLambda.Arn}:live/invocations
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetConfirmDetailsLambda.Arn}:live/invocations
         credentials:
-          Fn::GetAtt: ConfirmDetailsLambdaRestApiRole.Arn
+          Fn::GetAtt: GetConfirmDetailsLambdaRestApiRole.Arn
         type: aws_proxy
     post:
       parameters:
@@ -105,7 +105,7 @@ paths:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ConfirmDetailsSubmissionLambda.Arn}:live/invocations
         credentials:
-          Fn::GetAtt: ConfirmDetailsLambdaRestApiRole.Arn
+          Fn::GetAtt: GetConfirmDetailsLambdaRestApiRole.Arn
         type: aws_proxy
   /error/unrecoverable:
     get:
