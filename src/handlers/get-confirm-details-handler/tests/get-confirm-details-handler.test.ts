@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, expect, it, vitest } from "vitest";
-import { lambdaHandler } from "../confirm-details-handler";
+import { lambdaHandler } from "../get-confirm-details-handler";
 import { APIGatewayProxyEvent } from "aws-lambda";
 
 const mockRender = vitest.hoisted(() => vitest.fn().mockReturnValue("Rendered Confirm Details Screen"));

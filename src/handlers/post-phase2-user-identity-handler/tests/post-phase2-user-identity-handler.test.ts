@@ -1,11 +1,11 @@
 import { APIGatewayProxyEvent, Context } from "aws-lambda";
-import { handler } from "../user-identity-handler";
+import { handler } from "../post-phase2-user-identity-handler";
 import { HttpCodesEnum } from "../../../commons/constants";
 import { Configuration } from "../../../commons/configuration";
 import * as configuration from "../../../commons/configuration";
 import { CredentialStoreIdentityResponse } from "../../../credential-store/credential-store-identity-response";
-import { UserIdentityResponse } from "../user-identity-response";
-import { UserIdentityRequest } from "../user-identity-request";
+import { UserIdentityResponse } from "../post-phase2-user-identity-response";
+import { UserIdentityRequest } from "../post-phase2-user-identity-request";
 import * as identityExpiryService from "../../../identity-reuse/identity-expiry-service";
 import * as storedIdentityValidator from "../../../identity-reuse/stored-identity-validator";
 import { IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials";

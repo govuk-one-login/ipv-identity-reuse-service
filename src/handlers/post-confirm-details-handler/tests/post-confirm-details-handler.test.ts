@@ -1,6 +1,6 @@
 import { APIGatewayEventRequestContextWithAuthorizer, APIGatewayProxyEvent } from "aws-lambda";
 import { expect, it } from "vitest";
-import { lambdaHandler } from "../confirm-details-submission-handler";
+import { lambdaHandler } from "../post-confirm-details-handler";
 
 it("should return a 302 status code on a successful request", async () => {
   const event = createMockAPIGatewayProxyEvent(
