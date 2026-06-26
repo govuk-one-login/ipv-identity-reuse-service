@@ -58,9 +58,9 @@ paths:
       x-amazon-apigateway-integration:
         httpMethod: POST
         uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UserIdentityFunction.Arn}:live/invocations
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostPhase2UserIdentityHandler.Arn}:live/invocations
         credentials:
-          Fn::GetAtt: UserIdentityRestApiRole.Arn
+          Fn::GetAtt: PostPhase2UserIdentityHandlerRestApiRole.Arn
         passthroughBehavior: NEVER
         contentHandling: CONVERT_TO_TEXT
         type: AWS_PROXY

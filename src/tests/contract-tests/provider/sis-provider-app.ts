@@ -1,6 +1,6 @@
 import express, { type Request } from "express";
 import type { Server } from "node:http";
-import { handler } from "../../../handlers/user-identity/user-identity-handler";
+import { handler } from "../../../handlers/post-phase2-user-identity-handler/post-phase2-user-identity-handler";
 import {
   APIGatewayEventRequestContextWithAuthorizer,
   APIGatewayProxyEvent,
