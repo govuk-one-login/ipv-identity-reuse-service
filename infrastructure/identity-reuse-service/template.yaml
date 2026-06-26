@@ -1875,15 +1875,15 @@ Resources:
     DependsOn:
       - PublicApiStage
 
-  ################################
-  # POST USER IDENTITY FEATURE  #
-  ################################
+  #######################################
+  # POST PHASE 2 USER IDENTITY HANDLER  #
+  #######################################
   UserIdentityFunction:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub "${AWS::StackName}-UserIdentityFunction"
       Description: "A lambda function that queues SIS data for processing"
-      Handler: user-identity-handler.handler
+      Handler: post-phase2-user-identity-handler.handler
       Role: !GetAtt UserIdentityFunctionRole.Arn
       KmsKeyArn: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
       VpcConfig: !If
@@ -1926,7 +1926,63 @@ Resources:
         Sourcemap: true
         SourcesContent: false
         EntryPoints:
-          - src/handlers/user-identity/user-identity-handler.ts
+          - src/handlers/post-phase2-user-identity-handler/post-phase2-user-identity-handler.ts
+        Format: esm
+        Platform: node
+        OutExtension:
+          - .js=.mjs
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
+
+  PostPhase2UserIdentityHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-PostPhase2UserIdentityHandler"
+      Description: "A lambda function that handles a request to the OAuth 2.0 resource server's protected resource, returning a stored identity (phase 2 version)"
+      Handler: post-phase2-user-identity-handler.handler
+      Role: !GetAtt PostPhase2UserIdentityHandlerRole.Arn
+      KmsKeyArn: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
+      VpcConfig: !If
+        - UseVpc
+        - SecurityGroupIds:
+            - Fn::ImportValue: !Sub "${VpcStackName}-AWSServicesEndpointSecurityGroupId"
+          SubnetIds:
+            - Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdA"
+            - Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdB"
+        - !Ref "AWS::NoValue"
+      Environment:
+        Variables:
+          METRIC_SERVICE_NAME: "UserIdentityFunction"
+          EVCS_API_KEY_SECRET_ARN:
+            Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
+          POWERTOOLS_METRICS_NAMESPACE:
+            !If [IsDev, !Sub "${AWS::StackName}-UserIdentityFunction", "UserIdentityFunction"]
+          POWERTOOLS_SERVICE_NAME: "PostPhase2UserIdentityHandler"
+          ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
+          APP_CONFIG_NAME: !Ref ApplicationConfigName
+          APP_CONFIG_APPLICATION: !Ref ApplicationName
+          SQS_AUDIT_EVENT_QUEUE_URL: !Ref AuditEventQueue
+          COMPONENT_ID: !Ref ComponentId
+      CodeSigningConfigArn: !If
+        - UseCodeSigning
+        - !Ref CodeSigningConfigArn
+        - !Ref AWS::NoValue
+      Tags:
+        Product: !Ref ProductTagValue
+        System: !Ref SystemTagValue
+        Environment: !Ref Environment
+        Owner: !Ref OwnerTagValue
+        Source: !Ref SourceTagValue
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        UseNpmCi: True
+        Minify: true
+        Target: es2022
+        Sourcemap: true
+        SourcesContent: false
+        EntryPoints:
+          - src/handlers/post-phase2-user-identity-handler/post-phase2-user-identity-handler.ts
         Format: esm
         Platform: node
         OutExtension:
@@ -1939,6 +1995,39 @@ Resources:
     Properties:
       RoleName: !Sub "${AWS::StackName}-UserIdentityFunctionRole"
       Description: !Sub "The role assumed by ${AWS::StackName}-UserIdentityFunction"
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+        - Fn::ImportValue: !Sub "${AppConfigStackName}-AppConfigClientPolicyArn"
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+
+  PostPhase2UserIdentityHandlerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-PostPhase2UserIdentityHandlerRole"
+      Description: !Sub "The role assumed by ${AWS::StackName}-PostPhase2UserIdentityHandler"
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -1991,6 +2080,30 @@ Resources:
       Roles:
         - !Ref UserIdentityFunctionRole
 
+  PostPhase2UserIdentityHandlerPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-PostPhase2UserIdentityHandlerPolicy"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - kms:Decrypt
+              - kms:GenerateDataKey
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - "secretsmanager:GetSecretValue" #pragma: allowlist secret
+            Resource:
+              - Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
+          - Effect: Allow
+            Action:
+              - sqs:SendMessage
+            Resource: !GetAtt AuditEventQueue.Arn
+      Roles:
+        - !Ref PostPhase2UserIdentityHandlerRole
+
   RegionalGatewayUserIdentityFunctionResourcePolicy:
     Condition: IsDev
     DependsOn: UserIdentityFunctionAliaslive
@@ -2006,6 +2119,21 @@ Resources:
       SourceAccount: !Ref AWS::AccountId
       SourceArn: !Sub "arn:aws:apigateway:${AWS::Region}::/restapis/${DevPrivateRestApi}/${ApiStageName}"
 
+  RegionalGatewayPostPhase2UserIdentityHandlerResourcePolicy:
+    Condition: IsDev
+    DependsOn: PostPhase2UserIdentityHandlerAliaslive
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Join
+        - ":"
+        - - "function"
+          - !Select [6, !Split [":", !GetAtt PostPhase2UserIdentityHandler.Arn]]
+          - "live"
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub "arn:aws:apigateway:${AWS::Region}::/restapis/${DevPrivateRestApi}/${ApiStageName}"
+
   PrivateGatewayUserIdentityFunctionResourcePolicy:
     DependsOn: UserIdentityFunctionAliaslive
     Type: AWS::Lambda::Permission
@@ -2014,6 +2142,20 @@ Resources:
         - ":"
         - - "function"
           - !Select [6, !Split [":", !GetAtt UserIdentityFunction.Arn]]
+          - "live"
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PrivateRestApi}/${ApiStageName}/POST/*"
+
+  PrivateGatewayPostPhase2UserIdentityHandlerResourcePolicy:
+    DependsOn: PostPhase2UserIdentityHandlerAliaslive
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Join
+        - ":"
+        - - "function"
+          - !Select [6, !Split [":", !GetAtt PostPhase2UserIdentityHandler.Arn]]
           - "live"
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
@@ -2183,6 +2325,32 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
 
+  PostPhase2UserIdentityHandlerRestApiRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-PostPhase2UserIdentityHandlerRestApiRole"
+      Description: !Sub "Role that allows API Gateway to execute the PostPhase2UserIdentityHandler in the ${AWS::StackName} stack"
+      PermissionsBoundary: !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+
   UserIdentityRestApiPolicy:
     Type: AWS::IAM::Policy
     Properties:
@@ -2197,6 +2365,21 @@ Resources:
               - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-UserIdentityFunction:*"
       Roles:
         - !Ref UserIdentityRestApiRole
+
+  PostPhase2UserIdentityHandlerRestApiPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-PostPhase2UserIdentityHandlerRestApiPolicy"
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "lambda:InvokeFunction"
+            Resource:
+              - !Sub "${PostPhase2UserIdentityHandler.Arn}:*"
+      Roles:
+        - !Ref PostPhase2UserIdentityHandlerRestApiRole
 
   UserIdentityFunctionLogGroup:
     Type: AWS::Logs::LogGroup
@@ -2217,6 +2400,26 @@ Resources:
           Value: !Ref SourceTagValue
         - Key: Name
           Value: !Sub "/aws/lambda/${UserIdentityFunction}"
+
+  PostPhase2UserIdentityHandlerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${PostPhase2UserIdentityHandler}"
+      RetentionInDays: 30
+      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "/aws/lambda/${PostPhase2UserIdentityHandler}"
 
   MessageProcessorLambda:
     Type: AWS::Serverless::Function

@@ -1,7 +1,7 @@
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
 import { calculateVot } from "../calculate-vot";
-import { StoredIdentityVectorOfTrust } from "../../handlers/user-identity/user-identity-response";
-import { StoredIdentityJWT } from "../../handlers/user-identity/stored-identity-jwt";
+import { StoredIdentityVectorOfTrust } from "../../handlers/post-phase2-user-identity-handler/post-phase2-user-identity-response";
+import { StoredIdentityJWT } from "../../handlers/post-phase2-user-identity-handler/stored-identity-jwt";
 import logger from "../../commons/logger";
 import { vi, describe, it, afterEach, expect, Mocked } from "vitest";
 
