@@ -2024,17 +2024,17 @@ Resources:
         - Key: Name
           Value: !Sub "/aws/lambda/${PostPhase2UserIdentityHandler}"
 
-  MessageProcessorLambda:
+  InboundTxmaQueueMessageHandler:
     Type: AWS::Serverless::Function
     # checkov:skip=CKV_AWS_115: We do not have enough data to allocate the concurrent execution allowance per function.
     # checkov:skip=CKV_AWS_116: DLQs are not used for synchronous invocations.
     # checkov:skip=CKV_AWS_173: Check encryption settings for Lambda environmental variable
-    DependsOn: MessageProcessorLambdaTriggerPolicy
+    DependsOn: InboundTxmaQueueMessageHandlerTriggerPolicy
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-MessageProcessorLambda"
+      FunctionName: !Sub "${AWS::StackName}-InboundTxmaQueueMessageHandler"
       Description: Logs passed in VCs
-      Handler: ais-message-handler.handler
-      Role: !GetAtt MessageProcessorLambdaTriggerRole.Arn
+      Handler: inbound-txma-queue-message-handler.handler
+      Role: !GetAtt InboundTxmaQueueMessageHandlerTriggerRole.Arn
       Environment:
         Variables:
           POWERTOOLS_METRICS_NAMESPACE:
@@ -2059,7 +2059,7 @@ Resources:
       BuildProperties:
         UseNpmCi: True
         EntryPoints:
-          - src/handlers/ais-message-processor/ais-message-handler.ts
+          - src/handlers/inbound-txma-queue-message-handler/inbound-txma-queue-message-handler.ts
         Sourcemap: true
         SourcesContent: false
         Target: "es2024"
@@ -2070,10 +2070,10 @@ Resources:
         Banner:
           - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
 
-  MessageProcessorLambdaTriggerRole:
+  InboundTxmaQueueMessageHandlerTriggerRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub "${AWS::StackName}-MessageProcessorLambdaTriggerRole"
+      RoleName: !Sub "${AWS::StackName}-InboundTxmaQueueMessageHandlerTriggerRole"
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -2100,12 +2100,12 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
         - Key: Name
-          Value: !Sub "${AWS::StackName}-MessageProcessorLambdaTriggerRole"
+          Value: !Sub "${AWS::StackName}-InboundTxmaQueueMessageHandlerTriggerRole"
 
-  MessageProcessorLambdaTriggerPolicy:
+  InboundTxmaQueueMessageHandlerTriggerPolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: !Sub "${AWS::StackName}-MessageProcessorLambdaTriggerPolicy"
+      PolicyName: !Sub "${AWS::StackName}-InboundTxmaQueueMessageHandlerTriggerPolicy"
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -2140,30 +2140,30 @@ Resources:
               - "kms:*"
             Resource: "*"
       Roles:
-        - !Ref MessageProcessorLambdaTriggerRole
+        - !Ref InboundTxmaQueueMessageHandlerTriggerRole
 
-  MessageProcessorLambdaLogGroup:
+  InboundTxmaQueueMessageHandlerLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-MessageProcessorLambda"
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-InboundTxmaQueueMessageHandler"
       RetentionInDays: !Ref LogGroupRetentionInDays
       KmsKeyId: !GetAtt LoggingKmsKey.Arn
 
-  MessageProcessorLambdaLogGroupSubscriptionFilter:
+  InboundTxmaQueueMessageHandlerLogGroupSubscriptionFilter:
     Type: AWS::Logs::SubscriptionFilter
     Condition: IsNotDevOrBuild
     Properties:
       DestinationArn: !Ref CSLSSubscriptionEndpointArn
       FilterPattern: "{$._aws.CloudWatchMetrics NOT EXISTS}"
-      LogGroupName: !Ref MessageProcessorLambdaLogGroup
+      LogGroupName: !Ref InboundTxmaQueueMessageHandlerLogGroup
 
-  MessageProcessorLambdaErrorMetric:
+  InboundTxmaQueueMessageHandlerErrorMetric:
     Type: AWS::Logs::MetricFilter
     Properties:
       FilterPattern: '{ $.level = "ERROR"}'
-      LogGroupName: !Ref MessageProcessorLambdaLogGroup
+      LogGroupName: !Ref InboundTxmaQueueMessageHandlerLogGroup
       MetricTransformations:
-        - MetricName: !Sub "${MessageProcessorLambda}-LambdaError"
+        - MetricName: !Sub "${InboundTxmaQueueMessageHandler}-LambdaError"
           MetricNamespace: !Ref MainCloudWatchMetricNamespace
           MetricValue: "1"
 
@@ -2799,7 +2799,7 @@ Resources:
       QueueName: !Sub "${AWS::StackName}-stub-queue"
       KmsMasterKeyId: !Ref StubQueueKey
 
-  MessageProcessorLambdaTrigger:
+  InboundTxmaQueueMessageHandlerTrigger:
     Type: AWS::Lambda::EventSourceMapping
     Properties:
       BatchSize: 1
@@ -2807,7 +2807,7 @@ Resources:
         - IsDevOrBuild
         - !GetAtt StubQueue.Arn
         - !FindInMap [EnvironmentMap, !Ref Environment, messageQueueArn]
-      FunctionName: !GetAtt MessageProcessorLambda.Arn
+      FunctionName: !GetAtt InboundTxmaQueueMessageHandler.Arn
       Enabled: true
 
   AuditEventDeadLetterQueueAlarm:
@@ -2961,14 +2961,14 @@ Resources:
       AlarmDescription: "Errors invoking SIS lambda functions"
       Metrics:
         - Id: m1
-          Label: MessageProcessorLambda Errors
+          Label: InboundTxmaQueueMessageHandler Errors
           MetricStat:
             Metric:
               MetricName: Errors
               Namespace: AWS/Lambda
               Dimensions:
                 - Name: FunctionName
-                  Value: !Ref MessageProcessorLambda
+                  Value: !Ref InboundTxmaQueueMessageHandler
             Period: 60
             Stat: Sum
             Unit: Count
