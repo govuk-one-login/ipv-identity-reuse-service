@@ -41,6 +41,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-request-validator: ALL
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${OAuthCommonStackName}-SessionFn:live/invocations
+        passthroughBehavior: never
 
   /api/authorization:
     get:
@@ -72,6 +79,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-request-validator: ALL
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${OAuthCommonStackName}-AuthorizationFn:live/invocations
+        passthroughBehavior: never
 
   /token:
     post:
@@ -125,6 +139,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${OAuthCommonStackName}-AccessTokenFn:live/invocations
+        passthroughBehavior: never
 
 components:
   parameters:
@@ -207,3 +227,9 @@ components:
       properties:
         message:
           type: "string"
+
+x-amazon-apigateway-request-validators:
+  ALL:
+    validateRequestBody: true
+    validateRequestParameters: true
+    validateRequestHeaders: true

@@ -82,9 +82,25 @@ pre-commit run --all-files
 
 For testing, you can deploy your code changes to a development environment.
 
-### Instructions
+There are two templates that make up the application:
 
-Follow these instructions to build and deploy the lambda functions to your development environment.
+* `/infrastructure/identity-reuse-service/template.yaml` - the main application stack, containing:
+  * a public API for the OAuth 2.0 authorization endpoint and frontend endpoints, with associated logic in Lambda functions
+  * a private external-facing API for the OAuth 2.0 token endpoint and protected resource, with associated logic in Lambda functions*
+    (except for the token function, which lives in the stack below)
+* `/infrastructure/oauth-internal/template.yaml` - internal-only OAuth "helper" stacks, containing:
+  * a private internal-facing API providing some endpoints that help manage a user's OAuth session
+  * a nested [ipv-cri-oauth-common](https://github.com/govuk-one-login/ipv-cri-oauth-common) stack deployed via SAR
+    containing the session management logic in Lambda functions and a DynamoDB table
+
+> **_NOTE:_**  The `oauth-internal` stack imports stack outputs from the `identity-reuse-service` stack, so there is a dependency between the two.
+> This is because the audit queue lives in the latter, but the former also needs access to it.
+
+### Deploying the main application stack
+
+By default, the `./deploy-to-dev.sh` script deploys only `/infrastructure/identity-reuse-service/template.yaml`.
+
+Follow these instructions to build and deploy the above AWS resources to your development environment.
 
 1. Set your environment variables (replace with your actual values):
 
@@ -112,13 +128,40 @@ aws sso login --profile $AWS_PROFILE
 aws cloudformation describe-stacks --profile $AWS_PROFILE --stack-name $STACK_NAME
 ```
 
+### Deploying the OAuth internal stack
+
+To deploy `/infrastructure/oauth-internal/template.yaml` you need additional options when using the script.
+
+* `-o` - add this to deploy BOTH the `identity-reuse-service` stack and the `oauth-internal` stack
+* `-n` - add this (as well as `-o`) to deploy ONLY the `oauth-internal` stack
+* `-m` - use this to specify the `identity-reuse-service` stack that the `oauth-internal` stack points to -
+         by default it uses the one being deployed, or `preview-main` if only deploying `oauth-internal`.
+
+```sh
+# Deploy BOTH (oauth-internal points at $STACK_NAME)
+./deploy-to-dev.sh -s $STACK_NAME -o
+
+# Deploy only oauth-internal (oauth-internal points at preview-main)
+./deploy-to-dev.sh -s $STACK_NAME -o -n
+
+# Deploy only oauth-internal (oauth-internal points at $ANOTHER_SIS_STACK)
+./deploy-to-dev.sh -s $STACK_NAME -o -n -m $ANOTHER_SIS_STACK
+```
+
 ### Delete your stack deployment
 
-When you have finished testing, you'll need to manually delete the stack you created:
+When you have finished testing, you'll need to manually delete the stack(s) you created by adding `-d` to any of the commands:
 
 ```sh
 # Takes ~5 minutes to complete
+# Deletes only identity-reuse-service
 ./deploy-to-dev.sh -s $STACK_NAME -d
+
+# Deletes BOTH identity-reuse-service and oauth-internal
+./deploy-to-dev.sh -s $STACK_NAME -o -d
+
+# Deletes ONLY oauth-internal
+./deploy-to-dev.sh -s $STACK_NAME -o -n -d
 ```
 
 ## Interact with the deployed service in development
