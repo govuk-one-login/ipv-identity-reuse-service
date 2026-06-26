@@ -1,4 +1,4 @@
-import { StoredIdentityJWT } from "../../handlers/user-identity/stored-identity-jwt";
+import { StoredIdentityJWT } from "../../handlers/post-phase2-user-identity-handler/stored-identity-jwt";
 import { validateStoredIdentityCredentials } from "../stored-identity-validator";
 import { vi, describe, it, expect } from "vitest";
 
