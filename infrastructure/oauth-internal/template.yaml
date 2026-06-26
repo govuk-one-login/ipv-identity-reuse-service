@@ -80,6 +80,11 @@ Parameters:
     Description: The name of the main SIS stack containing audit queue infrastructure
     Type: String
 
+  OAuthClientId:
+    Description: "The client ID used by the main OAuth client"
+    Type: String
+    Default: "orchestrator"
+
   OwnerTagValue:
     Description: Value for the Owner Tag
     Type: String
@@ -108,31 +113,43 @@ Parameters:
 Mappings:
   EnvironmentMap:
     "local":
+      OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: "https://orch.reuse.dev.stubs.account.gov.uk/.well-known/jwks.json"
       OrchestrationRedirectURI: "https://orch.reuse.dev.stubs.account.gov.uk"
       SISAudience: "https://reuse-identity.dev.account.gov.uk"
     "dev":
+      OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: "https://orch.reuse.dev.stubs.account.gov.uk/.well-known/jwks.json"
       OrchestrationRedirectURI: "https://orch.reuse.dev.stubs.account.gov.uk"
       SISAudience: "https://reuse-identity.dev.account.gov.uk"
     "build":
+      OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: "https://orch.reuse.stubs.account.gov.uk/.well-known/jwks.json"
       OrchestrationRedirectURI: "https://orch.reuse.stubs.account.gov.uk"
       SISAudience: "https://reuse-identity.build.account.gov.uk"
     "staging":
+      OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: none
       OrchestrationRedirectURI: none
       SISAudience: "https://reuse-identity.staging.account.gov.uk"
     "integration":
+      OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: none
       OrchestrationRedirectURI: none
       SISAudience: "https://reuse-identity.integration.account.gov.uk"
     "production":
+      OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: none
       OrchestrationRedirectURI: none
       SISAudience: "https://reuse-identity.account.gov.uk"
 
 Conditions:
+  IsDevOrBuild:
+    Fn::Or:
+      - Fn::Equals: [ !Ref Environment, "local" ]
+      - Fn::Equals: [ !Ref Environment, "dev" ]
+      - Fn::Equals: [ !Ref Environment, "build" ]
+
   IsNotProduction:
     Fn::Or:
       - Fn::Equals: [ !Ref Environment, "local" ]
@@ -293,6 +310,46 @@ Resources:
           Value: !Ref SourceTagValue
         - Key: Name
           Value: !Sub "${AWS::StackName}-CloudWatchEncryptionKey"
+
+  IPVCoreAuthenticationAlgParameter:
+    Type: AWS::SSM::Parameter
+    Condition: IsDevOrBuild
+    Properties:
+      Name: !Sub "/${OAuthCommonStackName}/clients/${OAuthClientId}/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
+  IPVCoreAudienceParameter:
+    Type: AWS::SSM::Parameter
+    Condition: IsDevOrBuild
+    Properties:
+      Name: !Sub "/${OAuthCommonStackName}/clients/${OAuthClientId}/jwtAuthentication/audience"
+      Type: String
+      Value: !FindInMap [ EnvironmentMap, !Ref Environment, SISAudience ]
+
+  IPVCoreIssuerParameter:
+    Type: AWS::SSM::Parameter
+    Condition: IsNotProduction
+    Properties:
+      Name: !Sub "/${OAuthCommonStackName}/clients/${OAuthClientId}/jwtAuthentication/issuer"
+      Type: String
+      Value: !FindInMap [EnvironmentMap, !Ref "Environment", OrchestrationIssuer]
+
+  IPVCoreRedirectURIParameter:
+    Type: AWS::SSM::Parameter
+    Condition: IsDevOrBuild
+    Properties:
+      Name: !Sub "/${OAuthCommonStackName}/clients/${OAuthClientId}/jwtAuthentication/redirectUri"
+      Type: String
+      Value: !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationRedirectURI ]
+
+  IPVCoreJwksEndpointParameter:
+    Type: AWS::SSM::Parameter
+    Condition: IsNotProduction
+    Properties:
+      Name: !Sub "/${OAuthCommonStackName}/clients/${OAuthClientId}/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value: !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationJwksEndpoint ]
 
 Outputs:
   OAuthInternalApi:
