@@ -81,6 +81,11 @@ Parameters:
     Type: String
     Default: vpc
 
+  OauthInternalStackName:
+    Description: OAuth Internal Stack name
+    Type: String
+    Default: "oauth-internal"
+
   DynatraceNodeLayerArn:
     Type: String
     Description: The ARN of the OneAgent Node layer for Lambda Node functions
@@ -379,6 +384,8 @@ Resources:
           SQS_AUDIT_EVENT_QUEUE_URL: !Ref AuditEventQueue
           COMPONENT_ID: !Ref ComponentId
           DOMAIN_NAME: !Ref ReuseIdentityCustomDomain
+          OAUTH_INTERNAL_API_URL:
+            Fn::ImportValue: !Sub "${OauthInternalStackName}-OAuthInternalApi"
       CodeSigningConfigArn: !If
         - UseCodeSigning
         - !Ref CodeSigningConfigArn
