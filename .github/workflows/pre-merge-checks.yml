@@ -19,6 +19,8 @@ jobs:
     permissions:
       contents: read
       packages: read
+    secrets:
+      aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
 
   run-tests:
     if: ${{ !github.event.pull_request.draft }}

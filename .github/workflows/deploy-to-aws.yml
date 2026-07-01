@@ -124,18 +124,19 @@ jobs:
           stack-names: ${{ env.STACK_NAME }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Deploy OAuth Stack
-        timeout-minutes: 15
-        run: |
-          echo "$OAUTH_STACK_NAME"
-          sam deploy \
-          --stack-name "$OAUTH_STACK_NAME"
-          --region "$AWS_REGION"  \
-          --no-confirm-changeset \
-          --no-fail-on-empty-changeset \
-          --capabilities CAPABILITY_NAMED_IAM \
-          --tags DeploymentSource="GitHub Actions" StackType=Preview \
-          --parameter-overrides Environment="dev" VpcStackName=vpc
+#      N.B. Comment out until we've solved the circular dependency
+#      - name: Deploy OAuth Stack
+#        timeout-minutes: 15
+#        run: |
+#          echo "$OAUTH_STACK_NAME"
+#          sam deploy \
+#          --stack-name "$OAUTH_STACK_NAME"
+#          --region "$AWS_REGION"  \
+#          --no-confirm-changeset \
+#          --no-fail-on-empty-changeset \
+#          --capabilities CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND \
+#          --tags DeploymentSource="GitHub Actions" StackType=Preview \
+#          --parameter-overrides Environment="dev" SisStackName=preview-main
 
       - name: Deploy SAM Application
         timeout-minutes: 15
@@ -153,7 +154,7 @@ jobs:
             --no-fail-on-empty-changeset \
             --capabilities CAPABILITY_NAMED_IAM \
             --tags DeploymentSource="GitHub Actions" StackType=Preview \
-            --parameter-overrides Environment="dev" VpcStackName=vpc
+            --parameter-overrides Environment="dev"
 
       - name: Report deployment
         run: echo "Deployed stack \`$STACK_NAME\`, \`$OAUTH_STACK_NAME`\" >> "$GITHUB_STEP_SUMMARY"

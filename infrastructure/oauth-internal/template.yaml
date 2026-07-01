@@ -74,6 +74,7 @@ Parameters:
   SisStackName:
     Description: The name of the main SIS stack containing audit queue infrastructure
     Type: String
+    Default: sis-main
 
   OAuthClientId:
     Description: "The client ID used by the main OAuth client"

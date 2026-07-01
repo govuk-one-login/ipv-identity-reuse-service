@@ -117,7 +117,28 @@ jobs:
       aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
       ecr-repository: ${{ secrets.TEST_IMAGE_ECR_REPOSITORY }}
 
-  publish:
+
+  publish-oauth:
+    uses: ./.github/workflows/publish.yml
+    needs:
+      - publish-test-image
+      - acceptance-test
+    if: |
+      always() &&
+      (needs.publish-test-image.result == 'success' || needs.publish-test-image.result == 'skipped') &&
+      (needs.acceptance-test.result == 'success')
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      artifact-name: built-oauth-code
+      aws-region: eu-west-2
+    secrets:
+      aws-role-arn: ${{ secrets.GHA_OAUTH_AWS_ROLE_ARN }}
+      sam-s3-bucket: ${{ secrets.GHA_OAUTH_SAM_DEPLOYMENT_BUCKET }}
+      signing-profile-name: ${{ secrets.SIGNING_PROFILE_NAME }}
+
+  publish-sis:
     uses: ./.github/workflows/publish.yml
     needs:
       - publish-test-image
