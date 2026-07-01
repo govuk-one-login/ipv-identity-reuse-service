@@ -59,7 +59,7 @@ Parameters:
   SourceTagValue:
     Description: Value for the Source Tag
     Type: String
-    Default: govuk-one-login/ipv-identity-reuse-service/template.yaml
+    Default: govuk-one-login/ipv-identity-reuse-service/infrastructure/identity-reuse-service/template.yaml
 
   SystemTagValue:
     Description: Value for the System Tag
@@ -273,7 +273,7 @@ Globals:
   Function:
     MemorySize: 1024
     Timeout: 30
-    CodeUri: ./
+    CodeUri: ../../
     Runtime: nodejs22.x
     Architectures:
       - arm64
@@ -935,7 +935,7 @@ Resources:
         Fn::Transform:
           Name: AWS::Include
           Parameters:
-            Location: "openAPI/public-api.yaml"
+            Location: "../../openAPI/public-api.yaml"
       Description: "Stored Identity Service Public Authorization API"
       StageName: !Ref ApiStageName
       AccessLogSetting:
@@ -1008,7 +1008,7 @@ Resources:
     Condition: IsNotProduction
     Properties:
       LayerName: !Sub "${AWS::StackName}-govuk-frontend-resources-layer"
-      ContentUri: ./lambda-layers
+      ContentUri: ../../lambda-layers
     Metadata:
       BuildMethod: makefile
 
@@ -1440,7 +1440,7 @@ Resources:
         Fn::Transform:
           Name: AWS::Include
           Parameters:
-            Location: "openAPI/private-api.yaml"
+            Location: "../../openAPI/private-api.yaml"
       Description: "Stored Identity Service Private API"
       StageName: !Ref ApiStageName
       Auth:
@@ -1544,7 +1544,7 @@ Resources:
         Fn::Transform:
           Name: AWS::Include
           Parameters:
-            Location: "openAPI/private-api.yaml"
+            Location: "../../openAPI/private-api.yaml"
       Description: "Stored Identity Service Private API (development)"
       StageName: !Ref ApiStageName
       AccessLogSetting:
@@ -1838,7 +1838,7 @@ Resources:
         Fn::Transform:
           Name: AWS::Include
           Parameters:
-            Location: "openAPI/api.yaml"
+            Location: "../../openAPI/api.yaml"
       Description: "Private REST API that provides method to interact with post user identity"
       StageName: !Ref ApiStageName
       Auth:
@@ -2215,7 +2215,7 @@ Resources:
         Fn::Transform:
           Name: AWS::Include
           Parameters:
-            Location: "openAPI/api.yaml"
+            Location: "../../openAPI/api.yaml"
       Description: "Regional Development API for the Private REST API that provides method to interact with post user identity"
       StageName: !Ref ApiStageName
       AccessLogSetting:
