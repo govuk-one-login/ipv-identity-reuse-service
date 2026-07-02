@@ -357,6 +357,13 @@ Resources:
                   - application-autoscaling:DescribeScalingActivities
                   - application-autoscaling:DeleteScalingPolicy
 
+              - Effect: Allow
+                Resource: "arn:aws:serverlessrepo:eu-west-2:667736788427:applications/di-ipv-cri-oauth-common"
+                Action:
+                  - serverlessrepo:CreateCloudFormationTemplate
+                  - serverlessrepo:GetCloudFormationTemplate
+                  - serverlessrepo:GetApplication
+
   GithubOidc:
     Type: AWS::IAM::OIDCProvider
     Condition: CreateOIDCProvider

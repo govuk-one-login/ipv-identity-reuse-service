@@ -106,11 +106,6 @@ Parameters:
     Type: String
     Default: vpc
 
-  VpcStackName:
-    Description: The name of the stack containing VPC infrastructure
-    Type: String
-    Default: vpc
-
 Mappings:
   EnvironmentMap:
     "local":
