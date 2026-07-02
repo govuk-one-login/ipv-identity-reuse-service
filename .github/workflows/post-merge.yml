@@ -60,6 +60,9 @@ jobs:
     permissions:
       contents: read
       packages: read
+      id-token: write
+    secrets:
+      aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
 
   run-tests:
     uses: ./.github/workflows/test.yml

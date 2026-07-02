@@ -35,7 +35,7 @@ on:
         value: ${{ jobs.deploy.outputs.stack-name }}
       oauth-stack-name:
         description: The name of the deployed OAuth stack
-        value: ${{ jobs.deploy-oauth.outputs.stack-name }} #IS THIS NEEDED?
+        value: ${{ jobs.deploy-oauth.outputs.stack-name }}
     secrets:
       aws-role-arn:
         required: true
