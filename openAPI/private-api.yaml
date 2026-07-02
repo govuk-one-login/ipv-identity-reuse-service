@@ -97,12 +97,30 @@ components:
   schemas:
     TokenRequestBody:
       type: object
+      required:
+        - grant_type
+        - code
+        - client_assertion_type
+        - client_assertion
+        - redirect_uri
       properties:
         grant_type:
           type: string
-          enum: ["authorization_code"]
+          pattern: "authorization_code"
+          example: "authorization_code"
         code:
           type: string
+          minLength: 1
+        client_assertion_type:
+          type: string
+          pattern: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
+          example: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
+        client_assertion:
+          type: string
+          pattern: "[a-zA-Z0-9_=]+\\.[a-zA-Z0-9_=]+\\.[a-zA-Z0-9_\\-\\+\\/=]+"
+        redirect_uri:
+          type: string
+          format: "uri"
     TokenResponseBody:
       type: object
       properties:
