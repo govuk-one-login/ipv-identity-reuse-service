@@ -157,8 +157,9 @@ jobs:
             --parameter-overrides Environment="dev"
 
       - name: Report deployment
-        run: echo "Deployed stack \`$STACK_NAME\`, \`$OAUTH_STACK_NAME`\" >> "$GITHUB_STEP_SUMMARY"
+        run: echo "Deployed stack \`$STACK_NAME\` >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Output Stack Name
-        id: output-stack-name
-        run: echo "STACK_NAME=$STACK_NAME, OAUTH_STACK_NAME=$OAUTH_STACK_NAME" >> "$GITHUB_OUTPUT"
+#       N.B Uncomment if this output is needed when the above deployment is fixed
+#      - name: Output Stack Name
+#        id: output-stack-name
+#        run: echo "STACK_NAME=$STACK_NAME, OAUTH_STACK_NAME=$OAUTH_STACK_NAME" >> "$GITHUB_OUTPUT"
