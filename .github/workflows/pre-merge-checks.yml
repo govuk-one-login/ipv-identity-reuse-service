@@ -18,6 +18,7 @@ jobs:
       aws-region: eu-west-2
     permissions:
       contents: read
+      id-token: write
       packages: read
     secrets:
       aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
