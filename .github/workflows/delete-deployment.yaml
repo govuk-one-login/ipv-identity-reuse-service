@@ -45,21 +45,22 @@ jobs:
           branch-name: preview-pr-${{ github.event.pull_request.number }}
           length-limit: ${{ env.STACK_NAME_LENGTH }}
 
-      - name: Get OAuth stack name
-        id: get-oauth-stack-name
-        if: ${{ github.event_name != 'schedule' }}
-        uses: govuk-one-login/github-actions/beautify-branch-name@f5362528578198e7851e96e0594f593beff0162e
-        with:
-          usage: Stack name
-          branch-name: preview-pr-${{ github.event.pull_request.number }}-oauth
-          length-limit: ${{ env.STACK_NAME_LENGTH }}
+#       N.B Uncomment this once the OAuth stack can be deployed
+#      - name: Get OAuth stack name
+#        id: get-oauth-stack-name
+#        if: ${{ github.event_name != 'schedule' }}
+#        uses: govuk-one-login/github-actions/beautify-branch-name@f5362528578198e7851e96e0594f593beff0162e
+#        with:
+#          usage: Stack name
+#          branch-name: preview-pr-${{ github.event.pull_request.number }}-oauth
+#          length-limit: ${{ env.STACK_NAME_LENGTH }}
 
       - name: Check stack exists
         if: ${{ github.event_name != 'schedule' }}
         id: check-stack-exists
         uses: govuk-one-login/github-actions/sam/check-stacks-exist@f5362528578198e7851e96e0594f593beff0162e
         with:
-          stack-names: ${{ steps.get-stack-name.outputs.pretty-branch-name }} ${{ steps.get-oauth-stack-name.outputs.pretty-branch-name }}
+          stack-names: ${{ steps.get-stack-name.outputs.pretty-branch-name }}
           set-env-var: STACKS_TO_DELETE
           verbose: true
 
