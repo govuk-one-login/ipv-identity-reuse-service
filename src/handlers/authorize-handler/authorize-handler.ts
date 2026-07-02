@@ -53,7 +53,7 @@ function redirectToConfirmDetails(domainName: string, sessionId: string): APIGat
 }
 
 async function callSessionApi(apiUrl: string, clientId: string, request: string): Promise<Response> {
-  const url = new URL("/api/session", apiUrl);
+  const url = new URL(`${apiUrl}/api/session`);
 
   const body = JSON.stringify({
     client_id: clientId,

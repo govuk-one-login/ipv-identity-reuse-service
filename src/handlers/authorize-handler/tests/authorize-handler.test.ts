@@ -3,7 +3,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthorizationQueryStringParameters, handler } from "../authorize-handler";
 
 process.env.DOMAIN_NAME = "test-domain";
-process.env.OAUTH_INTERNAL_API_URL = "https://example.com";
+process.env.OAUTH_INTERNAL_API_URL = "https://example.com/v1";
 
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
@@ -89,7 +89,7 @@ describe("authorize-handler", () => {
 
       const response = await handler(event, {} as Context);
 
-      expect(mockFetch).toHaveBeenCalledWith("https://example.com/api/session", {
+      expect(mockFetch).toHaveBeenCalledWith("https://example.com/v1/api/session", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

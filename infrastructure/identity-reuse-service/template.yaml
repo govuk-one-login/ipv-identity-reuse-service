@@ -84,7 +84,7 @@ Parameters:
   OauthInternalStackName:
     Description: OAuth Internal Stack name
     Type: String
-    Default: "oauth-internal"
+    Default: "sis-oauth-internal"
 
   DynatraceNodeLayerArn:
     Type: String
@@ -385,7 +385,7 @@ Resources:
           COMPONENT_ID: !Ref ComponentId
           DOMAIN_NAME: !Ref ReuseIdentityCustomDomain
           OAUTH_INTERNAL_API_URL:
-            Fn::ImportValue: !Sub "${OauthInternalStackName}-OAuthInternalApi"
+            Fn::ImportValue: !Sub "${OauthInternalStackName}-PrivateApi"
       CodeSigningConfigArn: !If
         - UseCodeSigning
         - !Ref CodeSigningConfigArn
