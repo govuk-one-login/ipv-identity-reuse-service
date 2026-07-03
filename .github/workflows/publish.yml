@@ -13,6 +13,11 @@ on:
         default: built-code
         required: false
         type: string
+      environment:
+        description: The name of the GitHub environment to use for publishing
+        default: build
+        required: false
+        type: string
     secrets:
       aws-role-arn:
         description: >
@@ -33,6 +38,7 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
     permissions:
       id-token: write
       contents: read

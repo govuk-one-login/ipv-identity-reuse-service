@@ -120,7 +120,6 @@ jobs:
       aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
       ecr-repository: ${{ secrets.TEST_IMAGE_ECR_REPOSITORY }}
 
-
   publish-oauth:
     uses: ./.github/workflows/publish.yml
     needs:
