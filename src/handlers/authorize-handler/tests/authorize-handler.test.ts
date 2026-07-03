@@ -18,7 +18,7 @@ describe("authorize-handler", () => {
   });
 
   describe("when request param is absent", () => {
-    it("should return 302 with hardcoded auth code", async () => {
+    it("should return 302 with redirect_uri and state", async () => {
       const event = createMockEvent({
         queryStringParameters: {
           client_id: "sample",
@@ -32,8 +32,7 @@ describe("authorize-handler", () => {
 
       const expectedLocation = [
         "https://test-domain/confirm-details",
-        "?code=SplxlOBeZQQYbYS6WxSbIA",
-        "&state=test-state",
+        "?state=test-state",
         "&redirect_uri=https%3A%2F%2Fsome.redirect.com",
       ].join("");
 
@@ -56,8 +55,7 @@ describe("authorize-handler", () => {
 
       const expectedLocation = [
         "https://test-domain/confirm-details",
-        "?code=SplxlOBeZQQYbYS6WxSbIA",
-        "&state=test-state",
+        "?state=test-state",
         "&redirect_uri=https%253A%252F%252Fsome.redirect.com%252Fcallback",
       ].join("");
 
@@ -103,7 +101,9 @@ describe("authorize-handler", () => {
 
       expect(response.statusCode).toBe(302);
 
-      expect(response.headers?.Location).toBe("https://test-domain/confirm-details");
+      expect(response.headers?.Location).toBe(
+        "https://test-domain/confirm-details?state=test-state&redirect_uri=https%3A%2F%2Fsome.redirect.com"
+      );
 
       const expectedCookie = [
         "identity_reuse_service_session=session-abc-123",

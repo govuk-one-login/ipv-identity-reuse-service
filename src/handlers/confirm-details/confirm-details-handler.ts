@@ -8,14 +8,13 @@ const govukFrontendDistribution = path.join(path.dirname(require.resolve("govuk-
 const nunjucksEnvironment = nunjucks.configure([process.env.LAMBDA_TASK_ROOT || "", govukFrontendDistribution]);
 
 export type ConfirmDetailsQueryStringParameters = {
-  code: string;
   redirect_uri: string;
   state: string;
 };
 
 export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  const { code, redirect_uri, state } = event.queryStringParameters as ConfirmDetailsQueryStringParameters;
-  if (!code || !redirect_uri || !state) {
+  const { redirect_uri, state } = event.queryStringParameters as ConfirmDetailsQueryStringParameters;
+  if (!redirect_uri || !state) {
     throw new Error("One or more required query string parameters are undefined or empty");
   }
   try {
@@ -24,7 +23,6 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
       body: nunjucksEnvironment.render(mainPageTemplate, {
         assetPath: "./assets",
         rootPath: ".",
-        code,
         redirect_uri,
         state,
       }),

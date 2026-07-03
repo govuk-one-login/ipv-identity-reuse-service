@@ -162,7 +162,12 @@ fi
 
 if $DEPLOY_SIS; then
   SIS_STACK_NAME=$STACK_NAME
-  OAUTH_STACK_NAME="$STACK_NAME-oauth-internal"
+
+    if $DEPLOY_OAUTH; then
+        OAUTH_STACK_NAME="$STACK_NAME-oauth-internal"
+    else
+        OAUTH_STACK_NAME="preview-main-oauth"
+    fi
 elif $DEPLOY_OAUTH; then
   OAUTH_STACK_NAME=$STACK_NAME
 else
@@ -184,7 +189,7 @@ $DEPLOY_OAUTH && echo "Deploy oauth-internal to stack $OAUTH_STACK_NAME, pointin
 echo
 
 if $DEPLOY_SIS; then
-  deploy_or_destroy "identity-reuse-service" "$SIS_STACK_NAME"
+  deploy_or_destroy "identity-reuse-service" "$SIS_STACK_NAME" "OauthInternalStackName=$OAUTH_STACK_NAME"
 fi
 if $DEPLOY_OAUTH; then
   deploy_or_destroy "oauth-internal" "$OAUTH_STACK_NAME" "SisStackName=$SIS_STACK_NAME"

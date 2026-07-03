@@ -22,7 +22,6 @@ it("should render the confirm details screen when all query string parameters ar
   const result = await lambdaHandler({
     queryStringParameters: {
       redirect_uri: "https://example.com",
-      code: "1234",
       state: "state-id",
     },
   } as never as APIGatewayProxyEvent);
@@ -32,7 +31,6 @@ it("should render the confirm details screen when all query string parameters ar
     {
       assetPath: "./assets",
       redirect_uri: "https://example.com",
-      code: "1234",
       state: "state-id",
       rootPath: ".",
     }
