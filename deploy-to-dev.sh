@@ -165,7 +165,7 @@ if $DEPLOY_SIS; then
 
     if $DEPLOY_OAUTH; then
         OAUTH_STACK_NAME="$STACK_NAME-oauth-internal"
-    else
+    elif
         OAUTH_STACK_NAME="preview-main-oauth"
     fi
 elif $DEPLOY_OAUTH; then
