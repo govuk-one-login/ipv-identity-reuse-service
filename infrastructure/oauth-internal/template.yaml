@@ -74,6 +74,7 @@ Parameters:
   SisStackName:
     Description: The name of the main SIS stack containing audit queue infrastructure
     Type: String
+    Default: sis-main
 
   OAuthClientId:
     Description: "The client ID used by the main OAuth client"
@@ -99,11 +100,6 @@ Parameters:
     Description: Value for the System Tag
     Type: String
     Default: Re-use identity service
-
-  VpcStackName:
-    Description: The name of the stack containing VPC infrastructure
-    Type: String
-    Default: vpc
 
   VpcStackName:
     Description: The name of the stack containing VPC infrastructure
