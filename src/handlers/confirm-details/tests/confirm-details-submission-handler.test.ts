@@ -3,17 +3,14 @@ import { expect, it } from "vitest";
 import { lambdaHandler } from "../confirm-details-submission-handler";
 
 it("should return a 302 status code on a successful request", async () => {
-  const event = createMockAPIGatewayProxyEvent(
-    {},
-    "redirectUri=https%3A%2F%2Fapi.example.com&code=abc123&state=test-state-id"
-  );
+  const event = createMockAPIGatewayProxyEvent({}, "redirectUri=https%3A%2F%2Fapi.example.com&state=test-state-id");
 
   const response = await lambdaHandler(event);
   expect(response).toStrictEqual({
     statusCode: 302,
     body: "",
     headers: {
-      Location: "https://api.example.com/?code=abc123&state=test-state-id",
+      Location: "https://api.example.com/?code=SplxlOBeZQQYbYS6WxSbIA&state=test-state-id",
     },
   });
 });

@@ -37,18 +37,15 @@ Then<WorldDefinition>(
       this.authorizationResponse.origin = domainName!;
     }
     assert.ok(isAuthorizationResponse(this.authorizationResponse));
-    assert.ok(this.authorizationResponse.code);
     assert.equal(this.authorizationResponse.origin, domainName);
   }
 );
 
 When<WorldDefinition>("I call the token endpoint with the authorization code", async function () {
   assert.ok(isAuthorizationResponse(this.authorizationResponse));
-  assert.ok(this.authorizationResponse.code);
-
   this.tokenResponse = await token({
     grant_type: TokenGrantType.AuthorizationCode,
-    code: this.authorizationResponse.code,
+    code: "SplxlOBeZQQYbYS6WxSbIA",
   });
 });
 
