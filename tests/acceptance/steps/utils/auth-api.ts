@@ -94,3 +94,25 @@ export const token = async (parameters: TokenRequest): Promise<TokenResponse | O
 
   return response.body;
 };
+
+export const confirmDetailsSubmission = async (
+  redirectUri: string,
+  state: string
+): Promise<AuthorizationResponse | OAuthBadRequest> => {
+  const publicApi = await getCloudFormationOutput(CloudFormationOutputs.SisPublicApi);
+
+  const response = await request(publicApi)
+    .post("/confirm-details")
+    .set("content-type", "application/x-www-form-urlencoded")
+    .send({ redirectUri, state });
+
+  if (response.statusCode === 302) {
+    const { origin, search } = new URL(response.header["location"]);
+    return {
+      origin,
+      code: new URLSearchParams(search).get("code"),
+    };
+  }
+
+  return { error: "error", error_description: `Expected 302 but got ${response.statusCode}` };
+};

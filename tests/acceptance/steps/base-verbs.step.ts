@@ -15,6 +15,8 @@ export type WorldDefinition = {
   userIdentityPostResponse?: Response;
   authorizationResponse?: AuthorizationResponse | OAuthBadRequest;
   tokenResponse?: TokenResponse | OAuthBadRequest;
+  redirectUri?: string;
+  state?: string;
 };
 
 setDefaultTimeout(20_000);
@@ -34,6 +36,8 @@ Before<WorldDefinition>(async function () {
   this.keyId = await getSigningKeyId();
   this.authorizationResponse = undefined;
   this.tokenResponse = undefined;
+  this.redirectUri = undefined;
+  this.state = undefined;
 });
 
 function generateRandomTestUserId() {
