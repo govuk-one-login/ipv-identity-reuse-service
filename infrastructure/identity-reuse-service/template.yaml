@@ -517,6 +517,7 @@ Resources:
 
   AuthorizationFunctionLogGroup:
     Type: AWS::Logs::LogGroup
+    Condition: IsNotProduction
     Properties:
       LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-AuthorizationFunction"
       RetentionInDays: 30
@@ -697,6 +698,7 @@ Resources:
 
   TokenFunctionLogGroup:
     Type: AWS::Logs::LogGroup
+    Condition: IsNotProduction
     Properties:
       LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-TokenFunction"
       RetentionInDays: 30
@@ -750,6 +752,7 @@ Resources:
   ################################
   UserIdentityHandlerFunction:
     Type: AWS::Serverless::Function
+    Condition: IsNotProduction
     Properties:
       FunctionName: !Sub "${AWS::StackName}-UserIdentityHandlerFunction"
       Description: "A lambda function that queues SIS data for processing"
@@ -806,6 +809,7 @@ Resources:
 
   UserIdentityHandlerFunctionRole:
     Type: AWS::IAM::Role
+    Condition: IsNotProduction
     Properties:
       RoleName: !Sub "${AWS::StackName}-UserIdentityHandlerFunctionRole"
       Description: !Sub "The role assumed by ${AWS::StackName}-UserIdentityHandlerFunction"
@@ -839,6 +843,7 @@ Resources:
 
   UserIdentityHandlerFunctionPolicy:
     Type: AWS::IAM::Policy
+    Condition: IsNotProduction
     Properties:
       PolicyName: !Sub "${AWS::StackName}-UserIdentityHandlerFunctionPolicy"
       PolicyDocument:
@@ -863,6 +868,7 @@ Resources:
 
   UserIdentityHandlerRestApiRole:
     Type: AWS::IAM::Role
+    Condition: IsNotProduction
     Properties:
       RoleName: !Sub "${AWS::StackName}-UserIdentityHandlerRestApiRole"
       Description: !Sub "Update User identity Function related permissions for the ${AWS::StackName}-RestApi Gateway IAM role"
@@ -889,6 +895,7 @@ Resources:
 
   UserIdentityHandlerRestApiPolicy:
     Type: AWS::IAM::Policy
+    Condition: IsNotProduction
     Properties:
       PolicyName: !Sub "${AWS::StackName}-UserIdentityHandlerRestApiPolicy"
       PolicyDocument:
@@ -904,6 +911,7 @@ Resources:
 
   UserIdentityHandlerFunctionLogGroup:
     Type: AWS::Logs::LogGroup
+    Condition: IsNotProduction
     Properties:
       LogGroupName: !Sub "/aws/lambda/${UserIdentityHandlerFunction}"
       RetentionInDays: 30
