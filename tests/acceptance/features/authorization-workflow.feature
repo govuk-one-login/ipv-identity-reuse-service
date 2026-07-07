@@ -5,7 +5,7 @@ Feature: authorization-workflow.feature
     When the client calls the authorize endpoint, with the redirect URI "https://api.example.com" and state "sample-state"
     Then the user will be redirected to the confirm details page
     When the user clicks Continue
-    Then the user will be redirected to the client's redirect URI with an authorization code
+    Then the user will be redirected to the client's redirect URI with an authorization code and the state
     When the client calls the token endpoint with the authorization code
     Then the client will be issued with an access token
     When the client calls the user-identity endpoint with the access token

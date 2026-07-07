@@ -2,21 +2,22 @@ import { setDefaultTimeout, Before, defineParameterType } from "@cucumber/cucumb
 import { Response } from "superagent";
 import { randomString } from "../../../shared-test/string-utilities";
 import { getDidControllerName, getSigningKeyId } from "./utils/ssm-utilities";
-import { AuthorizationResponse, OAuthBadRequest, TokenResponse } from "./utils/auth-api";
+import { AuthorizationResponse, OAuthBadRequest, RedirectResponse, TokenResponse } from "./utils/auth-api";
 
 export type WorldDefinition = {
   testDidController: string;
   keyId: string;
   userId: string;
   bearerToken?: string;
+  redirectUri?: string;
+  state?: string;
   requestedVtr: string[];
   govukSigninJourneyId: string;
   credentialJwts: string[];
   userIdentityPostResponse?: Response;
+  redirectResponse?: RedirectResponse | OAuthBadRequest;
   authorizationResponse?: AuthorizationResponse | OAuthBadRequest;
   tokenResponse?: TokenResponse | OAuthBadRequest;
-  redirectUri?: string;
-  state?: string;
 };
 
 setDefaultTimeout(20_000);
@@ -30,14 +31,15 @@ defineParameterType({
 Before<WorldDefinition>(async function () {
   this.userId = generateRandomTestUserId();
   this.govukSigninJourneyId = randomString(12);
+  this.redirectUri = undefined;
+  this.state = undefined;
   this.requestedVtr = ["P2"];
   this.credentialJwts = [];
   this.testDidController = await getDidControllerName();
   this.keyId = await getSigningKeyId();
+  this.redirectResponse = undefined;
   this.authorizationResponse = undefined;
   this.tokenResponse = undefined;
-  this.redirectUri = undefined;
-  this.state = undefined;
 });
 
 function generateRandomTestUserId() {

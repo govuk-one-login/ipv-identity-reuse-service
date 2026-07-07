@@ -13,9 +13,14 @@ export type AuthorizationParameters = {
   state: string;
 };
 
+export type RedirectResponse = {
+  origin: string;
+};
+
 export type AuthorizationResponse = {
   origin: string;
   code: string | null;
+  state: string | null;
 };
 
 export type OAuthBadRequest = {
@@ -57,12 +62,13 @@ export const isAwsError = (response: unknown): response is AwsError => {
   return !!response && typeof response === "object" && "message" in response;
 };
 
-export const isAuthorizationResponse = (response: unknown): response is AuthorizationResponse =>
-  !!response && typeof response === "object" && "origin" in response && "code" in response;
+export const isRedirectResponse = (response: unknown): response is RedirectResponse =>
+  !!response && typeof response === "object" && "origin" in response;
 
-export const authorize = async (
-  parameters: AuthorizationParameters
-): Promise<AuthorizationResponse | OAuthBadRequest> => {
+export const isAuthorizationResponse = (response: unknown): response is AuthorizationResponse =>
+  !!response && typeof response === "object" && "origin" in response && "code" in response && "state" in response;
+
+export const authorize = async (parameters: AuthorizationParameters): Promise<RedirectResponse | OAuthBadRequest> => {
   const publicApi = await getCloudFormationOutput(CloudFormationOutputs.SisPublicApi);
 
   const response = await request(publicApi).get("/authorize").query(parameters).send();
@@ -71,10 +77,9 @@ export const authorize = async (
   }
 
   if (response.statusCode === 302) {
-    const { origin, search } = new URL(response.header["location"]);
+    const { origin } = new URL(response.header["location"]);
     return {
       origin,
-      code: new URLSearchParams(search).get("code"),
     };
   }
 
@@ -111,6 +116,7 @@ export const confirmDetailsSubmission = async (
     return {
       origin,
       code: new URLSearchParams(search).get("code"),
+      state: new URLSearchParams(search).get("state"),
     };
   }
 

@@ -5,6 +5,7 @@ import {
   authorize,
   confirmDetailsSubmission,
   isAuthorizationResponse,
+  isRedirectResponse,
   isTokenResponse,
   token,
   TokenGrantType,
@@ -23,7 +24,7 @@ When<WorldDefinition>(
   async function (redirectUri: string, state: string) {
     this.redirectUri = redirectUri;
     this.state = state;
-    this.authorizationResponse = await authorize({
+    this.redirectResponse = await authorize({
       client_id: "acceptance-tests",
       state: state,
       response_type: AuthorizationResponseType.code,
@@ -34,11 +35,11 @@ When<WorldDefinition>(
 
 Then<WorldDefinition>("the user will be redirected to the confirm details page", function () {
   const domainName = process.env.DOMAIN_NAME;
-  if ("origin" in this.authorizationResponse!) {
-    this.authorizationResponse.origin = domainName!;
+  if ("origin" in this.redirectResponse!) {
+    this.redirectResponse.origin = domainName!;
   }
-  assert.ok(isAuthorizationResponse(this.authorizationResponse));
-  assert.equal(this.authorizationResponse.origin, domainName);
+  assert.ok(isRedirectResponse(this.redirectResponse));
+  assert.equal(this.redirectResponse.origin, domainName);
 });
 
 When<WorldDefinition>("the user clicks Continue", async function () {
@@ -46,10 +47,11 @@ When<WorldDefinition>("the user clicks Continue", async function () {
 });
 
 Then<WorldDefinition>(
-  "the user will be redirected to the client's redirect URI with an authorization code",
+  "the user will be redirected to the client's redirect URI with an authorization code and the state",
   async function () {
     assert.ok(isAuthorizationResponse(this.authorizationResponse));
-    assert.equal(this.authorizationResponse.origin, "https://api.example.com");
+    assert.equal(this.authorizationResponse.origin, this.redirectUri);
+    assert.equal(this.authorizationResponse.state, this.state);
     assert.ok(this.authorizationResponse.code, "Expected an authorization code but got none");
   }
 );
@@ -58,7 +60,7 @@ When<WorldDefinition>("the client calls the token endpoint with the authorizatio
   assert.ok(isAuthorizationResponse(this.authorizationResponse));
   this.tokenResponse = await token({
     grant_type: TokenGrantType.AuthorizationCode,
-    code: "SplxlOBeZQQYbYS6WxSbIA",
+    code: this.authorizationResponse.code!,
   });
 });
 
