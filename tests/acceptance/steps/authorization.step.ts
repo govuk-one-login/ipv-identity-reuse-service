@@ -62,13 +62,13 @@ When<WorldDefinition>("the client calls the token endpoint with the authorizatio
   });
 });
 
-Then<WorldDefinition>("the client will be issued with an authorization token", function () {
+Then<WorldDefinition>("the client will be issued with an access token", function () {
   assert.ok(isTokenResponse(this.tokenResponse));
   assert.ok(this.tokenResponse.access_token);
   assert.equal(this.tokenResponse.token_type, "Bearer");
 });
 
-When<WorldDefinition>("the client calls the user-identity endpoint with the authorization token", async function () {
+When<WorldDefinition>("the client calls the user-identity endpoint with the access token", async function () {
   assert.ok(isTokenResponse(this.tokenResponse));
 
   this.userIdentityPostResponse = await sisGetUserIdentityHandler(

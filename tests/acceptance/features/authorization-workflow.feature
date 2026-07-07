@@ -7,6 +7,6 @@ Feature: authorization-workflow.feature
     When the user clicks Continue
     Then the user will be redirected to the client's redirect URI with an authorization code
     When the client calls the token endpoint with the authorization code
-    Then the client will be issued with an authorization token
-    When the client calls the user-identity endpoint with the authorization token
+    Then the client will be issued with an access token
+    When the client calls the user-identity endpoint with the access token
     Then the user-identity will be returned to the client
