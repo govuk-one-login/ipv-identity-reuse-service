@@ -477,7 +477,7 @@ Resources:
     Condition: IsNotProduction
     Properties:
       RoleName: !Sub "${AWS::StackName}-GetAuthorizeHandlerRestApiRole"
-      Description: !Sub "Roles for the GetAuthorizeHandler"
+      Description: !Sub "Role that allows API Gateway to execute the GetAuthorizeHandler in the ${AWS::StackName} stack"
       PermissionsBoundary: !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -658,7 +658,7 @@ Resources:
     Condition: IsNotProduction
     Properties:
       RoleName: !Sub "${AWS::StackName}-PostTokenHandlerRestApiRole"
-      Description: !Sub "Roles for the PostTokenHandler"
+      Description: !Sub "Role that allows API Gateway to execute the PostTokenHandler in the ${AWS::StackName} stack"
       PermissionsBoundary: !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -871,7 +871,7 @@ Resources:
     Condition: IsNotProduction
     Properties:
       RoleName: !Sub "${AWS::StackName}-GetUserIdentityHandlerRestApiRole"
-      Description: !Sub "GetUserIdentityHandler related permissions for the ${AWS::StackName}-RestApi Gateway IAM role"
+      Description: !Sub "Role that allows API Gateway to execute the GetUserIdentityHandler in the ${AWS::StackName} stack"
       PermissionsBoundary: !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -1213,7 +1213,7 @@ Resources:
     Condition: IsNotProduction
     Properties:
       RoleName: !Sub "${AWS::StackName}-GetConfirmDetailsHandlerRestApiRole"
-      Description: !Sub "Roles for the GetConfirmDetailsHandler"
+      Description: !Sub "Role that allows API Gateway to execute the GetConfirmDetailsHandler in the ${AWS::StackName} stack"
       PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -1318,7 +1318,7 @@ Resources:
     Condition: IsNotProduction
     Properties:
       RoleName: !Sub "${AWS::StackName}-PostConfirmDetailsHandlerRestApiRole"
-      Description: !Sub "Roles for the PostConfirmDetailsHandler"
+      Description: !Sub "Role that allows API Gateway to execute the PostConfirmDetailsHandler in the ${AWS::StackName} stack"
       PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -1439,7 +1439,7 @@ Resources:
     Condition: IsNotProduction
     Properties:
       RoleName: !Sub "${AWS::StackName}-GetUnrecoverableErrorHandlerRestApiRole"
-      Description: !Sub "Role for the GetUnrecoverableErrorHandler"
+      Description: !Sub "Role that allows API Gateway to execute the GetUnrecoverableErrorHandler in the ${AWS::StackName} stack"
       PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
       AssumeRolePolicyDocument:
         Version: 2012-10-17
