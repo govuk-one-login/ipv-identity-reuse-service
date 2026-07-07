@@ -2,6 +2,7 @@
 
 set -e
 set -o pipefail
+BASE_DIR="$(dirname "${0}")"
 
 usage() {
   cat << EOF
@@ -28,60 +29,60 @@ EOF
 }
 
 deploy_or_destroy() {
-  BASE_DIR="$(dirname "$0")"
-  pushd $BASE_DIR
+  pushd "${BASE_DIR}"
 
-  TEMPLATE_FILE="infrastructure/$1/template.yaml"
-  BUILD_DIR=".aws-sam/build/$1"
-  STACK_NAME=$2
-  PARAMETER_OVERRIDES=$3
+  TEMPLATE_FILE="infrastructure/${1}/template.yaml"
+  BUILD_DIR=".aws-sam/build/${1}"
+  shift
+  STACK_NAME=${1}
+  shift
 
-  SAM_CONFIG="infrastructure/$1/samconfig.toml"
-  [[ -e "$SAM_CONFIG" ]] || RESOLVE_S3=true
-  if $RESOLVE_S3; then
-    BUCKET_PARAM="--resolve-s3"
+  SAM_CONFIG="infrastructure/${1}/samconfig.toml"
+  [[ -e "${SAM_CONFIG}" ]] || RESOLVE_S3=true
+  if "${RESOLVE_S3}"; then
+    BUCKET_PARAM=("--resolve-s3")
   else
-    BUCKET_PARAM="--config-file ../../../$SAM_CONFIG"
+    BUCKET_PARAM=("--config-file" "../../../$SAM_CONFIG")
   fi
 
   case $OPERATION in
     deploy)
-      echo "Validating $TEMPLATE_FILE..."
+      echo "Validating ${TEMPLATE_FILE}..."
       $SAM_CMD validate \
-        --template-file "$TEMPLATE_FILE" \
-        --profile "$AWS_PROFILE"
+        --template-file "${TEMPLATE_FILE}" \
+        --profile "${AWS_PROFILE}"
       echo
 
-      echo "Building $TEMPLATE_FILE..."
-      $SAM_CMD build --parallel --beta-features ${BUILD_CACHE} \
-        --template-file "$TEMPLATE_FILE" \
-        --build-dir "$BUILD_DIR"
+      echo "Building ${TEMPLATE_FILE}..."
+      $SAM_CMD build --parallel --beta-features "${BUILD_CACHE}" \
+        --template-file "${TEMPLATE_FILE}" \
+        --build-dir "${BUILD_DIR}"
       echo
 
-      echo "Deploying $TEMPLATE_FILE to stack $STACK_NAME..."
+      echo "Deploying ${TEMPLATE_FILE} to stack ${STACK_NAME}..."
       $SAM_CMD deploy \
-        --template-file "$BUILD_DIR/template.yaml" \
-        --stack-name "$STACK_NAME" \
-        --s3-prefix "$STACK_NAME" \
-        $BUCKET_PARAM \
-        $CONFIRM_CHANGES_PARAM \
+        --template-file "${BUILD_DIR}/template.yaml" \
+        --stack-name "${STACK_NAME}" \
+        --s3-prefix "${STACK_NAME}" \
+        "${BUCKET_PARAM[@]}" \
+        "${CONFIRM_CHANGES_PARAM}" \
         --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
         --no-fail-on-empty-changeset \
-        --profile "$AWS_PROFILE" \
+        --profile "${AWS_PROFILE}" \
         --tags DeploymentSource=Manual StackType=Dev Project="ipv-identity-reuse-service" \
-        --parameter-overrides Environment="$ENVIRONMENT" $PARAMETER_OVERRIDES
+        --parameter-overrides Environment="${ENVIRONMENT}" "$@"
       echo
       ;;
     destroy)
-      echo "Destroying stack $STACK_NAME..."
+      echo "Destroying stack ${STACK_NAME}..."
       $SAM_CMD delete \
-        --stack-name "$STACK_NAME" \
-        --profile "$AWS_PROFILE"
+        --stack-name "${STACK_NAME}" \
+        --profile "${AWS_PROFILE}"
       echo
       ;;
     *)
       popd
-      echo -e "Unknown operation $OPERATION...\n"
+      echo -e "Unknown operation ${OPERATION}...\n"
       usage
       exit 1
       ;;
@@ -99,19 +100,19 @@ OPERATION="deploy"
 ENVIRONMENT="local"
 AWS_PROFILE="sis-dev"
 
-while [[ -n "$1" ]]; do
-  case $1 in
+while [[ -n "${1}" ]]; do
+  case "${1}" in
     -a | --aws-profile)
       shift
-      export AWS_PROFILE=$1
+      export AWS_PROFILE="${1}"
       ;;
     -s | --stack-name)
       shift
-      STACK_NAME=$1
+      STACK_NAME="${1}"
       ;;
     -e | --environment)
       shift
-      ENVIRONMENT=$1
+      ENVIRONMENT="${1}"
       ;;
     -o | --oauth-deploy)
       DEPLOY_OAUTH=true
@@ -121,7 +122,7 @@ while [[ -n "$1" ]]; do
       ;;
     -m | --sis-stack-name)
       shift
-      SIS_STACK_NAME=$1
+      SIS_STACK_NAME="${1}"
       ;;
     -r | --resolve-s3)
       RESOLVE_S3=true
@@ -140,7 +141,7 @@ while [[ -n "$1" ]]; do
       exit 0
       ;;
     *)
-      echo -e "Unknown option $1...\n"
+      echo -e "Unknown option ${1}...\n"
       usage
       exit 1
       ;;
@@ -148,28 +149,27 @@ while [[ -n "$1" ]]; do
   shift
 done
 
-if $CONFIRM_CHANGES; then
+if "${CONFIRM_CHANGES}"; then
   CONFIRM_CHANGES_PARAM="--confirm-changeset"
 else
   CONFIRM_CHANGES_PARAM="--no-confirm-changeset"
 fi
 
-if [[ -z "$STACK_NAME" ]]; then
+if [[ -z "${STACK_NAME}" ]]; then
   echo "Please specify a stack name."
   usage
   exit 1
 fi
 
-if $DEPLOY_SIS; then
-  SIS_STACK_NAME=$STACK_NAME
-
-    if $DEPLOY_OAUTH; then
-        OAUTH_STACK_NAME="$STACK_NAME-oauth-internal"
-    elif
+if "${DEPLOY_SIS}"; then
+    SIS_STACK_NAME="${STACK_NAME}"
+    if "${DEPLOY_OAUTH}"; then
+        OAUTH_STACK_NAME="${STACK_NAME}-oauth"
+    else
         OAUTH_STACK_NAME="preview-main-oauth"
     fi
-elif $DEPLOY_OAUTH; then
-  OAUTH_STACK_NAME=$STACK_NAME
+elif "${DEPLOY_OAUTH}"; then
+  OAUTH_STACK_NAME="${STACK_NAME}"
 else
   echo "Nothing to deploy. Using --no-sis-deploy without --oauth-deploy means I don't do anything."
   usage
@@ -177,20 +177,20 @@ else
 fi
 
 SAM_CMD=sam
-if [[ "$OSTYPE" =~ ^msys ]]; then
+if [[ "${OSTYPE}" =~ ^msys ]]; then
   SAM_CMD=sam.cmd
 fi
 
 export AWS_DEFAULT_REGION=eu-west-2
-echo "Environment: $ENVIRONMENT"
-echo "Profile:     $AWS_PROFILE"
-$DEPLOY_SIS && echo "Deploy identity-reuse-service to stack $SIS_STACK_NAME"
-$DEPLOY_OAUTH && echo "Deploy oauth-internal to stack $OAUTH_STACK_NAME, pointing at identity-reuse-service stack $SIS_STACK_NAME"
+echo "Environment: ${ENVIRONMENT}"
+echo "Profile:     ${AWS_PROFILE}"
+$DEPLOY_SIS && echo "Deploy identity-reuse-service to stack ${SIS_STACK_NAME}"
+$DEPLOY_OAUTH && echo "Deploy oauth-internal to stack ${OAUTH_STACK_NAME}, pointing at identity-reuse-service stack ${SIS_STACK_NAME}"
 echo
 
 if $DEPLOY_SIS; then
-  deploy_or_destroy "identity-reuse-service" "$SIS_STACK_NAME" "OauthInternalStackName=$OAUTH_STACK_NAME"
+  deploy_or_destroy "identity-reuse-service" "${SIS_STACK_NAME}" "OauthInternalStackName=${OAUTH_STACK_NAME}"
 fi
 if $DEPLOY_OAUTH; then
-  deploy_or_destroy "oauth-internal" "$OAUTH_STACK_NAME" "SisStackName=$SIS_STACK_NAME"
+  deploy_or_destroy "oauth-internal" "${OAUTH_STACK_NAME}" "SisStackName=${SIS_STACK_NAME}"
 fi
