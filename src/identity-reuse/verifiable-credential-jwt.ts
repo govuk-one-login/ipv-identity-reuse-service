@@ -5,9 +5,7 @@ import {
 } from "@govuk-one-login/data-vocab/credentials";
 
 export type VerifiableCredentialJWT =
-  | IdentityCheckCredentialJWTClass
-  | RiskAssessmentCredentialJWTClass
-  | SecurityCheckCredentialJWTClass;
+  IdentityCheckCredentialJWTClass | RiskAssessmentCredentialJWTClass | SecurityCheckCredentialJWTClass;
 
 export const isIdentityCheckCredential = (vc: VerifiableCredentialJWT): vc is IdentityCheckCredentialJWTClass => {
   const vcTypes = vc.vc?.type;
