@@ -160,6 +160,18 @@ paths:
         requestParameters:
           integration.request.path.item: method.request.path.item
         type: aws
+  /oauth2/callback:
+    get:
+      responses:
+        "302":
+          $ref: "#/components/responses/AuthorizationRedirect"
+      x-amazon-apigateway-integration:
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetCallbackHandler.Arn}:live/invocations
+        credentials:
+          Fn::GetAtt: GetCallbackHandlerRestApiRole.Arn
+        type: aws_proxy
 
 components:
   parameters:
