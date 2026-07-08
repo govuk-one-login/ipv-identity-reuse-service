@@ -45,6 +45,28 @@ it("should return a 302 status code and redirect with an auth code and state on 
   });
 });
 
+it("should return a 302 status code and redirect to the SIS error page when /api/authorization API call returns 200 with an empty state object", async () => {
+  const event = createMockAPIGatewayProxyEvent({}, "");
+
+  globalThis.fetch = vitest.fn().mockResolvedValue({
+    status: 200,
+    json: vitest.fn().mockResolvedValue({
+      redirectionURI: "https://api.example.com",
+      authorizationCode: { value: "test-auth-code" },
+      state: {},
+    }),
+  });
+
+  const response = await handler(event);
+  expect(response).toStrictEqual({
+    statusCode: 302,
+    body: "",
+    headers: {
+      Location: "https://test-domain/error/unrecoverable",
+    },
+  });
+});
+
 it("should return a 302 status code and redirect with an access_denied error and state when /api/authorization API call returns 403", async () => {
   const event = createMockAPIGatewayProxyEvent({}, "");
 
