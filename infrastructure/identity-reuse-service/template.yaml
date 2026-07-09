@@ -1352,7 +1352,7 @@ Resources:
             Action:
               - "lambda:InvokeFunction"
             Resource:
-              - !GetAtt PostConfirmDetailsHandler.Arn
+              - !Sub "${PostConfirmDetailsHandler.Arn}:*"
       Roles:
         - !Ref PostConfirmDetailsHandlerRestApiRole
 
