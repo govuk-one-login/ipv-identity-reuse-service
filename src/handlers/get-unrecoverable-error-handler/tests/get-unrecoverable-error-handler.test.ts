@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vitest } from "vitest";
-import { lambdaHandler } from "../unrecoverable-error-handler";
+import { lambdaHandler } from "../get-unrecoverable-error-handler";
 
 const { mockRender } = vitest.hoisted(() => {
   return {

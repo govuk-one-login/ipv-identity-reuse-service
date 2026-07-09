@@ -352,17 +352,17 @@ Globals:
 
 Resources:
   ################################
-  # AUTHORIZATION LAMBDA         #
+  # GET AUTHORIZE HANDLER        #
   ################################
 
-  AuthorizationFunction:
+  GetAuthorizeHandler:
     Type: AWS::Serverless::Function
     Condition: IsNotProduction
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-AuthorizationFunction"
-      Description: "A lambda function that performs OAuth"
-      Handler: authorize-handler.handler
-      Role: !GetAtt AuthorizationFunctionRole.Arn
+      FunctionName: !Sub "${AWS::StackName}-GetAuthorizeHandler"
+      Description: "A lambda function that handles a request to the OAuth 2.0 authorization server's authorization endpoint"
+      Handler: get-authorize-handler.handler
+      Role: !GetAtt GetAuthorizeHandlerRole.Arn
       KmsKeyArn: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
       VpcConfig: !If
         - UseVpc
@@ -374,10 +374,10 @@ Resources:
         - !Ref "AWS::NoValue"
       Environment:
         Variables:
-          METRIC_SERVICE_NAME: "AuthorizationFunction"
+          METRIC_SERVICE_NAME: "GetAuthorizeHandler"
           POWERTOOLS_METRICS_NAMESPACE:
-            !If [IsDev, !Sub "${AWS::StackName}-AuthorizationFunction", "AuthorizationFunction"]
-          POWERTOOLS_SERVICE_NAME: "AuthorizationFunction"
+            !If [IsDev, !Sub "${AWS::StackName}-GetAuthorizeHandler", "GetAuthorizeHandler"]
+          POWERTOOLS_SERVICE_NAME: "GetAuthorizeHandler"
           ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
           APP_CONFIG_NAME: !Ref ApplicationConfigName
           APP_CONFIG_APPLICATION: !Ref ApplicationName
@@ -405,7 +405,7 @@ Resources:
         Sourcemap: true
         SourcesContent: false
         EntryPoints:
-          - src/handlers/authorize-handler/authorize-handler.ts
+          - src/handlers/get-authorize-handler/get-authorize-handler.ts
         Format: esm
         Platform: node
         OutExtension:
@@ -413,12 +413,12 @@ Resources:
         Banner:
           - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
 
-  AuthorizationFunctionRole:
+  GetAuthorizeHandlerRole:
     Type: AWS::IAM::Role
     Condition: IsNotProduction
     Properties:
-      RoleName: !Sub "${AWS::StackName}-AuthorizationFunctionRole"
-      Description: !Sub "The role assumed by ${AWS::StackName}-AuthorizationFunction"
+      RoleName: !Sub "${AWS::StackName}-GetAuthorizeHandlerRole"
+      Description: !Sub "The role assumed by ${AWS::StackName}-GetAuthorizeHandler"
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -447,11 +447,11 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
 
-  AuthorizationFunctionPolicy:
+  GetAuthorizeHandlerPolicy:
     Type: AWS::IAM::Policy
     Condition: IsNotProduction
     Properties:
-      PolicyName: !Sub "${AWS::StackName}-AuthorizationFunctionPolicy"
+      PolicyName: !Sub "${AWS::StackName}-GetAuthorizeHandlerPolicy"
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -470,14 +470,14 @@ Resources:
               - sqs:SendMessage
             Resource: !GetAtt AuditEventQueue.Arn
       Roles:
-        - !Ref AuthorizationFunctionRole
+        - !Ref GetAuthorizeHandlerRole
 
-  AuthorizationFunctionRestApiRole:
+  GetAuthorizeHandlerRestApiRole:
     Type: AWS::IAM::Role
     Condition: IsNotProduction
     Properties:
-      RoleName: !Sub "${AWS::StackName}-AuthorizationFunctionRestApiRole"
-      Description: !Sub "Roles for the AuthorizationFunction"
+      RoleName: !Sub "${AWS::StackName}-GetAuthorizeHandlerRestApiRole"
+      Description: !Sub "Role that allows API Gateway to execute the GetAuthorizeHandler in the ${AWS::StackName} stack"
       PermissionsBoundary: !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -499,11 +499,11 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
 
-  AuthorizationFunctionRestApiPolicy:
+  GetAuthorizeHandlerRestApiPolicy:
     Type: AWS::IAM::Policy
     Condition: IsNotProduction
     Properties:
-      PolicyName: !Sub "${AWS::StackName}-AuthorizationFunctionRestApiPolicy"
+      PolicyName: !Sub "${AWS::StackName}-GetAuthorizeHandlerRestApiPolicy"
       PolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -511,15 +511,15 @@ Resources:
             Action:
               - "lambda:InvokeFunction"
             Resource:
-              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-AuthorizationFunction:*"
+              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-GetAuthorizeHandler:*"
       Roles:
-        - !Ref AuthorizationFunctionRestApiRole
+        - !Ref GetAuthorizeHandlerRestApiRole
 
-  AuthorizationFunctionLogGroup:
+  GetAuthorizeHandlerLogGroup:
     Type: AWS::Logs::LogGroup
     Condition: IsNotProduction
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-AuthorizationFunction"
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-GetAuthorizeHandler"
       RetentionInDays: 30
       KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
@@ -534,20 +534,20 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
         - Key: Name
-          Value: !Sub "/aws/lambda/${AWS::StackName}-AuthorizationFunction"
+          Value: !Sub "/aws/lambda/${AWS::StackName}-GetAuthorizeHandler"
 
   ################################
-  # AUTHORIZATION LAMBDA         #
+  # POST TOKEN HANDLER           #
   ################################
 
-  TokenFunction:
+  PostTokenHandler:
     Type: AWS::Serverless::Function
     Condition: IsNotProduction
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-TokenFunction"
-      Description: "A lambda function that performs OAuth"
-      Handler: token-handler.handler
-      Role: !GetAtt TokenFunctionRole.Arn
+      FunctionName: !Sub "${AWS::StackName}-PostTokenHandler"
+      Description: "A lambda function that handles a request to the OAuth 2.0 authorization server's token endpoint"
+      Handler: post-token-handler.handler
+      Role: !GetAtt PostTokenHandlerRole.Arn
       KmsKeyArn: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
       VpcConfig: !If
         - UseVpc
@@ -559,9 +559,9 @@ Resources:
         - !Ref "AWS::NoValue"
       Environment:
         Variables:
-          METRIC_SERVICE_NAME: "TokenFunction"
-          POWERTOOLS_METRICS_NAMESPACE: !If [IsDev, !Sub "${AWS::StackName}-TokenFunction", "TokenFunction"]
-          POWERTOOLS_SERVICE_NAME: "TokenFunction"
+          METRIC_SERVICE_NAME: "PostTokenHandler"
+          POWERTOOLS_METRICS_NAMESPACE: !If [IsDev, !Sub "${AWS::StackName}-PostTokenHandler", "PostTokenHandler"]
+          POWERTOOLS_SERVICE_NAME: "PostTokenHandler"
           ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
           APP_CONFIG_NAME: !Ref ApplicationConfigName
           APP_CONFIG_APPLICATION: !Ref ApplicationName
@@ -586,7 +586,7 @@ Resources:
         Sourcemap: true
         SourcesContent: false
         EntryPoints:
-          - src/handlers/token-handler/token-handler.ts
+          - src/handlers/post-token-handler/post-token-handler.ts
         Format: esm
         Platform: node
         OutExtension:
@@ -594,12 +594,12 @@ Resources:
         Banner:
           - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
 
-  TokenFunctionRole:
+  PostTokenHandlerRole:
     Type: AWS::IAM::Role
     Condition: IsNotProduction
     Properties:
-      RoleName: !Sub "${AWS::StackName}-TokenFunctionRole"
-      Description: !Sub "The role assumed by ${AWS::StackName}-TokenFunction"
+      RoleName: !Sub "${AWS::StackName}-PostTokenHandlerRole"
+      Description: !Sub "The role assumed by ${AWS::StackName}-PostTokenHandler"
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -628,11 +628,11 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
 
-  TokenFunctionPolicy:
+  PostTokenHandlerPolicy:
     Type: AWS::IAM::Policy
     Condition: IsNotProduction
     Properties:
-      PolicyName: !Sub "${AWS::StackName}-TokenFunctionPolicy"
+      PolicyName: !Sub "${AWS::StackName}-PostTokenHandlerPolicy"
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -651,14 +651,14 @@ Resources:
               - sqs:SendMessage
             Resource: !GetAtt AuditEventQueue.Arn
       Roles:
-        - !Ref TokenFunctionRole
+        - !Ref PostTokenHandlerRole
 
-  TokenFunctionRestApiRole:
+  PostTokenHandlerRestApiRole:
     Type: AWS::IAM::Role
     Condition: IsNotProduction
     Properties:
-      RoleName: !Sub "${AWS::StackName}-TokenFunctionRestApiRole"
-      Description: !Sub "Roles for the TokenFunction"
+      RoleName: !Sub "${AWS::StackName}-PostTokenHandlerRestApiRole"
+      Description: !Sub "Role that allows API Gateway to execute the PostTokenHandler in the ${AWS::StackName} stack"
       PermissionsBoundary: !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -680,11 +680,11 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
 
-  TokenFunctionRestApiPolicy:
+  PostTokenHandlerRestApiPolicy:
     Type: AWS::IAM::Policy
     Condition: IsNotProduction
     Properties:
-      PolicyName: !Sub "${AWS::StackName}-TokenFunctionRestApiPolicy"
+      PolicyName: !Sub "${AWS::StackName}-PostTokenHandlerRestApiPolicy"
       PolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -692,15 +692,15 @@ Resources:
             Action:
               - "lambda:InvokeFunction"
             Resource:
-              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-TokenFunction:*"
+              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-PostTokenHandler:*"
       Roles:
-        - !Ref TokenFunctionRestApiRole
+        - !Ref PostTokenHandlerRestApiRole
 
-  TokenFunctionLogGroup:
+  PostTokenHandlerLogGroup:
     Type: AWS::Logs::LogGroup
     Condition: IsNotProduction
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-TokenFunction"
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-PostTokenHandler"
       RetentionInDays: 30
       KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
@@ -715,32 +715,32 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
         - Key: Name
-          Value: !Sub "/aws/lambda/${AWS::StackName}-TokenFunction"
+          Value: !Sub "/aws/lambda/${AWS::StackName}-PostTokenHandler"
 
-  PrivateApiTokenFunctionResourcePolicy:
-    DependsOn: TokenFunctionAliaslive
+  PrivateApiPostTokenHandlerResourcePolicy:
+    DependsOn: PostTokenHandlerAliaslive
     Condition: IsNotProduction
     Type: AWS::Lambda::Permission
     Properties:
       FunctionName: !Join
         - ":"
         - - "function"
-          - !Select [6, !Split [":", !GetAtt TokenFunction.Arn]]
+          - !Select [6, !Split [":", !GetAtt PostTokenHandler.Arn]]
           - "live"
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
       SourceAccount: !Ref AWS::AccountId
       SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PrivateApi}/${ApiStageName}/POST/*"
 
-  PrivateApiDevTokenFunctionResourcePolicy:
-    DependsOn: TokenFunctionAliaslive
+  PrivateApiDevPostTokenHandlerResourcePolicy:
+    DependsOn: PostTokenHandlerAliaslive
     Condition: IsDev
     Type: AWS::Lambda::Permission
     Properties:
       FunctionName: !Join
         - ":"
         - - "function"
-          - !Select [6, !Split [":", !GetAtt TokenFunction.Arn]]
+          - !Select [6, !Split [":", !GetAtt PostTokenHandler.Arn]]
           - "live"
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
@@ -748,16 +748,16 @@ Resources:
       SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PrivateApiDev}/${ApiStageName}/POST/*"
 
   ################################
-  # POST USER IDENTITY FEATURE  #
+  # GET USER IDENTITY HANDLER    #
   ################################
-  UserIdentityHandlerFunction:
+  GetUserIdentityHandler:
     Type: AWS::Serverless::Function
     Condition: IsNotProduction
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-UserIdentityHandlerFunction"
-      Description: "A lambda function that queues SIS data for processing"
-      Handler: user-identity-handler.handler
-      Role: !GetAtt UserIdentityHandlerFunctionRole.Arn
+      FunctionName: !Sub "${AWS::StackName}-GetUserIdentityHandler"
+      Description: "A lambda function that handles a request to the OAuth 2.0 resource server's protected resource, returning a stored identity"
+      Handler: get-user-identity-handler.handler
+      Role: !GetAtt GetUserIdentityHandlerRole.Arn
       KmsKeyArn: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
       VpcConfig: !If
         - UseVpc
@@ -769,12 +769,12 @@ Resources:
         - !Ref "AWS::NoValue"
       Environment:
         Variables:
-          METRIC_SERVICE_NAME: "UserIdentityHandlerFunction"
+          METRIC_SERVICE_NAME: "GetUserIdentityHandler"
           EVCS_API_KEY_SECRET_ARN:
             Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
           POWERTOOLS_METRICS_NAMESPACE:
-            !If [IsDev, !Sub "${AWS::StackName}-UserIdentityHandlerFunction", "UserIdentityHandlerFunction"]
-          POWERTOOLS_SERVICE_NAME: "UserIdentityHandlerFunction"
+            !If [IsDev, !Sub "${AWS::StackName}-GetUserIdentityHandler", "GetUserIdentityHandler"]
+          POWERTOOLS_SERVICE_NAME: "GetUserIdentityHandler"
           ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
           APP_CONFIG_NAME: !Ref ApplicationConfigName
           APP_CONFIG_APPLICATION: !Ref ApplicationName
@@ -799,7 +799,7 @@ Resources:
         Sourcemap: true
         SourcesContent: false
         EntryPoints:
-          - src/handlers/user-identity-handler/user-identity-handler.ts
+          - src/handlers/get-user-identity-handler/get-user-identity-handler.ts
         Format: esm
         Platform: node
         OutExtension:
@@ -807,12 +807,12 @@ Resources:
         Banner:
           - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
 
-  UserIdentityHandlerFunctionRole:
+  GetUserIdentityHandlerRole:
     Type: AWS::IAM::Role
     Condition: IsNotProduction
     Properties:
-      RoleName: !Sub "${AWS::StackName}-UserIdentityHandlerFunctionRole"
-      Description: !Sub "The role assumed by ${AWS::StackName}-UserIdentityHandlerFunction"
+      RoleName: !Sub "${AWS::StackName}-GetUserIdentityHandlerRole"
+      Description: !Sub "The role assumed by ${AWS::StackName}-GetUserIdentityHandler"
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -841,11 +841,11 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
 
-  UserIdentityHandlerFunctionPolicy:
+  GetUserIdentityHandlerPolicy:
     Type: AWS::IAM::Policy
     Condition: IsNotProduction
     Properties:
-      PolicyName: !Sub "${AWS::StackName}-UserIdentityHandlerFunctionPolicy"
+      PolicyName: !Sub "${AWS::StackName}-GetUserIdentityHandlerPolicy"
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -864,14 +864,14 @@ Resources:
               - sqs:SendMessage
             Resource: !GetAtt AuditEventQueue.Arn
       Roles:
-        - !Ref UserIdentityHandlerFunctionRole
+        - !Ref GetUserIdentityHandlerRole
 
-  UserIdentityHandlerRestApiRole:
+  GetUserIdentityHandlerRestApiRole:
     Type: AWS::IAM::Role
     Condition: IsNotProduction
     Properties:
-      RoleName: !Sub "${AWS::StackName}-UserIdentityHandlerRestApiRole"
-      Description: !Sub "Update User identity Function related permissions for the ${AWS::StackName}-RestApi Gateway IAM role"
+      RoleName: !Sub "${AWS::StackName}-GetUserIdentityHandlerRestApiRole"
+      Description: !Sub "Role that allows API Gateway to execute the GetUserIdentityHandler in the ${AWS::StackName} stack"
       PermissionsBoundary: !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -893,11 +893,11 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
 
-  UserIdentityHandlerRestApiPolicy:
+  GetUserIdentityHandlerRestApiPolicy:
     Type: AWS::IAM::Policy
     Condition: IsNotProduction
     Properties:
-      PolicyName: !Sub "${AWS::StackName}-UserIdentityHandlerRestApiPolicy"
+      PolicyName: !Sub "${AWS::StackName}-GetUserIdentityHandlerRestApiPolicy"
       PolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -905,15 +905,15 @@ Resources:
             Action:
               - "lambda:InvokeFunction"
             Resource:
-              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-UserIdentityHandlerFunction:*"
+              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-GetUserIdentityHandler:*"
       Roles:
-        - !Ref UserIdentityHandlerRestApiRole
+        - !Ref GetUserIdentityHandlerRestApiRole
 
-  UserIdentityHandlerFunctionLogGroup:
+  GetUserIdentityHandlerLogGroup:
     Type: AWS::Logs::LogGroup
     Condition: IsNotProduction
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${UserIdentityHandlerFunction}"
+      LogGroupName: !Sub "/aws/lambda/${GetUserIdentityHandler}"
       RetentionInDays: 30
       KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
@@ -928,7 +928,7 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
         - Key: Name
-          Value: !Sub "/aws/lambda/${UserIdentityHandlerFunction}"
+          Value: !Sub "/aws/lambda/${GetUserIdentityHandler}"
 
   ################################
   # PUBLIC API API GATEWAY       #
@@ -1151,7 +1151,43 @@ Resources:
               - sts:AssumeRole
       Path: "/"
 
-  ConfirmDetailsRole:
+  GetConfirmDetailsHandler:
+    Type: AWS::Serverless::Function
+    Condition: IsNotProduction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-GetConfirmDetailsHandler"
+      Handler: get-confirm-details-handler.lambdaHandler
+      Role: !GetAtt GetConfirmDetailsHandlerRole.Arn
+      Environment:
+        Variables:
+          NODE_OPTIONS: "--enable-source-maps"
+      Layers:
+        - !Ref GovUKFrontEndLayer
+        - !If
+          - DynaTraceEnabled
+          - !Ref DynatraceNodeLayerArn
+          - !Ref AWS::NoValue
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        UseNpmCi: True
+        EntryPoints:
+          - src/handlers/get-confirm-details-handler/get-confirm-details-handler.ts
+        Sourcemap: true
+        SourcesContent: false
+        Target: "es2024"
+        Format: esm
+        Platform: node
+        OutExtension:
+          - .js=.mjs
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
+        Loader:
+          - .njk=file
+        External:
+          - govuk-frontend
+
+  GetConfirmDetailsHandlerRole:
     # checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
     Type: AWS::IAM::Role
     Condition: IsNotProduction
@@ -1172,49 +1208,77 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
 
-  ConfirmDetailsLambda:
-    Type: AWS::Serverless::Function
+  GetConfirmDetailsHandlerRestApiRole:
+    Type: AWS::IAM::Role
     Condition: IsNotProduction
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-ConfirmDetailsLambda"
-      Handler: confirm-details-handler.lambdaHandler
-      Role: !GetAtt ConfirmDetailsRole.Arn
-      Environment:
-        Variables:
-          NODE_OPTIONS: "--enable-source-maps"
-      Layers:
-        - !Ref GovUKFrontEndLayer
-        - !If
-          - DynaTraceEnabled
-          - !Ref DynatraceNodeLayerArn
-          - !Ref AWS::NoValue
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        UseNpmCi: True
-        EntryPoints:
-          - src/handlers/confirm-details/confirm-details-handler.ts
-        Sourcemap: true
-        SourcesContent: false
-        Target: "es2024"
-        Format: esm
-        Platform: node
-        OutExtension:
-          - .js=.mjs
-        Banner:
-          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
-        Loader:
-          - .njk=file
-        External:
-          - govuk-frontend
+      RoleName: !Sub "${AWS::StackName}-GetConfirmDetailsHandlerRestApiRole"
+      Description: !Sub "Role that allows API Gateway to execute the GetConfirmDetailsHandler in the ${AWS::StackName} stack"
+      PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
 
-  ConfirmDetailsSubmissionLambda:
+  GetConfirmDetailsHandlerRestApiPolicy:
+    Type: AWS::IAM::Policy
+    Condition: IsNotProduction
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-GetConfirmDetailsHandlerRestApiPolicy"
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "lambda:InvokeFunction"
+            Resource:
+              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-GetConfirmDetailsHandler:*"
+      Roles:
+        - !Ref GetConfirmDetailsHandlerRestApiRole
+
+  GetConfirmDetailsHandlerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: IsNotProduction
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-GetConfirmDetailsHandler"
+      RetentionInDays: 30
+      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "/aws/lambda/${AWS::StackName}-GetConfirmDetailsHandler"
+
+  PostConfirmDetailsHandler:
     Type: AWS::Serverless::Function
     Condition: IsNotProduction
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-ConfirmDetailsSubmissionLambda"
-      Handler: confirm-details-submission-handler.lambdaHandler
-      Role: !GetAtt ConfirmDetailsRole.Arn
+      FunctionName: !Sub "${AWS::StackName}-PostConfirmDetailsHandler"
+      Handler: post-confirm-details-handler.lambdaHandler
+      Role: !GetAtt PostConfirmDetailsHandlerRole.Arn
       Environment:
         Variables:
           NODE_OPTIONS: "--enable-source-maps"
@@ -1223,98 +1287,12 @@ Resources:
       BuildProperties:
         UseNpmCi: True
         EntryPoints:
-          - src/handlers/confirm-details/confirm-details-submission-handler.ts
+          - src/handlers/post-confirm-details-handler/post-confirm-details-handler.ts
         Target: es2022
         Minify: true
         Sourcemap: true
 
-  ConfirmDetailsLambdaRestApiRole:
-    Type: AWS::IAM::Role
-    Condition: IsNotProduction
-    Properties:
-      RoleName: !Sub "${AWS::StackName}-ConfirmDetailsLambdaRestApiRole"
-      Description: !Sub "Roles for the ConfirmDetailsLambda"
-      PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: apigateway.amazonaws.com
-            Action:
-              - "sts:AssumeRole"
-      Tags:
-        - Key: Product
-          Value: !Ref ProductTagValue
-        - Key: System
-          Value: !Ref SystemTagValue
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Owner
-          Value: !Ref OwnerTagValue
-        - Key: Source
-          Value: !Ref SourceTagValue
-
-  ConfirmDetailsLambdaRestApiPolicy:
-    Type: AWS::IAM::Policy
-    Condition: IsNotProduction
-    Properties:
-      PolicyName: !Sub "${AWS::StackName}-ConfirmDetailsLambdaRestApiPolicy"
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: "Allow"
-            Action:
-              - "lambda:InvokeFunction"
-            Resource:
-              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-ConfirmDetailsLambda:*"
-              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-ConfirmDetailsSubmissionLambda:*"
-      Roles:
-        - !Ref ConfirmDetailsLambdaRestApiRole
-
-  ConfirmDetailsFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Condition: IsNotProduction
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${ConfirmDetailsLambda}"
-      RetentionInDays: 30
-      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
-      Tags:
-        - Key: Product
-          Value: !Ref ProductTagValue
-        - Key: System
-          Value: !Ref SystemTagValue
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Owner
-          Value: !Ref OwnerTagValue
-        - Key: Source
-          Value: !Ref SourceTagValue
-        - Key: Name
-          Value: !Sub "/aws/lambda/${ConfirmDetailsLambda}"
-
-  ConfirmDetailsSubmissionFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Condition: IsNotProduction
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${ConfirmDetailsSubmissionLambda}"
-      RetentionInDays: 30
-      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
-      Tags:
-        - Key: Product
-          Value: !Ref ProductTagValue
-        - Key: System
-          Value: !Ref SystemTagValue
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Owner
-          Value: !Ref OwnerTagValue
-        - Key: Source
-          Value: !Ref SourceTagValue
-        - Key: Name
-          Value: !Sub "/aws/lambda/${ConfirmDetailsSubmissionLambda}"
-
-  UnrecoverableErrorRole:
+  PostConfirmDetailsHandlerRole:
     # checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
     Type: AWS::IAM::Role
     Condition: IsNotProduction
@@ -1335,48 +1313,12 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
 
-  UnrecoverableErrorLambda:
-    Type: AWS::Serverless::Function
-    Condition: IsNotProduction
-    Properties:
-      FunctionName: !Sub "${AWS::StackName}-UnrecoverableErrorLambda"
-      Handler: unrecoverable-error-handler.lambdaHandler
-      Role: !GetAtt UnrecoverableErrorRole.Arn
-      Environment:
-        Variables:
-          NODE_OPTIONS: "--enable-source-maps"
-      Layers:
-        - !Ref GovUKFrontEndLayer
-        - !If
-          - DynaTraceEnabled
-          - !Ref DynatraceNodeLayerArn
-          - !Ref AWS::NoValue
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        UseNpmCi: True
-        EntryPoints:
-          - src/handlers/unrecoverable-error/unrecoverable-error-handler.ts
-        Sourcemap: true
-        SourcesContent: false
-        Target: "es2024"
-        Format: esm
-        Platform: node
-        OutExtension:
-          - .js=.mjs
-        Banner:
-          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
-        Loader:
-          - .njk=file
-        External:
-          - govuk-frontend
-
-  UnrecoverableErrorLambdaRestApiRole:
+  PostConfirmDetailsHandlerRestApiRole:
     Type: AWS::IAM::Role
     Condition: IsNotProduction
     Properties:
-      RoleName: !Sub "${AWS::StackName}-UnrecoverableErrorLambdaRestApiRole"
-      Description: !Sub "Role for the UnrecoverableErrorLambda"
+      RoleName: !Sub "${AWS::StackName}-PostConfirmDetailsHandlerRestApiRole"
+      Description: !Sub "Role that allows API Gateway to execute the PostConfirmDetailsHandler in the ${AWS::StackName} stack"
       PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -1398,11 +1340,11 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
 
-  UnrecoverableErrorLambdaRestApiPolicy:
+  PostConfirmDetailsHandlerRestApiPolicy:
     Type: AWS::IAM::Policy
     Condition: IsNotProduction
     Properties:
-      PolicyName: !Sub "${AWS::StackName}-UnrecoverableErrorLambdaRestApiPolicy"
+      PolicyName: !Sub "${AWS::StackName}-PostConfirmDetailsHandlerRestApiPolicy"
       PolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -1410,15 +1352,15 @@ Resources:
             Action:
               - "lambda:InvokeFunction"
             Resource:
-              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-UnrecoverableErrorLambda:*"
+              - !GetAtt PostConfirmDetailsHandler.Arn
       Roles:
-        - !Ref UnrecoverableErrorLambdaRestApiRole
+        - !Ref PostConfirmDetailsHandlerRestApiRole
 
-  UnrecoverableErrorFunctionLogGroup:
+  PostConfirmDetailsHandlerLogGroup:
     Type: AWS::Logs::LogGroup
     Condition: IsNotProduction
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${UnrecoverableErrorLambda}"
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-PostConfirmDetailsHandler"
       RetentionInDays: 30
       KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
@@ -1433,7 +1375,128 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
         - Key: Name
-          Value: !Sub "/aws/lambda/${UnrecoverableErrorLambda}"
+          Value: !Sub "/aws/lambda/${AWS::StackName}-PostConfirmDetailsHandler"
+
+  GetUnrecoverableErrorHandler:
+    Type: AWS::Serverless::Function
+    Condition: IsNotProduction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-GetUnrecoverableErrorHandler"
+      Handler: get-unrecoverable-error-handler.lambdaHandler
+      Role: !GetAtt GetUnrecoverableErrorHandlerRole.Arn
+      Environment:
+        Variables:
+          NODE_OPTIONS: "--enable-source-maps"
+      Layers:
+        - !Ref GovUKFrontEndLayer
+        - !If
+          - DynaTraceEnabled
+          - !Ref DynatraceNodeLayerArn
+          - !Ref AWS::NoValue
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        UseNpmCi: True
+        EntryPoints:
+          - src/handlers/get-unrecoverable-error-handler/get-unrecoverable-error-handler.ts
+        Sourcemap: true
+        SourcesContent: false
+        Target: "es2024"
+        Format: esm
+        Platform: node
+        OutExtension:
+          - .js=.mjs
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
+        Loader:
+          - .njk=file
+        External:
+          - govuk-frontend
+
+  GetUnrecoverableErrorHandlerRole:
+    # checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
+    Type: AWS::IAM::Role
+    Condition: IsNotProduction
+    Properties:
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+
+  GetUnrecoverableErrorHandlerRestApiRole:
+    Type: AWS::IAM::Role
+    Condition: IsNotProduction
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-GetUnrecoverableErrorHandlerRestApiRole"
+      Description: !Sub "Role that allows API Gateway to execute the GetUnrecoverableErrorHandler in the ${AWS::StackName} stack"
+      PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+
+  GetUnrecoverableErrorHandlerRestApiPolicy:
+    Type: AWS::IAM::Policy
+    Condition: IsNotProduction
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-GetUnrecoverableErrorHandlerRestApiPolicy"
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "lambda:InvokeFunction"
+            Resource:
+              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-GetUnrecoverableErrorHandler:*"
+      Roles:
+        - !Ref GetUnrecoverableErrorHandlerRestApiRole
+
+  GetUnrecoverableErrorHandlerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: IsNotProduction
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-GetUnrecoverableErrorHandler"
+      RetentionInDays: 30
+      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "/aws/lambda/${AWS::StackName}-GetUnrecoverableErrorHandler"
 
   GetCallbackHandler:
     Type: AWS::Serverless::Function

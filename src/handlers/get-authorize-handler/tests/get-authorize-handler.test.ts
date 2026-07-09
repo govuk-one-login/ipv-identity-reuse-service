@@ -1,6 +1,6 @@
 import { APIGatewayEventRequestContextWithAuthorizer, APIGatewayProxyEvent, Context } from "aws-lambda";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { AuthorizationQueryStringParameters, handler } from "../authorize-handler";
+import { AuthorizationQueryStringParameters, handler } from "../get-authorize-handler";
 
 process.env.DOMAIN_NAME = "test-domain";
 process.env.OAUTH_INTERNAL_API_URL = "https://example.com/v1";
