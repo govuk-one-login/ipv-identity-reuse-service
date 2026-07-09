@@ -7,11 +7,13 @@ import {
   isAuthorizationResponse,
   isRedirectResponse,
   isTokenResponse,
+  RedirectResponse,
   token,
   TokenGrantType,
 } from "./utils/auth-api";
 import assert from "node:assert";
 import { sisGetUserIdentityHandler } from "./utils/sis-api";
+import { CloudFormationOutputs, getCloudFormationOutput } from "./utils/cloudformation";
 
 Given<WorldDefinition>("a user has a profile", function () {
   // Do nothing, this is currently a placeholder with a verb to make it clear
@@ -33,11 +35,9 @@ When<WorldDefinition>(
   }
 );
 
-Then<WorldDefinition>("the user will be redirected to the confirm details page", function () {
-  const domainName = process.env.DOMAIN_NAME;
-  if ("origin" in this.redirectResponse!) {
-    this.redirectResponse.origin = domainName!;
-  }
+Then<WorldDefinition>("the user will be redirected to the confirm details page", async function () {
+  const domainName = await getCloudFormationOutput(CloudFormationOutputs.SisPublicApi);
+  assertRedirectResponse(this.redirectResponse);
   assert.ok(isRedirectResponse(this.redirectResponse));
   assert.equal(this.redirectResponse.origin, domainName);
 });
@@ -92,3 +92,7 @@ Then<WorldDefinition>("the user-identity will be returned to the client", functi
     vtm: "https://oidc.account.gov.uk/trustmark",
   });
 });
+
+function assertRedirectResponse(value: unknown): asserts value is RedirectResponse {
+  assert.ok(isRedirectResponse(value));
+}
