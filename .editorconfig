@@ -13,3 +13,7 @@ quote_type = double
 
 [*.md]
 trim_trailing_whitespace = false
+
+[COMMIT_EDITMSG]
+trim_trailing_whitespace = true
+max_line_length = 72
