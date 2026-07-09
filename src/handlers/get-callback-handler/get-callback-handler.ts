@@ -26,6 +26,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
   url.searchParams.append("client_id", queryParameters.client_id);
   url.searchParams.append("redirect_uri", queryParameters.redirect_uri);
+  url.searchParams.append("state", queryParameters.state);
   url.searchParams.append("response_type", "code");
 
   try {
