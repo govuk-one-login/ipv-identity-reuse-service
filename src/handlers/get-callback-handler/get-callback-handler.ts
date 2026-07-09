@@ -52,12 +52,13 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 };
 
 const redirectToClient = async (authorizationResponse: Response, domainName: string) => {
-  if (!isValidSuccessResponse(await authorizationResponse.json())) {
+  const authResponseJson = await authorizationResponse.json();
+  if (!isValidSuccessResponse(authResponseJson)) {
     logger.error("Invalid response properties received from authorization endpoint");
     return await redirectToErrorPage(domainName);
   }
 
-  const authorizationData = (await authorizationResponse.json()) as AuthorizationSuccessResponse;
+  const authorizationData = authResponseJson as AuthorizationSuccessResponse;
   const orchestrationRedirectUrl = new URL(decodeURIComponent(authorizationData.redirectionURI));
   orchestrationRedirectUrl.searchParams.append("code", authorizationData.authorizationCode.value);
   orchestrationRedirectUrl.searchParams.append("state", authorizationData.state.value);
