@@ -511,7 +511,7 @@ Resources:
             Action:
               - "lambda:InvokeFunction"
             Resource:
-              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-GetAuthorizeHandler:*"
+              - !Sub "${GetAuthorizeHandler.Arn}:*"
       Roles:
         - !Ref GetAuthorizeHandlerRestApiRole
 
@@ -692,7 +692,7 @@ Resources:
             Action:
               - "lambda:InvokeFunction"
             Resource:
-              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-PostTokenHandler:*"
+              - !Sub "${PostTokenHandler.Arn}:*"
       Roles:
         - !Ref PostTokenHandlerRestApiRole
 
@@ -905,7 +905,7 @@ Resources:
             Action:
               - "lambda:InvokeFunction"
             Resource:
-              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-GetUserIdentityHandler:*"
+              - !Sub "${GetUserIdentityHandler.Arn}:*"
       Roles:
         - !Ref GetUserIdentityHandlerRestApiRole
 
@@ -1247,7 +1247,7 @@ Resources:
             Action:
               - "lambda:InvokeFunction"
             Resource:
-              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-GetConfirmDetailsHandler:*"
+              - !Sub "${GetConfirmDetailsHandler.Arn}:*"
       Roles:
         - !Ref GetConfirmDetailsHandlerRestApiRole
 
@@ -1352,7 +1352,7 @@ Resources:
             Action:
               - "lambda:InvokeFunction"
             Resource:
-              - !GetAtt PostConfirmDetailsHandler.Arn
+              - !Sub "${PostConfirmDetailsHandler.Arn}:*"
       Roles:
         - !Ref PostConfirmDetailsHandlerRestApiRole
 
@@ -1473,7 +1473,7 @@ Resources:
             Action:
               - "lambda:InvokeFunction"
             Resource:
-              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-GetUnrecoverableErrorHandler:*"
+              - !Sub "${GetUnrecoverableErrorHandler.Arn}:*"
       Roles:
         - !Ref GetUnrecoverableErrorHandlerRestApiRole
 
@@ -1596,7 +1596,7 @@ Resources:
             Action:
               - "lambda:InvokeFunction"
             Resource:
-              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-GetCallbackHandler:*"
+              - !Sub "${GetCallbackHandler.Arn}:*"
       Roles:
         - !Ref GetCallbackHandlerRestApiRole
 
