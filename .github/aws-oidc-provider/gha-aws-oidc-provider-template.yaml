@@ -88,7 +88,20 @@ Resources:
                   - s3:PutEncryptionConfiguration
                   - s3:ListBucket
                   - s3:DeleteObject
-
+              - Sid: "ConsumeServerlessApplicationRepository"
+                Effect: "Allow"
+                Action:
+                  - "serverlessrepo:GetCloudFormationTemplate"
+                  - "serverlessrepo:CreateCloudFormationTemplate"
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:serverlessrepo:${AWS::Region}:*:applications/*"
+              - Effect: "Allow"
+                Action:
+                  - "s3:GetObject"
+                  - "s3:GetObjectVersion"
+                Resource:
+                   - !Sub "arn:${AWS::Partition}:s3:::*"
+                   - !Sub "arn:${AWS::Partition}:s3:::*/*"
               - Effect: Allow
                 Resource: arn:aws:s3:::github-actions-deployment*
                 Action:
@@ -119,6 +132,8 @@ Resources:
                   - !Sub arn:aws:cloudformation:${AWS::Region}:aws:transform/*
                 Action:
                   - cloudformation:DeleteStack
+                  - cloudformation:CreateStack
+                  - cloudformation:UpdateStack
                   - cloudformation:GetTemplate
                   - cloudformation:CreateChangeSet
                   - cloudformation:ExecuteChangeSet
@@ -254,6 +269,7 @@ Resources:
                   - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/state-machine/*
                   - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/states/*
                   - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/apigateway/*
+                  - !Sub arn:aws:logs:${AWS::Region}:885513274347:destination:*
                 Action:
                   - logs:PutSubscriptionFilter
                   - logs:CreateLogGroup
