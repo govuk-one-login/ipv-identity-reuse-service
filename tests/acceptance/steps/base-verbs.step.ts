@@ -15,7 +15,7 @@ export type WorldDefinition = {
   govukSigninJourneyId: string;
   credentialJwts: string[];
   userIdentityPostResponse?: Response;
-  redirectResponse?: RedirectResponse | OAuthBadRequest;
+  redirectResponse?: RedirectResponse | Error;
   authorizationResponse?: AuthorizationResponse | OAuthBadRequest;
   tokenResponse?: TokenResponse | OAuthBadRequest;
 };

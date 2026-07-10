@@ -40,6 +40,7 @@ Then<WorldDefinition>("the user will be redirected to the confirm details page",
   assertRedirectResponse(this.redirectResponse);
   assert.ok(isRedirectResponse(this.redirectResponse));
   assert.equal(this.redirectResponse.origin, domainName);
+  assert.equal(this.redirectResponse.pathname, "/confirm-details");
 });
 
 When<WorldDefinition>("the user clicks Continue", async function () {

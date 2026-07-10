@@ -15,6 +15,7 @@ export type AuthorizationParameters = {
 
 export type RedirectResponse = {
   origin: string;
+  pathname: string;
 };
 
 export type AuthorizationResponse = {
@@ -68,18 +69,19 @@ export const isRedirectResponse = (response: unknown): response is RedirectRespo
 export const isAuthorizationResponse = (response: unknown): response is AuthorizationResponse =>
   !!response && typeof response === "object" && "origin" in response && "code" in response && "state" in response;
 
-export const authorize = async (parameters: AuthorizationParameters): Promise<RedirectResponse | OAuthBadRequest> => {
+export const authorize = async (parameters: AuthorizationParameters): Promise<RedirectResponse | Error> => {
   const publicApi = await getCloudFormationOutput(CloudFormationOutputs.SisPublicApi);
 
   const response = await request(publicApi).get("/authorize").query(parameters).send();
   if (isAwsError(response.body)) {
-    return { error: "error", error_description: response.body.message };
+    return new Error("error", { cause: response.body.message });
   }
 
   if (response.statusCode === 302) {
-    const { origin } = new URL(response.header["location"]);
+    const { origin, pathname } = new URL(response.header["location"]);
     return {
       origin,
+      pathname,
     };
   }
 
