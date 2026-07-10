@@ -79,7 +79,7 @@ jobs:
       contents: read
       packages: read
 
-  preview-main:
+  preview-oauth:
     uses: ./.github/workflows/deploy-to-aws.yml
     needs:
       - build
@@ -88,6 +88,24 @@ jobs:
     permissions:
       id-token: write
       contents: read
+    with:
+      stack-name: preview-main-oauth
+      artifact-name: built-oauth-code
+      capabilities: 'CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND'
+    secrets:
+      aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
+      aws-s3-bucket: ${{ secrets.GHA_SAM_DEPLOYMENT_BUCKET }}
+
+  preview-main:
+    uses: ./.github/workflows/deploy-to-aws.yml
+    needs:
+      - preview-oauth
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      stack-name: preview-main
+      oauth-stack-name: preview-main-oauth
     secrets:
       aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
       aws-s3-bucket: ${{ secrets.GHA_SAM_DEPLOYMENT_BUCKET }}

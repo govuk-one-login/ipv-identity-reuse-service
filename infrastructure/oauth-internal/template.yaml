@@ -71,11 +71,6 @@ Parameters:
     Type: String
     Default: none
 
-  SisStackName:
-    Description: The name of the main SIS stack containing audit queue infrastructure
-    Type: String
-    Default: sis-main
-
   OAuthClientId:
     Description: "The client ID used by the main OAuth client"
     Type: String
@@ -90,6 +85,11 @@ Parameters:
     Description: Value for the Product Tag
     Type: String
     Default: GOV.UK One Login
+
+  SharedStackName:
+    Description: The name of the Identity Reuse Service Shared Stack
+    Type: String
+    Default: reuse-identity-shared
 
   SourceTagValue:
     Description: Value for the Source Tag
@@ -168,7 +168,7 @@ Resources:
         SemanticVersion: 0.5.0
       Parameters:
         AuditEventNamePrefix: !Ref AuditEventNamePrefix
-        AuditTxmaStackName: !Ref SisStackName # TXMA infrastructure lives in the identity-reuse-service stack
+        AuditTxmaStackName: !Ref SharedStackName # TXMA infrastructure lives in the reuse-identity-shared stack
         CSLSDestinationArn: !Ref CSLSSubscriptionEndpointArn
         CriIdentifier: !Ref MainCloudWatchMetricNamespace # Used for the metrics namespace and metrics service names only
         CriAudience: !FindInMap [ EnvironmentMap, !Ref Environment, SISAudience ] # Sets the Audience value for the SIS OAuth 2.0 server

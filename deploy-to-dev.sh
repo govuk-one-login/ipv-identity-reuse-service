@@ -14,9 +14,8 @@ Usage:
     -e      --environment       Environment that the stack is being deployed to. (default = 'local')
     -o      --oauth-deploy      Deploy the oauth-internal stack (optional)
     -n      --no-sis-deploy     Do not deploy the identity-reuse-service stack (optional)
-    -m      --sis-stack-name    The name of an existing identity-reuse-service stack that the oauth-internal can point
-                                at for audit infrastructure and only relevant if not deploying a fresh
-                                identity-reuse-service stack. (optional)
+    -m      --shared-stack-name The name of an existing identity-reuse-shared stack that the oauth-internal can point
+                                at for audit infrastructure. (optional)
     -f      --force-build       Forces a build instead of using the build cache. (optional)
     -y      --no-confirm        Don't require changes to be confirmed when deploying
     -r      --resolve-s3        Force use default SAM managed bucket when samconfig.toml is present.
@@ -92,7 +91,7 @@ deploy_or_destroy() {
 
 DEPLOY_SIS=true
 DEPLOY_OAUTH=false
-SIS_STACK_NAME="preview-main"
+SHARED_STACK_NAME="identity-reuse-shared"
 RESOLVE_S3=false
 CONFIRM_CHANGES=true
 BUILD_CACHE="--cached"
@@ -120,9 +119,9 @@ while [[ -n "${1}" ]]; do
     -n | --no-sis-deploy)
       DEPLOY_SIS=false
       ;;
-    -m | --sis-stack-name)
+    -m | --shared-stack-name)
       shift
-      SIS_STACK_NAME="${1}"
+      SHARED_STACK_NAME="${1}"
       ;;
     -r | --resolve-s3)
       RESOLVE_S3=true
@@ -184,13 +183,14 @@ fi
 export AWS_DEFAULT_REGION=eu-west-2
 echo "Environment: ${ENVIRONMENT}"
 echo "Profile:     ${AWS_PROFILE}"
-$DEPLOY_SIS && echo "Deploy identity-reuse-service to stack ${SIS_STACK_NAME}"
-$DEPLOY_OAUTH && echo "Deploy oauth-internal to stack ${OAUTH_STACK_NAME}, pointing at identity-reuse-service stack ${SIS_STACK_NAME}"
+$DEPLOY_SIS && echo "Deploy identity-reuse-service to stack ${SIS_STACK_NAME}, pointing at shared stack ${SHARED_STACK_NAME}"
+$DEPLOY_OAUTH && echo "Deploy oauth-internal to stack ${OAUTH_STACK_NAME}, pointing at shared stack ${SHARED_STACK_NAME}"
 echo
 
-if $DEPLOY_SIS; then
-  deploy_or_destroy "identity-reuse-service" "${SIS_STACK_NAME}" "OauthInternalStackName=${OAUTH_STACK_NAME}"
+if "${DEPLOY_OAUTH}"; then
+  deploy_or_destroy "oauth-internal" "${OAUTH_STACK_NAME}" "SharedStackName=${SHARED_STACK_NAME}"
 fi
-if $DEPLOY_OAUTH; then
-  deploy_or_destroy "oauth-internal" "${OAUTH_STACK_NAME}" "SisStackName=${SIS_STACK_NAME}"
+
+if "${DEPLOY_SIS}"; then
+  deploy_or_destroy "identity-reuse-service" "${SIS_STACK_NAME}" "OauthInternalStackName=${OAUTH_STACK_NAME}" "SharedStackName=${SHARED_STACK_NAME}"
 fi
