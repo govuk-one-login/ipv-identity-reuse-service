@@ -45,7 +45,10 @@ Resources:
                 Resource: "*"
                 Action:
                   - iam:GetRole
+                  - iam:TagPolicy
+                  - iam:UntagPolicy
                   - iam:TagRole
+                  - iam:UntagRole
                   - iam:PassRole
                   - iam:CreateRole
                   - iam:DeleteRole
@@ -203,6 +206,7 @@ Resources:
                   - lambda:UpdateEventSourceMapping
                   - lambda:UpdateFunctionConfiguration
                   - lambda:TagResource
+                  - lambda:UntagResource
                   - lambda:GetFunctionConfiguration
 
               - Effect: Allow
@@ -275,6 +279,7 @@ Resources:
                   - logs:CreateLogGroup
                   - logs:ListTagsForResource
                   - logs:TagResource
+                  - logs:UntagResource
 
               - Effect: Allow
                 Resource:
