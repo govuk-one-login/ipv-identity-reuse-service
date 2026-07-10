@@ -3351,7 +3351,7 @@ Resources:
         - IsDevOrBuild
         - !GetAtt StubQueue.Arn
         - !FindInMap [EnvironmentMap, !Ref Environment, messageQueueArn]
-      FunctionName: !GetAtt MessageProcessorLambda.Arn
+      FunctionName: !Ref MessageProcessorLambda.Alias
       Enabled: true
 
   AuditEventDeadLetterQueueAlarm:
