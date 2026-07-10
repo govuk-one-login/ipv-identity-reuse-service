@@ -13,9 +13,15 @@ export type AuthorizationParameters = {
   state: string;
 };
 
+export type RedirectResponse = {
+  origin: string;
+  pathname: string;
+};
+
 export type AuthorizationResponse = {
   origin: string;
   code: string | null;
+  state: string | null;
 };
 
 export type OAuthBadRequest = {
@@ -57,24 +63,25 @@ export const isAwsError = (response: unknown): response is AwsError => {
   return !!response && typeof response === "object" && "message" in response;
 };
 
-export const isAuthorizationResponse = (response: unknown): response is AuthorizationResponse =>
-  !!response && typeof response === "object" && "origin" in response && "code" in response;
+export const isRedirectResponse = (response: unknown): response is RedirectResponse =>
+  !!response && typeof response === "object" && "origin" in response;
 
-export const authorize = async (
-  parameters: AuthorizationParameters
-): Promise<AuthorizationResponse | OAuthBadRequest> => {
+export const isAuthorizationResponse = (response: unknown): response is AuthorizationResponse =>
+  !!response && typeof response === "object" && "origin" in response && "code" in response && "state" in response;
+
+export const authorize = async (parameters: AuthorizationParameters): Promise<RedirectResponse | Error> => {
   const publicApi = await getCloudFormationOutput(CloudFormationOutputs.SisPublicApi);
 
   const response = await request(publicApi).get("/authorize").query(parameters).send();
   if (isAwsError(response.body)) {
-    return { error: "error", error_description: response.body.message };
+    return new Error("error", { cause: response.body.message });
   }
 
   if (response.statusCode === 302) {
-    const { origin, search } = new URL(response.header["location"]);
+    const { origin, pathname } = new URL(response.header["location"]);
     return {
       origin,
-      code: new URLSearchParams(search).get("code"),
+      pathname,
     };
   }
 
@@ -93,4 +100,27 @@ export const token = async (parameters: TokenRequest): Promise<TokenResponse | O
   }
 
   return response.body;
+};
+
+export const confirmDetailsSubmission = async (
+  redirectUri: string,
+  state: string
+): Promise<AuthorizationResponse | OAuthBadRequest> => {
+  const publicApi = await getCloudFormationOutput(CloudFormationOutputs.SisPublicApi);
+
+  const response = await request(publicApi)
+    .post("/confirm-details")
+    .set("content-type", "application/x-www-form-urlencoded")
+    .send({ redirectUri, state });
+
+  if (response.statusCode === 302) {
+    const { origin, search } = new URL(response.header["location"]);
+    return {
+      origin,
+      code: new URLSearchParams(search).get("code"),
+      state: new URLSearchParams(search).get("state"),
+    };
+  }
+
+  return { error: "error", error_description: `Expected 302 but got ${response.statusCode}` };
 };
