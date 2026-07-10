@@ -31,3 +31,31 @@ jobs:
           pull-repository: true
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  run-gitlint:
+    if: ${{ !github.event.pull_request.draft }}
+    name: Run Gitlint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Calculate fetch depth
+        id: calculate-fetch-depth
+        env:
+          NUMBER_OF_PR_COMMITS: ${{ github.event.pull_request.commits }}
+        run: |
+          echo "Number of PR ${NUMBER_OF_PR_COMMITS}"
+          echo "FETCH_DEPTH=$(($NUMBER_OF_PR_COMMITS + 1))" >> "${GITHUB_OUTPUT}"
+
+      - name: Pull repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: ${{ steps.calculate-fetch-depth.outputs.FETCH_DEPTH }}
+
+      - name: Install gitlint
+        shell: bash
+        run: |
+          python -m pip install gitlint==0.19.1
+
+      - name: Run gitlint
+        shell: bash
+        run: |
+          gitlint --commits "${{ github.event.pull_request.base.sha }}..HEAD" --fail-without-commits --ignore-stdin
