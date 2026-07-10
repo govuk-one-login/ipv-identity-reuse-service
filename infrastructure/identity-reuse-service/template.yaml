@@ -3373,7 +3373,7 @@ Resources:
       QueueName: !Sub "${AWS::StackName}-stub-queue"
       KmsMasterKeyId: !Ref StubQueueKey
 
-  MessageProcessorLambdaTrigger:
+  InboundTxmaQueueMessageHandlerTrigger:
     Type: AWS::Lambda::EventSourceMapping
     Properties:
       BatchSize: 1
@@ -3381,7 +3381,7 @@ Resources:
         - IsDevOrBuild
         - !GetAtt StubQueue.Arn
         - !FindInMap [EnvironmentMap, !Ref Environment, messageQueueArn]
-      FunctionName: !Ref MessageProcessorLambda.Alias
+      FunctionName: !Ref InboundTxmaQueueMessageHandler.Alias
       Enabled: true
 
   AuditEventDeadLetterQueueAlarm:
@@ -3535,14 +3535,14 @@ Resources:
       AlarmDescription: "Errors invoking SIS lambda functions"
       Metrics:
         - Id: m1
-          Label: MessageProcessorLambda Errors
+          Label: InboundTxmaQueueMessageHandler Errors
           MetricStat:
             Metric:
               MetricName: Errors
               Namespace: AWS/Lambda
               Dimensions:
                 - Name: FunctionName
-                  Value: !Ref MessageProcessorLambda
+                  Value: !Ref InboundTxmaQueueMessageHandler
             Period: 60
             Stat: Sum
             Unit: Count
