@@ -21,6 +21,31 @@ vitest.mock("@aws-lambda-powertools/logger", () => {
   };
 });
 
+it("should only read the response body once and redirect successfully", async () => {
+  const mockJsonMethod = vitest.fn().mockResolvedValue({
+    redirectionURI: "https://api.example.com",
+    authorizationCode: { value: "test-auth-code" },
+    state: { value: "test-state" },
+  });
+
+  globalThis.fetch = vitest.fn().mockResolvedValue({
+    status: 200,
+    json: mockJsonMethod,
+  });
+
+  const event = createMockAPIGatewayProxyEvent({}, "");
+  const response = await handler(event);
+
+  expect(mockJsonMethod).toHaveBeenCalledTimes(1);
+  expect(response).toStrictEqual({
+    statusCode: 302,
+    body: "",
+    headers: {
+      Location: "https://api.example.com/?code=test-auth-code&state=test-state",
+    },
+  });
+});
+
 it("should return a 302 status code and redirect with an auth code and state on a successful request", async () => {
   const event = createMockAPIGatewayProxyEvent({}, "");
   const token = getCookieValues(event)!.get("identity_reuse_service_session");
