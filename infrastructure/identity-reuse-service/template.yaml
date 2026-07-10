@@ -3548,14 +3548,14 @@ Resources:
             Unit: Count
           ReturnData: false
         - Id: m2
-          Label: UserIdentityFunction Errors
+          Label: PostPhase2UserIdentityHandler Errors
           MetricStat:
             Metric:
               MetricName: Errors
               Namespace: AWS/Lambda
               Dimensions:
                 - Name: FunctionName
-                  Value: !Ref UserIdentityFunction
+                  Value: !Ref PostPhase2UserIdentityHandler
             Period: 60
             Stat: Sum
             Unit: Count
