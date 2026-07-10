@@ -2476,12 +2476,12 @@ Resources:
     # checkov:skip=CKV_AWS_115: We do not have enough data to allocate the concurrent execution allowance per function.
     # checkov:skip=CKV_AWS_116: DLQs are not used for synchronous invocations.
     # checkov:skip=CKV_AWS_173: Check encryption settings for Lambda environmental variable
-    DependsOn: InboundTxmaQueueMessageHandlerTriggerPolicy
+    DependsOn: InboundTxmaQueueMessageHandlerPolicy
     Properties:
       FunctionName: !Sub "${AWS::StackName}-InboundTxmaQueueMessageHandler"
       Description: "A lambda function that handles a message received on the inbound TXMA queue"
       Handler: inbound-txma-queue-message-handler.handler
-      Role: !GetAtt InboundTxmaQueueMessageHandlerTriggerRole.Arn
+      Role: !GetAtt InboundTxmaQueueMessageHandlerRole.Arn
       Environment:
         Variables:
           POWERTOOLS_METRICS_NAMESPACE:
@@ -2549,10 +2549,10 @@ Resources:
         - Key: Name
           Value: !Sub "${AWS::StackName}-MessageProcessorLambdaTriggerRole"
 
-  InboundTxmaQueueMessageHandlerTriggerRole:
+  InboundTxmaQueueMessageHandlerRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub "${AWS::StackName}-InboundTxmaQueueMessageHandlerTriggerRole"
+      RoleName: !Sub "${AWS::StackName}-InboundTxmaQueueMessageHandlerRole"
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -2579,7 +2579,7 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
         - Key: Name
-          Value: !Sub "${AWS::StackName}-InboundTxmaQueueMessageHandlerTriggerRole"
+          Value: !Sub "${AWS::StackName}-InboundTxmaQueueMessageHandlerRole"
 
   MessageProcessorLambdaTriggerPolicy:
     Type: AWS::IAM::Policy
@@ -2621,10 +2621,10 @@ Resources:
       Roles:
         - !Ref MessageProcessorLambdaTriggerRole
 
-  InboundTxmaQueueMessageHandlerTriggerPolicy:
+  InboundTxmaQueueMessageHandlerPolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: !Sub "${AWS::StackName}-InboundTxmaQueueMessageHandlerTriggerPolicy"
+      PolicyName: !Sub "${AWS::StackName}-InboundTxmaQueueMessageHandlerPolicy"
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -2659,7 +2659,7 @@ Resources:
               - "kms:*"
             Resource: "*"
       Roles:
-        - !Ref InboundTxmaQueueMessageHandlerTriggerRole
+        - !Ref InboundTxmaQueueMessageHandlerRole
 
   MessageProcessorLambdaLogGroup:
     Type: AWS::Logs::LogGroup
