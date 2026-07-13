@@ -382,7 +382,7 @@ Resources:
           APP_CONFIG_NAME: !Ref ApplicationConfigName
           APP_CONFIG_APPLICATION: !Ref ApplicationName
           SQS_AUDIT_EVENT_QUEUE_URL:
-            Fn::ImportValue: !Sub ${SharedStackName}-AuditEventQueueUrl
+            Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueUrl"
           COMPONENT_ID: !Ref ComponentId
           DOMAIN_NAME: !Ref ReuseIdentityCustomDomain
           OAUTH_INTERNAL_API_URL:
@@ -470,7 +470,7 @@ Resources:
             Action:
               - sqs:SendMessage
             Resource:
-              Fn::ImportValue: !Sub ${SharedStackName}-AuditEventQueueArn
+              Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueArn"
       Roles:
         - !Ref GetAuthorizeHandlerRole
 
@@ -568,7 +568,7 @@ Resources:
           APP_CONFIG_NAME: !Ref ApplicationConfigName
           APP_CONFIG_APPLICATION: !Ref ApplicationName
           SQS_AUDIT_EVENT_QUEUE_URL:
-            Fn::ImportValue: !Sub ${SharedStackName}-AuditEventQueueUrl
+            Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueUrl"
           COMPONENT_ID: !Ref ComponentId
       CodeSigningConfigArn: !If
         - UseCodeSigning
@@ -653,7 +653,7 @@ Resources:
             Action:
               - sqs:SendMessage
             Resource:
-              Fn::ImportValue: !Sub ${SharedStackName}-AuditEventQueueArn
+              Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueArn"
       Roles:
         - !Ref PostTokenHandlerRole
 
@@ -783,7 +783,7 @@ Resources:
           APP_CONFIG_NAME: !Ref ApplicationConfigName
           APP_CONFIG_APPLICATION: !Ref ApplicationName
           SQS_AUDIT_EVENT_QUEUE_URL:
-            Fn::ImportValue: !Sub ${SharedStackName}-AuditEventQueueUrl
+            Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueUrl"
           COMPONENT_ID: !Ref ComponentId
       CodeSigningConfigArn: !If
         - UseCodeSigning
@@ -868,7 +868,7 @@ Resources:
             Action:
               - sqs:SendMessage
             Resource:
-              Fn::ImportValue: !Sub ${SharedStackName}-AuditEventQueueArn
+              Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueArn"
       Roles:
         - !Ref GetUserIdentityHandlerRole
 
@@ -1884,7 +1884,6 @@ Resources:
   #######################################
   # POST PHASE 2 USER IDENTITY HANDLER  #
   #######################################
-
   PostPhase2UserIdentityHandler:
     Type: AWS::Serverless::Function
     Properties:
@@ -1913,7 +1912,7 @@ Resources:
           APP_CONFIG_NAME: !Ref ApplicationConfigName
           APP_CONFIG_APPLICATION: !Ref ApplicationName
           SQS_AUDIT_EVENT_QUEUE_URL:
-            Fn::ImportValue: !Sub ${SharedStackName}-AuditEventQueueUrl
+            Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueUrl"
           COMPONENT_ID: !Ref ComponentId
       CodeSigningConfigArn: !If
         - UseCodeSigning
@@ -1995,12 +1994,8 @@ Resources:
           - Effect: Allow
             Action:
               - sqs:SendMessage
-            Resource: !GetAtt AuditEventQueue.Arn
-          - Effect: Allow
-            Action:
-              - sqs:SendMessage
             Resource:
-              Fn::ImportValue: !Sub ${SharedStackName}-AuditEventQueueArn
+              Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueArn"
       Roles:
         - !Ref PostPhase2UserIdentityHandlerRole
 
@@ -2234,7 +2229,6 @@ Resources:
   ######################################
   # INBOUND TXMA QUEUE MESSAGE HANDLER #
   ######################################
-
   InboundTxmaQueueMessageHandler:
     Type: AWS::Serverless::Function
     # checkov:skip=CKV_AWS_115: We do not have enough data to allocate the concurrent execution allowance per function.
@@ -2257,7 +2251,7 @@ Resources:
           APP_CONFIG_NAME: !Ref ApplicationConfigName
           APP_CONFIG_APPLICATION: !Ref ApplicationName
           SQS_AUDIT_EVENT_QUEUE_URL:
-            Fn::ImportValue: !Sub ${SharedStackName}-AuditEventQueueUrl
+            Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueUrl"
           COMPONENT_ID: !Ref ComponentId
       Tags:
         Product: !Ref ProductTagValue
@@ -2333,12 +2327,8 @@ Resources:
           - Effect: Allow
             Action:
               - sqs:SendMessage
-            Resource: !GetAtt AuditEventQueue.Arn
-          - Effect: Allow
-            Action:
-              - sqs:SendMessage
             Resource:
-              Fn::ImportValue: !Sub ${SharedStackName}-AuditEventQueueArn
+              Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueArn"
           - Effect: Allow
             Action:
               - kms:Decrypt
@@ -2934,81 +2924,6 @@ Resources:
             Action: kms:*
             Resource: "*"
 
-  AuditEventQueue:
-    Type: AWS::SQS::Queue
-    Properties:
-      KmsMasterKeyId: !Ref AuditEventQueueEncryptionKeyAlias
-      VisibilityTimeout: 70
-      MessageRetentionPeriod: 1209600
-      RedriveAllowPolicy:
-        redrivePermission: denyAll
-      RedrivePolicy:
-        deadLetterTargetArn: !GetAtt AuditEventDeadLetterQueue.Arn
-        maxReceiveCount: 10
-
-  AuditEventDeadLetterQueue:
-    Type: AWS::SQS::Queue
-    Properties:
-      KmsMasterKeyId: !Ref AuditEventQueueEncryptionKeyAlias
-
-  AuditEventQueuePolicy:
-    Type: AWS::SQS::QueuePolicy
-    Properties:
-      Queues:
-        - !Ref AuditEventQueue
-      PolicyDocument:
-        Statement:
-          - Sid: "AllowReadByTxMAAccount"
-            Effect: Allow
-            Action:
-              - "sqs:ChangeMessageVisibility"
-              - "sqs:DeleteMessage"
-              - "sqs:GetQueueAttributes"
-              - "sqs:ReceiveMessage"
-            Resource: !GetAtt AuditEventQueue.Arn
-            Principal:
-              AWS: !FindInMap [EnvironmentMap, !Ref Environment, TxmaAccountId]
-
-  AuditEventQueueEncryptionKey:
-    Type: AWS::KMS::Key
-    Properties:
-      Description: Symmetric key used to encrypt audit messages at rest in SQS
-      EnableKeyRotation: true
-      KeySpec: SYMMETRIC_DEFAULT
-      KeyPolicy:
-        Version: 2012-10-17
-        Statement:
-          - Sid: Enable Root access
-            Effect: Allow
-            Principal:
-              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
-            Action:
-              - "kms:*"
-            Resource: "*"
-          - Sid: Allow decryption of events by TxMA
-            Effect: Allow
-            Principal:
-              AWS: !FindInMap [EnvironmentMap, !Ref Environment, TxmaAccountId]
-            Action:
-              - "kms:decrypt"
-            Resource: "*"
-      Tags:
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-AuditEventQueueEncryptionKey"
-        - Key: Stack
-          Value: !Sub "${AWS::StackName}"
-
-  AuditEventQueueEncryptionKeyAlias:
-    Type: AWS::KMS::Alias
-    Properties:
-      AliasName: !If
-        - IsDev
-        - !Sub "alias/${AWS::StackName}/auditEventQueueEncryptionKey"
-        - !Sub "alias/${Environment}/auditEventQueueEncryptionKey"
-      TargetKeyId: !Ref AuditEventQueueEncryptionKey
-
   StubQueue:
     Type: AWS::SQS::Queue
     Condition: IsDevOrBuild
@@ -3026,24 +2941,6 @@ Resources:
         - !FindInMap [EnvironmentMap, !Ref Environment, InboundTxmaQueueArn]
       FunctionName: !Ref InboundTxmaQueueMessageHandler.Alias
       Enabled: true
-
-  AuditEventDeadLetterQueueAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmDescription: "Triggers when any message is in the DLQ"
-      Namespace: "AWS/SQS"
-      MetricName: "ApproximateNumberOfMessagesVisible"
-      Dimensions:
-        - Name: QueueName
-          Value: !Ref AuditEventDeadLetterQueue
-      Statistic: Sum
-      Period: 60
-      EvaluationPeriods: 1
-      Threshold: 0
-      ComparisonOperator: GreaterThanThreshold
-      AlarmActions:
-        - !ImportValue alerting-integration-AlertNotificationTopicArn
-      TreatMissingData: notBreaching
 
   ##########################
   # .well-known resources
@@ -3251,24 +3148,6 @@ Outputs:
     Condition: IsDevOrBuild
     Description: App Config environment - used for testing.
     Value: !Ref Environment
-
-  AuditEventQueueEncryptionKeyArn:
-    Description: The ARN for the key used to encrypt/decrypt audit messages on the audit queue
-    Value: !GetAtt AuditEventQueueEncryptionKey.Arn
-    Export:
-      Name: !Sub ${AWS::StackName}-AuditEventQueueEncryptionKeyArn
-
-  AuditEventQueueName:
-    Description: The name of the queue where audit messages are sent
-    Value: !GetAtt AuditEventQueue.QueueName
-    Export:
-      Name: !Sub ${AWS::StackName}-AuditEventQueueName
-
-  AuditEventQueueUrl:
-    Description: The url of the queue where audit messages are sent
-    Value: !Ref AuditEventQueue
-    Export:
-      Name: !Sub ${AWS::StackName}-AuditEventQueueUrl
 
   SisPublicApi:
     Condition: IsNotProduction
