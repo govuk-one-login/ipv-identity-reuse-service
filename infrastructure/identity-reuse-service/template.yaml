@@ -1968,7 +1968,8 @@ Resources:
           ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
           APP_CONFIG_NAME: !Ref ApplicationConfigName
           APP_CONFIG_APPLICATION: !Ref ApplicationName
-          SQS_AUDIT_EVENT_QUEUE_URL: !Ref AuditEventQueue
+          SQS_AUDIT_EVENT_QUEUE_URL:
+            Fn::ImportValue: !Sub ${SharedStackName}-AuditEventQueueUrl
           COMPONENT_ID: !Ref ComponentId
       CodeSigningConfigArn: !If
         - UseCodeSigning
@@ -2089,7 +2090,6 @@ Resources:
               - sqs:SendMessage
             Resource:
               Fn::ImportValue: !Sub ${SharedStackName}-AuditEventQueueArn
-
       Roles:
         - !Ref UserIdentityFunctionRole
 
@@ -2114,6 +2114,11 @@ Resources:
             Action:
               - sqs:SendMessage
             Resource: !GetAtt AuditEventQueue.Arn
+          - Effect: Allow
+            Action:
+              - sqs:SendMessage
+            Resource:
+              Fn::ImportValue: !Sub ${SharedStackName}-AuditEventQueueArn
       Roles:
         - !Ref PostPhase2UserIdentityHandlerRole
 
@@ -2506,7 +2511,8 @@ Resources:
           ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
           APP_CONFIG_NAME: !Ref ApplicationConfigName
           APP_CONFIG_APPLICATION: !Ref ApplicationName
-          SQS_AUDIT_EVENT_QUEUE_URL: !Ref AuditEventQueue
+          SQS_AUDIT_EVENT_QUEUE_URL:
+            Fn::ImportValue: !Sub ${SharedStackName}-AuditEventQueueUrl
           COMPONENT_ID: !Ref ComponentId
       Tags:
         Product: !Ref ProductTagValue
@@ -2660,6 +2666,11 @@ Resources:
             Action:
               - sqs:SendMessage
             Resource: !GetAtt AuditEventQueue.Arn
+          - Effect: Allow
+            Action:
+              - sqs:SendMessage
+            Resource:
+              Fn::ImportValue: !Sub ${SharedStackName}-AuditEventQueueArn
           - Effect: Allow
             Action:
               - kms:Decrypt
