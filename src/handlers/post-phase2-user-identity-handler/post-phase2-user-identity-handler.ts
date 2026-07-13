@@ -17,10 +17,10 @@ import { getFraudVc } from "../../identity-reuse/fraud-check-service";
 import { hasIdentityExpired } from "../../identity-reuse/identity-expiry-service";
 import { validateStoredIdentityCredentials } from "../../identity-reuse/stored-identity-validator";
 import { VerifiableCredentialJWT } from "../../identity-reuse/verifiable-credential-jwt";
-import { UserIdentityErrorResponse } from "./user-identity-error-response";
-import { UserIdentityRequest } from "./user-identity-request";
+import { UserIdentityErrorResponse } from "./post-phase2-user-identity-error-response";
+import { UserIdentityRequest } from "./post-phase2-user-identity-request";
 import { StoredIdentityJWT } from "./stored-identity-jwt";
-import { StoredIdentityVectorOfTrust, UserIdentityResponse } from "./user-identity-response";
+import { StoredIdentityVectorOfTrust, UserIdentityResponse } from "./post-phase2-user-identity-response";
 
 export const handler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
   const request = event.body ? (JSON.parse(event.body) as UserIdentityRequest) : undefined;
