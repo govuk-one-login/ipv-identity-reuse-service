@@ -91,7 +91,7 @@ deploy_or_destroy() {
 
 DEPLOY_SIS=true
 DEPLOY_OAUTH=false
-SHARED_STACK_NAME="identity-reuse-shared"
+SHARED_STACK_NAME="reuse-identity-shared"
 RESOLVE_S3=false
 CONFIRM_CHANGES=true
 BUILD_CACHE="--cached"
