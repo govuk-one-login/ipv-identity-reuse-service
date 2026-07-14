@@ -136,8 +136,8 @@ Parameters:
 Mappings:
   EnvironmentMap:
     "local":
-      txmaAccountId: "275907361037"
-      dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+      TxmaAccountId: "275907361037"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
       InboundTxmaQueueArn: "unused"
       InboundTxmaQueueKeyArn: "unused"
       ApiRateLimit: 5 # allowed requests per second
@@ -149,8 +149,8 @@ Mappings:
       UniqueVPCEndpointIDs: none
       UseCanary: false
     "dev":
-      txmaAccountId: "275907361037"
-      dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+      TxmaAccountId: "275907361037"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
       InboundTxmaQueueArn: "unused"
       InboundTxmaQueueKeyArn: "unused"
       ApiRateLimit: 5 # allowed requests per second
@@ -162,8 +162,8 @@ Mappings:
       UniqueVPCEndpointIDs: none
       UseCanary: false
     "build":
-      txmaAccountId: "779873699903"
-      dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+      TxmaAccountId: "779873699903"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
       InboundTxmaQueueArn: "unused"
       InboundTxmaQueueKeyArn: "unused"
       ApiRateLimit: 5 # allowed requests per second
@@ -175,8 +175,8 @@ Mappings:
       UniqueVPCEndpointIDs: vpce-0edf9e66222007102 # IPV Build VPCE ID
       UseCanary: false
     "staging":
-      txmaAccountId: "178023842775"
-      dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+      TxmaAccountId: "178023842775"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
       InboundTxmaQueueArn: "arn:aws:sqs:eu-west-2:178023842775:self-staging-EC-SQS-Output-Queue-identityreuse" #pragma: allowlist secret
       InboundTxmaQueueKeyArn: "arn:aws:kms:eu-west-2:178023842775:key/325458a5-de28-4c28-aaf0-678ebefb35ac"
       ApiRateLimit: 5 # allowed requests per second
@@ -188,8 +188,8 @@ Mappings:
       UniqueVPCEndpointIDs: vpce-0cc0de10742b83b8a # IPV Staging VPCE ID
       UseCanary: true
     "integration":
-      txmaAccountId: "729485541398"
-      dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+      TxmaAccountId: "729485541398"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
       InboundTxmaQueueArn: "arn:aws:sqs:eu-west-2:729485541398:self-integration-EC-SQS-Output-Queue-identityreuse" #pragma: allowlist secret
       InboundTxmaQueueKeyArn: "arn:aws:kms:eu-west-2:729485541398:key/c199c69c-7ce7-4a82-b5a7-b344c7ac04f5"
       ApiRateLimit: 2000 # allowed requests per second
@@ -201,8 +201,8 @@ Mappings:
       UniqueVPCEndpointIDs: vpce-0f47068fdf9ad0c3d # IPV Int VPCE ID
       UseCanary: true
     "production":
-      txmaAccountId: "451773080033"
-      dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables"
+      TxmaAccountId: "451773080033"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables"
       InboundTxmaQueueArn: "arn:aws:sqs:eu-west-2:451773080033:self-production-EC-SQS-Output-Queue-identityreuse" #pragma: allowlist secret
       InboundTxmaQueueKeyArn: "arn:aws:kms:eu-west-2:451773080033:key/5b5d3a8e-cf70-49ca-bec8-b3a2e61ce770"
       ApiRateLimit: 2000 # allowed requests per second
@@ -289,31 +289,31 @@ Globals:
           - DynaTraceEnabled
           - !Sub
             - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_AUTH_TOKEN}}"
-            - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, dynatraceSecretArn]
+            - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, DynatraceSecretArn]
           - !Ref "AWS::NoValue"
         DT_CONNECTION_BASE_URL: !If
           - DynaTraceEnabled
           - !Sub
             - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_BASE_URL}}"
-            - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, dynatraceSecretArn]
+            - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, DynatraceSecretArn]
           - !Ref "AWS::NoValue"
         DT_CLUSTER_ID: !If
           - DynaTraceEnabled
           - !Sub
             - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CLUSTER_ID}}"
-            - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, dynatraceSecretArn]
+            - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, DynatraceSecretArn]
           - !Ref "AWS::NoValue"
         DT_LOG_COLLECTION_AUTH_TOKEN: !If
           - DynaTraceEnabled
           - !Sub
             - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_LOG_COLLECTION_AUTH_TOKEN}}"
-            - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, dynatraceSecretArn]
+            - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, DynatraceSecretArn]
           - !Ref "AWS::NoValue"
         DT_TENANT: !If
           - DynaTraceEnabled
           - !Sub
             - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_TENANT}}"
-            - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, dynatraceSecretArn]
+            - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, DynatraceSecretArn]
           - !Ref "AWS::NoValue"
         DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: !If [DynaTraceEnabled, "true", !Ref "AWS::NoValue"]
     CodeSigningConfigArn: !If
@@ -2967,7 +2967,7 @@ Resources:
               - "sqs:ReceiveMessage"
             Resource: !GetAtt AuditEventQueue.Arn
             Principal:
-              AWS: !FindInMap [EnvironmentMap, !Ref Environment, txmaAccountId]
+              AWS: !FindInMap [EnvironmentMap, !Ref Environment, TxmaAccountId]
 
   AuditEventQueueEncryptionKey:
     Type: AWS::KMS::Key
@@ -2988,7 +2988,7 @@ Resources:
           - Sid: Allow decryption of events by TxMA
             Effect: Allow
             Principal:
-              AWS: !FindInMap [EnvironmentMap, !Ref Environment, txmaAccountId]
+              AWS: !FindInMap [EnvironmentMap, !Ref Environment, TxmaAccountId]
             Action:
               - "kms:decrypt"
             Resource: "*"
