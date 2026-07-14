@@ -2019,6 +2019,7 @@ Resources:
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
         - Fn::ImportValue: !Sub "${AppConfigStackName}-AppConfigClientPolicyArn"
+        - Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueMessagePolicy"
       Tags:
         - Key: Product
           Value: !Ref ProductTagValue
@@ -2052,6 +2053,7 @@ Resources:
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
         - Fn::ImportValue: !Sub "${AppConfigStackName}-AppConfigClientPolicyArn"
+        - Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueMessagePolicy"
       Tags:
         - Key: Product
           Value: !Ref ProductTagValue
@@ -2085,11 +2087,6 @@ Resources:
             Action:
               - sqs:SendMessage
             Resource: !GetAtt AuditEventQueue.Arn
-          - Effect: Allow
-            Action:
-              - sqs:SendMessage
-            Resource:
-              Fn::ImportValue: !Sub ${SharedStackName}-AuditEventQueueArn
       Roles:
         - !Ref UserIdentityFunctionRole
 
@@ -2114,11 +2111,6 @@ Resources:
             Action:
               - sqs:SendMessage
             Resource: !GetAtt AuditEventQueue.Arn
-          - Effect: Allow
-            Action:
-              - sqs:SendMessage
-            Resource:
-              Fn::ImportValue: !Sub ${SharedStackName}-AuditEventQueueArn
       Roles:
         - !Ref PostPhase2UserIdentityHandlerRole
 
@@ -2555,6 +2547,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
         - Fn::ImportValue: !Sub "${AppConfigStackName}-AppConfigClientPolicyArn"
+        - Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueMessagePolicy"
       Tags:
         - Key: Product
           Value: !Ref ProductTagValue
@@ -2587,6 +2580,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
         - Fn::ImportValue: !Sub "${AppConfigStackName}-AppConfigClientPolicyArn"
+        - Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueMessagePolicy"
       Tags:
         - Key: Product
           Value: !Ref ProductTagValue
@@ -2621,11 +2615,6 @@ Resources:
             Action:
               - sqs:SendMessage
             Resource: !GetAtt AuditEventQueue.Arn
-          - Effect: Allow
-            Action:
-              - sqs:SendMessage
-            Resource:
-              Fn::ImportValue: !Sub ${SharedStackName}-AuditEventQueueArn
           - Effect: Allow
             Action:
               - kms:Decrypt
@@ -2666,11 +2655,6 @@ Resources:
             Action:
               - sqs:SendMessage
             Resource: !GetAtt AuditEventQueue.Arn
-          - Effect: Allow
-            Action:
-              - sqs:SendMessage
-            Resource:
-              Fn::ImportValue: !Sub ${SharedStackName}-AuditEventQueueArn
           - Effect: Allow
             Action:
               - kms:Decrypt
