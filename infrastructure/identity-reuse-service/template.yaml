@@ -136,10 +136,10 @@ Parameters:
 Mappings:
   EnvironmentMap:
     "local":
-      txmaAccountId: "275907361037"
-      dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
-      messageQueueArn: "unused"
-      messageQueueKeyArn: "unused"
+      TxmaAccountId: "275907361037"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+      InboundTxmaQueueArn: "unused"
+      InboundTxmaQueueKeyArn: "unused"
       ApiRateLimit: 5 # allowed requests per second
       ApiBurstLimit: 5 # requests the API can handle concurrently
       DevOrchestrationVPCID: vpc-0ef7e5d033cabd99f
@@ -149,10 +149,10 @@ Mappings:
       UniqueVPCEndpointIDs: none
       UseCanary: false
     "dev":
-      txmaAccountId: "275907361037"
-      dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
-      messageQueueArn: "unused"
-      messageQueueKeyArn: "unused"
+      TxmaAccountId: "275907361037"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+      InboundTxmaQueueArn: "unused"
+      InboundTxmaQueueKeyArn: "unused"
       ApiRateLimit: 5 # allowed requests per second
       ApiBurstLimit: 5 # requests the API can handle concurrently
       DevOrchestrationVPCID: vpc-0ef7e5d033cabd99f
@@ -162,10 +162,10 @@ Mappings:
       UniqueVPCEndpointIDs: none
       UseCanary: false
     "build":
-      txmaAccountId: "779873699903"
-      dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
-      messageQueueArn: "unused"
-      messageQueueKeyArn: "unused"
+      TxmaAccountId: "779873699903"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+      InboundTxmaQueueArn: "unused"
+      InboundTxmaQueueKeyArn: "unused"
       ApiRateLimit: 5 # allowed requests per second
       ApiBurstLimit: 5 # requests the API can handle concurrently
       DevOrchestrationVPCID: vpc-00e8a85efc283fe6f
@@ -175,10 +175,10 @@ Mappings:
       UniqueVPCEndpointIDs: vpce-0edf9e66222007102 # IPV Build VPCE ID
       UseCanary: false
     "staging":
-      txmaAccountId: "178023842775"
-      dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
-      messageQueueArn: "arn:aws:sqs:eu-west-2:178023842775:self-staging-EC-SQS-Output-Queue-identityreuse" #pragma: allowlist secret
-      messageQueueKeyArn: "arn:aws:kms:eu-west-2:178023842775:key/325458a5-de28-4c28-aaf0-678ebefb35ac"
+      TxmaAccountId: "178023842775"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+      InboundTxmaQueueArn: "arn:aws:sqs:eu-west-2:178023842775:self-staging-EC-SQS-Output-Queue-identityreuse" #pragma: allowlist secret
+      InboundTxmaQueueKeyArn: "arn:aws:kms:eu-west-2:178023842775:key/325458a5-de28-4c28-aaf0-678ebefb35ac"
       ApiRateLimit: 5 # allowed requests per second
       ApiBurstLimit: 5 # requests the API can handle concurrently
       DevOrchestrationVPCID: none
@@ -188,10 +188,10 @@ Mappings:
       UniqueVPCEndpointIDs: vpce-0cc0de10742b83b8a # IPV Staging VPCE ID
       UseCanary: true
     "integration":
-      txmaAccountId: "729485541398"
-      dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
-      messageQueueArn: "arn:aws:sqs:eu-west-2:729485541398:self-integration-EC-SQS-Output-Queue-identityreuse" #pragma: allowlist secret
-      messageQueueKeyArn: "arn:aws:kms:eu-west-2:729485541398:key/c199c69c-7ce7-4a82-b5a7-b344c7ac04f5"
+      TxmaAccountId: "729485541398"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
+      InboundTxmaQueueArn: "arn:aws:sqs:eu-west-2:729485541398:self-integration-EC-SQS-Output-Queue-identityreuse" #pragma: allowlist secret
+      InboundTxmaQueueKeyArn: "arn:aws:kms:eu-west-2:729485541398:key/c199c69c-7ce7-4a82-b5a7-b344c7ac04f5"
       ApiRateLimit: 2000 # allowed requests per second
       ApiBurstLimit: 2000 # requests the API can handle concurrently
       DevOrchestrationVPCID: none
@@ -201,10 +201,10 @@ Mappings:
       UniqueVPCEndpointIDs: vpce-0f47068fdf9ad0c3d # IPV Int VPCE ID
       UseCanary: true
     "production":
-      txmaAccountId: "451773080033"
-      dynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables"
-      messageQueueArn: "arn:aws:sqs:eu-west-2:451773080033:self-production-EC-SQS-Output-Queue-identityreuse" #pragma: allowlist secret
-      messageQueueKeyArn: "arn:aws:kms:eu-west-2:451773080033:key/5b5d3a8e-cf70-49ca-bec8-b3a2e61ce770"
+      TxmaAccountId: "451773080033"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables"
+      InboundTxmaQueueArn: "arn:aws:sqs:eu-west-2:451773080033:self-production-EC-SQS-Output-Queue-identityreuse" #pragma: allowlist secret
+      InboundTxmaQueueKeyArn: "arn:aws:kms:eu-west-2:451773080033:key/5b5d3a8e-cf70-49ca-bec8-b3a2e61ce770"
       ApiRateLimit: 2000 # allowed requests per second
       ApiBurstLimit: 2000 # requests the API can handle concurrently
       DevOrchestrationVPCID: none
@@ -289,31 +289,31 @@ Globals:
           - DynaTraceEnabled
           - !Sub
             - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_AUTH_TOKEN}}"
-            - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, dynatraceSecretArn]
+            - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, DynatraceSecretArn]
           - !Ref "AWS::NoValue"
         DT_CONNECTION_BASE_URL: !If
           - DynaTraceEnabled
           - !Sub
             - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_BASE_URL}}"
-            - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, dynatraceSecretArn]
+            - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, DynatraceSecretArn]
           - !Ref "AWS::NoValue"
         DT_CLUSTER_ID: !If
           - DynaTraceEnabled
           - !Sub
             - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CLUSTER_ID}}"
-            - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, dynatraceSecretArn]
+            - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, DynatraceSecretArn]
           - !Ref "AWS::NoValue"
         DT_LOG_COLLECTION_AUTH_TOKEN: !If
           - DynaTraceEnabled
           - !Sub
             - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_LOG_COLLECTION_AUTH_TOKEN}}"
-            - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, dynatraceSecretArn]
+            - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, DynatraceSecretArn]
           - !Ref "AWS::NoValue"
         DT_TENANT: !If
           - DynaTraceEnabled
           - !Sub
             - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_TENANT}}"
-            - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, dynatraceSecretArn]
+            - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, DynatraceSecretArn]
           - !Ref "AWS::NoValue"
         DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: !If [DynaTraceEnabled, "true", !Ref "AWS::NoValue"]
     CodeSigningConfigArn: !If
@@ -1884,62 +1884,6 @@ Resources:
   #######################################
   # POST PHASE 2 USER IDENTITY HANDLER  #
   #######################################
-  UserIdentityFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub "${AWS::StackName}-UserIdentityFunction"
-      Description: "A lambda function that queues SIS data for processing"
-      Handler: post-phase2-user-identity-handler.handler
-      Role: !GetAtt UserIdentityFunctionRole.Arn
-      KmsKeyArn: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
-      VpcConfig: !If
-        - UseVpc
-        - SecurityGroupIds:
-            - Fn::ImportValue: !Sub "${VpcStackName}-AWSServicesEndpointSecurityGroupId"
-          SubnetIds:
-            - Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdA"
-            - Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdB"
-        - !Ref "AWS::NoValue"
-      Environment:
-        Variables:
-          METRIC_SERVICE_NAME: "UserIdentityFunction"
-          EVCS_API_KEY_SECRET_ARN:
-            Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
-          POWERTOOLS_METRICS_NAMESPACE:
-            !If [IsDev, !Sub "${AWS::StackName}-UserIdentityFunction", "UserIdentityFunction"]
-          POWERTOOLS_SERVICE_NAME: "UserIdentityFunction"
-          ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
-          APP_CONFIG_NAME: !Ref ApplicationConfigName
-          APP_CONFIG_APPLICATION: !Ref ApplicationName
-          SQS_AUDIT_EVENT_QUEUE_URL:
-            Fn::ImportValue: !Sub ${SharedStackName}-AuditEventQueueUrl
-          COMPONENT_ID: !Ref ComponentId
-      CodeSigningConfigArn: !If
-        - UseCodeSigning
-        - !Ref CodeSigningConfigArn
-        - !Ref AWS::NoValue
-      Tags:
-        Product: !Ref ProductTagValue
-        System: !Ref SystemTagValue
-        Environment: !Ref Environment
-        Owner: !Ref OwnerTagValue
-        Source: !Ref SourceTagValue
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        UseNpmCi: True
-        Minify: true
-        Target: es2022
-        Sourcemap: true
-        SourcesContent: false
-        EntryPoints:
-          - src/handlers/post-phase2-user-identity-handler/post-phase2-user-identity-handler.ts
-        Format: esm
-        Platform: node
-        OutExtension:
-          - .js=.mjs
-        Banner:
-          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
 
   PostPhase2UserIdentityHandler:
     Type: AWS::Serverless::Function
@@ -1998,39 +1942,6 @@ Resources:
         Banner:
           - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
 
-  UserIdentityFunctionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub "${AWS::StackName}-UserIdentityFunctionRole"
-      Description: !Sub "The role assumed by ${AWS::StackName}-UserIdentityFunction"
-      PermissionsBoundary: !If
-        - UsePermissionsBoundary
-        - !Ref PermissionsBoundary
-        - !Ref AWS::NoValue
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action:
-              - "sts:AssumeRole"
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
-        - Fn::ImportValue: !Sub "${AppConfigStackName}-AppConfigClientPolicyArn"
-      Tags:
-        - Key: Product
-          Value: !Ref ProductTagValue
-        - Key: System
-          Value: !Ref SystemTagValue
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Owner
-          Value: !Ref OwnerTagValue
-        - Key: Source
-          Value: !Ref SourceTagValue
-
   PostPhase2UserIdentityHandlerRole:
     Type: AWS::IAM::Role
     Properties:
@@ -2064,35 +1975,6 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
 
-  UserIdentityFunctionPolicy:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyName: !Sub "${AWS::StackName}-UserIdentityFunctionPolicy"
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Action:
-              - kms:Decrypt
-              - kms:GenerateDataKey
-            Resource: "*"
-          - Effect: Allow
-            Action:
-              - "secretsmanager:GetSecretValue" #pragma: allowlist secret
-            Resource:
-              - Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
-          - Effect: Allow
-            Action:
-              - sqs:SendMessage
-            Resource: !GetAtt AuditEventQueue.Arn
-          - Effect: Allow
-            Action:
-              - sqs:SendMessage
-            Resource:
-              Fn::ImportValue: !Sub ${SharedStackName}-AuditEventQueueArn
-      Roles:
-        - !Ref UserIdentityFunctionRole
-
   PostPhase2UserIdentityHandlerPolicy:
     Type: AWS::IAM::Policy
     Properties:
@@ -2122,21 +2004,6 @@ Resources:
       Roles:
         - !Ref PostPhase2UserIdentityHandlerRole
 
-  RegionalGatewayUserIdentityFunctionResourcePolicy:
-    Condition: IsDev
-    DependsOn: UserIdentityFunctionAliaslive
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Join
-        - ":"
-        - - "function"
-          - !Select [6, !Split [":", !GetAtt UserIdentityFunction.Arn]]
-          - "live"
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceAccount: !Ref AWS::AccountId
-      SourceArn: !Sub "arn:aws:apigateway:${AWS::Region}::/restapis/${DevPrivateRestApi}/${ApiStageName}"
-
   RegionalGatewayPostPhase2UserIdentityHandlerResourcePolicy:
     Condition: IsDev
     DependsOn: PostPhase2UserIdentityHandlerAliaslive
@@ -2151,20 +2018,6 @@ Resources:
       Principal: apigateway.amazonaws.com
       SourceAccount: !Ref AWS::AccountId
       SourceArn: !Sub "arn:aws:apigateway:${AWS::Region}::/restapis/${DevPrivateRestApi}/${ApiStageName}"
-
-  PrivateGatewayUserIdentityFunctionResourcePolicy:
-    DependsOn: UserIdentityFunctionAliaslive
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Join
-        - ":"
-        - - "function"
-          - !Select [6, !Split [":", !GetAtt UserIdentityFunction.Arn]]
-          - "live"
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceAccount: !Ref AWS::AccountId
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PrivateRestApi}/${ApiStageName}/POST/*"
 
   PrivateGatewayPostPhase2UserIdentityHandlerResourcePolicy:
     DependsOn: PostPhase2UserIdentityHandlerAliaslive
@@ -2317,32 +2170,6 @@ Resources:
         Owner: !Ref OwnerTagValue
         Source: !Ref SourceTagValue
 
-  UserIdentityRestApiRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub "${AWS::StackName}-UserIdentityRestApiRole"
-      Description: !Sub "Update User identity Function related permissions for the ${AWS::StackName}-RestApi Gateway IAM role"
-      PermissionsBoundary: !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: apigateway.amazonaws.com
-            Action:
-              - "sts:AssumeRole"
-      Tags:
-        - Key: Product
-          Value: !Ref ProductTagValue
-        - Key: System
-          Value: !Ref SystemTagValue
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Owner
-          Value: !Ref OwnerTagValue
-        - Key: Source
-          Value: !Ref SourceTagValue
-
   PostPhase2UserIdentityHandlerRestApiRole:
     Type: AWS::IAM::Role
     Properties:
@@ -2369,21 +2196,6 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
 
-  UserIdentityRestApiPolicy:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyName: !Sub "${AWS::StackName}-UserIdentityRestApiPolicy"
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: "Allow"
-            Action:
-              - "lambda:InvokeFunction"
-            Resource:
-              - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-UserIdentityFunction:*"
-      Roles:
-        - !Ref UserIdentityRestApiRole
-
   PostPhase2UserIdentityHandlerRestApiPolicy:
     Type: AWS::IAM::Policy
     Properties:
@@ -2398,26 +2210,6 @@ Resources:
               - !Sub "${PostPhase2UserIdentityHandler.Arn}:*"
       Roles:
         - !Ref PostPhase2UserIdentityHandlerRestApiRole
-
-  UserIdentityFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${UserIdentityFunction}"
-      RetentionInDays: 30
-      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
-      Tags:
-        - Key: Product
-          Value: !Ref ProductTagValue
-        - Key: System
-          Value: !Ref SystemTagValue
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Owner
-          Value: !Ref OwnerTagValue
-        - Key: Source
-          Value: !Ref SourceTagValue
-        - Key: Name
-          Value: !Sub "/aws/lambda/${UserIdentityFunction}"
 
   PostPhase2UserIdentityHandlerLogGroup:
     Type: AWS::Logs::LogGroup
@@ -2442,53 +2234,6 @@ Resources:
   ######################################
   # INBOUND TXMA QUEUE MESSAGE HANDLER #
   ######################################
-
-  MessageProcessorLambda:
-    Type: AWS::Serverless::Function
-    # checkov:skip=CKV_AWS_115: We do not have enough data to allocate the concurrent execution allowance per function.
-    # checkov:skip=CKV_AWS_116: DLQs are not used for synchronous invocations.
-    # checkov:skip=CKV_AWS_173: Check encryption settings for Lambda environmental variable
-    DependsOn: MessageProcessorLambdaTriggerPolicy
-    Properties:
-      FunctionName: !Sub "${AWS::StackName}-MessageProcessorLambda"
-      Description: Logs passed in VCs
-      Handler: inbound-txma-queue-message-handler.handler
-      Role: !GetAtt MessageProcessorLambdaTriggerRole.Arn
-      Environment:
-        Variables:
-          POWERTOOLS_METRICS_NAMESPACE:
-            !If [IsDev, !Sub "${AWS::StackName}-TXMAMessageProcessor", "TXMAMessageProcessor"]
-          POWERTOOLS_SERVICE_NAME: "MessagesReceived"
-          EVCS_API_KEY_SECRET_ARN:
-            Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
-          ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
-          APP_CONFIG_NAME: !Ref ApplicationConfigName
-          APP_CONFIG_APPLICATION: !Ref ApplicationName
-          SQS_AUDIT_EVENT_QUEUE_URL:
-            Fn::ImportValue: !Sub ${SharedStackName}-AuditEventQueueUrl
-          COMPONENT_ID: !Ref ComponentId
-      Tags:
-        Product: !Ref ProductTagValue
-        System: !Ref SystemTagValue
-        Environment: !Ref Environment
-        Owner: !Ref OwnerTagValue
-        Source: !Ref SourceTagValue
-        Name: !Sub "${AWS::StackName}-SecretsManagerEncryptionKey"
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        UseNpmCi: True
-        EntryPoints:
-          - src/handlers/inbound-txma-queue-message-handler/inbound-txma-queue-message-handler.ts
-        Sourcemap: true
-        SourcesContent: false
-        Target: "es2024"
-        Format: esm
-        Platform: node
-        OutExtension:
-          - .js=.mjs
-        Banner:
-          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
 
   InboundTxmaQueueMessageHandler:
     Type: AWS::Serverless::Function
@@ -2537,38 +2282,6 @@ Resources:
         Banner:
           - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
 
-  MessageProcessorLambdaTriggerRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub "${AWS::StackName}-MessageProcessorLambdaTriggerRole"
-      PermissionsBoundary: !If
-        - UsePermissionsBoundary
-        - !Ref PermissionsBoundary
-        - !Ref AWS::NoValue
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
-        - Fn::ImportValue: !Sub "${AppConfigStackName}-AppConfigClientPolicyArn"
-      Tags:
-        - Key: Product
-          Value: !Ref ProductTagValue
-        - Key: System
-          Value: !Ref SystemTagValue
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Owner
-          Value: !Ref OwnerTagValue
-        - Key: Source
-          Value: !Ref SourceTagValue
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-MessageProcessorLambdaTriggerRole"
-
   InboundTxmaQueueMessageHandlerRole:
     Type: AWS::IAM::Role
     Properties:
@@ -2601,51 +2314,6 @@ Resources:
         - Key: Name
           Value: !Sub "${AWS::StackName}-InboundTxmaQueueMessageHandlerRole"
 
-  MessageProcessorLambdaTriggerPolicy:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyName: !Sub "${AWS::StackName}-MessageProcessorLambdaTriggerPolicy"
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Action:
-              - sqs:ReceiveMessage
-              - sqs:DeleteMessage
-              - sqs:GetQueueAttributes
-            Resource: !If
-              - IsDevOrBuild
-              - !GetAtt StubQueue.Arn
-              - !FindInMap [EnvironmentMap, !Ref Environment, messageQueueArn]
-          - Effect: Allow
-            Action:
-              - sqs:SendMessage
-            Resource: !GetAtt AuditEventQueue.Arn
-          - Effect: Allow
-            Action:
-              - sqs:SendMessage
-            Resource:
-              Fn::ImportValue: !Sub ${SharedStackName}-AuditEventQueueArn
-          - Effect: Allow
-            Action:
-              - kms:Decrypt
-              - kms:GenerateDataKey
-            Resource: !If
-              - IsDevOrBuild
-              - !GetAtt StubQueueKey.Arn
-              - !FindInMap [EnvironmentMap, !Ref Environment, messageQueueKeyArn]
-          - Effect: Allow
-            Action:
-              - "secretsmanager:GetSecretValue" #pragma: allowlist secret
-            Resource:
-              - Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
-          - Effect: Allow
-            Action:
-              - "kms:*"
-            Resource: "*"
-      Roles:
-        - !Ref MessageProcessorLambdaTriggerRole
-
   InboundTxmaQueueMessageHandlerPolicy:
     Type: AWS::IAM::Policy
     Properties:
@@ -2661,7 +2329,7 @@ Resources:
             Resource: !If
               - IsDevOrBuild
               - !GetAtt StubQueue.Arn
-              - !FindInMap [EnvironmentMap, !Ref Environment, messageQueueArn]
+              - !FindInMap [EnvironmentMap, !Ref Environment, InboundTxmaQueueArn]
           - Effect: Allow
             Action:
               - sqs:SendMessage
@@ -2678,7 +2346,7 @@ Resources:
             Resource: !If
               - IsDevOrBuild
               - !GetAtt StubQueueKey.Arn
-              - !FindInMap [EnvironmentMap, !Ref Environment, messageQueueKeyArn]
+              - !FindInMap [EnvironmentMap, !Ref Environment, InboundTxmaQueueKeyArn]
           - Effect: Allow
             Action:
               - "secretsmanager:GetSecretValue" #pragma: allowlist secret
@@ -2691,27 +2359,12 @@ Resources:
       Roles:
         - !Ref InboundTxmaQueueMessageHandlerRole
 
-  MessageProcessorLambdaLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-MessageProcessorLambda"
-      RetentionInDays: !Ref LogGroupRetentionInDays
-      KmsKeyId: !GetAtt LoggingKmsKey.Arn
-
   InboundTxmaQueueMessageHandlerLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-InboundTxmaQueueMessageHandler"
       RetentionInDays: !Ref LogGroupRetentionInDays
       KmsKeyId: !GetAtt LoggingKmsKey.Arn
-
-  MessageProcessorLambdaLogGroupSubscriptionFilter:
-    Type: AWS::Logs::SubscriptionFilter
-    Condition: IsNotDevOrBuild
-    Properties:
-      DestinationArn: !Ref CSLSSubscriptionEndpointArn
-      FilterPattern: "{$._aws.CloudWatchMetrics NOT EXISTS}"
-      LogGroupName: !Ref MessageProcessorLambdaLogGroup
 
   InboundTxmaQueueMessageHandlerLogGroupSubscriptionFilter:
     Type: AWS::Logs::SubscriptionFilter
@@ -2720,16 +2373,6 @@ Resources:
       DestinationArn: !Ref CSLSSubscriptionEndpointArn
       FilterPattern: "{$._aws.CloudWatchMetrics NOT EXISTS}"
       LogGroupName: !Ref InboundTxmaQueueMessageHandlerLogGroup
-
-  MessageProcessorLambdaErrorMetric:
-    Type: AWS::Logs::MetricFilter
-    Properties:
-      FilterPattern: '{ $.level = "ERROR"}'
-      LogGroupName: !Ref MessageProcessorLambdaLogGroup
-      MetricTransformations:
-        - MetricName: !Sub "${MessageProcessorLambda}-LambdaError"
-          MetricNamespace: !Ref MainCloudWatchMetricNamespace
-          MetricValue: "1"
 
   InboundTxmaQueueMessageHandlerErrorMetric:
     Type: AWS::Logs::MetricFilter
@@ -3324,7 +2967,7 @@ Resources:
               - "sqs:ReceiveMessage"
             Resource: !GetAtt AuditEventQueue.Arn
             Principal:
-              AWS: !FindInMap [EnvironmentMap, !Ref Environment, txmaAccountId]
+              AWS: !FindInMap [EnvironmentMap, !Ref Environment, TxmaAccountId]
 
   AuditEventQueueEncryptionKey:
     Type: AWS::KMS::Key
@@ -3345,7 +2988,7 @@ Resources:
           - Sid: Allow decryption of events by TxMA
             Effect: Allow
             Principal:
-              AWS: !FindInMap [EnvironmentMap, !Ref Environment, txmaAccountId]
+              AWS: !FindInMap [EnvironmentMap, !Ref Environment, TxmaAccountId]
             Action:
               - "kms:decrypt"
             Resource: "*"
@@ -3380,7 +3023,7 @@ Resources:
       EventSourceArn: !If
         - IsDevOrBuild
         - !GetAtt StubQueue.Arn
-        - !FindInMap [EnvironmentMap, !Ref Environment, messageQueueArn]
+        - !FindInMap [EnvironmentMap, !Ref Environment, InboundTxmaQueueArn]
       FunctionName: !Ref InboundTxmaQueueMessageHandler.Alias
       Enabled: true
 
