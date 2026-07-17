@@ -110,8 +110,8 @@ paths:
   /error/unrecoverable:
     get:
       responses:
-        "200":
-          description: OK
+        "500":
+          description: Internal Server Error
           content:
             text/html:
               schema:
