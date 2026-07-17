@@ -360,3 +360,10 @@ Outputs:
     Value: !Sub "https://${PrivateApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"
     Export:
       Name: !Sub ${AWS::StackName}-PrivateApi
+
+  AccessTokenFunctionName:
+    Condition: IsNotProduction
+    Description: "The OAuth token function"
+    Value: !GetAtt OAuthCommon.Outputs.LambdaAccessTokenFunctionName
+    Export:
+      Name: !Sub ${AWS::StackName}-AccessTokenFunctionName

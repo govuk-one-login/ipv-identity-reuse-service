@@ -43,9 +43,11 @@ paths:
       x-amazon-apigateway-integration:
         httpMethod: POST
         uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostTokenHandler.Arn}:live/invocations
-        credentials:
-          Fn::GetAtt: PostTokenHandlerRestApiRole.Arn
+          Fn::Sub:
+            - "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AccessTokenFunctionName}:live/invocations"
+            - AccessTokenFunctionName:
+                Fn::ImportValue:
+                  Fn::Sub: "${OauthInternalStackName}-AccessTokenFunctionName"
         passthroughBehavior: never
         type: AWS_PROXY
   /user-identity:
