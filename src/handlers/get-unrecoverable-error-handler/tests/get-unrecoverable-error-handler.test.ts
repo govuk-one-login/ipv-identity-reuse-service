@@ -40,7 +40,7 @@ it("should render the error screen", async () => {
     headers: {
       "content-type": "text/html",
     },
-    statusCode: 200,
+    statusCode: 500,
   });
 });
 

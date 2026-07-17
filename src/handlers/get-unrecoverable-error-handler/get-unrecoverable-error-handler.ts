@@ -10,7 +10,7 @@ const nunjucksEnvironment = nunjucks.configure([process.env.LAMBDA_TASK_ROOT || 
 export const lambdaHandler = async (): Promise<APIGatewayProxyResult> => {
   try {
     return {
-      statusCode: 200,
+      statusCode: 500,
       body: nunjucksEnvironment.render(mainPageTemplate, {
         assetPath: "/assets",
         rootPath: "",
