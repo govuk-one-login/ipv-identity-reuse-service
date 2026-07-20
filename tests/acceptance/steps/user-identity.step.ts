@@ -43,6 +43,7 @@ Given<WorldDefinition>(
       iss: "http://api.example.com",
       vot,
     };
+
     const jwt = await sign(header, payload, true);
 
     const result = await evcsPostIdentity(
