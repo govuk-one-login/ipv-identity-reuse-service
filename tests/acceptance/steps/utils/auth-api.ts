@@ -72,7 +72,7 @@ export const isAuthorizationResponse = (response: unknown): response is Authoriz
 export const authorize = async (parameters: AuthorizationParameters): Promise<RedirectResponse | Error> => {
   const publicApi = await getCloudFormationOutput(CloudFormationOutputs.SisPublicApi);
 
-  const response = await request(publicApi).get("/authorize").query(parameters).send();
+  const response = await request(publicApi).get("/oauth2/authorize").query(parameters).send();
   if (isAwsError(response.body)) {
     return new Error("error", { cause: response.body.message });
   }
