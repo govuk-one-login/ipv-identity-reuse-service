@@ -39,34 +39,6 @@ paths:
                 {
                     "message": "Not Found"
                 }
-  /authorize:
-    get:
-      summary: Get an authorization grant
-      description: |
-        The authorization endpoint is used to interact with the resource owner
-        and obtain an authorization grant.
-      tags:
-        - Authorization
-      parameters:
-        - $ref: "#/components/parameters/ResponseTypeParam"
-        - $ref: "#/components/parameters/ClientIdParam"
-        - $ref: "#/components/parameters/RedirectUriParam"
-        - $ref: "#/components/parameters/ScopeParam"
-        - $ref: "#/components/parameters/StateParam"
-        - $ref: "#/components/parameters/RequestParam"
-      responses:
-        "302":
-          $ref: "#/components/responses/AuthorizationRedirect"
-      x-amazon-apigateway-request-validator: ALL
-      x-amazon-apigateway-integration:
-        httpMethod: POST
-        uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetAuthorizeHandler.Arn}:live/invocations
-        credentials:
-          Fn::GetAtt: GetAuthorizeHandlerRestApiRole.Arn
-        passthroughBehavior: NEVER
-        contentHandling: CONVERT_TO_TEXT
-        type: AWS_PROXY
   /confirm-details:
     get:
       parameters:
