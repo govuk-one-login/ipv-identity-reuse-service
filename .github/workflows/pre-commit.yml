@@ -46,7 +46,7 @@ jobs:
           echo "FETCH_DEPTH=$(($NUMBER_OF_PR_COMMITS + 1))" >> "${GITHUB_OUTPUT}"
 
       - name: Pull repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: ${{ steps.calculate-fetch-depth.outputs.FETCH_DEPTH }}
 
