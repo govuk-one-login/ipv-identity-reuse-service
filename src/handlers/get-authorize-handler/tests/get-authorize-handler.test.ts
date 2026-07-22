@@ -1,20 +1,21 @@
 import { APIGatewayEventRequestContextWithAuthorizer, APIGatewayProxyEvent, Context } from "aws-lambda";
-import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, MockInstance, vi, vitest } from "vitest";
 import { AuthorizationQueryStringParameters, handler } from "../get-authorize-handler";
+import * as oauthInternalService from "../../../services/oauth-internal-service";
+import { CreateSessionError } from "../../../services/oauth-internal-service";
 
 process.env.DOMAIN_NAME = "test-domain";
 process.env.OAUTH_INTERNAL_API_URL = "https://example.com/v1";
 
-const mockFetch = vi.fn();
-vi.stubGlobal("fetch", mockFetch);
-
-afterAll(() => {
-  vi.unstubAllGlobals();
-});
+vi.mock("../../../services/oauth-internal-service", () => ({
+  callSessionApi: vi.fn(),
+}));
 
 describe("authorize-handler", () => {
+  let fetchSessionIdSpy: MockInstance<typeof oauthInternalService.callSessionApi>;
   beforeEach(() => {
     vi.clearAllMocks();
+    fetchSessionIdSpy = vitest.spyOn(oauthInternalService, "callSessionApi");
   });
 
   describe("when request param is absent", () => {
@@ -27,6 +28,7 @@ describe("authorize-handler", () => {
           state: "test-state",
         } satisfies AuthorizationQueryStringParameters,
       });
+      fetchSessionIdSpy = vitest.spyOn(oauthInternalService, "callSessionApi");
 
       const response = await handler(event, {} as Context);
 
@@ -38,7 +40,7 @@ describe("authorize-handler", () => {
 
       expect(response.statusCode).toBe(302);
       expect(response.headers?.Location).toBe(expectedLocation);
-      expect(mockFetch).not.toHaveBeenCalled();
+      expect(fetchSessionIdSpy).not.toHaveBeenCalled();
     });
 
     it("should handle URL encoded redirect_uri", async () => {
@@ -66,14 +68,12 @@ describe("authorize-handler", () => {
 
   describe("when request param is present", () => {
     it("should redirect to confirm-details with session cookie on 201", async () => {
-      mockFetch.mockResolvedValue({
-        status: 201,
-        json: async () => ({
-          session_id: "session-abc-123",
-          state: "test-state",
-          redirect_uri: "https://some.redirect.com",
-        }),
-      });
+      const mockResponse = {
+        session_id: "session-abc-123",
+        state: "test-state",
+        redirect_uri: "https://some.redirect.com",
+      };
+      fetchSessionIdSpy.mockResolvedValueOnce(mockResponse);
 
       const event = createMockEvent({
         queryStringParameters: {
@@ -87,17 +87,7 @@ describe("authorize-handler", () => {
 
       const response = await handler(event, {} as Context);
 
-      expect(mockFetch).toHaveBeenCalledWith("https://example.com/v1/api/session", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          client_id: "orchestrator",
-          request: "foo.bar.123",
-        }),
-        signal: expect.any(AbortSignal),
-      });
+      expect(fetchSessionIdSpy).toHaveBeenCalledWith("orchestrator", "foo.bar.123");
 
       expect(response.statusCode).toBe(302);
 
@@ -116,9 +106,9 @@ describe("authorize-handler", () => {
       expect(response.headers?.["Set-Cookie"]).toBe(expectedCookie);
     });
 
-    it("should redirect to error page when session handler returns 400", async () => {
-      mockFetch.mockResolvedValue({
-        status: 400,
+    it("should redirect to error page when session handler returns an error", async () => {
+      fetchSessionIdSpy.mockImplementationOnce(() => {
+        throw new CreateSessionError("Session endpoint returned an error response");
       });
 
       const event = createMockEvent({
@@ -140,30 +130,8 @@ describe("authorize-handler", () => {
       expect(response.headers?.["Set-Cookie"]).toBeUndefined();
     });
 
-    it("should redirect to error page when session handler returns 500", async () => {
-      mockFetch.mockResolvedValue({
-        status: 500,
-      });
-
-      const event = createMockEvent({
-        queryStringParameters: {
-          client_id: "orchestrator",
-          response_type: "code",
-          redirect_uri: "https://some.redirect.com",
-          state: "test-state",
-          request: "some.jar.value",
-        } satisfies AuthorizationQueryStringParameters,
-      });
-
-      const response = await handler(event, {} as Context);
-
-      expect(response.statusCode).toBe(302);
-
-      expect(response.headers?.Location).toBe("https://test-domain/error/unrecoverable");
-    });
-
     it("should redirect to error page when fetch throws", async () => {
-      mockFetch.mockRejectedValue(new Error("ECONNREFUSED"));
+      fetchSessionIdSpy.mockRejectedValueOnce(new Error("ECONNREFUSED"));
 
       const event = createMockEvent({
         queryStringParameters: {

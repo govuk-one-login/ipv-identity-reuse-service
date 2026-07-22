@@ -1,10 +1,11 @@
 import { APIGatewayEventRequestContextWithAuthorizer, APIGatewayProxyEvent } from "aws-lambda";
-import { expect, it, vitest } from "vitest";
+import { afterEach, beforeEach, expect, it, vitest } from "vitest";
 import { handler } from "../get-callback-handler";
 import { getCookieValues } from "../../../commons/cookie-utilities";
+import * as oauthInternalService from "../../../services/oauth-internal-service";
 
 process.env.DOMAIN_NAME = "test-domain";
-process.env.OAUTH_INTERNAL_API = "https://test.com";
+process.env.OAUTH_INTERNAL_API_URL = "https://test.com";
 
 const { mockError } = vitest.hoisted(() => {
   return {
@@ -21,29 +22,16 @@ vitest.mock("@aws-lambda-powertools/logger", () => {
   };
 });
 
-it("should only read the response body once and redirect successfully", async () => {
-  const mockJsonMethod = vitest.fn().mockResolvedValue({
-    redirectionURI: "https://api.example.com",
-    authorizationCode: { value: "test-auth-code" },
-    state: { value: "test-state" },
-  });
+vitest.mock("../../services/oauth-internal", () => ({
+  getAuthorizationCode: vitest.fn(),
+}));
 
-  globalThis.fetch = vitest.fn().mockResolvedValue({
-    status: 200,
-    json: mockJsonMethod,
-  });
+beforeEach(() => {
+  vitest.clearAllMocks();
+});
 
-  const event = createMockAPIGatewayProxyEvent({}, "");
-  const response = await handler(event);
-
-  expect(mockJsonMethod).toHaveBeenCalledTimes(1);
-  expect(response).toStrictEqual({
-    statusCode: 302,
-    body: "",
-    headers: {
-      Location: "https://api.example.com/?code=test-auth-code&state=test-state",
-    },
-  });
+afterEach(() => {
+  vitest.restoreAllMocks();
 });
 
 it("should return a 302 status code and redirect with an auth code and state on a successful request", async () => {
@@ -51,14 +39,15 @@ it("should return a 302 status code and redirect with an auth code and state on 
   const token = getCookieValues(event)!.get("identity_reuse_service_session");
   expect(token).toBe("abc123");
 
-  globalThis.fetch = vitest.fn().mockResolvedValue({
-    status: 200,
-    json: vitest.fn().mockResolvedValue({
-      redirectionURI: "https://api.example.com",
-      authorizationCode: { value: "test-auth-code" },
-      state: { value: "test-state" },
-    }),
-  });
+  const fetchAuthCodeSpy = vitest.spyOn(oauthInternalService, "getAuthorizationCode");
+
+  const mockResponse = {
+    redirect_uri: "https://api.example.com",
+    authorizationCode: "test-auth-code",
+    state: "test-state",
+  };
+
+  fetchAuthCodeSpy.mockResolvedValueOnce(mockResponse);
 
   const response = await handler(event);
   expect(response).toStrictEqual({
@@ -70,38 +59,17 @@ it("should return a 302 status code and redirect with an auth code and state on 
   });
 });
 
-it("should return a 302 status code and redirect to the SIS error page when /api/authorization API call returns 200 with an empty state object", async () => {
+it("should return a 302 status code and redirect with an access_denied error and state when /api/authorization API call returns without an authorization code", async () => {
   const event = createMockAPIGatewayProxyEvent({}, "");
 
-  globalThis.fetch = vitest.fn().mockResolvedValue({
-    status: 200,
-    json: vitest.fn().mockResolvedValue({
-      redirectionURI: "https://api.example.com",
-      authorizationCode: { value: "test-auth-code" },
-      state: {},
-    }),
-  });
+  const fetchAuthCodeSpy = vitest.spyOn(oauthInternalService, "getAuthorizationCode");
 
-  const response = await handler(event);
-  expect(response).toStrictEqual({
-    statusCode: 302,
-    body: "",
-    headers: {
-      Location: "https://test-domain/error/unrecoverable",
-    },
-  });
-});
+  const mockResponse = {
+    redirect_uri: "https://api.example.com",
+    state: "test-state",
+  };
 
-it("should return a 302 status code and redirect with an access_denied error and state when /api/authorization API call returns 403", async () => {
-  const event = createMockAPIGatewayProxyEvent({}, "");
-
-  globalThis.fetch = vitest.fn().mockResolvedValue({
-    status: 403,
-    json: vitest.fn().mockResolvedValue({
-      error: "access_denied",
-      state: "test-state",
-    }),
-  });
+  fetchAuthCodeSpy.mockResolvedValueOnce(mockResponse);
 
   const response = await handler(event);
   expect(response).toStrictEqual({
@@ -109,63 +77,6 @@ it("should return a 302 status code and redirect with an access_denied error and
     body: "",
     headers: {
       Location: "https://api.example.com/?error=access_denied&state=test-state",
-    },
-  });
-});
-
-it("should return a 302 status code and redirect to the SIS error page when /api/authorization API call returns 400", async () => {
-  const event = createMockAPIGatewayProxyEvent({}, "");
-
-  globalThis.fetch = vitest.fn().mockResolvedValue({
-    status: 400,
-    json: vitest.fn().mockResolvedValue({
-      error: "access_denied",
-      state: "test-state",
-    }),
-  });
-
-  const response = await handler(event);
-  expect(response).toStrictEqual({
-    statusCode: 302,
-    body: "",
-    headers: {
-      Location: "https://test-domain/error/unrecoverable",
-    },
-  });
-});
-
-it("should return a 302 status code and redirect to error page when /api/authorization API call returns 500", async () => {
-  const event = createMockAPIGatewayProxyEvent({}, "");
-
-  globalThis.fetch = vitest.fn().mockResolvedValue({
-    status: 500,
-    json: vitest.fn().mockResolvedValue({
-      error: "access_denied",
-      state: "test-state",
-    }),
-  });
-
-  const response = await handler(event);
-  expect(response).toStrictEqual({
-    statusCode: 302,
-    body: "",
-    headers: {
-      Location: "https://test-domain/error/unrecoverable",
-    },
-  });
-});
-
-it("should return a 302 status code and redirect to error page when a call to the /api/authorization API fails", async () => {
-  const event = createMockAPIGatewayProxyEvent({}, "");
-
-  globalThis.fetch = vitest.fn().mockRejectedValue(new Error("TypeError: API call failed"));
-
-  const response = await handler(event);
-  expect(response).toStrictEqual({
-    statusCode: 302,
-    body: "",
-    headers: {
-      Location: "https://test-domain/error/unrecoverable",
     },
   });
 });
@@ -190,14 +101,7 @@ it("should log an error and redirect to the SIS error page if any of the require
   const event = createMockAPIGatewayProxyEvent({}, "");
   delete event.queryStringParameters!["redirect_uri"];
 
-  globalThis.fetch = vitest.fn().mockResolvedValue({
-    status: 200,
-    json: vitest.fn().mockResolvedValue({
-      redirectionURI: "https://api.example.com",
-      authorizationCode: { value: "test-auth-code" },
-      state: { value: "test-state" },
-    }),
-  });
+  const fetchAuthCodeSpy = vitest.spyOn(oauthInternalService, "getAuthorizationCode");
 
   const response = await handler(event);
   expect(response).toStrictEqual({
@@ -209,69 +113,15 @@ it("should log an error and redirect to the SIS error page if any of the require
   });
 
   expect(mockError).toHaveBeenCalledWith(expect.stringContaining("Missing mandatory query string parameters"));
+  expect(fetchAuthCodeSpy).not.toHaveBeenCalled();
 });
 
-it("should log an error and redirect to the SIS error page if the authorization endpoint returns a missing redirection URI", async () => {
+it("should log an error and redirect to the SIS error page if the authorization endpoint returns an error for a missing response property", async () => {
   const event = createMockAPIGatewayProxyEvent({}, "");
 
-  globalThis.fetch = vitest.fn().mockResolvedValue({
-    status: 200,
-    json: vitest.fn().mockResolvedValue({
-      authorizationCode: { value: "test-auth-code" },
-      state: { value: "test-state" },
-    }),
-  });
-
-  const response = await handler(event);
-  expect(response).toStrictEqual({
-    statusCode: 302,
-    body: "",
-    headers: {
-      Location: "https://test-domain/error/unrecoverable",
-    },
-  });
-
-  expect(mockError).toHaveBeenCalled();
-  expect(mockError).toHaveBeenCalledWith(
-    expect.stringContaining("Invalid response properties received from authorization endpoint")
-  );
-});
-
-it("should log an error and redirect to the SIS error page if the authorization endpoint returns a missing auth code", async () => {
-  const event = createMockAPIGatewayProxyEvent({}, "");
-
-  globalThis.fetch = vitest.fn().mockResolvedValue({
-    status: 200,
-    json: vitest.fn().mockResolvedValue({
-      redirectionURI: "https://api.example.com",
-      state: { value: "test-state" },
-    }),
-  });
-
-  const response = await handler(event);
-  expect(response).toStrictEqual({
-    statusCode: 302,
-    body: "",
-    headers: {
-      Location: "https://test-domain/error/unrecoverable",
-    },
-  });
-
-  expect(mockError).toHaveBeenCalled();
-  expect(mockError).toHaveBeenCalledWith(
-    expect.stringContaining("Invalid response properties received from authorization endpoint")
-  );
-});
-
-it("should log an error and redirect to the SIS error page if the authorization endpoint returns a missing state", async () => {
-  const event = createMockAPIGatewayProxyEvent({}, "");
-
-  globalThis.fetch = vitest.fn().mockResolvedValue({
-    status: 200,
-    json: vitest.fn().mockResolvedValue({
-      redirectionURI: "https://api.example.com",
-      authorizationCode: { value: "test-auth-code" },
-    }),
+  const fetchAuthCodeSpy = vitest.spyOn(oauthInternalService, "getAuthorizationCode");
+  fetchAuthCodeSpy.mockImplementationOnce(() => {
+    throw new Error("Invalid response properties received from authorization endpoint");
   });
 
   const response = await handler(event);

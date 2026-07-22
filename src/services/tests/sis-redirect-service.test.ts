@@ -1,14 +1,8 @@
 import { it, expect } from "vitest";
-import {
-  redirectToClient,
-  redirectToClientWithError,
-  redirectToConfirmDetails,
-  redirectToConfirmDetailsWithCookie,
-  redirectToErrorPage,
-} from "../sis-redirect-service";
+import { redirectToClient, redirectToConfirmDetails, redirectToErrorPage } from "../sis-redirect-service";
 
 it("should redirect to error page", async () => {
-  const result = await redirectToErrorPage("test.com");
+  const result = redirectToErrorPage("test.com");
   expect(result).toEqual({
     statusCode: 302,
     headers: {
@@ -19,11 +13,12 @@ it("should redirect to error page", async () => {
 });
 
 it("should redirect to confirm details page with cookie", async () => {
-  const result = await redirectToConfirmDetailsWithCookie("test.com", {
-    state: "test-state",
-    redirect_uri: "https://api.example.com",
-    session_id: "test-session-id",
-  });
+  const result = redirectToConfirmDetails(
+    "test.com",
+    "test-state",
+    "https://api.example.com",
+    "identity_reuse_service_session=test-session-id; Path=/; Secure; HttpOnly; SameSite=Lax"
+  );
   expect(result).toEqual({
     statusCode: 302,
     headers: {
@@ -35,7 +30,7 @@ it("should redirect to confirm details page with cookie", async () => {
 });
 
 it("should redirect to confirm details page", async () => {
-  const result = await redirectToConfirmDetails("test.com", "test-state", "https://api.example.com");
+  const result = redirectToConfirmDetails("test.com", "test-state", "https://api.example.com");
   expect(result).toEqual({
     statusCode: 302,
     headers: {
@@ -46,13 +41,7 @@ it("should redirect to confirm details page", async () => {
 });
 
 it("should redirect to the client page", async () => {
-  const mockResponse = Response.json({
-    redirectionURI: "https://api.example.com",
-    authorizationCode: { value: "test-auth-code" },
-    state: { value: "test-state" },
-  });
-
-  const result = await redirectToClient(mockResponse, "");
+  const result = redirectToClient("https://api.example.com", "test-state", "test-auth-code");
   expect(result).toEqual({
     statusCode: 302,
     headers: {
@@ -63,7 +52,7 @@ it("should redirect to the client page", async () => {
 });
 
 it("should redirect to the client page with an error", async () => {
-  const result = await redirectToClientWithError("https://api.example.com", "test-state");
+  const result = redirectToClient("https://api.example.com", "test-state");
   expect(result).toEqual({
     statusCode: 302,
     headers: {
