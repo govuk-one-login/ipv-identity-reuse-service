@@ -73,6 +73,29 @@ it("should return an error when some query string parameters are missing", async
   });
 });
 
+it("should redirect to the error page when createAuthCode throws an error", async () => {
+  vi.stubEnv("OAUTH_INTERNAL_API_URL", "https://test.com");
+
+  const mockFetch = vi.spyOn(globalThis, "fetch").mockRejectedValueOnce(new Error("API call failure"));
+
+  const event = createMockAPIGatewayProxyEvent(
+    {},
+    "redirectUri=https%3A%2F%2Fapi.example.com&state=test-state-id&client_id=client",
+    TEST_SESSION_ID
+  );
+
+  const response = await lambdaHandler(event);
+  expect(response).toStrictEqual({
+    statusCode: 302,
+    body: "",
+    headers: {
+      Location: "https://api2.example.com/error/unrecoverable",
+    },
+  });
+
+  mockFetch.mockRestore();
+});
+
 const createMockAPIGatewayProxyEvent = (
   event: Partial<APIGatewayProxyEvent>,
   body: string,
