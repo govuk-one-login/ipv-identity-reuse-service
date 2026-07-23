@@ -11,9 +11,14 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
     throw new Error("One or more required query string parameters are undefined");
   }
 
-  const url = new URL(decodeURIComponent(eventValues.get("redirectUri") || ""));
-  url.searchParams.append("code", "SplxlOBeZQQYbYS6WxSbIA");
-  url.searchParams.append("state", eventValues.get("state") || "");
+  // const url = new URL(decodeURIComponent(eventValues.get("redirectUri") || ""));
+  // url.searchParams.append("code", "SplxlOBeZQQYbYS6WxSbIA");
+  // url.searchParams.append("state", eventValues.get("state") || "");
+
+  const url = new URL("/oauth2/common");
+  url.searchParams.append("redirect_uri", "whoknows");
+  url.searchParams.append("state", "whoknows");
+  url.searchParams.append("client_id", "whoknows");
 
   try {
     return {

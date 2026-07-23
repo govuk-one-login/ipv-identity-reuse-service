@@ -84,7 +84,7 @@ Parameters:
   OauthInternalStackName:
     Description: OAuth Internal Stack name
     Type: String
-    Default: "sis-oauth-internal"
+    Default: preview-main-oauth
 
   DynatraceNodeLayerArn:
     Type: String
