@@ -538,6 +538,16 @@ Resources:
         - Key: Name
           Value: !Sub "/aws/lambda/${AWS::StackName}-GetAuthorizeHandler"
 
+  PublicApiGetAuthorizeHandlerResourcePolicy:
+    Condition: IsNotProduction
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref GetAuthorizeHandler.Alias
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PublicApi}/${ApiStageName}/GET/*"
+
   ################################
   # GET USER IDENTITY HANDLER    #
   ################################
@@ -722,6 +732,26 @@ Resources:
           Value: !Ref SourceTagValue
         - Key: Name
           Value: !Sub "/aws/lambda/${GetUserIdentityHandler}"
+
+  PrivateApiGetUserIdentityHandlerResourcePolicy:
+    Condition: IsNotProduction
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref GetUserIdentityHandler.Alias
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PrivateApi}/${ApiStageName}/GET/*"
+
+  PrivateApiDevGetUserIdentityHandlerResourcePolicy:
+    Condition: IsDev
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref GetUserIdentityHandler.Alias
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PrivateApiDev}/${ApiStageName}/GET/*"
 
   ################################
   # PUBLIC API API GATEWAY       #
@@ -1065,6 +1095,16 @@ Resources:
         - Key: Name
           Value: !Sub "/aws/lambda/${AWS::StackName}-GetConfirmDetailsHandler"
 
+  PublicApiGetConfirmDetailsHandlerResourcePolicy:
+    Condition: IsNotProduction
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref GetConfirmDetailsHandler.Alias
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PublicApi}/${ApiStageName}/GET/*"
+
   PostConfirmDetailsHandler:
     Type: AWS::Serverless::Function
     Condition: IsNotProduction
@@ -1169,6 +1209,16 @@ Resources:
           Value: !Ref SourceTagValue
         - Key: Name
           Value: !Sub "/aws/lambda/${AWS::StackName}-PostConfirmDetailsHandler"
+
+  PublicApiPostConfirmDetailsHandlerResourcePolicy:
+    Condition: IsNotProduction
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PostConfirmDetailsHandler.Alias
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PublicApi}/${ApiStageName}/POST/*"
 
   GetUnrecoverableErrorHandler:
     Type: AWS::Serverless::Function
@@ -1290,6 +1340,16 @@ Resources:
           Value: !Ref SourceTagValue
         - Key: Name
           Value: !Sub "/aws/lambda/${AWS::StackName}-GetUnrecoverableErrorHandler"
+
+  PublicApiGetUnrecoverableErrorHandlerResourcePolicy:
+    Condition: IsNotProduction
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref GetUnrecoverableErrorHandler.Alias
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PublicApi}/${ApiStageName}/GET/*"
 
   GetCallbackHandler:
     Type: AWS::Serverless::Function
@@ -1413,6 +1473,16 @@ Resources:
           Value: !Ref SourceTagValue
         - Key: Name
           Value: !Sub "/aws/lambda/${GetCallbackHandler}"
+
+  PublicApiGetCallbackHandlerResourcePolicy:
+    Condition: IsNotProduction
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref GetCallbackHandler.Alias
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PublicApi}/${ApiStageName}/GET/*"
 
   ################################
   # PRIVATE API API GATEWAY       #
@@ -1788,28 +1858,18 @@ Resources:
 
   RegionalGatewayPostPhase2UserIdentityHandlerResourcePolicy:
     Condition: IsDev
-    DependsOn: PostPhase2UserIdentityHandlerAliaslive
     Type: AWS::Lambda::Permission
     Properties:
-      FunctionName: !Join
-        - ":"
-        - - "function"
-          - !Select [6, !Split [":", !GetAtt PostPhase2UserIdentityHandler.Arn]]
-          - "live"
+      FunctionName: !Ref PostPhase2UserIdentityHandler.Alias
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
       SourceAccount: !Ref AWS::AccountId
-      SourceArn: !Sub "arn:aws:apigateway:${AWS::Region}::/restapis/${DevPrivateRestApi}/${ApiStageName}"
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${DevPrivateRestApi}/${ApiStageName}/POST/*"
 
   PrivateGatewayPostPhase2UserIdentityHandlerResourcePolicy:
-    DependsOn: PostPhase2UserIdentityHandlerAliaslive
     Type: AWS::Lambda::Permission
     Properties:
-      FunctionName: !Join
-        - ":"
-        - - "function"
-          - !Select [6, !Split [":", !GetAtt PostPhase2UserIdentityHandler.Arn]]
-          - "live"
+      FunctionName: !Ref PostPhase2UserIdentityHandler.Alias
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
       SourceAccount: !Ref AWS::AccountId
