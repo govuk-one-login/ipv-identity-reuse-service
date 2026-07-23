@@ -109,37 +109,60 @@ Parameters:
 Mappings:
   EnvironmentMap:
     "local":
+      DynatraceLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables"
       OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: "https://orch.reuse.dev.stubs.account.gov.uk/.well-known/jwks.json"
       OrchestrationRedirectURI: "https://orch.reuse.dev.stubs.account.gov.uk"
       SISAudience: "https://reuse-identity.dev.account.gov.uk"
     "dev":
+      DynatraceLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables"
       OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: "https://orch.reuse.dev.stubs.account.gov.uk/.well-known/jwks.json"
       OrchestrationRedirectURI: "https://orch.reuse.dev.stubs.account.gov.uk"
       SISAudience: "https://reuse-identity.dev.account.gov.uk"
     "build":
+      DynatraceLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables"
       OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: "https://orch.reuse.stubs.account.gov.uk/.well-known/jwks.json"
       OrchestrationRedirectURI: "https://orch.reuse.stubs.account.gov.uk"
       SISAudience: "https://reuse-identity.build.account.gov.uk"
     "staging":
+      DynatraceLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables"
       OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: none
       OrchestrationRedirectURI: none
       SISAudience: "https://reuse-identity.staging.account.gov.uk"
     "integration":
+      DynatraceLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables"
       OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: none
       OrchestrationRedirectURI: none
       SISAudience: "https://reuse-identity.integration.account.gov.uk"
     "production":
+      DynatraceLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables"
       OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: none
       OrchestrationRedirectURI: none
       SISAudience: "https://reuse-identity.account.gov.uk"
 
 Conditions:
+  CanariesEnabled: !Equals
+    - !FindInMap [ EnvironmentMap, !Ref Environment, UseCanary ]
+    - true
+
+  DynaTraceEnabled:
+    Fn::Or:
+      - Fn::Equals: [ !Ref Environment, "build" ]
+      - Fn::Equals: [ !Ref Environment, "staging" ]
+      - Fn::Equals: [ !Ref Environment, "integration" ]
+      - Fn::Equals: [ !Ref Environment, "production" ]
+
   IsDev:
     Fn::Or:
       - Fn::Equals: [ !Ref Environment, "local" ]
@@ -157,7 +180,20 @@ Conditions:
       - Fn::Equals: [ !Ref Environment, "dev" ]
       - Fn::Equals: [ !Ref Environment, "build" ]
       - Fn::Equals: [ !Ref Environment, "staging" ]
+  UseCodeSigning:
+    Fn::Not:
+      - Fn::Equals:
+          - !Ref CodeSigningConfigArn
+          - none
+  UsePermissionsBoundary:
+    Fn::Not:
+      - Fn::Equals:
+          - !Ref PermissionsBoundary
+          - none
 
+  UseVpc:
+    Fn::Not:
+      - Fn::Equals: [!Ref VpcStackName, "none"]
 Resources:
   OAuthCommon:
     Type: AWS::Serverless::Application
@@ -353,17 +389,200 @@ Resources:
       Type: String
       Value: !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationJwksEndpoint ]
 
+  ##################################
+  # API GATEWAY AUTHORIZER HANDLER #
+  ##################################
+  AuthorizerFunction:
+    Condition: IsNotProduction
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-AuthorizerFunction"
+      Description: "Authorizes requests and redirects to appropriate Lambda"
+      Timeout: 10
+      Handler: authorizer-handler.handle
+      Role: !GetAtt AuthorizerFunctionRole.Arn
+      MemorySize: 1024
+      CodeUri: ../../
+      Runtime: nodejs22.x
+      Architectures:
+        - arm64
+      Environment:
+        Variables:
+          AWS_LAMBDA_EXEC_WRAPPER: !If [DynaTraceEnabled, "/opt/dynatrace", !Ref "AWS::NoValue"]
+          DT_CONNECTION_AUTH_TOKEN: !If
+            - DynaTraceEnabled
+            - !Sub
+              - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_AUTH_TOKEN}}"
+              - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, DynatraceSecretArn]
+            - !Ref "AWS::NoValue"
+          DT_CONNECTION_BASE_URL: !If
+            - DynaTraceEnabled
+            - !Sub
+              - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_BASE_URL}}"
+              - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, DynatraceSecretArn]
+            - !Ref "AWS::NoValue"
+          DT_CLUSTER_ID: !If
+            - DynaTraceEnabled
+            - !Sub
+              - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CLUSTER_ID}}"
+              - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, DynatraceSecretArn]
+            - !Ref "AWS::NoValue"
+          DT_LOG_COLLECTION_AUTH_TOKEN: !If
+            - DynaTraceEnabled
+            - !Sub
+              - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_LOG_COLLECTION_AUTH_TOKEN}}"
+              - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, DynatraceSecretArn]
+            - !Ref "AWS::NoValue"
+          DT_TENANT: !If
+            - DynaTraceEnabled
+            - !Sub
+              - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_TENANT}}"
+              - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, DynatraceSecretArn]
+            - !Ref "AWS::NoValue"
+          DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: !If [DynaTraceEnabled, "true", !Ref "AWS::NoValue"]
+          SESSION_TABLE_NAME:
+            Fn::ImportValue: !GetAtt OAuthCommon.Outputs.DbSessionTableName
+      CodeSigningConfigArn: !If
+        - UseCodeSigning
+        - !Ref CodeSigningConfigArn
+        - !Ref AWS::NoValue
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      VpcConfig: !If
+        - UseVpc
+        - SecurityGroupIds:
+            - Fn::ImportValue: !Sub "${VpcStackName}-AWSServicesEndpointSecurityGroupId"
+          SubnetIds:
+            - Fn::ImportValue: !Sub "${VpcStackName}-PrivateSubnetIdA"
+            - Fn::ImportValue: !Sub "${VpcStackName}-PrivateSubnetIdB"
+        - !Ref "AWS::NoValue"
+      Tracing: Active
+      AutoPublishAlias: live
+      Layers: !If
+        - DynaTraceEnabled
+        - - !Ref DynatraceNodeLayerArn
+        - !Ref AWS::NoValue
+      DeploymentPreference:
+        Type: !If
+          - CanariesEnabled
+          - !Ref LambdaDeploymentPreference
+          - AllAtOnce
+        Role: !GetAtt CodeDeployServiceRole.Arn
+        Alarms:
+          Fn::If:
+            - CanariesEnabled
+            - - !Ref LambdaErrorAlarm
+            - - !Ref "AWS::NoValue"
+
+  AuthorizerFunctionRole:
+    Condition: IsNotProduction
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-AuthorizerFunctionRole"
+      Description: !Sub "The role assumed by the ${AWS::StackName}-AuthorizerFunction"
+      PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+
+  AuthorizerFunctionPolicy:
+    Condition: IsNotProduction
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-AuthorizerFunctionPolicy"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "logs:CreateLogStream"
+              - "logs:PutLogEvents"
+            Resource:
+              - !GetAtt AuthorizerFunctionLogGroup.Arn
+          - Effect: Allow
+            Action:
+              - "cloudwatch:PutMetricData"
+            Resource:
+              - "*"
+            Condition:
+              StringEquals:
+                cloudwatch:namespace: !Ref SystemTagValue
+      Roles:
+        - !Ref AuthorizerFunctionRole
+
+  AuthorizerFunctionLogGroup:
+    Condition: IsNotProduction
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AuthorizerFunction}"
+      RetentionInDays: 30
+      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "/aws/lambda/${AuthorizerFunction}"
+
+  AuthorizerFunctionLogsSubscriptionFilterCSLS:
+    Condition: IsNotProduction
+    Type: AWS::Logs::SubscriptionFilter
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      DestinationArn: !Ref CSLSSubscriptionEndpointArn
+      LogGroupName: !Ref AuthorizerFunctionLogGroup
+      FilterPattern: "{$.message != \"LambdaSensor*\" }"
+
 Outputs:
   PrivateApi:
     Condition: IsNotProduction
     Description: "The URL for the OAuth internal private API"
     Value: !Sub "https://${PrivateApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"
     Export:
-      Name: !Sub ${AWS::StackName}-PrivateApi
+      Name: !Sub "${AWS::StackName}-PrivateApi"
 
   AccessTokenFunctionName:
     Condition: IsNotProduction
     Description: "The OAuth token function"
     Value: !GetAtt OAuthCommon.Outputs.LambdaAccessTokenFunctionName
     Export:
-      Name: !Sub ${AWS::StackName}-AccessTokenFunctionName
+      Name: !Sub "${AWS::StackName}-AccessTokenFunctionName"
+
+  AuthorierFunctionArn:
+    Condition: IsNotProduction
+    Description: "The ARN of the authoriser function to attach to protected resources"
+    Value: !GetAtt AuthorizerFunction.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-AuthoriserFunctionArn"
+

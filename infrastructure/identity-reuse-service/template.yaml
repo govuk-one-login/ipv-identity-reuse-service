@@ -316,6 +316,8 @@ Globals:
             - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, DynatraceSecretArn]
           - !Ref "AWS::NoValue"
         DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: !If [DynaTraceEnabled, "true", !Ref "AWS::NoValue"]
+        SESSION_TABLE_NAME:
+          Fn::ImportValue SessionTableName
     CodeSigningConfigArn: !If
       - UseCodeSigning
       - !Ref CodeSigningConfigArn
