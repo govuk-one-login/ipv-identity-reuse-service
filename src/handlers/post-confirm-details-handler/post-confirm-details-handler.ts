@@ -1,5 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import logger from "../../commons/logger";
+import { redirect } from "../../services/sis-redirect-service";
 
 export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const eventValues = new URLSearchParams(event.body || "");
@@ -16,13 +17,7 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
   url.searchParams.append("state", eventValues.get("state") || "");
 
   try {
-    return {
-      statusCode: 302,
-      body: "",
-      headers: {
-        Location: url.href,
-      },
-    };
+    return redirect({ location: url.href, body: "" });
   } catch (error) {
     logger.error(`Error in lambdaHandler event: ${error}`);
     return {
