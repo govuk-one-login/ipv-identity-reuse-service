@@ -106,6 +106,16 @@ Parameters:
     Type: String
     Default: vpc
 
+  OrchestrationJwksEndpointOverride:
+    Type: String
+    Description: Override for the default OrchestrationJwksEndpoint for the environment
+    Default: none
+
+  OrchestrationRedirectURIOverride:
+    Type: String
+    Description: Override for the default OrchestrationRedirectURI for the environment
+    Default: none
+
 Mappings:
   EnvironmentMap:
     "local":
@@ -158,6 +168,14 @@ Conditions:
       - Fn::Equals: [ !Ref Environment, "build" ]
       - Fn::Equals: [ !Ref Environment, "staging" ]
 
+  IsOrchestrationJwksEndpointOverridden:
+    Fn::Not:
+      - Fn::Equals: [ !Ref OrchestrationJwksEndpointOverride, "none" ]
+
+  IsOrchestrationRedirectURIOverridden:
+    Fn::Not:
+      - Fn::Equals: [ !Ref OrchestrationRedirectURIOverride, "none" ]
+
 Resources:
   OAuthCommon:
     Type: AWS::Serverless::Application
@@ -176,8 +194,14 @@ Resources:
         CriPrivateApiGwName: !Sub "${AWS::StackName}-PrivateApi" # Used to create canary deployment alarms for the stack
         CriPublicApiGwName: !Sub "${AWS::StackName}-PrivateApi" # This will become the external facing private API when the /token endpoint moves there
         Environment: !If [IsDev, dev, !Ref Environment ]
-        IPVCoreRedirectURI: !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationRedirectURI ] # The expected client redirect URI (used in staging upwards)
-        IPVCoreStubJwksEndpoint: !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationJwksEndpoint ] # The expected client JWKS endpoint (used in non-prod)
+        IPVCoreRedirectURI: !If
+          - IsOrchestrationRedirectURIOverridden
+          - !Ref OrchestrationRedirectURIOverride
+          - !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationRedirectURI ] # The expected client redirect URI (used in staging upwards)
+        IPVCoreStubJwksEndpoint: !If
+          - IsOrchestrationJwksEndpointOverridden
+          - !Ref OrchestrationJwksEndpointOverride
+          - !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationJwksEndpoint ] # The expected client JWKS endpoint (used in non-prod)
         IsCredentialIssuer: "false"
         LambdaCodeSigningConfigArn: !Ref CodeSigningConfigArn
         LambdaDeploymentPreference: !Ref LambdaDeploymentPreference
@@ -343,7 +367,10 @@ Resources:
     Properties:
       Name: !Sub "/${OAuthCommon.Outputs.StackName}/clients/${OAuthClientId}/jwtAuthentication/redirectUri"
       Type: String
-      Value: !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationRedirectURI ]
+      Value: !If
+        - IsOrchestrationRedirectURIOverridden
+        - !Ref OrchestrationRedirectURIOverride
+        - !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationRedirectURI ]
 
   IPVCoreJwksEndpointParameter:
     Type: AWS::SSM::Parameter
@@ -351,7 +378,10 @@ Resources:
     Properties:
       Name: !Sub "/${OAuthCommon.Outputs.StackName}/clients/${OAuthClientId}/jwtAuthentication/jwksEndpoint"
       Type: String
-      Value: !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationJwksEndpoint ]
+      Value: !If
+        - IsOrchestrationJwksEndpointOverridden
+        - !Ref OrchestrationJwksEndpointOverride
+        - !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationJwksEndpoint ]
 
 Outputs:
   PrivateApi:

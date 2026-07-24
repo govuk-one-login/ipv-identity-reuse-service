@@ -1,10 +1,13 @@
 version = 0.1
 
+[default.build.parameters]
+parallel = true
+
 [default.deploy.parameters]
 resolve_s3 = true
 region = "eu-west-2"
 confirm_changeset = false
 capabilities = "CAPABILITY_NAMED_IAM"
 disable_rollback = false
-parameter_overrides = "VpcStackName=\"vpc\" LogGroupRetentionInDays=\"30\""
+parameter_overrides = "VpcStackName=\"vpc\" LogGroupRetentionInDays=\"30\" Environment=\"dev\" OauthInternalStackName=\"preview-main-oauth\""
 image_repositories = []

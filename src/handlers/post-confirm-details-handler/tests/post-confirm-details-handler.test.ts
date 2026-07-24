@@ -1,18 +1,26 @@
 import { APIGatewayEventRequestContextWithAuthorizer, APIGatewayProxyEvent } from "aws-lambda";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { lambdaHandler } from "../post-confirm-details-handler";
 
 it("should return a 302 status code on a successful request", async () => {
-  const event = createMockAPIGatewayProxyEvent({}, "redirectUri=https%3A%2F%2Fapi.example.com&state=test-state-id");
+  vi.stubEnv("PUBLIC_API", "api.example.com");
+
+  const event = createMockAPIGatewayProxyEvent(
+    {},
+    "redirectUri=https%3A%2F%2Fapi.example.com&state=test-state-id&client_id=client"
+  );
 
   const response = await lambdaHandler(event);
   expect(response).toStrictEqual({
     statusCode: 302,
     body: "",
     headers: {
-      Location: "https://api.example.com/?code=SplxlOBeZQQYbYS6WxSbIA&state=test-state-id",
+      Location:
+        "https://api.example.com/oauth2/callback?redirect_uri=https%3A%2F%2Fapi.example.com&state=test-state-id&client_id=client",
     },
   });
+
+  vi.unstubAllEnvs();
 });
 
 it("should return an error when some query string parameters are missing", async () => {

@@ -5,15 +5,17 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
   const eventValues = new URLSearchParams(event.body || "");
 
   const redirectUri = eventValues.get("redirectUri");
+  const clientId = eventValues.get("client_id");
   const state = eventValues.get("state");
 
-  if (!redirectUri || !state) {
+  if (!redirectUri || !state || !clientId) {
     throw new Error("One or more required query string parameters are undefined");
   }
 
-  const url = new URL(decodeURIComponent(eventValues.get("redirectUri") || ""));
-  url.searchParams.append("code", "SplxlOBeZQQYbYS6WxSbIA");
-  url.searchParams.append("state", eventValues.get("state") || "");
+  const url = new URL(`https://${process.env.PUBLIC_API}/oauth2/callback`);
+  url.searchParams.append("redirect_uri", redirectUri);
+  url.searchParams.append("state", state);
+  url.searchParams.append("client_id", clientId);
 
   try {
     return {
