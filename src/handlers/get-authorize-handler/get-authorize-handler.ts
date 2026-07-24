@@ -39,10 +39,15 @@ function redirectToError(domainName: string): APIGatewayProxyResult {
   };
 }
 
-function redirectToConfirmDetails(domainName: string, sessionResponse: SessionResponse): APIGatewayProxyResult {
+function redirectToConfirmDetails(
+  domainName: string,
+  sessionResponse: SessionResponse,
+  clientId: string
+): APIGatewayProxyResult {
   const url = new URL("/confirm-details", `https://${domainName}`);
   url.searchParams.append("state", sessionResponse.state);
   url.searchParams.append("redirect_uri", sessionResponse.redirect_uri);
+  url.searchParams.append("client_id", clientId);
 
   return {
     statusCode: 302,
@@ -119,5 +124,5 @@ async function createSession(clientId: string, request: string, domainName: stri
 
   const sessionResponse: SessionResponse = await response.json();
 
-  return redirectToConfirmDetails(domainName, sessionResponse);
+  return redirectToConfirmDetails(domainName, sessionResponse, clientId);
 }

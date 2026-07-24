@@ -9,12 +9,13 @@ const nunjucksEnvironment = nunjucks.configure([process.env.LAMBDA_TASK_ROOT || 
 
 export type ConfirmDetailsQueryStringParameters = {
   redirect_uri: string;
+  client_id: string;
   state: string;
 };
 
 export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  const { redirect_uri, state } = event.queryStringParameters as ConfirmDetailsQueryStringParameters;
-  if (!redirect_uri || !state) {
+  const { redirect_uri, client_id, state } = event.queryStringParameters as ConfirmDetailsQueryStringParameters;
+  if (!redirect_uri || !state || !client_id) {
     throw new Error("One or more required query string parameters are undefined or empty");
   }
   try {
@@ -25,6 +26,7 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
         rootPath: ".",
         redirect_uri,
         state,
+        client_id,
       }),
       headers: {
         "content-type": "text/html",

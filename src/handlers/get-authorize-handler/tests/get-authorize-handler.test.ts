@@ -102,7 +102,7 @@ describe("authorize-handler", () => {
       expect(response.statusCode).toBe(302);
 
       expect(response.headers?.Location).toBe(
-        "https://test-domain/confirm-details?state=test-state&redirect_uri=https%3A%2F%2Fsome.redirect.com"
+        "https://test-domain/confirm-details?state=test-state&redirect_uri=https%3A%2F%2Fsome.redirect.com&client_id=orchestrator"
       );
 
       const expectedCookie = [

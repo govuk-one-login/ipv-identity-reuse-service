@@ -84,7 +84,7 @@ Parameters:
   OauthInternalStackName:
     Description: OAuth Internal Stack name
     Type: String
-    Default: preview-main-oauth
+    Default: "sis-oauth-internal"
 
   DynatraceNodeLayerArn:
     Type: String
@@ -1075,6 +1075,7 @@ Resources:
       Environment:
         Variables:
           NODE_OPTIONS: "--enable-source-maps"
+          PUBLIC_API: !GetAtt ReuseIdentityDomain.Value
     Metadata:
       BuildMethod: esbuild
       BuildProperties:

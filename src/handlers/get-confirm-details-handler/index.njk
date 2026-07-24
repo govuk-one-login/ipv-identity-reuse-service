@@ -71,6 +71,12 @@
                       name: "state",
                       value: state
                     }) }}
+                    {{ govukInput({
+                      type: "hidden",
+                      id: "client_id",
+                      name: "client_id",
+                      value: client_id
+                    }) }}
                     {{ govukButton({
                     text: "Continue"
                     }) }}

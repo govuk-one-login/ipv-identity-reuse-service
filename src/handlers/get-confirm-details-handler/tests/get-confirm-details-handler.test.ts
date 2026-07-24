@@ -23,6 +23,7 @@ it("should render the confirm details screen when all query string parameters ar
     queryStringParameters: {
       redirect_uri: "https://example.com",
       state: "state-id",
+      client_id: "client",
     },
   } as never as APIGatewayProxyEvent);
 
@@ -33,6 +34,7 @@ it("should render the confirm details screen when all query string parameters ar
       redirect_uri: "https://example.com",
       state: "state-id",
       rootPath: ".",
+      client_id: "client",
     }
   );
 
