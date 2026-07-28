@@ -56,7 +56,7 @@ paths:
       description: >
         Returns the signed Stored Identity JWT and stored vector of trust (VOT).
       security:
-        - bearerAuth: []
+        - protectedResourceAuthorizer: []
       tags:
         - Stored Identity
       responses:
@@ -223,7 +223,23 @@ components:
         - vtm
         - credentials
       additionalProperties: false
-
+  securitySchemes:
+    protectedResourceAuthorizer:
+      description: API Gateway authorizer lambda that will validate a bearer token against the session table
+      type: apiKey
+      in: header
+      name: Authorization
+      x-amazon-apigateway-authtype: custom
+      x-amazon-apigateway-authorizer:
+        type: request
+        identitySource: method.request.header.Authorization
+        authorizerUri:
+          Fn::Sub:
+            - "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AuthorizerFunction}/invocations"
+            - AuthorizerFunction:
+                Fn::ImportValue:
+                  Fn::Sub: "${OauthInternalStackName}-ProtectedResourceAuthorizerFunctionArn"
+        authorizerResultTtlInSeconds: 0
 x-amazon-apigateway-request-validators:
   ParamsAndHeaders:
     validateRequestBody: false
