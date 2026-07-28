@@ -74,13 +74,7 @@ Then<WorldDefinition>("the client will be issued with an access token", function
 When<WorldDefinition>("the client calls the user-identity endpoint with the access token", async function () {
   assert.ok(isTokenResponse(this.tokenResponse));
 
-  this.userIdentityPostResponse = await sisGetUserIdentityHandler(
-    {
-      vtr: this.requestedVtr,
-      govukSigninJourneyId: this.govukSigninJourneyId,
-    },
-    this.tokenResponse.access_token
-  );
+  this.userIdentityPostResponse = await sisGetUserIdentityHandler(this.tokenResponse.access_token);
 });
 
 Then<WorldDefinition>("the user-identity will be returned to the client", function () {
