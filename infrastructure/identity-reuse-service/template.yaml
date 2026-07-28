@@ -459,19 +459,9 @@ Resources:
         Statement:
           - Effect: Allow
             Action:
-              - kms:Decrypt
-              - kms:GenerateDataKey
-            Resource: "*"
-          - Effect: Allow
-            Action:
               - "secretsmanager:GetSecretValue" #pragma: allowlist secret
             Resource:
               - Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
-          - Effect: Allow
-            Action:
-              - sqs:SendMessage
-            Resource:
-              Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueArn"
       Roles:
         - !Ref GetAuthorizeHandlerRole
 
@@ -645,19 +635,9 @@ Resources:
         Statement:
           - Effect: Allow
             Action:
-              - kms:Decrypt
-              - kms:GenerateDataKey
-            Resource: "*"
-          - Effect: Allow
-            Action:
               - "secretsmanager:GetSecretValue" #pragma: allowlist secret
             Resource:
               - Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
-          - Effect: Allow
-            Action:
-              - sqs:SendMessage
-            Resource:
-              Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueArn"
       Roles:
         - !Ref GetUserIdentityHandlerRole
 
@@ -1774,19 +1754,9 @@ Resources:
         Statement:
           - Effect: Allow
             Action:
-              - kms:Decrypt
-              - kms:GenerateDataKey
-            Resource: "*"
-          - Effect: Allow
-            Action:
               - "secretsmanager:GetSecretValue" #pragma: allowlist secret
             Resource:
               - Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
-          - Effect: Allow
-            Action:
-              - sqs:SendMessage
-            Resource:
-              Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueArn"
       Roles:
         - !Ref PostPhase2UserIdentityHandlerRole
 
@@ -2116,11 +2086,6 @@ Resources:
               - IsDevOrBuild
               - !GetAtt StubQueue.Arn
               - !FindInMap [EnvironmentMap, !Ref Environment, InboundTxmaQueueArn]
-          - Effect: Allow
-            Action:
-              - sqs:SendMessage
-            Resource:
-              Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueArn"
           - Effect: Allow
             Action:
               - kms:Decrypt
