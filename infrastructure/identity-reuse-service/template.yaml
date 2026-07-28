@@ -436,6 +436,7 @@ Resources:
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
         - Fn::ImportValue: !Sub "${AppConfigStackName}-AppConfigClientPolicyArn"
+        - Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueSendMessagePolicy"
       Tags:
         - Key: Product
           Value: !Ref ProductTagValue
@@ -621,6 +622,7 @@ Resources:
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
         - Fn::ImportValue: !Sub "${AppConfigStackName}-AppConfigClientPolicyArn"
+        - Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueSendMessagePolicy"
       Tags:
         - Key: Product
           Value: !Ref ProductTagValue
@@ -1750,6 +1752,7 @@ Resources:
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
         - Fn::ImportValue: !Sub "${AppConfigStackName}-AppConfigClientPolicyArn"
+        - Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueSendMessagePolicy"
       Tags:
         - Key: Product
           Value: !Ref ProductTagValue
@@ -2082,6 +2085,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
         - Fn::ImportValue: !Sub "${AppConfigStackName}-AppConfigClientPolicyArn"
+        - Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueSendMessagePolicy"
       Tags:
         - Key: Product
           Value: !Ref ProductTagValue
