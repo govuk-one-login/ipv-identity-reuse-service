@@ -148,6 +148,31 @@ To deploy `/infrastructure/oauth-internal/template.yaml` you need additional opt
 ./deploy-to-dev.sh -s $STACK_NAME -o -n -m $ANOTHER_SIS_STACK
 ```
 
+### Deploying orchestration-stub
+
+You will need to check out `ipv-reuse-service-stubs` in the same folder as the `ipv-identity-reuse-service` repository,
+which contains the orchestration-stub. You will then have the following options which will enable you to deploy the
+stub:
+
+```
+-c, --orch-deploy       Deploy the orchestration-stub stack (optional)
+-p, --stubs-profile     The AWS profile for the stubs environment. (default = 'stubs-dev')
+```
+
+You can deploy Orchestration stub, SIS and OAuth common using the following command:
+
+```sh
+./deploy-to-dev.sh -a sis-dev -p stubs-dev -s dev-test -o -c -y
+```
+
+Where:
+* `-a` the account profile that SIS and OAuth common will be deployed to
+* `-p` the account profile that Orchestration Stub will be deployed to
+* `-s` the name of the stacks, where in this example SIS and Orchestration Stub will be deployed as dev-test and OAuth common will be deployed as `dev-test-oauth`.
+* `-o` deploy OAuth common
+* `-c` deploy Orchestration Stub
+* `-y` disable confirmations
+
 ### Delete your stack deployment
 
 When you have finished testing, you'll need to manually delete the stack(s) you created by adding `-d` to any of the commands:
