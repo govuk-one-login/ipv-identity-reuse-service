@@ -119,41 +119,64 @@ Parameters:
 Mappings:
   EnvironmentMap:
     "local":
+      DynatraceLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables" # pragma: allowlist secret
       OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: "https://orch.reuse.dev.stubs.account.gov.uk/.well-known/jwks.json"
       OrchestrationRedirectURI: "https://orch.reuse.dev.stubs.account.gov.uk"
       SISAudience: "https://reuse-identity.dev.account.gov.uk"
     "dev":
+      DynatraceLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables" # pragma: allowlist secret
       OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: "https://orch.reuse.dev.stubs.account.gov.uk/.well-known/jwks.json"
       OrchestrationRedirectURI: "https://orch.reuse.dev.stubs.account.gov.uk"
       SISAudience: "https://reuse-identity.dev.account.gov.uk"
     "build":
+      DynatraceLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables" # pragma: allowlist secret
       OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: "https://orch.reuse.stubs.account.gov.uk/.well-known/jwks.json"
       OrchestrationRedirectURI: "https://orch.reuse.stubs.account.gov.uk"
       SISAudience: "https://reuse-identity.build.account.gov.uk"
     "staging":
+      DynatraceLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables" # pragma: allowlist secret
       OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: none
       OrchestrationRedirectURI: none
       SISAudience: "https://reuse-identity.staging.account.gov.uk"
     "integration":
+      DynatraceLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables" # pragma: allowlist secret
       OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: none
       OrchestrationRedirectURI: none
       SISAudience: "https://reuse-identity.integration.account.gov.uk"
     "production":
+      DynatraceLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
+      DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables" # pragma: allowlist secret
       OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: none
       OrchestrationRedirectURI: none
       SISAudience: "https://reuse-identity.account.gov.uk"
 
 Conditions:
+  DynaTraceEnabled:
+    Fn::Or:
+      - Fn::Equals: [ !Ref Environment, "build" ]
+      - Fn::Equals: [ !Ref Environment, "staging" ]
+      - Fn::Equals: [ !Ref Environment, "integration" ]
+      - Fn::Equals: [ !Ref Environment, "production" ]
+
   IsDev:
     Fn::Or:
       - Fn::Equals: [ !Ref Environment, "local" ]
       - Fn::Equals: [ !Ref Environment, "dev" ]
+
+  IsNotDev:
+    Fn::Not:
+      - !Condition IsDev
 
   IsDevOrBuild:
     Fn::Or:
@@ -167,6 +190,16 @@ Conditions:
       - Fn::Equals: [ !Ref Environment, "dev" ]
       - Fn::Equals: [ !Ref Environment, "build" ]
       - Fn::Equals: [ !Ref Environment, "staging" ]
+  UseCodeSigning:
+    Fn::Not:
+      - Fn::Equals:
+          - !Ref CodeSigningConfigArn
+          - none
+  UsePermissionsBoundary:
+    Fn::Not:
+      - Fn::Equals:
+          - !Ref PermissionsBoundary
+          - none
 
   IsOrchestrationJwksEndpointOverridden:
     Fn::Not:
@@ -175,6 +208,10 @@ Conditions:
   IsOrchestrationRedirectURIOverridden:
     Fn::Not:
       - Fn::Equals: [ !Ref OrchestrationRedirectURIOverride, "none" ]
+
+  UseVpc:
+    Fn::Not:
+      - Fn::Equals: [!Ref VpcStackName, "none"]
 
 Resources:
   OAuthCommon:
@@ -383,17 +420,291 @@ Resources:
         - !Ref OrchestrationJwksEndpointOverride
         - !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationJwksEndpoint ]
 
+  ##################################
+  # API GATEWAY AUTHORIZER HANDLER #
+  ##################################
+  CodeDeployServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - codedeploy.amazonaws.com
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRoleForLambda
+      PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-CodeDeployServiceRole"
+
+  ProtectedResourceAuthorizerFunction:
+    Condition: IsNotProduction
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-ProtectedResourceAuthorizerFunctionArn"
+      Description: "Authorizes requests and redirects to appropriate Lambda"
+      Timeout: 5
+      Handler: api-gateway-protected-resource-authorizer-handler.handler
+      Role: !GetAtt ProtectedResourceAuthorizerFunctionRole.Arn
+      MemorySize: 2048
+      CodeUri: ../../
+      Runtime: nodejs24.x
+      Architectures:
+        - arm64
+      Environment:
+        Variables:
+          AWS_LAMBDA_EXEC_WRAPPER: !If [DynaTraceEnabled, "/opt/dynatrace", !Ref "AWS::NoValue"]
+          DT_CONNECTION_AUTH_TOKEN: !If
+            - DynaTraceEnabled
+            - !Sub
+              - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_AUTH_TOKEN}}" # pragma: allowlist secret
+              - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, DynatraceSecretArn]
+            - !Ref "AWS::NoValue"
+          DT_CONNECTION_BASE_URL: !If
+            - DynaTraceEnabled
+            - !Sub
+              - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_BASE_URL}}" # pragma: allowlist secret
+              - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, DynatraceSecretArn]
+            - !Ref "AWS::NoValue"
+          DT_CLUSTER_ID: !If
+            - DynaTraceEnabled
+            - !Sub
+              - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CLUSTER_ID}}" # pragma: allowlist secret
+              - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, DynatraceSecretArn]
+            - !Ref "AWS::NoValue"
+          DT_LOG_COLLECTION_AUTH_TOKEN: !If
+            - DynaTraceEnabled
+            - !Sub
+              - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_LOG_COLLECTION_AUTH_TOKEN}}" # pragma: allowlist secret
+              - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, DynatraceSecretArn]
+            - !Ref "AWS::NoValue"
+          DT_TENANT: !If
+            - DynaTraceEnabled
+            - !Sub
+              - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_TENANT}}" # pragma: allowlist secret
+              - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, DynatraceSecretArn]
+            - !Ref "AWS::NoValue"
+          DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: !If [DynaTraceEnabled, "true", !Ref "AWS::NoValue"]
+          SESSION_TABLE_NAME: !GetAtt OAuthCommon.Outputs.DbSessionTableName
+          POWERTOOLS_METRICS_NAMESPACE: !Ref AWS::StackName
+          POWERTOOLS_SERVICE_NAME: "AuthorizerFunction"
+      CodeSigningConfigArn: !If
+        - UseCodeSigning
+        - !Ref CodeSigningConfigArn
+        - !Ref AWS::NoValue
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      VpcConfig: !If
+        - UseVpc
+        - SecurityGroupIds:
+            - Fn::ImportValue: !Sub "${VpcStackName}-AWSServicesEndpointSecurityGroupId"
+          SubnetIds:
+            - Fn::ImportValue: !Sub "${VpcStackName}-PrivateSubnetIdA"
+            - Fn::ImportValue: !Sub "${VpcStackName}-PrivateSubnetIdB"
+        - !Ref "AWS::NoValue"
+      Tracing: Active
+      AutoPublishAlias: live
+      Layers: !If
+        - DynaTraceEnabled
+        - - !FindInMap [EnvironmentMap, !Ref Environment, DynatraceLayerArn]
+        - !Ref AWS::NoValue
+      DeploymentPreference:
+        Type: !Ref LambdaDeploymentPreference
+        Role: !GetAtt CodeDeployServiceRole.Arn
+        Alarms:
+          Fn::If:
+            - IsNotProduction
+            - - !Ref ProtectedResourceAuthorizerFunctionLambdaErrorAlarm
+            - - !Ref "AWS::NoValue"
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        UseNpmCi: True
+        Minify: true
+        Target: es2022
+        Sourcemap: true
+        SourcesContent: false
+        EntryPoints:
+          - src/handlers/api-gateway-protected-resource-authorizer-handler/api-gateway-protected-resource-authorizer-handler.ts
+        Format: esm
+        Platform: node
+        OutExtension:
+          - .js=.mjs
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
+
+  ProtectedResourceAuthorizerFunctionRole:
+    Condition: IsNotProduction
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-ProtectedResourceAuthorizerFunctionRole"
+      Description: !Sub "The role assumed by the ${AWS::StackName}-ProtectedResourceAuthorizerFunction"
+      PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+
+  ProtectedResourceAuthorizerFunctionPolicy:
+    Condition: IsNotProduction
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-ProtectedResourceAuthorizerFunctionPolicy"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "logs:CreateLogStream"
+              - "logs:PutLogEvents"
+            Resource:
+              - !GetAtt ProtectedResourceAuthorizerFunctionLogGroup.Arn
+          - Effect: Allow
+            Action:
+              - "cloudwatch:PutMetricData"
+            Resource:
+              - "*"
+            Condition:
+              StringEquals:
+                cloudwatch:namespace: !Ref AWS::StackName
+          - Effect: Allow
+            Action:
+              - "dynamodb:Query"
+            Resource:
+              - Fn::Sub:
+                - "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}/index/*"
+                - TableName: !GetAtt OAuthCommon.Outputs.DbSessionTableName
+          - Effect: Allow
+            Action:
+              - "kms:Decrypt"
+            Resource:
+              - Fn::Sub:
+                  - "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${KeyID}"
+                  - KeyID: !GetAtt OAuthCommon.Outputs.DbCustomerManagedKeyID
+      Roles:
+        - !Ref ProtectedResourceAuthorizerFunctionRole
+
+  ProtectedResourceAuthorizerFunctionLogGroup:
+    Condition: IsNotProduction
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: !If [ IsDev, Delete, Retain ]
+    UpdateReplacePolicy: !If [ IsDev, Delete, Retain ]
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${ProtectedResourceAuthorizerFunction}"
+      RetentionInDays: 30
+      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "/aws/lambda/${ProtectedResourceAuthorizerFunction}"
+
+  ProtectedResourceAuthorizerFunctionLogsSubscriptionFilterCSLS:
+    Condition: IsNotProduction
+    Type: AWS::Logs::SubscriptionFilter
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      DestinationArn: !Ref CSLSSubscriptionEndpointArn
+      LogGroupName: !Ref ProtectedResourceAuthorizerFunctionLogGroup
+      FilterPattern: "{$.message != \"LambdaSensor*\" }"
+
+  ProtectedResourceAuthorizerFunctionLambdaErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: IsNotProduction
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-ProtectedResourceAuthorizerFunctionLambdaErrorAlarm"
+      AlarmDescription: "Errors invoking lambda authorizer function"
+      Metrics:
+        - Id: m1
+          Label: ProtectedResourceAuthorizerFunction Errors
+          MetricStat:
+            Metric:
+              MetricName: Errors
+              Namespace: AWS/Lambda
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Ref ProtectedResourceAuthorizerFunction
+            Period: 60
+            Stat: Sum
+            Unit: Count
+          ReturnData: true
+      DatapointsToAlarm: 1
+      EvaluationPeriods: 1
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 0
+      TreatMissingData: notBreaching
+      ActionsEnabled:
+        Fn::If:
+          - IsNotDev
+          - TRUE
+          - FALSE
+      AlarmActions:
+        - !ImportValue alerting-integration-AlertNotificationTopicArn
+      OKActions:
+        - !ImportValue alerting-integration-AlertNotificationTopicArn
+
 Outputs:
   PrivateApi:
     Condition: IsNotProduction
     Description: "The URL for the OAuth internal private API"
     Value: !Sub "https://${PrivateApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"
     Export:
-      Name: !Sub ${AWS::StackName}-PrivateApi
+      Name: !Sub "${AWS::StackName}-PrivateApi"
 
   AccessTokenFunctionName:
     Condition: IsNotProduction
     Description: "The OAuth token function"
     Value: !GetAtt OAuthCommon.Outputs.LambdaAccessTokenFunctionName
     Export:
-      Name: !Sub ${AWS::StackName}-AccessTokenFunctionName
+      Name: !Sub "${AWS::StackName}-AccessTokenFunctionName"
+
+  ProtectedResourceAuthorizerFunctionArn:
+    Condition: IsNotProduction
+    Description: "The ARN of the authorizer function to attach to protected resources"
+    Value: !Ref ProtectedResourceAuthorizerFunction.Alias
+    Export:
+      Name: !Sub "${AWS::StackName}-ProtectedResourceAuthorizerFunctionArn"

@@ -21,6 +21,7 @@ import { UserIdentityErrorResponse } from "./post-phase2-user-identity-error-res
 import { UserIdentityRequest } from "./post-phase2-user-identity-request";
 import { StoredIdentityJWT } from "./stored-identity-jwt";
 import { StoredIdentityVectorOfTrust, UserIdentityResponse } from "./post-phase2-user-identity-response";
+import { getProperty } from "../../commons/case-insensitive-header-utilities";
 
 export const handler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
   const request = event.body ? (JSON.parse(event.body) as UserIdentityRequest) : undefined;
@@ -73,12 +74,6 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
     logger.error("Error retrieving user identity", { error });
     return await createAndLogErrorResponse(HttpCodesEnum.INTERNAL_SERVER_ERROR, subject, request.govukSigninJourneyId);
   }
-};
-
-const getProperty = <T extends Record<string, unknown>>(object: T, property: string): string | undefined => {
-  const propertyLowerCase = property.toLowerCase();
-  const foundKey = Object.keys(object).find((k) => k.toLowerCase() === propertyLowerCase);
-  return foundKey && typeof object[foundKey] === "string" ? object[foundKey] : undefined;
 };
 
 const createSuccessResponse = async (

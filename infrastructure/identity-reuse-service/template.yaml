@@ -316,6 +316,8 @@ Globals:
             - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, DynatraceSecretArn]
           - !Ref "AWS::NoValue"
         DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: !If [DynaTraceEnabled, "true", !Ref "AWS::NoValue"]
+        SESSION_TABLE_NAME:
+          Fn::ImportValue SessionTableName
     CodeSigningConfigArn: !If
       - UseCodeSigning
       - !Ref CodeSigningConfigArn
@@ -1573,6 +1575,18 @@ Resources:
         - Key: Name
           Value: !Sub "/aws/apigateway/${AWS::StackName}-PrivateApi/${ApiStageName}"
 
+
+  PrivateApiAuthorizerResourcePolicy:
+    Type: AWS::Lambda::Permission
+    Condition: IsNotProduction
+    Properties:
+      FunctionName:
+        Fn::ImportValue: !Sub "${OauthInternalStackName}-ProtectedResourceAuthorizerFunctionArn"
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PrivateApi}/authorizers/*"
+
   ################################
   # PRIVATE API API GATEWAY       #
   ################################
@@ -1597,6 +1611,8 @@ Resources:
       Description: "Stored Identity Service Private API (development)"
       StageName: !Ref ApiStageName
       AccessLogSetting:
+        # N.B. the subjectId and storageToken are included here for debugging purposes in
+        # the dev environment only, they should not be used any higher environments.
         Format: >-
           {
           "requestId": "$context.requestId",
@@ -1618,7 +1634,10 @@ Resources:
           "errorResponseType": "$context.error.responseType",
           "validationErrorString": "$context.error.validationErrorString",
           "xrayTraceId": "$context.xrayTraceId",
-          "apiKeyId": "$context.identity.apiKeyId"
+          "apiKeyId": "$context.identity.apiKeyId",
+          "user": "$context.authorizer.principalId",
+          "subjectId": "$context.authorizer.subjectId",
+          "storageToken": "$context.authorizer.storageToken"
           }
         DestinationArn: !GetAtt PrivateApiDevAccessLogGroup.Arn
       CacheClusterEnabled: false
@@ -1660,6 +1679,17 @@ Resources:
           Value: !Ref SourceTagValue
         - Key: Name
           Value: !Sub "/aws/apigateway/${AWS::StackName}-PrivateApiDev/${ApiStageName}"
+
+  PrivateApiDevAuthorizerResourcePolicy:
+    Type: AWS::Lambda::Permission
+    Condition: IsDev
+    Properties:
+      FunctionName:
+        Fn::ImportValue: !Sub "${OauthInternalStackName}-ProtectedResourceAuthorizerFunctionArn"
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PrivateApiDev}/authorizers/*"
 
   ################################
   # Hosted Zone                  #

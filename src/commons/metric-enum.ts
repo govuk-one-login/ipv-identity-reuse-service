@@ -1,9 +1,12 @@
-export const MetricName = {
-  MessagesReceived: "MessagesReceived",
-  IdentityInvalidatedOnIntervention: "IdentityInvalidatedOnIntervention",
-  IdentityDoesNotExist: "IdentityDoesNotExist",
-} as const;
+export enum MetricName {
+  AccessTokenValidationFailure = "AccessTokenValidationFailure",
+  AccessTokenValidationSuccessful = "AccessTokenValidationSuccessful",
+  MessagesReceived = "MessagesReceived",
+  IdentityInvalidatedOnIntervention = "IdentityInvalidatedOnIntervention",
+  IdentityDoesNotExist = "IdentityDoesNotExist",
+}
 
-export const MetricDimension = {
-  InterventionCode: "InterventionCode",
-} as const;
+export enum MetricDimension {
+  InterventionCode = "InterventionCode",
+  Reason = "Reason",
+}
