@@ -56,8 +56,6 @@ paths:
         httpMethod: POST
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetConfirmDetailsHandler.Arn}:live/invocations
-        credentials:
-          Fn::GetAtt: GetConfirmDetailsHandlerRestApiRole.Arn
         type: aws_proxy
     post:
       parameters:
@@ -76,8 +74,6 @@ paths:
         httpMethod: POST
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostConfirmDetailsHandler.Arn}:live/invocations
-        credentials:
-          Fn::GetAtt: PostConfirmDetailsHandlerRestApiRole.Arn
         type: aws_proxy
   /error/unrecoverable:
     get:
@@ -92,8 +88,6 @@ paths:
         httpMethod: POST
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetUnrecoverableErrorHandler.Arn}:live/invocations
-        credentials:
-          Fn::GetAtt: GetUnrecoverableErrorHandlerRestApiRole.Arn
         type: aws_proxy
   /{item+}:
     get:
@@ -155,8 +149,6 @@ paths:
         httpMethod: POST
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetAuthorizeHandler.Arn}:live/invocations
-        credentials:
-          Fn::GetAtt: GetAuthorizeHandlerRestApiRole.Arn
         passthroughBehavior: NEVER
         contentHandling: CONVERT_TO_TEXT
         type: AWS_PROXY
@@ -169,8 +161,6 @@ paths:
         httpMethod: POST
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetCallbackHandler.Arn}:live/invocations
-        credentials:
-          Fn::GetAtt: GetCallbackHandlerRestApiRole.Arn
         type: aws_proxy
 
 components:
