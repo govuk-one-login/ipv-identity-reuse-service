@@ -437,6 +437,7 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
         - Fn::ImportValue: !Sub "${AppConfigStackName}-AppConfigClientPolicyArn"
         - Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueSendMessagePolicy"
+        - Fn::ImportValue: !Sub "${SharedStackName}-EvcsApiKeySecretsManagerPolicy"
       Tags:
         - Key: Product
           Value: !Ref ProductTagValue
@@ -459,19 +460,9 @@ Resources:
         Statement:
           - Effect: Allow
             Action:
-              - kms:Decrypt
-              - kms:GenerateDataKey
-            Resource: "*"
-          - Effect: Allow
-            Action:
               - "secretsmanager:GetSecretValue" #pragma: allowlist secret
             Resource:
               - Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
-          - Effect: Allow
-            Action:
-              - sqs:SendMessage
-            Resource:
-              Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueArn"
       Roles:
         - !Ref GetAuthorizeHandlerRole
 
@@ -623,6 +614,7 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
         - Fn::ImportValue: !Sub "${AppConfigStackName}-AppConfigClientPolicyArn"
         - Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueSendMessagePolicy"
+        - Fn::ImportValue: !Sub "${SharedStackName}-EvcsApiKeySecretsManagerPolicy"
       Tags:
         - Key: Product
           Value: !Ref ProductTagValue
@@ -645,19 +637,9 @@ Resources:
         Statement:
           - Effect: Allow
             Action:
-              - kms:Decrypt
-              - kms:GenerateDataKey
-            Resource: "*"
-          - Effect: Allow
-            Action:
               - "secretsmanager:GetSecretValue" #pragma: allowlist secret
             Resource:
               - Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
-          - Effect: Allow
-            Action:
-              - sqs:SendMessage
-            Resource:
-              Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueArn"
       Roles:
         - !Ref GetUserIdentityHandlerRole
 
@@ -1753,6 +1735,7 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
         - Fn::ImportValue: !Sub "${AppConfigStackName}-AppConfigClientPolicyArn"
         - Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueSendMessagePolicy"
+        - Fn::ImportValue: !Sub "${SharedStackName}-EvcsApiKeySecretsManagerPolicy"
       Tags:
         - Key: Product
           Value: !Ref ProductTagValue
@@ -1774,19 +1757,9 @@ Resources:
         Statement:
           - Effect: Allow
             Action:
-              - kms:Decrypt
-              - kms:GenerateDataKey
-            Resource: "*"
-          - Effect: Allow
-            Action:
               - "secretsmanager:GetSecretValue" #pragma: allowlist secret
             Resource:
               - Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
-          - Effect: Allow
-            Action:
-              - sqs:SendMessage
-            Resource:
-              Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueArn"
       Roles:
         - !Ref PostPhase2UserIdentityHandlerRole
 
@@ -2086,6 +2059,7 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
         - Fn::ImportValue: !Sub "${AppConfigStackName}-AppConfigClientPolicyArn"
         - Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueSendMessagePolicy"
+        - Fn::ImportValue: !Sub "${SharedStackName}-EvcsApiKeySecretsManagerPolicy"
       Tags:
         - Key: Product
           Value: !Ref ProductTagValue
@@ -2118,11 +2092,6 @@ Resources:
               - !FindInMap [EnvironmentMap, !Ref Environment, InboundTxmaQueueArn]
           - Effect: Allow
             Action:
-              - sqs:SendMessage
-            Resource:
-              Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueArn"
-          - Effect: Allow
-            Action:
               - kms:Decrypt
               - kms:GenerateDataKey
             Resource: !If
@@ -2134,10 +2103,10 @@ Resources:
               - "secretsmanager:GetSecretValue" #pragma: allowlist secret
             Resource:
               - Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
-          - Effect: Allow
-            Action:
-              - "kms:*"
-            Resource: "*"
+#          - Effect: Allow
+#            Action:
+#              - "kms:*"
+#            Resource: "*"
       Roles:
         - !Ref InboundTxmaQueueMessageHandlerRole
 
