@@ -452,22 +452,6 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
 
-  GetAuthorizeHandlerPolicy:
-    Type: AWS::IAM::Policy
-    Condition: IsNotProduction
-    Properties:
-      PolicyName: !Sub "${AWS::StackName}-GetAuthorizeHandlerPolicy"
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Action:
-              - "secretsmanager:GetSecretValue" #pragma: allowlist secret
-            Resource:
-              - Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
-      Roles:
-        - !Ref GetAuthorizeHandlerRole
-
   GetAuthorizeHandlerLogGroup:
     Type: AWS::Logs::LogGroup
     Condition: IsNotProduction
@@ -595,22 +579,6 @@ Resources:
           Value: !Ref OwnerTagValue
         - Key: Source
           Value: !Ref SourceTagValue
-
-  GetUserIdentityHandlerPolicy:
-    Type: AWS::IAM::Policy
-    Condition: IsNotProduction
-    Properties:
-      PolicyName: !Sub "${AWS::StackName}-GetUserIdentityHandlerPolicy"
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Action:
-              - "secretsmanager:GetSecretValue" #pragma: allowlist secret
-            Resource:
-              - Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
-      Roles:
-        - !Ref GetUserIdentityHandlerRole
 
   GetUserIdentityHandlerLogGroup:
     Type: AWS::Logs::LogGroup
@@ -1590,21 +1558,6 @@ Resources:
         - Key: Source
           Value: !Ref SourceTagValue
 
-  PostPhase2UserIdentityHandlerPolicy:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyName: !Sub "${AWS::StackName}-PostPhase2UserIdentityHandlerPolicy"
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Action:
-              - "secretsmanager:GetSecretValue" #pragma: allowlist secret
-            Resource:
-              - Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
-      Roles:
-        - !Ref PostPhase2UserIdentityHandlerRole
-
   RegionalGatewayPostPhase2UserIdentityHandlerResourcePolicy:
     Condition: IsDev
     Type: AWS::Lambda::Permission
@@ -1889,15 +1842,6 @@ Resources:
               - IsDevOrBuild
               - !GetAtt StubQueueKey.Arn
               - !FindInMap [EnvironmentMap, !Ref Environment, InboundTxmaQueueKeyArn]
-          - Effect: Allow
-            Action:
-              - "secretsmanager:GetSecretValue" #pragma: allowlist secret
-            Resource:
-              - Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
-#          - Effect: Allow
-#            Action:
-#              - "kms:*"
-#            Resource: "*"
       Roles:
         - !Ref InboundTxmaQueueMessageHandlerRole
 
