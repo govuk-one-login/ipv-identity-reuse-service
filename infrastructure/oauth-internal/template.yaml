@@ -174,15 +174,15 @@ Conditions:
       - Fn::Equals: [ !Ref Environment, "local" ]
       - Fn::Equals: [ !Ref Environment, "dev" ]
 
-  IsNotDev:
-    Fn::Not:
-      - !Condition IsDev
-
   IsDevOrBuild:
     Fn::Or:
       - Fn::Equals: [ !Ref Environment, "local" ]
       - Fn::Equals: [ !Ref Environment, "dev" ]
       - Fn::Equals: [ !Ref Environment, "build" ]
+
+  IsNotDevOrBuild:
+    Fn::Not:
+      - !Condition IsDevOrBuild
 
   IsNotProduction:
     Fn::Or:
@@ -679,7 +679,7 @@ Resources:
       TreatMissingData: notBreaching
       ActionsEnabled:
         Fn::If:
-          - IsNotDev
+          - IsNotDevOrBuild
           - TRUE
           - FALSE
       AlarmActions:
