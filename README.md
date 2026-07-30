@@ -39,6 +39,17 @@ You can run the acceptance tests using the following command (replacing the valu
 SAM_STACK_NAME=<stack-name> npm run test:acceptance
 ```
 
+### Browser tests
+
+Tests are in `tests/acceptance/browser`:
+
+```bash
+npm run test:browser:install
+# append `-- --headed` to see the browser
+npm run test:browser
+STACK_NAME=my-stack npm run test:browser             # against your own SIS stack
+```
+
 ## Linting
 
 You can lint the code using the following command:
@@ -84,16 +95,16 @@ For testing, you can deploy your code changes to a development environment.
 
 There are two templates that make up the application:
 
-* `/infrastructure/identity-reuse-service/template.yaml` - the main application stack, containing:
-  * a public API for the OAuth 2.0 authorization endpoint and frontend endpoints, with associated logic in Lambda functions
-  * a private external-facing API for the OAuth 2.0 token endpoint and protected resource, with associated logic in Lambda functions*
+- `/infrastructure/identity-reuse-service/template.yaml` - the main application stack, containing:
+  - a public API for the OAuth 2.0 authorization endpoint and frontend endpoints, with associated logic in Lambda functions
+  - a private external-facing API for the OAuth 2.0 token endpoint and protected resource, with associated logic in Lambda functions*
     (except for the token function, which lives in the stack below)
-* `/infrastructure/oauth-internal/template.yaml` - internal-only OAuth "helper" stacks, containing:
-  * a private internal-facing API providing some endpoints that help manage a user's OAuth session
-  * a nested [ipv-cri-oauth-common](https://github.com/govuk-one-login/ipv-cri-oauth-common) stack deployed via SAR
+- `/infrastructure/oauth-internal/template.yaml` - internal-only OAuth "helper" stacks, containing:
+  - a private internal-facing API providing some endpoints that help manage a user's OAuth session
+  - a nested [ipv-cri-oauth-common](https://github.com/govuk-one-login/ipv-cri-oauth-common) stack deployed via SAR
     containing the session management logic in Lambda functions and a DynamoDB table
 
-> **_NOTE:_**  The `oauth-internal` stack imports stack outputs from the `identity-reuse-service` stack, so there is a dependency between the two.
+> **_NOTE:_** The `oauth-internal` stack imports stack outputs from the `identity-reuse-service` stack, so there is a dependency between the two.
 > This is because the audit queue lives in the latter, but the former also needs access to it.
 
 ### Deploying the main application stack
@@ -132,10 +143,10 @@ aws cloudformation describe-stacks --profile $AWS_PROFILE --stack-name $STACK_NA
 
 To deploy `/infrastructure/oauth-internal/template.yaml` you need additional options when using the script.
 
-* `-o` - add this to deploy BOTH the `identity-reuse-service` stack and the `oauth-internal` stack
-* `-n` - add this (as well as `-o`) to deploy ONLY the `oauth-internal` stack
-* `-m` - use this to specify the `identity-reuse-service` stack that the `oauth-internal` stack points to -
-         by default it uses the one being deployed, or `preview-main` if only deploying `oauth-internal`.
+- `-o` - add this to deploy BOTH the `identity-reuse-service` stack and the `oauth-internal` stack
+- `-n` - add this (as well as `-o`) to deploy ONLY the `oauth-internal` stack
+- `-m` - use this to specify the `identity-reuse-service` stack that the `oauth-internal` stack points to -
+  by default it uses the one being deployed, or `preview-main` if only deploying `oauth-internal`.
 
 ```sh
 # Deploy BOTH (oauth-internal points at $STACK_NAME)
