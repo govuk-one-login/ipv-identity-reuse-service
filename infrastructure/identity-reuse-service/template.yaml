@@ -466,49 +466,6 @@ Resources:
       Roles:
         - !Ref GetAuthorizeHandlerRole
 
-  GetAuthorizeHandlerRestApiRole:
-    Type: AWS::IAM::Role
-    Condition: IsNotProduction
-    Properties:
-      RoleName: !Sub "${AWS::StackName}-GetAuthorizeHandlerRestApiRole"
-      Description: !Sub "Role that allows API Gateway to execute the GetAuthorizeHandler in the ${AWS::StackName} stack"
-      PermissionsBoundary: !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: apigateway.amazonaws.com
-            Action:
-              - "sts:AssumeRole"
-      Tags:
-        - Key: Product
-          Value: !Ref ProductTagValue
-        - Key: System
-          Value: !Ref SystemTagValue
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Owner
-          Value: !Ref OwnerTagValue
-        - Key: Source
-          Value: !Ref SourceTagValue
-
-  GetAuthorizeHandlerRestApiPolicy:
-    Type: AWS::IAM::Policy
-    Condition: IsNotProduction
-    Properties:
-      PolicyName: !Sub "${AWS::StackName}-GetAuthorizeHandlerRestApiPolicy"
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: "Allow"
-            Action:
-              - "lambda:InvokeFunction"
-            Resource:
-              - !Sub "${GetAuthorizeHandler.Arn}:*"
-      Roles:
-        - !Ref GetAuthorizeHandlerRestApiRole
-
   GetAuthorizeHandlerLogGroup:
     Type: AWS::Logs::LogGroup
     Condition: IsNotProduction
@@ -652,49 +609,6 @@ Resources:
               - Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
       Roles:
         - !Ref GetUserIdentityHandlerRole
-
-  GetUserIdentityHandlerRestApiRole:
-    Type: AWS::IAM::Role
-    Condition: IsNotProduction
-    Properties:
-      RoleName: !Sub "${AWS::StackName}-GetUserIdentityHandlerRestApiRole"
-      Description: !Sub "Role that allows API Gateway to execute the GetUserIdentityHandler in the ${AWS::StackName} stack"
-      PermissionsBoundary: !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: apigateway.amazonaws.com
-            Action:
-              - "sts:AssumeRole"
-      Tags:
-        - Key: Product
-          Value: !Ref ProductTagValue
-        - Key: System
-          Value: !Ref SystemTagValue
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Owner
-          Value: !Ref OwnerTagValue
-        - Key: Source
-          Value: !Ref SourceTagValue
-
-  GetUserIdentityHandlerRestApiPolicy:
-    Type: AWS::IAM::Policy
-    Condition: IsNotProduction
-    Properties:
-      PolicyName: !Sub "${AWS::StackName}-GetUserIdentityHandlerRestApiPolicy"
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: "Allow"
-            Action:
-              - "lambda:InvokeFunction"
-            Resource:
-              - !Sub "${GetUserIdentityHandler.Arn}:*"
-      Roles:
-        - !Ref GetUserIdentityHandlerRestApiRole
 
   GetUserIdentityHandlerLogGroup:
     Type: AWS::Logs::LogGroup
@@ -1015,49 +929,6 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
 
-  GetConfirmDetailsHandlerRestApiRole:
-    Type: AWS::IAM::Role
-    Condition: IsNotProduction
-    Properties:
-      RoleName: !Sub "${AWS::StackName}-GetConfirmDetailsHandlerRestApiRole"
-      Description: !Sub "Role that allows API Gateway to execute the GetConfirmDetailsHandler in the ${AWS::StackName} stack"
-      PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: apigateway.amazonaws.com
-            Action:
-              - "sts:AssumeRole"
-      Tags:
-        - Key: Product
-          Value: !Ref ProductTagValue
-        - Key: System
-          Value: !Ref SystemTagValue
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Owner
-          Value: !Ref OwnerTagValue
-        - Key: Source
-          Value: !Ref SourceTagValue
-
-  GetConfirmDetailsHandlerRestApiPolicy:
-    Type: AWS::IAM::Policy
-    Condition: IsNotProduction
-    Properties:
-      PolicyName: !Sub "${AWS::StackName}-GetConfirmDetailsHandlerRestApiPolicy"
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: "Allow"
-            Action:
-              - "lambda:InvokeFunction"
-            Resource:
-              - !Sub "${GetConfirmDetailsHandler.Arn}:*"
-      Roles:
-        - !Ref GetConfirmDetailsHandlerRestApiRole
-
   GetConfirmDetailsHandlerLogGroup:
     Type: AWS::Logs::LogGroup
     Condition: IsNotProduction
@@ -1130,49 +1001,6 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
-
-  PostConfirmDetailsHandlerRestApiRole:
-    Type: AWS::IAM::Role
-    Condition: IsNotProduction
-    Properties:
-      RoleName: !Sub "${AWS::StackName}-PostConfirmDetailsHandlerRestApiRole"
-      Description: !Sub "Role that allows API Gateway to execute the PostConfirmDetailsHandler in the ${AWS::StackName} stack"
-      PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: apigateway.amazonaws.com
-            Action:
-              - "sts:AssumeRole"
-      Tags:
-        - Key: Product
-          Value: !Ref ProductTagValue
-        - Key: System
-          Value: !Ref SystemTagValue
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Owner
-          Value: !Ref OwnerTagValue
-        - Key: Source
-          Value: !Ref SourceTagValue
-
-  PostConfirmDetailsHandlerRestApiPolicy:
-    Type: AWS::IAM::Policy
-    Condition: IsNotProduction
-    Properties:
-      PolicyName: !Sub "${AWS::StackName}-PostConfirmDetailsHandlerRestApiPolicy"
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: "Allow"
-            Action:
-              - "lambda:InvokeFunction"
-            Resource:
-              - !Sub "${PostConfirmDetailsHandler.Arn}:*"
-      Roles:
-        - !Ref PostConfirmDetailsHandlerRestApiRole
 
   PostConfirmDetailsHandlerLogGroup:
     Type: AWS::Logs::LogGroup
@@ -1261,49 +1089,6 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
-
-  GetUnrecoverableErrorHandlerRestApiRole:
-    Type: AWS::IAM::Role
-    Condition: IsNotProduction
-    Properties:
-      RoleName: !Sub "${AWS::StackName}-GetUnrecoverableErrorHandlerRestApiRole"
-      Description: !Sub "Role that allows API Gateway to execute the GetUnrecoverableErrorHandler in the ${AWS::StackName} stack"
-      PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: apigateway.amazonaws.com
-            Action:
-              - "sts:AssumeRole"
-      Tags:
-        - Key: Product
-          Value: !Ref ProductTagValue
-        - Key: System
-          Value: !Ref SystemTagValue
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Owner
-          Value: !Ref OwnerTagValue
-        - Key: Source
-          Value: !Ref SourceTagValue
-
-  GetUnrecoverableErrorHandlerRestApiPolicy:
-    Type: AWS::IAM::Policy
-    Condition: IsNotProduction
-    Properties:
-      PolicyName: !Sub "${AWS::StackName}-GetUnrecoverableErrorHandlerRestApiPolicy"
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: "Allow"
-            Action:
-              - "lambda:InvokeFunction"
-            Resource:
-              - !Sub "${GetUnrecoverableErrorHandler.Arn}:*"
-      Roles:
-        - !Ref GetUnrecoverableErrorHandlerRestApiRole
 
   GetUnrecoverableErrorHandlerLogGroup:
     Type: AWS::Logs::LogGroup
@@ -1394,49 +1179,6 @@ Resources:
               - "sts:AssumeRole"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
-
-  GetCallbackHandlerRestApiRole:
-    Type: AWS::IAM::Role
-    Condition: IsNotProduction
-    Properties:
-      RoleName: !Sub "${AWS::StackName}-GetCallbackHandlerRestApiRole"
-      Description: !Sub "Roles for the GetCallbackHandler"
-      PermissionsBoundary: !If [ UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue ]
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: apigateway.amazonaws.com
-            Action:
-              - "sts:AssumeRole"
-      Tags:
-        - Key: Product
-          Value: !Ref ProductTagValue
-        - Key: System
-          Value: !Ref SystemTagValue
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Owner
-          Value: !Ref OwnerTagValue
-        - Key: Source
-          Value: !Ref SourceTagValue
-
-  GetCallbackHandlerRestApiPolicy:
-    Type: AWS::IAM::Policy
-    Condition: IsNotProduction
-    Properties:
-      PolicyName: !Sub "${AWS::StackName}-GetCallbackHandlerRestApiPolicy"
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: "Allow"
-            Action:
-              - "lambda:InvokeFunction"
-            Resource:
-              - !Sub "${GetCallbackHandler.Arn}:*"
-      Roles:
-        - !Ref GetCallbackHandlerRestApiRole
 
   GetCallbackHandlerLogGroup:
     Type: AWS::Logs::LogGroup
@@ -1988,47 +1730,6 @@ Resources:
         System: !Ref SystemTagValue
         Owner: !Ref OwnerTagValue
         Source: !Ref SourceTagValue
-
-  PostPhase2UserIdentityHandlerRestApiRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub "${AWS::StackName}-PostPhase2UserIdentityHandlerRestApiRole"
-      Description: !Sub "Role that allows API Gateway to execute the PostPhase2UserIdentityHandler in the ${AWS::StackName} stack"
-      PermissionsBoundary: !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: apigateway.amazonaws.com
-            Action:
-              - "sts:AssumeRole"
-      Tags:
-        - Key: Product
-          Value: !Ref ProductTagValue
-        - Key: System
-          Value: !Ref SystemTagValue
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Owner
-          Value: !Ref OwnerTagValue
-        - Key: Source
-          Value: !Ref SourceTagValue
-
-  PostPhase2UserIdentityHandlerRestApiPolicy:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyName: !Sub "${AWS::StackName}-PostPhase2UserIdentityHandlerRestApiPolicy"
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: "Allow"
-            Action:
-              - "lambda:InvokeFunction"
-            Resource:
-              - !Sub "${PostPhase2UserIdentityHandler.Arn}:*"
-      Roles:
-        - !Ref PostPhase2UserIdentityHandlerRestApiRole
 
   PostPhase2UserIdentityHandlerLogGroup:
     Type: AWS::Logs::LogGroup

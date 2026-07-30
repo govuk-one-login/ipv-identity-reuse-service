@@ -89,8 +89,6 @@ paths:
         httpMethod: POST
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetUserIdentityHandler.Arn}:live/invocations
-        credentials:
-          Fn::GetAtt: GetUserIdentityHandlerRestApiRole.Arn
         passthroughBehavior: NEVER
         contentHandling: CONVERT_TO_TEXT
         type: AWS_PROXY
