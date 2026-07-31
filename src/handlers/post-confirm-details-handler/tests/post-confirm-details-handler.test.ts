@@ -1,13 +1,44 @@
 import { APIGatewayEventRequestContextWithAuthorizer, APIGatewayProxyEvent } from "aws-lambda";
-import { expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { lambdaHandler } from "../post-confirm-details-handler";
+import { randomUUID } from "node:crypto";
 
-it("should return a 302 status code on a successful request", async () => {
+const TEST_SESSION_ID = randomUUID();
+
+beforeEach(() => {
   vi.stubEnv("PUBLIC_API", "api.example.com");
+  vi.stubEnv("DOMAIN_NAME", "api2.example.com");
+});
 
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
+it("should redirect to the error page if the session is not provided", async () => {
   const event = createMockAPIGatewayProxyEvent(
     {},
     "redirectUri=https%3A%2F%2Fapi.example.com&state=test-state-id&client_id=client"
+  );
+
+  const response = await lambdaHandler(event);
+  expect(response).toStrictEqual({
+    statusCode: 302,
+    body: "",
+    headers: {
+      Location: "https://api2.example.com/error/unrecoverable",
+    },
+  });
+});
+
+it("should return a 302 status code on a successful request", async () => {
+  vi.stubEnv("OAUTH_INTERNAL_API_URL", "https://internal.example.com");
+
+  const mockFetch = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response("", { status: 201 }));
+
+  const event = createMockAPIGatewayProxyEvent(
+    {},
+    "redirectUri=https%3A%2F%2Fapi.example.com&state=test-state-id&client_id=client",
+    TEST_SESSION_ID
   );
 
   const response = await lambdaHandler(event);
@@ -20,7 +51,14 @@ it("should return a 302 status code on a successful request", async () => {
     },
   });
 
-  vi.unstubAllEnvs();
+  expect(mockFetch).toHaveBeenCalledWith(new URL("https://internal.example.com/api/create-auth-code"), {
+    method: "POST",
+    headers: {
+      "session-id": TEST_SESSION_ID,
+    },
+  });
+
+  mockFetch.mockRestore();
 });
 
 it("should return an error when some query string parameters are missing", async () => {
@@ -35,9 +73,15 @@ it("should return an error when some query string parameters are missing", async
   });
 });
 
-const createMockAPIGatewayProxyEvent = (event: Partial<APIGatewayProxyEvent>, body: string): APIGatewayProxyEvent => ({
+const createMockAPIGatewayProxyEvent = (
+  event: Partial<APIGatewayProxyEvent>,
+  body: string,
+  sessionId?: string
+): APIGatewayProxyEvent => ({
   body: body,
-  headers: {},
+  headers: {
+    ...(sessionId && { cookie: `identity_reuse_service_session=${sessionId}` }),
+  },
   multiValueHeaders: {},
   httpMethod: "POST",
   isBase64Encoded: false,

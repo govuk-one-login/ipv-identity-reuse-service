@@ -4,7 +4,7 @@ import { handler } from "../get-callback-handler";
 import { getCookieValues } from "../../../commons/cookie-utilities";
 
 process.env.DOMAIN_NAME = "test-domain";
-process.env.OAUTH_INTERNAL_API = "https://test.com";
+process.env.OAUTH_INTERNAL_API_URL = "https://test.com";
 
 const { mockError } = vitest.hoisted(() => {
   return {

@@ -284,6 +284,7 @@ Globals:
       - arm64
     Environment:
       Variables:
+        POWERTOOLS_METRICS_NAMESPACE: !GetAtt MainCloudWatchMetricNamespaceName.Value
         AWS_LAMBDA_EXEC_WRAPPER: !If [DynaTraceEnabled, "/opt/dynatrace", !Ref "AWS::NoValue"]
         DT_CONNECTION_AUTH_TOKEN: !If
           - DynaTraceEnabled
@@ -377,8 +378,6 @@ Resources:
       Environment:
         Variables:
           METRIC_SERVICE_NAME: "GetAuthorizeHandler"
-          POWERTOOLS_METRICS_NAMESPACE:
-            !If [IsDev, !Sub "${AWS::StackName}-GetAuthorizeHandler", "GetAuthorizeHandler"]
           POWERTOOLS_SERVICE_NAME: "GetAuthorizeHandler"
           ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
           APP_CONFIG_NAME: !Ref ApplicationConfigName
@@ -508,8 +507,6 @@ Resources:
           METRIC_SERVICE_NAME: "GetUserIdentityHandler"
           EVCS_API_KEY_SECRET_ARN:
             Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
-          POWERTOOLS_METRICS_NAMESPACE:
-            !If [IsDev, !Sub "${AWS::StackName}-GetUserIdentityHandler", "GetUserIdentityHandler"]
           POWERTOOLS_SERVICE_NAME: "GetUserIdentityHandler"
           ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
           APP_CONFIG_NAME: !Ref ApplicationConfigName
@@ -852,6 +849,7 @@ Resources:
       Environment:
         Variables:
           NODE_OPTIONS: "--enable-source-maps"
+          POWERTOOLS_SERVICE_NAME: "GetConfirmDetailsHandler"
       Layers:
         - !Ref GovUKFrontEndLayer
         - !If
@@ -939,8 +937,12 @@ Resources:
       Role: !GetAtt PostConfirmDetailsHandlerRole.Arn
       Environment:
         Variables:
+          DOMAIN_NAME: !Ref ReuseIdentityCustomDomain
           NODE_OPTIONS: "--enable-source-maps"
+          OAUTH_INTERNAL_API_URL:
+            Fn::ImportValue: !Sub "${OauthInternalStackName}-PrivateApi"
           PUBLIC_API: !GetAtt ReuseIdentityDomain.Value
+          POWERTOOLS_SERVICE_NAME: "PostConfirmDetailsHandler"
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -1013,6 +1015,7 @@ Resources:
       Environment:
         Variables:
           NODE_OPTIONS: "--enable-source-maps"
+          POWERTOOLS_SERVICE_NAME: "GetUnrecoverableErrorHandler"
       Layers:
         - !Ref GovUKFrontEndLayer
         - !If
@@ -1102,11 +1105,9 @@ Resources:
         Variables:
           NODE_OPTIONS: "--enable-source-maps"
           DOMAIN_NAME: !Ref ReuseIdentityCustomDomain
-          OAUTH_INTERNAL_API:
-            Fn::Sub:
-              - "${OauthInternalStackId}"
-              - OauthInternalStackId:
-                  Fn::ImportValue: !Sub "${OauthInternalStackName}-PrivateApi"
+          POWERTOOLS_SERVICE_NAME: "GetCallbackHandler"
+          OAUTH_INTERNAL_API_URL:
+            Fn::ImportValue: !Sub "${OauthInternalStackName}-PrivateApi"
       Layers:
         - !Ref GovUKFrontEndLayer
         - !If
@@ -1487,8 +1488,6 @@ Resources:
           METRIC_SERVICE_NAME: "UserIdentityFunction"
           EVCS_API_KEY_SECRET_ARN:
             Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
-          POWERTOOLS_METRICS_NAMESPACE:
-            !If [IsDev, !Sub "${AWS::StackName}-UserIdentityFunction", "UserIdentityFunction"]
           POWERTOOLS_SERVICE_NAME: "PostPhase2UserIdentityHandler"
           ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
           APP_CONFIG_NAME: !Ref ApplicationConfigName
@@ -1750,8 +1749,6 @@ Resources:
       Role: !GetAtt InboundTxmaQueueMessageHandlerRole.Arn
       Environment:
         Variables:
-          POWERTOOLS_METRICS_NAMESPACE:
-            !If [IsDev, !Sub "${AWS::StackName}-TXMAMessageProcessor", "TXMAMessageProcessor"]
           POWERTOOLS_SERVICE_NAME: "MessagesReceived"
           EVCS_API_KEY_SECRET_ARN:
             Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
@@ -1867,8 +1864,17 @@ Resources:
       LogGroupName: !Ref InboundTxmaQueueMessageHandlerLogGroup
       MetricTransformations:
         - MetricName: !Sub "${InboundTxmaQueueMessageHandler}-LambdaError"
-          MetricNamespace: !Ref MainCloudWatchMetricNamespace
+          MetricNamespace: !GetAtt MainCloudWatchMetricNamespaceName.Value
           MetricValue: "1"
+
+  MainCloudWatchMetricNamespaceName:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: !If
+        - IsDev
+        - !Sub "${AWS::StackName}-${MainCloudWatchMetricNamespace}"
+        - !Ref MainCloudWatchMetricNamespace
 
   #######
   # API #

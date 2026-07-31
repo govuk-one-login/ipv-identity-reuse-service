@@ -4,6 +4,7 @@ import { URL } from "node:url";
 import { getCookieValues } from "../../commons/cookie-utilities";
 import { AuthorizationSuccessResponse, isValidSuccessResponse } from "./get-callback-response";
 import { isValidQueryParameters } from "./get-callback-request";
+import { redirect, redirectToErrorPage } from "../../commons/redirect-utilities";
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const queryParameters = event.queryStringParameters || {};
@@ -21,15 +22,15 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     return await redirectToErrorPage(domainName);
   }
 
-  const oauthInternalApiUrl = process.env.OAUTH_INTERNAL_API;
-  const url = new URL(`${oauthInternalApiUrl}/api/authorization`);
-
-  url.searchParams.append("client_id", queryParameters.client_id);
-  url.searchParams.append("redirect_uri", queryParameters.redirect_uri);
-  url.searchParams.append("state", queryParameters.state);
-  url.searchParams.append("response_type", "code");
-
   try {
+    const oauthInternalApiUrl = process.env.OAUTH_INTERNAL_API_URL;
+    const url = new URL(`${oauthInternalApiUrl}/api/authorization`);
+
+    url.searchParams.append("client_id", queryParameters.client_id);
+    url.searchParams.append("redirect_uri", queryParameters.redirect_uri);
+    url.searchParams.append("state", queryParameters.state);
+    url.searchParams.append("response_type", "code");
+
     const responseFromAuthorizeEndpoint = await fetch(url, {
       method: "GET",
       headers: {
@@ -71,18 +72,4 @@ const redirectToClientWithError = async (redirectUri: string, state: string) => 
   // To be replaced with the state returned by the /authorization endpoint once it's added to the oauth-common response
   orchestrationRedirectUrl.searchParams.append("state", state);
   return redirect(`${orchestrationRedirectUrl}`);
-};
-
-const redirectToErrorPage = async (domainName: string) => {
-  return await redirect(`https://${domainName}/error/unrecoverable`);
-};
-
-const redirect = async (location: string) => {
-  return {
-    statusCode: 302,
-    headers: {
-      Location: location,
-    },
-    body: "",
-  };
 };

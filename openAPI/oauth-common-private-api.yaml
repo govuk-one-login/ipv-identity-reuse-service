@@ -87,6 +87,36 @@ paths:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${OAuthCommon.Outputs.LambdaAuthorizationFunctionName}:live/invocations
         passthroughBehavior: never
 
+  /api/create-auth-code:
+    post:
+      summary: "Create authorization code for a session"
+      parameters:
+        - $ref: "#/components/parameters/SessionHeader"
+      responses:
+        "200":
+          description: The authorization code already exists for the user
+        "201":
+          description: The authorization code was created for the session
+        "400":
+          description: A bad request error with a message
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: An internal server error with a message
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-request-validator: ALL
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${OAuthCommon.Outputs.LambdaCreateAuthCodeFunctionName}:live/invocations
+        passthroughBehavior: never
+
 components:
   parameters:
     SessionHeader:
