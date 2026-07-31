@@ -90,6 +90,7 @@ jobs:
       contents: read
     with:
       stack-name: preview-main-oauth
+      oauth-stack-name: preview-main-oauth
       artifact-name: built-oauth-code
       capabilities: 'CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND'
     secrets:
