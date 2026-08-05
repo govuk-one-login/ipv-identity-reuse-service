@@ -2,6 +2,7 @@ import { getAppConfig } from "@aws-lambda-powertools/parameters/appconfig";
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { getString } from "./string-utilities";
 import logger from "./logger";
+import { getRequiredEnvironment } from "./get-required-environment";
 
 export type Configuration = {
   evcsApiUrl: string;
@@ -33,4 +34,12 @@ export const getServiceApiKey = async (): Promise<string | undefined> => {
   logger.info("Retrieving Service API Key");
 
   return getString(await getSecret(process.env.EVCS_API_KEY_SECRET_ARN));
+};
+
+export const getOauthInternalApiUrl = (): string => {
+  return getRequiredEnvironment("OAUTH_INTERNAL_API_URL");
+};
+
+export const getSessionTimeout = (): string => {
+  return getRequiredEnvironment("SESSION_TIMEOUT_MS");
 };

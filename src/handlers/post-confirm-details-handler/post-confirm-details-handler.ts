@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import logger from "../../commons/logger";
 import { getCookieValues } from "../../commons/cookie-utilities";
-import { redirectToErrorPage } from "../../commons/redirect-utilities";
+import { redirectToErrorPage } from "../../services/sis-redirect-service";
 
 export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const eventValues = new URLSearchParams(event.body || "");
@@ -16,7 +16,7 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
     throw new Error("One or more required query string parameters are undefined");
   }
   if (!sessionId) {
-    return await redirectToErrorPage(domainName);
+    return redirectToErrorPage(domainName);
   }
 
   try {
@@ -36,7 +36,7 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
     };
   } catch (error) {
     logger.error(`Error in lambdaHandler event`, { error });
-    return await redirectToErrorPage(domainName);
+    return redirectToErrorPage(domainName);
   }
 };
 

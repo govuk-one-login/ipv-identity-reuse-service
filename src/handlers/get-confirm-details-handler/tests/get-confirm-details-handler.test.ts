@@ -1,4 +1,4 @@
-import { afterEach, beforeAll, expect, it, vitest } from "vitest";
+import { afterEach, expect, it, vitest } from "vitest";
 import { lambdaHandler } from "../get-confirm-details-handler";
 import { APIGatewayProxyEvent } from "aws-lambda";
 
@@ -9,10 +9,6 @@ vitest.mock("nunjucks", () => ({
     configure: vitest.fn(() => ({ render: mockRender })),
   },
 }));
-
-beforeAll(() => {
-  vitest.stubEnv("DOMAIN_NAME", "https://example.com");
-});
 
 afterEach(() => {
   vitest.clearAllMocks();

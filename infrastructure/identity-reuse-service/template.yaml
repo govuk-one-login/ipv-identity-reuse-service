@@ -13,14 +13,22 @@ Parameters:
       - integration
       - production
     Default: local
+
   ApiStageName:
     Description: The stage name of the API
     Type: String
     Default: v1
+
+  ApiTimeoutMilliseconds:
+    Description: Timeout for API calls in milliseconds
+    Type: Number
+    Default: 5000
+
   CSLSSubscriptionEndpointArn:
     Type: String
     Description: CSLS Subscription endpoint
     Default: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
+
   ApplicationName:
     Description: The name of the application
     Type: String
@@ -388,6 +396,7 @@ Resources:
           DOMAIN_NAME: !Ref ReuseIdentityCustomDomain
           OAUTH_INTERNAL_API_URL:
             Fn::ImportValue: !Sub "${OauthInternalStackName}-PrivateApi"
+          SESSION_TIMEOUT_MS: !Ref ApiTimeoutMilliseconds
       CodeSigningConfigArn: !If
         - UseCodeSigning
         - !Ref CodeSigningConfigArn
@@ -1108,6 +1117,7 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "GetCallbackHandler"
           OAUTH_INTERNAL_API_URL:
             Fn::ImportValue: !Sub "${OauthInternalStackName}-PrivateApi"
+          SESSION_TIMEOUT_MS: !Ref ApiTimeoutMilliseconds
       Layers:
         - !Ref GovUKFrontEndLayer
         - !If
