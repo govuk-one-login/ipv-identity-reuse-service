@@ -23,7 +23,11 @@ paths:
         credentials:
           Fn::GetAtt: RestOAuthDocumentResourceS3Role.Arn
         uri:
-          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:s3:path/govuk-one-login-${ServiceName}-published-keys-${Environment}/jwks.json"
+          Fn::Sub:
+            - "arn:aws:apigateway:${AWS::Region}:s3:path/${BucketName}/jwks.json"
+            - BucketName:
+                Fn::ImportValue:
+                  Fn::Sub: "${SharedStackName}-PublishedKeysS3Bucket"
         passthroughBehavior: WHEN_NO_MATCH
         httpMethod: GET
         type: aws
