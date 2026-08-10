@@ -2481,8 +2481,11 @@ Resources:
                   - "s3:GetObject"
                   - "s3:ListBucket"
                 Resource:
-                  - !Sub "arn:aws:s3:::govuk-one-login-${ServiceName}-published-keys-${Environment}"
-                  - !Sub "arn:aws:s3:::govuk-one-login-${ServiceName}-published-keys-${Environment}/jwks.json"
+                  - Fn::ImportValue: !Sub "${SharedStackName}-PublishedKeysS3BucketArn"
+                  - !Sub
+                    - "${BucketArn}/jwks.json"
+                    - BucketArn:
+                        Fn::ImportValue: !Sub "${SharedStackName}-PublishedKeysS3BucketArn"
       Tags:
         - Key: "key_consumer_type"
           Value: "use"

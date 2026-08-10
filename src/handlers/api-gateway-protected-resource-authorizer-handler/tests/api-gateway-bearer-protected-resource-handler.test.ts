@@ -16,7 +16,7 @@ describe("api-gateway-bearer-token-authorizer-handler", () => {
 
   describe("return a allow policy", () => {
     it("should return an allow policy and subject and storageToken when bearer token is present and valid", async () => {
-      const accessToken = "abcd1234";
+      const accessToken = "Bearer abcd1234";
       const subjectId = "urn:uuid:569faa50-71fe-4d12-b54f-9809483fec0c";
       const storageToken = "abcd.1234.xyz";
       const dynamodbDocumentMock = mockClient(DynamoDBDocumentClient);
