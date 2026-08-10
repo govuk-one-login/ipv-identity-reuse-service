@@ -53,7 +53,7 @@ export const handler = async (
       KeyConditionExpression: "accessToken = :tokenValue",
       ExpressionAttributeValues: {
         ":tokenValue": {
-          S: authorizationHeader?.slice(7),
+          S: authorizationHeader,
         },
       },
     });
