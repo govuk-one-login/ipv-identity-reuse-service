@@ -1,22 +1,16 @@
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
-import { jwtVerify } from "jose";
 import { auditIdentityRecordRead, auditIdentityRecordReturned } from "../../commons/audit";
 import { getConfiguration } from "../../commons/configuration";
 import { HttpCodesEnum } from "../../commons/constants";
-import { getJwtBody, getJwtHeader } from "../../commons/jwt-utilities";
+import { getJwtBody } from "../../commons/jwt-utilities";
 import logger from "../../commons/logger";
 import { CredentialStoreIdentityResponse } from "../../credential-store/credential-store-identity-response";
-import {
-  getIdentityFromCredentialStore,
-  parseCurrentVerifiableCredentials,
-} from "../../credential-store/encrypted-credential-store";
+import { parseCurrentVerifiableCredentials } from "../../credential-store/encrypted-credential-store";
 import { calculateVot } from "../../identity-reuse/calculate-vot";
 import { getFraudVc } from "../../identity-reuse/fraud-check-service";
 import { hasIdentityExpired } from "../../identity-reuse/identity-expiry-service";
-import { validateStoredIdentityCredentials } from "../../identity-reuse/stored-identity-validator";
 import { VerifiableCredentialJWT } from "../../identity-reuse/verifiable-credential-jwt";
-import { UserIdentityErrorResponse } from "./post-phase2-user-identity-error-response";
 import { UserIdentityRequest } from "./post-phase2-user-identity-request";
 import { StoredIdentityJWT } from "./stored-identity-jwt";
 import { StoredIdentityVectorOfTrust, UserIdentityResponse } from "./post-phase2-user-identity-response";
@@ -26,7 +20,6 @@ import {
   handleGetIdentityFromCredentialStore,
   createErrorResponse,
   createAndLogErrorResponse,
-  validateCryptography,
   validateIdentityRecords,
 } from "../../commons/validate-records";
 import { CredentialStoreError } from "../../commons/errors";
@@ -85,13 +78,10 @@ const createSuccessResponse = async (
   govukSigninJourneyId: string
 ): Promise<UserIdentityResponse> => {
   const configuration = await getConfiguration();
-  const currentVcsEncoded: string[] = identityResponse.vcs.map((vcWithMetadata) => vcWithMetadata.vc);
   const currentVcs: VerifiableCredentialJWT[] = parseCurrentVerifiableCredentials(identityResponse);
   const fraudVc = getFraudVc(currentVcs, configuration.fraudIssuer);
   const content = getJwtBody<StoredIdentityJWT>(identityResponse.si.vc);
   const { kidValid, signatureValid, isValid } = await validateIdentityRecords(identityResponse);
-  const kid = getJwtHeader(identityResponse.si.vc).kid || "";
-  const validationResults = await validateCryptography(kid, identityResponse);
   const vot: StoredIdentityVectorOfTrust = calculateVot(content, identityResponse.si.unsignedVot, vtr);
   const vtm = `https://oidc.account.gov.uk/trustmark`;
   const maxVot = content.max_vot || identityResponse.si.unsignedVot;

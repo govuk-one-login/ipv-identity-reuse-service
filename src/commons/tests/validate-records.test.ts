@@ -4,6 +4,7 @@ import * as DidResolutionService from "../../identity-reuse/did-resolution-servi
 import { publicKeyJwk, getDefaultJwtHeader } from "../../../shared-test/jwt-utilities";
 import {
   createCredentialStoreIdentityResponse,
+  createInvalidIdentityCheckCredentialJWT,
   createSignedIdentityCheckCredentialJWT,
 } from "../../../shared-test/credential-store-utilities";
 import { validateCryptography, validateIdentityRecords } from "../validate-records";
@@ -65,10 +66,9 @@ describe("validateCryptography", () => {
   });
 
   it("signatureValid false when the SI VC signature does not verify", async () => {
-    const misSignedStoredIdentity =
-      "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRpZDp3ZWI6YXBpLmlkZW50aXR5LmRldi5hY2NvdW50Lmdvdi51ayNmNWZlNWQyYS05ZWI2LTQ4MTktOGM0Ni03MjNlM2EyMTU2NWEifQ.eyJzdWIiOiJ1c2VyLXN1YiIsInZvdCI6IlAyIiwidnRtIjpbXX0.-jy9iwsn6uDzr6b3mk0JJZ4NdUf8z3O3ldBbbXKAAtxMH3TIMlBm5u2bI4I1qHrWk1BL2k8muKLV-VIUeych1A";
+    const incorrectlySignedIdentity = createInvalidIdentityCheckCredentialJWT(PASSPORT_ISSUER);
     const { mockEVCSData } = await createCredentialStoreIdentityResponse([], getDefaultJwtHeader());
-    mockEVCSData.si.vc = misSignedStoredIdentity;
+    mockEVCSData.si.vc = incorrectlySignedIdentity;
     mockEVCSResponse(mockEVCSData);
 
     const result = await validateCryptography(getDefaultJwtHeader().kid!, mockEVCSData);

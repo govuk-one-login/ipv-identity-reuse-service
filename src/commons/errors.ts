@@ -8,7 +8,7 @@ export class PolicyGenerationError extends Error {
 }
 
 export class TokenValidationError extends Error {
-  constructor(public readonly statuscode: HttpCodesEnum) {
+  constructor(public readonly statusCode: HttpCodesEnum) {
     super("Token validation failed");
     this.name = "TokenValidationError";
   }

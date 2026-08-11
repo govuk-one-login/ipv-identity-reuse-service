@@ -119,7 +119,7 @@ describe("user-identity-handler authorization", () => {
       signatureValid: true,
     });
     expect(ValidateRecords.handleGetIdentityFromCredentialStore).toHaveBeenCalledWith(
-      'Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6ImVjS2lkMTIzIn0.eyJzdWIiOiJ1cm46ZmRjOmdvdi51azoyMDIyOlRFU1RfVVNFUi1TN2pjckhMR0JqLTJrZ0ItOC1jWWhWck1kbzNDVjBMbEQ3QW4iLCJleHAiOjE3NTczMjQyMTcsImlhdCI6MTc1NzMyMzkxNywiaXNzIjoiaHR0cHM6Ly9tb2NrLmNyZWRlbnRpYWwtc3RvcmUuYnVpbGQuYWNjb3VudC5nb3YudWsvb3JjaGVzdHJhdGlvbiIsImF1ZCI6Imh0dHBzOi8vY3JlZGVudGlhbC1zdG9yZS5idWlsZC5hY2NvdW50Lmdvdi51ayIsInNjb3BlIjoicHJvdmluZyJ9.Sj-2jA6mLdfkU1ryoBCNHxpBCT49o9qfqpKPMLkKwY1D6V6SvVIERGbC0X-fh8SYk2z-strc9vahvacvkrNDUQ',
+      "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6ImVjS2lkMTIzIn0.eyJzdWIiOiJ1cm46ZmRjOmdvdi51azoyMDIyOlRFU1RfVVNFUi1TN2pjckhMR0JqLTJrZ0ItOC1jWWhWck1kbzNDVjBMbEQ3QW4iLCJleHAiOjE3NTczMjQyMTcsImlhdCI6MTc1NzMyMzkxNywiaXNzIjoiaHR0cHM6Ly9tb2NrLmNyZWRlbnRpYWwtc3RvcmUuYnVpbGQuYWNjb3VudC5nb3YudWsvb3JjaGVzdHJhdGlvbiIsImF1ZCI6Imh0dHBzOi8vY3JlZGVudGlhbC1zdG9yZS5idWlsZC5hY2NvdW50Lmdvdi51ayIsInNjb3BlIjoicHJvdmluZyJ9.Sj-2jA6mLdfkU1ryoBCNHxpBCT49o9qfqpKPMLkKwY1D6V6SvVIERGbC0X-fh8SYk2z-strc9vahvacvkrNDUQ",
       TEST_USER,
       "govuk_signin_journey_id"
     );
@@ -506,70 +506,3 @@ describe("user-identity-handler max_vot", () => {
     expect(body.vot).toEqual("P3");
   });
 });
-
-// type StoredIdentityResponse = {
-//   mockEVCSData: CredentialStoreIdentityResponse;
-//   credentialSignatures: string[];
-// };
-
-// const createCredentialStoreIdentityResponse = async (
-//   signedVcs: string[],
-//   header: JWTHeaderParameters = getDefaultJwtHeader(),
-//   forcedCredentialSignatures?: string[]
-// ): Promise<StoredIdentityResponse> => {
-//   const vcsAndStates = signedVcs.map((vc) => {
-//     return { signedVc: vc, state: CURRENT };
-//   });
-//   return await createCredentialStoreIdentityResponseWithStates(vcsAndStates, header, forcedCredentialSignatures);
-// };
-//
-// const createCredentialStoreIdentityResponseWithStates = async (
-//   credentialsAndStates: { signedVc: string; state: string }[],
-//   header: JWTHeaderParameters = getDefaultJwtHeader(),
-//   forcedCredentialSignatures?: string[]
-// ): Promise<StoredIdentityResponse> => {
-//   const evcsVcs = credentialsAndStates.map((vcState) => {
-//     return { state: vcState.state, vc: vcState.signedVc, metadata: undefined };
-//   });
-//
-//   const credentialSignatures =
-//     forcedCredentialSignatures ?? credentialsAndStates.map((credential) => credential.signedVc.split(".").at(2)!);
-//   const storedIdentity = createStoredIdentityRecord(...credentialSignatures);
-//
-//   const response: CredentialStoreIdentityResponse = {
-//     si: {
-//       vc: await sign(header, storedIdentity),
-//       metadata: undefined,
-//       unsignedVot: "P3",
-//     },
-//     vcs: evcsVcs,
-//   };
-//
-//   return { mockEVCSData: response, credentialSignatures: credentialSignatures };
-// };
-//
-// const createStoredIdentityRecord = (...credentialSignatures: string[]) => {
-//   const storedIdentityRecord = {
-//     sub: "user-sub",
-//     vot: "P2",
-//     vtm: "https://oidc.account.gov.uk/trustmark",
-//   };
-//
-//   return credentialSignatures?.length
-//     ? { ...storedIdentityRecord, credentials: credentialSignatures }
-//     : storedIdentityRecord;
-// };
-//
-// const createSignedIdentityCheckCredentialJWT = async (issuer: string, nbfDate?: string): Promise<string> => {
-//   const nbfSeconds = Math.floor((nbfDate ? new Date(nbfDate).getTime() : Date.now()) / 1000);
-//   const credential: IdentityCheckCredentialJWTClass = {
-//     iss: issuer,
-//     nbf: nbfSeconds,
-//     sub: "sdf",
-//     vc: {
-//       evidence: [{}],
-//       type: ["VerifiableCredential", "IdentityCheckCredential"],
-//     },
-//   };
-//   return await sign(getDefaultJwtHeader(), credential);
-// };

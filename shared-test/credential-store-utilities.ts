@@ -1,7 +1,6 @@
 import { JWTHeaderParameters } from "jose";
 import { CredentialStoreIdentityResponse } from "../src/credential-store/credential-store-identity-response";
 import { getDefaultJwtHeader, sign } from "./jwt-utilities";
-import { Mock } from "vitest";
 
 const CURRENT = "CURRENT";
 
@@ -45,3 +44,18 @@ export const createCredentialStoreIdentityResponse = async (
     header,
     forcedCredentialSignatures
   );
+
+export const createInvalidIdentityCheckCredentialJWT = (issuer: string, nbfDate?: string): string => {
+  const nbf = Math.floor((nbfDate ? new Date(nbfDate).getTime() : Date.now()) / 1000);
+  const headers = getDefaultJwtHeader();
+  const jwt = {
+    headers: headers,
+    body: {
+      iss: issuer,
+      nbf,
+      sub: "sdf",
+    },
+  };
+
+  return jwt + "aaa";
+};

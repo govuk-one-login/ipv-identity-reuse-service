@@ -35,7 +35,7 @@ export const handleGetIdentityFromCredentialStore = async (
 ): Promise<CredentialStoreIdentityResponse> => {
   const result = await getIdentityFromCredentialStore(authorizationToken);
   if (!result.ok) {
-    logger.error("Error received from EVCS service", { status: result.status });
+    logger.error("Error received from EVCS", { status: result.status });
     throw new CredentialStoreError(result.status, userId, journeyId);
   }
 
@@ -84,17 +84,6 @@ export const validateIdentityRecords = async (
   const isValid = validateStoredIdentityCredentials(content, currentVcsEncoded);
 
   return { kidValid, signatureValid, isValid };
-};
-
-export const mapErrorToResponse = async (error: unknown): Promise<APIGatewayProxyResult> => {
-  if (error instanceof TokenValidationError) {
-    return createErrorResponse(error.statuscode);
-  }
-  if (error instanceof CredentialStoreError) {
-    return await createAndLogErrorResponse(error.statusCode, error.userId, error.journeyId);
-  }
-  logger.error("Error retrieving user identity", { error });
-  return createErrorResponse(HttpCodesEnum.INTERNAL_SERVER_ERROR);
 };
 
 export const createErrorResponse = (errorCode: HttpCodesEnum): APIGatewayProxyResult => {
