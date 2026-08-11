@@ -1,25 +1,33 @@
 import { APIGatewayProxyEvent, Context } from "aws-lambda";
 import { handler } from "../post-phase2-user-identity-handler";
 import { HttpCodesEnum } from "../../../commons/constants";
-import { Configuration } from "../../../commons/configuration";
 import * as configuration from "../../../commons/configuration";
+import { Configuration } from "../../../commons/configuration";
 import { CredentialStoreIdentityResponse } from "../../../credential-store/credential-store-identity-response";
 import { UserIdentityResponse } from "../post-phase2-user-identity-response";
 import { UserIdentityRequest } from "../post-phase2-user-identity-request";
 import * as identityExpiryService from "../../../identity-reuse/identity-expiry-service";
-import * as storedIdentityValidator from "../../../identity-reuse/stored-identity-validator";
-import { IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials";
 
 import * as AuditModule from "../../../commons/audit";
-import * as DidResolutionService from "../../../identity-reuse/did-resolution-service";
-import { JWTHeaderParameters } from "jose";
-import { getJwtSignature } from "../../../commons/jwt-utilities";
-import { publicKeyJwk, getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utilities";
+import * as ValidateRecords from "../../../commons/validate-records";
+import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utilities";
 import logger from "../../../commons/logger";
-import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
+import { beforeEach, describe, expect, it, Mock, vi } from "vitest";
+import {
+  createCredentialStoreIdentityResponse,
+  createCredentialStoreIdentityResponseWithStates,
+  createSignedIdentityCheckCredentialJWT,
+} from "../../../../shared-test/credential-store-utilities";
+import { CredentialStoreError, TokenValidationError } from "../../../commons/errors";
 
 vi.mock("../../../commons/logger");
 vi.mock("../../../commons/audit");
+vi.mock("../../../commons/validate-records", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  getUserIdFromJwt: vi.fn(),
+  handleGetIdentityFromCredentialStore: vi.fn(),
+  validateIdentityRecords: vi.fn(),
+}));
 
 const CURRENT = "CURRENT";
 const HISTORIC = "HISTORIC";
@@ -61,24 +69,23 @@ const mockEVCSResponse = (response: CredentialStoreIdentityResponse) => {
 let newEvent: APIGatewayProxyEvent;
 let mockLoggerAppendKeys: Mock;
 
-const ALLOWED_CONTROLLER = "api.identity.dev.account.gov.uk";
-
 beforeEach(() => {
   vi.useFakeTimers({ now: 1_759_240_815_925 });
   vi.clearAllMocks();
   newEvent = event();
-  vi.spyOn(configuration, "getServiceApiKey").mockResolvedValue("an-api-key");
   vi.spyOn(configuration, "getConfiguration").mockResolvedValue({
     evcsApiUrl: "https://evcs.gov.uk",
-    controllerAllowList: [ALLOWED_CONTROLLER],
+    controllerAllowList: ["api.identity.dev.account.gov.uk"],
     fraudIssuer: [FRAUD_ISSUER],
     fraudValidityPeriod: TEST_FRAUD_VALIDITY_DAYS,
   } as Configuration);
   vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue(false);
-  vi.spyOn(storedIdentityValidator, "validateStoredIdentityCredentials").mockReturnValue(true);
-  vi.spyOn(DidResolutionService, "getPublicKeyJwkForKid").mockResolvedValue(publicKeyJwk);
-  vi.spyOn(DidResolutionService, "isValidDidWeb").mockReturnValue(true);
-  vi.spyOn(DidResolutionService, "getDidWebController").mockReturnValue(ALLOWED_CONTROLLER);
+  (ValidateRecords.getUserIdFromJwt as Mock).mockReturnValue(TEST_USER);
+  (ValidateRecords.validateIdentityRecords as Mock).mockResolvedValue({
+    kidValid: true,
+    signatureValid: true,
+    isValid: true,
+  });
   mockLoggerAppendKeys = vi.spyOn(logger, "appendKeys").mockImplementation(vi.fn());
 });
 
@@ -89,6 +96,7 @@ describe("user-identity-handler authorization", () => {
       await createSignedIdentityCheckCredentialJWT(FRAUD_ISSUER),
     ]);
     mockEVCSResponse(mockEVCSData);
+    (ValidateRecords.handleGetIdentityFromCredentialStore as Mock).mockResolvedValue(mockEVCSData);
 
     const auditIdentityRecordReadSpy = vi.spyOn(AuditModule, "auditIdentityRecordRead");
     const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
@@ -110,6 +118,12 @@ describe("user-identity-handler authorization", () => {
       kidValid: true,
       signatureValid: true,
     });
+    expect(ValidateRecords.handleGetIdentityFromCredentialStore).toHaveBeenCalledWith(
+      'Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6ImVjS2lkMTIzIn0.eyJzdWIiOiJ1cm46ZmRjOmdvdi51azoyMDIyOlRFU1RfVVNFUi1TN2pjckhMR0JqLTJrZ0ItOC1jWWhWck1kbzNDVjBMbEQ3QW4iLCJleHAiOjE3NTczMjQyMTcsImlhdCI6MTc1NzMyMzkxNywiaXNzIjoiaHR0cHM6Ly9tb2NrLmNyZWRlbnRpYWwtc3RvcmUuYnVpbGQuYWNjb3VudC5nb3YudWsvb3JjaGVzdHJhdGlvbiIsImF1ZCI6Imh0dHBzOi8vY3JlZGVudGlhbC1zdG9yZS5idWlsZC5hY2NvdW50Lmdvdi51ayIsInNjb3BlIjoicHJvdmluZyJ9.Sj-2jA6mLdfkU1ryoBCNHxpBCT49o9qfqpKPMLkKwY1D6V6SvVIERGbC0X-fh8SYk2z-strc9vahvacvkrNDUQ',
+      TEST_USER,
+      "govuk_signin_journey_id"
+    );
+    expect(ValidateRecords.validateIdentityRecords).toHaveBeenCalledWith(mockEVCSData);
     expect(auditIdentityRecordReadSpy).toHaveBeenCalledWith(
       {
         max_vot: "P3",
@@ -143,6 +157,7 @@ describe("user-identity-handler authorization", () => {
       await createSignedIdentityCheckCredentialJWT(FRAUD_ISSUER),
     ]);
     mockEVCSResponse(mockEVCSData);
+    (ValidateRecords.handleGetIdentityFromCredentialStore as Mock).mockResolvedValue(mockEVCSData);
 
     await handler(newEvent, {} as Context);
 
@@ -151,12 +166,14 @@ describe("user-identity-handler authorization", () => {
     });
   });
 
-  it("signatureValid should be false, given signature validation fails", async () => {
-    const misSignedStoredIdentity =
-      "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRpZDp3ZWI6YXBpLmlkZW50aXR5LmRldi5hY2NvdW50Lmdvdi51ayNmNWZlNWQyYS05ZWI2LTQ4MTktOGM0Ni03MjNlM2EyMTU2NWEifQ.eyJzdWIiOiJ1c2VyLXN1YiIsInZvdCI6IlAyIiwidnRtIjpbXX0.-jy9iwsn6uDzr6b3mk0JJZ4NdUf8z3O3ldBbbXKAAtxMH3TIMlBm5u2bI4I1qHrWk1BL2k8muKLV-VIUeych1A";
+  it("kidValid and signatureValid are passed through from validateIdentityRecords", async () => {
     const { mockEVCSData } = await createCredentialStoreIdentityResponse([], getDefaultJwtHeader());
-    mockEVCSData.si.vc = misSignedStoredIdentity;
-    mockEVCSResponse(mockEVCSData);
+    (ValidateRecords.handleGetIdentityFromCredentialStore as Mock).mockResolvedValue(mockEVCSData);
+    (ValidateRecords.validateIdentityRecords as Mock).mockResolvedValue({
+      kidValid: true,
+      signatureValid: false,
+      isValid: true,
+    });
 
     const result = await handler(newEvent, {} as Context);
 
@@ -172,52 +189,6 @@ describe("user-identity-handler authorization", () => {
     });
   });
 
-  it("kidValid should be false, given an invalid kid claim", async () => {
-    vi.spyOn(DidResolutionService, "isValidDidWeb").mockReturnValue(false);
-    const { mockEVCSData } = await createCredentialStoreIdentityResponse(
-      [],
-      getDefaultJwtHeader("ES256", "did:invalid-did")
-    );
-    mockEVCSResponse(mockEVCSData);
-
-    const result = await handler(newEvent, {} as Context);
-
-    expect(result.statusCode).toBe(HttpCodesEnum.OK);
-    const body = JSON.parse(result.body) as UserIdentityResponse;
-    expect(body).toStrictEqual({
-      vot: "P3",
-      content: { sub: "user-sub", vot: "P2", vtm: "https://oidc.account.gov.uk/trustmark" },
-      expired: false,
-      isValid: true,
-      kidValid: false,
-      signatureValid: false,
-    });
-  });
-
-  it("kidValid should be false, given non allow listed did controller header", async () => {
-    vi.spyOn(DidResolutionService, "isValidDidWeb").mockReturnValue(true);
-    vi.spyOn(DidResolutionService, "getDidWebController").mockReturnValue("DISALLOWED.CONTROLLER");
-
-    const { mockEVCSData } = await createCredentialStoreIdentityResponse(
-      [],
-      getDefaultJwtHeader("ES256", "did:web:DISALLOWED.CONTROLLER#f5fe5d2a-9eb6-4819-8c46-723e3a21565a")
-    );
-    mockEVCSResponse(mockEVCSData);
-
-    const result = await handler(newEvent, {} as Context);
-
-    expect(result.statusCode).toBe(HttpCodesEnum.OK);
-    const body = JSON.parse(result.body) as UserIdentityResponse;
-    expect(body).toStrictEqual({
-      vot: "P3",
-      content: { sub: "user-sub", vot: "P2", vtm: "https://oidc.account.gov.uk/trustmark" },
-      expired: false,
-      isValid: true,
-      kidValid: false,
-      signatureValid: false,
-    });
-  });
-
   it("should return Bad Request, given an invalid body", async () => {
     newEvent.body = undefined as never as string;
     const result = handler(newEvent, {} as Context);
@@ -229,6 +200,9 @@ describe("user-identity-handler authorization", () => {
   });
 
   it("should return Unauthorised given no Bearer token", async () => {
+    (ValidateRecords.getUserIdFromJwt as Mock).mockImplementation(() => {
+      throw new TokenValidationError(HttpCodesEnum.UNAUTHORIZED);
+    });
     newEvent.headers["Authorization"] = "";
     const result = handler(newEvent, {} as Context);
     await expect(result).resolves.toEqual({
@@ -238,6 +212,9 @@ describe("user-identity-handler authorization", () => {
   });
 
   it("should return Unauthorised given the Bearer token is malformed", async () => {
+    (ValidateRecords.getUserIdFromJwt as Mock).mockImplementation(() => {
+      throw new TokenValidationError(HttpCodesEnum.UNAUTHORIZED);
+    });
     newEvent.headers["Authorization"] = "Bearer bad.bearer.token";
     const result = handler(newEvent, {} as Context);
     await expect(result).resolves.toEqual({
@@ -250,15 +227,10 @@ describe("user-identity-handler authorization", () => {
     const auditIdentityRecordReadSpy = vi.spyOn(AuditModule, "auditIdentityRecordRead");
     const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
 
-    (globalThis.fetch as Mock) = vi.fn().mockResolvedValue(
-      Response.json(
-        {},
-        {
-          status: HttpCodesEnum.FORBIDDEN,
-          headers: { "content-type": "application/json" },
-        }
-      )
+    (ValidateRecords.handleGetIdentityFromCredentialStore as Mock).mockRejectedValue(
+      new CredentialStoreError(HttpCodesEnum.FORBIDDEN, TEST_USER, "govuk_signin_journey_id")
     );
+
     const result = handler(newEvent, {} as Context);
     await expect(result).resolves.toEqual({
       statusCode: HttpCodesEnum.FORBIDDEN,
@@ -288,14 +260,8 @@ describe("user-identity-handler authorization", () => {
   it("should return 401 given EVCS API responded with Unauthorized", async () => {
     const auditIdentityRecordReadSpy = vi.spyOn(AuditModule, "auditIdentityRecordRead");
     const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
-    (globalThis.fetch as Mock) = vi.fn().mockResolvedValue(
-      Response.json(
-        {},
-        {
-          status: HttpCodesEnum.UNAUTHORIZED,
-          headers: { "content-type": "application/json" },
-        }
-      )
+    (ValidateRecords.handleGetIdentityFromCredentialStore as Mock).mockRejectedValue(
+      new CredentialStoreError(HttpCodesEnum.UNAUTHORIZED, TEST_USER, "govuk_signin_journey_id")
     );
     const result = handler(newEvent, {} as Context);
     await expect(result).resolves.toEqual({
@@ -326,14 +292,8 @@ describe("user-identity-handler authorization", () => {
   it("should return 500 given EVCS API responded with Internal Server Error", async () => {
     const auditIdentityRecordReadSpy = vi.spyOn(AuditModule, "auditIdentityRecordRead");
     const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
-    (globalThis.fetch as Mock) = vi.fn().mockResolvedValue(
-      Response.json(
-        {},
-        {
-          status: HttpCodesEnum.INTERNAL_SERVER_ERROR,
-          headers: { "content-type": "application/json" },
-        }
-      )
+    (ValidateRecords.handleGetIdentityFromCredentialStore as Mock).mockRejectedValue(
+      new CredentialStoreError(HttpCodesEnum.INTERNAL_SERVER_ERROR, TEST_USER, "govuk_signin_journey_id")
     );
     const result = handler(newEvent, {} as Context);
     await expect(result).resolves.toEqual({
@@ -364,14 +324,8 @@ describe("user-identity-handler authorization", () => {
   it("should return 404 given EVCS API responded with Not Found", async () => {
     const auditIdentityRecordReadSpy = vi.spyOn(AuditModule, "auditIdentityRecordRead");
     const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
-    (globalThis.fetch as Mock) = vi.fn().mockResolvedValue(
-      Response.json(
-        {},
-        {
-          status: HttpCodesEnum.NOT_FOUND,
-          headers: { "content-type": "application/json" },
-        }
-      )
+    (ValidateRecords.handleGetIdentityFromCredentialStore as Mock).mockRejectedValue(
+      new CredentialStoreError(HttpCodesEnum.NOT_FOUND, TEST_USER, "govuk_signin_journey_id")
     );
     const result = handler(newEvent, {} as Context);
     await expect(result).resolves.toEqual({
@@ -444,7 +398,7 @@ describe("user-identity-handler expired", () => {
       ...fraudChecks,
       { signedVc: passportCheck, state: CURRENT },
     ]);
-    mockEVCSResponse(mockEVCSData);
+    (ValidateRecords.handleGetIdentityFromCredentialStore as Mock).mockResolvedValue(mockEVCSData);
 
     const result = await handler(newEvent, {} as Context);
 
@@ -474,7 +428,7 @@ describe("user-identity-handler expired field", () => {
       await createSignedIdentityCheckCredentialJWT(PASSPORT_ISSUER),
       await createSignedIdentityCheckCredentialJWT(FRAUD_ISSUER),
     ]);
-    mockEVCSResponse(mockEVCSData);
+    (ValidateRecords.handleGetIdentityFromCredentialStore as Mock).mockResolvedValue(mockEVCSData);
 
     const result = await handler(newEvent, {} as Context);
 
@@ -490,88 +444,13 @@ describe("user-identity-handler expired field", () => {
       await createSignedIdentityCheckCredentialJWT(PASSPORT_ISSUER),
       await createSignedIdentityCheckCredentialJWT(FRAUD_ISSUER),
     ]);
-    mockEVCSResponse(mockEVCSData);
+    (ValidateRecords.handleGetIdentityFromCredentialStore as Mock).mockResolvedValue(mockEVCSData);
 
     const result = await handler(newEvent, {} as Context);
 
     expect(result.statusCode).toBe(HttpCodesEnum.OK);
     const body = JSON.parse(result.body) as UserIdentityResponse;
     expect(body.expired).toBe(false);
-  });
-});
-
-describe("user-identity-handler isValid", () => {
-  beforeEach(() => {
-    vi.spyOn(storedIdentityValidator, "validateStoredIdentityCredentials").mockRestore();
-  });
-
-  it("should set isValid to false if stored identity record is missing credential signature", async () => {
-    const passportCredential = await createSignedIdentityCheckCredentialJWT(PASSPORT_ISSUER);
-    const fraudCredential = await createSignedIdentityCheckCredentialJWT(FRAUD_ISSUER);
-    const fraudCredentialSignature = getJwtSignature(fraudCredential)!;
-
-    const credentials = [passportCredential, fraudCredential];
-    const credentialSignaturesMissingOne = [fraudCredentialSignature];
-
-    const { mockEVCSData } = await createCredentialStoreIdentityResponse(
-      credentials,
-      getDefaultJwtHeader(),
-      credentialSignaturesMissingOne
-    );
-    mockEVCSResponse(mockEVCSData);
-
-    const result = await handler(newEvent, {} as Context);
-
-    expect(result.statusCode).toBe(HttpCodesEnum.OK);
-    const body = JSON.parse(result.body) as UserIdentityResponse;
-    expect(body).toStrictEqual({
-      vot: "P3",
-      content: {
-        sub: "user-sub",
-        vot: "P2",
-        vtm: "https://oidc.account.gov.uk/trustmark",
-        credentials: credentialSignaturesMissingOne,
-      },
-      expired: false,
-      isValid: false,
-      kidValid: true,
-      signatureValid: true,
-    });
-  });
-
-  it("should set isValid to false if stored identity record contains extra credential signature", async () => {
-    const passportCredential = await createSignedIdentityCheckCredentialJWT(PASSPORT_ISSUER);
-    const fraudCredential = await createSignedIdentityCheckCredentialJWT(FRAUD_ISSUER);
-    const fraudCredentialSignature = fraudCredential.split(".").at(2)!;
-    const passportCredentialSignature = passportCredential.split(".").at(2)!;
-
-    const credentials = [passportCredential];
-    const credentialSignaturesExtraOne = [passportCredentialSignature, fraudCredentialSignature];
-
-    const { mockEVCSData } = await createCredentialStoreIdentityResponse(
-      credentials,
-      getDefaultJwtHeader(),
-      credentialSignaturesExtraOne
-    );
-    mockEVCSResponse(mockEVCSData);
-
-    const result = await handler(newEvent, {} as Context);
-
-    expect(result.statusCode).toBe(HttpCodesEnum.OK);
-    const body = JSON.parse(result.body) as UserIdentityResponse;
-    expect(body).toStrictEqual({
-      vot: "P3",
-      content: {
-        sub: "user-sub",
-        vot: "P2",
-        vtm: "https://oidc.account.gov.uk/trustmark",
-        credentials: credentialSignaturesExtraOne,
-      },
-      expired: false,
-      isValid: false,
-      kidValid: true,
-      signatureValid: true,
-    });
   });
 });
 
@@ -593,7 +472,7 @@ describe("user-identity-handler max_vot", () => {
       vcs: [],
     };
 
-    mockEVCSResponse(mockEVCSData);
+    (ValidateRecords.handleGetIdentityFromCredentialStore as Mock).mockResolvedValue(mockEVCSData);
 
     const result = await handler(newEvent, {} as Context);
     expect(result.statusCode).toBe(HttpCodesEnum.OK);
@@ -619,7 +498,7 @@ describe("user-identity-handler max_vot", () => {
       vcs: [],
     };
 
-    mockEVCSResponse(mockEVCSData);
+    (ValidateRecords.handleGetIdentityFromCredentialStore as Mock).mockResolvedValue(mockEVCSData);
 
     const result = await handler(newEvent, {} as Context);
     expect(result.statusCode).toBe(HttpCodesEnum.OK);
@@ -628,69 +507,69 @@ describe("user-identity-handler max_vot", () => {
   });
 });
 
-type StoredIdentityResponse = {
-  mockEVCSData: CredentialStoreIdentityResponse;
-  credentialSignatures: string[];
-};
+// type StoredIdentityResponse = {
+//   mockEVCSData: CredentialStoreIdentityResponse;
+//   credentialSignatures: string[];
+// };
 
-const createCredentialStoreIdentityResponse = async (
-  signedVcs: string[],
-  header: JWTHeaderParameters = getDefaultJwtHeader(),
-  forcedCredentialSignatures?: string[]
-): Promise<StoredIdentityResponse> => {
-  const vcsAndStates = signedVcs.map((vc) => {
-    return { signedVc: vc, state: CURRENT };
-  });
-  return await createCredentialStoreIdentityResponseWithStates(vcsAndStates, header, forcedCredentialSignatures);
-};
-
-const createCredentialStoreIdentityResponseWithStates = async (
-  credentialsAndStates: { signedVc: string; state: string }[],
-  header: JWTHeaderParameters = getDefaultJwtHeader(),
-  forcedCredentialSignatures?: string[]
-): Promise<StoredIdentityResponse> => {
-  const evcsVcs = credentialsAndStates.map((vcState) => {
-    return { state: vcState.state, vc: vcState.signedVc, metadata: undefined };
-  });
-
-  const credentialSignatures =
-    forcedCredentialSignatures ?? credentialsAndStates.map((credential) => credential.signedVc.split(".").at(2)!);
-  const storedIdentity = createStoredIdentityRecord(...credentialSignatures);
-
-  const response: CredentialStoreIdentityResponse = {
-    si: {
-      vc: await sign(header, storedIdentity),
-      metadata: undefined,
-      unsignedVot: "P3",
-    },
-    vcs: evcsVcs,
-  };
-
-  return { mockEVCSData: response, credentialSignatures: credentialSignatures };
-};
-
-const createStoredIdentityRecord = (...credentialSignatures: string[]) => {
-  const storedIdentityRecord = {
-    sub: "user-sub",
-    vot: "P2",
-    vtm: "https://oidc.account.gov.uk/trustmark",
-  };
-
-  return credentialSignatures?.length
-    ? { ...storedIdentityRecord, credentials: credentialSignatures }
-    : storedIdentityRecord;
-};
-
-const createSignedIdentityCheckCredentialJWT = async (issuer: string, nbfDate?: string): Promise<string> => {
-  const nbfSeconds = Math.floor((nbfDate ? new Date(nbfDate).getTime() : Date.now()) / 1000);
-  const credential: IdentityCheckCredentialJWTClass = {
-    iss: issuer,
-    nbf: nbfSeconds,
-    sub: "sdf",
-    vc: {
-      evidence: [{}],
-      type: ["VerifiableCredential", "IdentityCheckCredential"],
-    },
-  };
-  return await sign(getDefaultJwtHeader(), credential);
-};
+// const createCredentialStoreIdentityResponse = async (
+//   signedVcs: string[],
+//   header: JWTHeaderParameters = getDefaultJwtHeader(),
+//   forcedCredentialSignatures?: string[]
+// ): Promise<StoredIdentityResponse> => {
+//   const vcsAndStates = signedVcs.map((vc) => {
+//     return { signedVc: vc, state: CURRENT };
+//   });
+//   return await createCredentialStoreIdentityResponseWithStates(vcsAndStates, header, forcedCredentialSignatures);
+// };
+//
+// const createCredentialStoreIdentityResponseWithStates = async (
+//   credentialsAndStates: { signedVc: string; state: string }[],
+//   header: JWTHeaderParameters = getDefaultJwtHeader(),
+//   forcedCredentialSignatures?: string[]
+// ): Promise<StoredIdentityResponse> => {
+//   const evcsVcs = credentialsAndStates.map((vcState) => {
+//     return { state: vcState.state, vc: vcState.signedVc, metadata: undefined };
+//   });
+//
+//   const credentialSignatures =
+//     forcedCredentialSignatures ?? credentialsAndStates.map((credential) => credential.signedVc.split(".").at(2)!);
+//   const storedIdentity = createStoredIdentityRecord(...credentialSignatures);
+//
+//   const response: CredentialStoreIdentityResponse = {
+//     si: {
+//       vc: await sign(header, storedIdentity),
+//       metadata: undefined,
+//       unsignedVot: "P3",
+//     },
+//     vcs: evcsVcs,
+//   };
+//
+//   return { mockEVCSData: response, credentialSignatures: credentialSignatures };
+// };
+//
+// const createStoredIdentityRecord = (...credentialSignatures: string[]) => {
+//   const storedIdentityRecord = {
+//     sub: "user-sub",
+//     vot: "P2",
+//     vtm: "https://oidc.account.gov.uk/trustmark",
+//   };
+//
+//   return credentialSignatures?.length
+//     ? { ...storedIdentityRecord, credentials: credentialSignatures }
+//     : storedIdentityRecord;
+// };
+//
+// const createSignedIdentityCheckCredentialJWT = async (issuer: string, nbfDate?: string): Promise<string> => {
+//   const nbfSeconds = Math.floor((nbfDate ? new Date(nbfDate).getTime() : Date.now()) / 1000);
+//   const credential: IdentityCheckCredentialJWTClass = {
+//     iss: issuer,
+//     nbf: nbfSeconds,
+//     sub: "sdf",
+//     vc: {
+//       evidence: [{}],
+//       type: ["VerifiableCredential", "IdentityCheckCredential"],
+//     },
+//   };
+//   return await sign(getDefaultJwtHeader(), credential);
+// };
