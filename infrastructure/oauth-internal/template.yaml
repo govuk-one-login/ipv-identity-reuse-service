@@ -29,6 +29,15 @@ Parameters:
     Type: String
     Default: SIS
 
+  AuthorizationRequestType:
+    Description: >
+      Whether to accept CRI or IPV authorisation requests
+    Type: String
+    Default: CRI
+    AllowedValues:
+      - CRI
+      - IPV
+
   CodeSigningConfigArn:
     Description: The ARN of the Code Signing Config to use, provided by the deployment pipeline
     Type: String
@@ -220,9 +229,10 @@ Resources:
     Properties:
       Location:
         ApplicationId: arn:aws:serverlessrepo:eu-west-2:667736788427:applications/di-ipv-cri-oauth-common
-        SemanticVersion: 0.8.0
+        SemanticVersion: 1.1.0
       Parameters:
         AuditEventNamePrefix: !Ref AuditEventNamePrefix
+        AuthorizationRequestType: !Ref AuthorizationRequestType
         AuditTxmaStackName: !Ref SharedStackName # TXMA infrastructure lives in the reuse-identity-shared stack
         CSLSDestinationArn: !Ref CSLSSubscriptionEndpointArn
         CriIdentifier: !Ref MainCloudWatchMetricNamespace # Used for the metrics namespace and metrics service names only
