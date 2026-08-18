@@ -1,27 +1,28 @@
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
-import { jwtVerify } from "jose";
 import { auditIdentityRecordRead, auditIdentityRecordReturned } from "../../commons/audit";
 import { getConfiguration } from "../../commons/configuration";
 import { HttpCodesEnum } from "../../commons/constants";
-import { getJwtBody, getJwtHeader } from "../../commons/jwt-utilities";
+import { getJwtBody } from "../../commons/jwt-utilities";
 import logger from "../../commons/logger";
 import { CredentialStoreIdentityResponse } from "../../credential-store/credential-store-identity-response";
-import {
-  getIdentityFromCredentialStore,
-  parseCurrentVerifiableCredentials,
-} from "../../credential-store/encrypted-credential-store";
+import { parseCurrentVerifiableCredentials } from "../../credential-store/encrypted-credential-store";
 import { calculateVot } from "../../identity-reuse/calculate-vot";
-import * as didResolutionService from "../../identity-reuse/did-resolution-service";
 import { getFraudVc } from "../../identity-reuse/fraud-check-service";
 import { hasIdentityExpired } from "../../identity-reuse/identity-expiry-service";
-import { validateStoredIdentityCredentials } from "../../identity-reuse/stored-identity-validator";
 import { VerifiableCredentialJWT } from "../../identity-reuse/verifiable-credential-jwt";
-import { UserIdentityErrorResponse } from "./post-phase2-user-identity-error-response";
 import { UserIdentityRequest } from "./post-phase2-user-identity-request";
 import { StoredIdentityJWT } from "./stored-identity-jwt";
 import { StoredIdentityVectorOfTrust, UserIdentityResponse } from "./post-phase2-user-identity-response";
 import { getProperty } from "../../commons/case-insensitive-header-utilities";
+import {
+  getUserIdFromJwt,
+  handleGetIdentityFromCredentialStore,
+  createErrorResponse,
+  createAndLogErrorResponse,
+  validateIdentityRecords,
+} from "../../commons/validate-records";
+import { CredentialStoreError } from "../../commons/errors";
 
 export const handler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
   const request = event.body ? (JSON.parse(event.body) as UserIdentityRequest) : undefined;
@@ -46,31 +47,25 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
 
   let subject: string;
   try {
-    const jwt = getJwtBody(authorisation.split(" ").at(1) || ""); // Validate bearer token
-    if (!jwt.sub) {
-      logger.error("Bearer token does not include subject");
-      return createErrorResponse(HttpCodesEnum.UNAUTHORIZED);
-    }
-
-    subject = jwt.sub;
+    subject = getUserIdFromJwt(authorisation);
   } catch {
     logger.error("Error whilst decoding Bearer token body");
     return createErrorResponse(HttpCodesEnum.UNAUTHORIZED);
   }
 
   try {
-    const result: Response = await getIdentityFromCredentialStore(authorisation);
-
-    if (!result.ok) {
-      logger.error("Error received from EVCS service", { status: result.status });
-      return await createAndLogErrorResponse(result.status, subject, request.govukSigninJourneyId);
-    }
-
-    const identityResponse: CredentialStoreIdentityResponse = await result.json();
+    const identityResponse = await handleGetIdentityFromCredentialStore(
+      authorisation,
+      subject,
+      request.govukSigninJourneyId
+    );
     const response = await createSuccessResponse(identityResponse, request.vtr, subject, request.govukSigninJourneyId);
 
     return { statusCode: HttpCodesEnum.OK, body: JSON.stringify(response) };
   } catch (error) {
+    if (error instanceof CredentialStoreError) {
+      return await createAndLogErrorResponse(error.statusCode, error.userId, error.journeyId);
+    }
     logger.error("Error retrieving user identity", { error });
     return await createAndLogErrorResponse(HttpCodesEnum.INTERNAL_SERVER_ERROR, subject, request.govukSigninJourneyId);
   }
@@ -83,12 +78,10 @@ const createSuccessResponse = async (
   govukSigninJourneyId: string
 ): Promise<UserIdentityResponse> => {
   const configuration = await getConfiguration();
-  const currentVcsEncoded: string[] = identityResponse.vcs.map((vcWithMetadata) => vcWithMetadata.vc);
   const currentVcs: VerifiableCredentialJWT[] = parseCurrentVerifiableCredentials(identityResponse);
   const fraudVc = getFraudVc(currentVcs, configuration.fraudIssuer);
   const content = getJwtBody<StoredIdentityJWT>(identityResponse.si.vc);
-  const kid = getJwtHeader(identityResponse.si.vc).kid || "";
-  const validationResults = await validateCryptography(kid, identityResponse);
+  const { kidValid, signatureValid, isValid } = await validateIdentityRecords(identityResponse);
   const vot: StoredIdentityVectorOfTrust = calculateVot(content, identityResponse.si.unsignedVot, vtr);
   const vtm = `https://oidc.account.gov.uk/trustmark`;
   const maxVot = content.max_vot || identityResponse.si.unsignedVot;
@@ -113,9 +106,10 @@ const createSuccessResponse = async (
   const successResponse: UserIdentityResponse = {
     content: { ...content, vot, vtm },
     vot: maxVot,
-    isValid: validateStoredIdentityCredentials(content, currentVcsEncoded),
+    isValid: isValid,
     expired,
-    ...validationResults,
+    kidValid,
+    signatureValid,
   };
 
   await auditIdentityRecordReturned(
@@ -133,119 +127,4 @@ const createSuccessResponse = async (
   );
 
   return successResponse;
-};
-
-const createErrorResponse = (errorCode: HttpCodesEnum): APIGatewayProxyResult => {
-  let error;
-  let error_description;
-  switch (errorCode) {
-    case HttpCodesEnum.BAD_REQUEST: {
-      error = "bad_request";
-      error_description = "Bad request from client";
-      break;
-    }
-    case HttpCodesEnum.NOT_FOUND: {
-      error = "not_found";
-      error_description = "No Stored Identity exists for this user or Stored Identity has been invalidated";
-      break;
-    }
-    case HttpCodesEnum.UNAUTHORIZED: {
-      error = "invalid_token";
-      error_description = "Bearer token is missing or invalid";
-      break;
-    }
-    case HttpCodesEnum.FORBIDDEN: {
-      error = "forbidden";
-      error_description = "Access token expired or not permitted";
-      break;
-    }
-    default: {
-      error = "server_error";
-      error_description = "Unable to retrieve data";
-    }
-  }
-  return {
-    statusCode: errorCode,
-    body: JSON.stringify({ error, error_description } as UserIdentityErrorResponse),
-  };
-};
-
-const generateErrorCodeDescription = async (errorCode: HttpCodesEnum): Promise<string> => {
-  let error_code_description;
-  switch (errorCode) {
-    case HttpCodesEnum.NOT_FOUND: {
-      error_code_description = "no_record";
-      break;
-    }
-    case HttpCodesEnum.UNAUTHORIZED: {
-      error_code_description = "authentication_failure";
-      break;
-    }
-    case HttpCodesEnum.FORBIDDEN: {
-      error_code_description = "forbidden";
-      break;
-    }
-    default: {
-      error_code_description = "service_error";
-    }
-  }
-  return error_code_description;
-};
-
-const createAndLogErrorResponse = async (
-  errorCode: HttpCodesEnum,
-  userId: string,
-  govukSigninJourneyId?: string
-): Promise<APIGatewayProxyResult> => {
-  await auditIdentityRecordRead(
-    {
-      retrieval_outcome: errorCode === HttpCodesEnum.NOT_FOUND ? "no_record" : "service_error",
-    },
-    undefined,
-    userId,
-    govukSigninJourneyId
-  );
-
-  const identityRecordErrorDescription = await generateErrorCodeDescription(errorCode);
-
-  const errorResponse = createErrorResponse(errorCode);
-
-  await auditIdentityRecordReturned(
-    {
-      response_outcome: "error",
-      error_code: identityRecordErrorDescription,
-    },
-    {
-      response_body: errorResponse.body,
-    },
-    userId,
-    govukSigninJourneyId
-  );
-
-  return errorResponse;
-};
-
-const validateCryptography = async (
-  kid: string,
-  identityResponse: CredentialStoreIdentityResponse
-): Promise<{ kidValid: boolean; signatureValid: boolean }> => {
-  const configuration = await getConfiguration();
-  const controller = didResolutionService.getDidWebController(kid);
-  const kidValid = didResolutionService.isValidDidWeb(kid) && configuration.controllerAllowList.includes(controller);
-  let signatureValid = false;
-  if (kidValid) {
-    signatureValid = await verifySignature(kid, identityResponse.si.vc);
-  }
-  return { kidValid, signatureValid };
-};
-
-export const verifySignature = async (kid: string, jwt: string): Promise<boolean> => {
-  try {
-    const jwk = await didResolutionService.getPublicKeyJwkForKid(kid);
-    await jwtVerify(jwt, jwk);
-  } catch (error) {
-    logger.error("Error verifying signature", { error });
-    return false;
-  }
-  return true;
 };
