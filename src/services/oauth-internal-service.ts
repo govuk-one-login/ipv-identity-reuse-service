@@ -6,6 +6,7 @@ import {
   isValidSessionSuccessResponse,
 } from "./oauth-internal-service-response.js";
 import { getOauthInternalApiUrl, getSessionTimeout } from "../commons/configuration.js";
+import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
 
 export type SessionResult = {
   session_id: string;
@@ -16,6 +17,7 @@ export type SessionResult = {
 export type GetSessionResult = {
   storageAccessToken?: string;
   subject: string;
+  vtr?: IdentityVectorOfTrust[];
 };
 
 type AuthorizationResult = {
@@ -134,6 +136,7 @@ export async function getSessionDetails(sessionId: string): Promise<GetSessionRe
     return {
       storageAccessToken: sessionData.storageAccessToken,
       subject: sessionData.subject,
+      vtr: sessionData.vtr,
     };
   } else {
     logger.error(`GET session handler returned non-200 status: ${responseFromSessionEndpoint.status}`);

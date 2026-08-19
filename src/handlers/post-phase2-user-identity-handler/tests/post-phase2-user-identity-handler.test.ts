@@ -79,7 +79,11 @@ beforeEach(() => {
     fraudIssuer: [FRAUD_ISSUER],
     fraudValidityPeriod: TEST_FRAUD_VALIDITY_DAYS,
   } as Configuration);
-  vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue(false);
+  vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue({
+    fraudExpired: false,
+    drivingLicenceExpired: false,
+    expired: false,
+  });
   (ValidateRecords.getUserIdFromJwt as Mock).mockReturnValue(TEST_USER);
   (ValidateRecords.validateIdentityRecords as Mock).mockResolvedValue({
     kidValid: true,
@@ -476,7 +480,11 @@ describe("user-identity-handler expired", () => {
 
 describe("user-identity-handler expired field", () => {
   it("should set expired to true when hasIdentityExpired returns true", async () => {
-    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue(true);
+    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue({
+      fraudExpired: true,
+      drivingLicenceExpired: false,
+      expired: true,
+    });
 
     const { mockEVCSData } = await createCredentialStoreIdentityResponse([
       await createSignedIdentityCheckCredentialJWT(PASSPORT_ISSUER),
@@ -492,7 +500,11 @@ describe("user-identity-handler expired field", () => {
   });
 
   it("should set expired to false when hasIdentityExpired returns false", async () => {
-    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue(false);
+    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue({
+      fraudExpired: false,
+      drivingLicenceExpired: false,
+      expired: false,
+    });
 
     const { mockEVCSData } = await createCredentialStoreIdentityResponse([
       await createSignedIdentityCheckCredentialJWT(PASSPORT_ISSUER),

@@ -38,7 +38,7 @@ describe("identity-expiry-service", () => {
     vi.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired").mockReturnValue(false);
 
     const result = hasIdentityExpired([createMockVc("fraudCRI")], BASE_CONFIGURATION);
-    expect(result).toBe(false);
+    expect(result).toEqual({ fraudExpired: false, drivingLicenceExpired: false, expired: false });
   });
 
   it("should return true when fraud check has expired", () => {
@@ -46,7 +46,7 @@ describe("identity-expiry-service", () => {
     vi.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired").mockReturnValue(false);
 
     const result = hasIdentityExpired([createMockVc("fraudCRI")], BASE_CONFIGURATION);
-    expect(result).toBe(true);
+    expect(result).toEqual({ fraudExpired: true, drivingLicenceExpired: false, expired: true });
   });
 
   it("should return true when driving licence has expired", () => {
@@ -54,7 +54,7 @@ describe("identity-expiry-service", () => {
     vi.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired").mockReturnValue(true);
 
     const result = hasIdentityExpired([createMockVc("fraudCRI")], BASE_CONFIGURATION);
-    expect(result).toBe(true);
+    expect(result).toEqual({ fraudExpired: false, drivingLicenceExpired: true, expired: true });
   });
 
   it("should return true when both fraud and driving licence have expired", () => {
@@ -62,7 +62,7 @@ describe("identity-expiry-service", () => {
     vi.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired").mockReturnValue(true);
 
     const result = hasIdentityExpired([createMockVc("fraudCRI")], BASE_CONFIGURATION);
-    expect(result).toBe(true);
+    expect(result).toEqual({ fraudExpired: true, drivingLicenceExpired: true, expired: true });
   });
 
   it("should return false when driving licence expiry check returns null", () => {
@@ -70,7 +70,7 @@ describe("identity-expiry-service", () => {
     vi.spyOn(drivingLicenceExpiryService, "hasDrivingLicenceExpired").mockImplementation(vi.fn());
 
     const result = hasIdentityExpired([createMockVc("fraudCRI")], BASE_CONFIGURATION);
-    expect(result).toBe(false);
+    expect(result).toEqual({ fraudExpired: false, drivingLicenceExpired: false, expired: false });
   });
 
   it("should not check driving licence expiry when dcmawIssuer is undefined", () => {
@@ -80,7 +80,7 @@ describe("identity-expiry-service", () => {
     const configuration = { ...BASE_CONFIGURATION, dcmawIssuer: undefined };
     const result = hasIdentityExpired([createMockVc("fraudCRI")], configuration);
 
-    expect(result).toBe(false);
+    expect(result).toEqual({ fraudExpired: false, drivingLicenceExpired: false, expired: false });
     expect(mockDlCheck).not.toHaveBeenCalled();
   });
 
@@ -91,7 +91,7 @@ describe("identity-expiry-service", () => {
     const configuration = { ...BASE_CONFIGURATION, drivingLicenceValidityPeriod: undefined };
     const result = hasIdentityExpired([createMockVc("fraudCRI")], configuration);
 
-    expect(result).toBe(false);
+    expect(result).toEqual({ fraudExpired: false, drivingLicenceExpired: false, expired: false });
     expect(mockDlCheck).not.toHaveBeenCalled();
   });
 
