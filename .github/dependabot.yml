@@ -13,9 +13,6 @@ updates:
         update-types: ["version-update:semver-patch"]
       - dependency-name: "@pact-foundation/pact"
         versions: ["v16.4.0", "v16.3.1", "v16.3.0"]
-      - dependency-name: "typescript"
-        # TypeScript 6.0.0 has breaking changes, so delaying the upgrade until we have capacity to work out the issues
-        versions: [ "6.x" ]
     open-pull-requests-limit: 5
     pull-request-branch-name:
       separator: "-"
@@ -28,6 +25,17 @@ updates:
         dependency-type: "development"
         patterns:
           - "*"
+        exclude-patterns:
+          - "@govuk-one-login/ipv-trust-and-reuse-eslint-rules"
+          - "typescript"
+      eslint-rules:
+        dependency-type: "development"
+        allow:
+          - "@govuk-one-login/ipv-trust-and-reuse-eslint-rules"
+      typescript:
+        dependency-type: "development"
+        allow:
+          - "typescript"
 
   - package-ecosystem: "github-actions"
     # Workflow files stored in the default location of `.github/workflows`
