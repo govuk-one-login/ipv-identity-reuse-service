@@ -28,7 +28,9 @@ test.describe("Confirm details page", () => {
       credentialJwts,
       "P2",
       await getDidControllerName(),
-      await getSigningKeyId()
+      await getSigningKeyId(),
+      undefined,
+      "P3"
     );
 
     await orchestrationStub.goto();

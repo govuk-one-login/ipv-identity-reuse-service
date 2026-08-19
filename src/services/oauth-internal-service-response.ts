@@ -1,3 +1,5 @@
+import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
+
 export interface AuthorizationSuccessResponse {
   redirectionURI: string;
   authorizationCode: { value: string };
@@ -11,7 +13,7 @@ export interface SessionSuccessResponse {
 }
 
 export interface GetSessionSuccessResponse {
-  vtr?: string;
+  vtr?: IdentityVectorOfTrust[];
   storageAccessToken?: string;
   clientSessionId: string;
   persistentSessionId?: string;

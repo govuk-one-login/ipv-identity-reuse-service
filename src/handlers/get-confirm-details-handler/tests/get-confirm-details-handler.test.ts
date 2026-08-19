@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, Mock, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, Mock, vi, vitest } from "vitest";
 import { lambdaHandler } from "../get-confirm-details-handler.js";
 import { APIGatewayProxyEvent } from "aws-lambda";
 import { handleGetIdentityFromCredentialStore, validateIdentityRecords } from "../../../commons/validate-records.js";
@@ -6,6 +6,13 @@ import { CredentialStoreError, StoredIdentityValidationError } from "../../../co
 import { HttpCodesEnum } from "../../../commons/constants.js";
 import { getSessionDetails } from "../../../services/oauth-internal-service.js";
 import translations from "../../../../locales/en/translation.json" with { type: "json" };
+import * as identityExpiryService from "../../../identity-reuse/identity-expiry-service.js";
+import * as calculateVotModule from "../../../identity-reuse/calculate-vot.js";
+import * as validateRecords from "../../../commons/validate-records.js";
+import * as credentialStore from "../../../credential-store/encrypted-credential-store.js";
+import * as configuration from "../../../commons/configuration.js";
+import * as jwtUtilities from "../../../commons/jwt-utilities.js";
+import { CredentialStoreIdentityResponse } from "../../../credential-store/credential-store-identity-response.js";
 
 const mockRender = vi.hoisted(() => vi.fn().mockReturnValue("Rendered Confirm Details Screen"));
 
@@ -15,6 +22,15 @@ vi.mock("nunjucks", () => ({
       render: mockRender,
       addFilter: vi.fn(),
     })),
+  },
+}));
+
+vitest.mock("../../../commons/logger");
+vitest.mock("@aws-lambda-powertools/metrics", () => ({
+  Metrics: class {
+    addDimensions = vi.fn();
+    addMetric = vi.fn();
+    publishStoredMetrics = vi.fn();
   },
 }));
 
@@ -35,6 +51,7 @@ vi.mock("../../../services/oauth-internal-service", () => ({
   getSessionDetails: vi.fn().mockResolvedValue({
     storageAccessToken: "mock-storage-access-token",
     subject: "user-sub",
+    vtr: ["P2"],
   }),
 }));
 
@@ -44,14 +61,62 @@ vi.mock("../../../commons/cookie-utilities", () => ({
 
 process.env.DOMAIN_NAME = "test-domain";
 
+const mockIdentityResponse: CredentialStoreIdentityResponse = {
+  si: {
+    vc: "header.payload.signature",
+    metadata: undefined,
+    unsignedVot: "P2",
+  },
+  vcs: [{ state: "CURRENT", vc: "vc-jwt", metadata: undefined }],
+};
+
 const validEvent = () =>
   ({
-    queryStringParameters: { redirect_uri: "https://example.com", state: "state-id", client_id: "client" },
-    headers: { cookie: "identity_reuse_service_session=test-session-id" },
+    queryStringParameters: {
+      redirect_uri: "https://example.com",
+      state: "state-id",
+      client_id: "client",
+    },
+    headers: {
+      authorization: "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJ1c2VyLWlkIn0.signature",
+    },
   }) as never as APIGatewayProxyEvent;
 
+beforeEach(() => {
+  vi.spyOn(validateRecords, "handleGetIdentityFromCredentialStore").mockResolvedValue(mockIdentityResponse);
+  vi.spyOn(validateRecords, "validateIdentityRecords").mockResolvedValue({
+    kidValid: true,
+    signatureValid: true,
+    isValid: true,
+    storedIdentityJwt: {
+      sub: "user-sub",
+      credentials: [],
+      vot: "P2",
+      vtm: "https://oidc.account.gov.uk/trustmark",
+      claims: {
+        "https://vocab.account.gov.uk/v1/coreIdentity": {},
+        "https://vocab.account.gov.uk/v1/address": [],
+      },
+    },
+  });
+  vi.spyOn(configuration, "getConfiguration").mockResolvedValue({
+    evcsApiUrl: "https://evcs.gov.uk",
+    controllerAllowList: [],
+    fraudIssuer: ["fraudCRI"],
+    fraudValidityPeriod: 180,
+  } as never);
+  vi.spyOn(credentialStore, "parseCurrentVerifiableCredentials").mockReturnValue([]);
+  vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue({
+    fraudExpired: false,
+    drivingLicenceExpired: false,
+    expired: false,
+  });
+  vi.spyOn(jwtUtilities, "getJwtBody").mockReturnValue({ sub: "user-sub", vot: "P2", max_vot: "P2" } as never);
+  vi.spyOn(calculateVotModule, "calculateVot").mockReturnValue("P2");
+});
+
 afterEach(() => {
-  vi.clearAllMocks();
+  vitest.clearAllMocks();
 });
 
 it("should render the confirm details screen when all query string parameters are provided", async () => {
@@ -72,7 +137,7 @@ it("should render the confirm details screen when all query string parameters ar
   expect(getSessionDetails).toHaveBeenCalledWith("test-session-id");
   expect(handleGetIdentityFromCredentialStore).toHaveBeenCalledWith("Bearer mock-storage-access-token", "user-sub");
   expect(mockRender).toHaveBeenCalledExactlyOnceWith(
-    expect.toSatisfy((filename) => filename.endsWith("index.njk")),
+    expect.toSatisfy((filename: string) => filename.endsWith("index.njk")),
     {
       assetPath: "./assets",
       redirect_uri: "https://example.com",
@@ -225,5 +290,111 @@ describe("handler record validation", () => {
       headers: { Location: "https://test-domain/error/unrecoverable" },
       body: "",
     });
+  });
+});
+
+describe("combined expiry and VoT checks", () => {
+  it("should redirect when both identity is expired and VoT is insufficient", async () => {
+    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue({
+      fraudExpired: true,
+      drivingLicenceExpired: true,
+      expired: true,
+    });
+    vi.spyOn(calculateVotModule, "calculateVot").mockReturnValue("P0");
+
+    const result = await lambdaHandler(validEvent());
+
+    expect(result).toEqual({
+      statusCode: 302,
+      body: "",
+      headers: {
+        Location: "https://test-domain/error/unrecoverable",
+      },
+    });
+  });
+
+  it("should redirect when only fraud check is expired but VoT is sufficient", async () => {
+    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue({
+      fraudExpired: true,
+      drivingLicenceExpired: false,
+      expired: true,
+    });
+    vi.spyOn(calculateVotModule, "calculateVot").mockReturnValue("P2");
+
+    const result = await lambdaHandler(validEvent());
+
+    expect(result).toEqual({
+      statusCode: 302,
+      body: "",
+      headers: {
+        Location: "https://test-domain/error/unrecoverable",
+      },
+    });
+  });
+
+  it("should redirect when only driving licence is expired but VoT is sufficient", async () => {
+    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue({
+      fraudExpired: false,
+      drivingLicenceExpired: true,
+      expired: true,
+    });
+    vi.spyOn(calculateVotModule, "calculateVot").mockReturnValue("P2");
+
+    const result = await lambdaHandler(validEvent());
+
+    expect(result).toEqual({
+      statusCode: 302,
+      body: "",
+      headers: {
+        Location: "https://test-domain/error/unrecoverable",
+      },
+    });
+  });
+
+  it("should redirect when only VoT is insufficient but identity is not expired", async () => {
+    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue({
+      fraudExpired: false,
+      drivingLicenceExpired: false,
+      expired: false,
+    });
+    vi.spyOn(calculateVotModule, "calculateVot").mockReturnValue("P0");
+
+    const result = await lambdaHandler(validEvent());
+
+    expect(result).toEqual({
+      statusCode: 302,
+      body: "",
+      headers: {
+        Location: "https://test-domain/error/unrecoverable",
+      },
+    });
+  });
+
+  it("should render confirm details page when neither check fails", async () => {
+    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue({
+      fraudExpired: false,
+      drivingLicenceExpired: false,
+      expired: false,
+    });
+    vi.spyOn(calculateVotModule, "calculateVot").mockReturnValue("P2");
+
+    const result = await lambdaHandler(validEvent());
+
+    expect(result.statusCode).toBe(200);
+    expect(mockRender).toHaveBeenCalled();
+  });
+
+  it("should always execute both checks before failing", async () => {
+    const hasIdentityExpiredSpy = vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue({
+      fraudExpired: true,
+      drivingLicenceExpired: true,
+      expired: true,
+    });
+    const calculateVotSpy = vi.spyOn(calculateVotModule, "calculateVot").mockReturnValue("P0");
+
+    await lambdaHandler(validEvent());
+
+    expect(hasIdentityExpiredSpy).toHaveBeenCalled();
+    expect(calculateVotSpy).toHaveBeenCalled();
   });
 });
