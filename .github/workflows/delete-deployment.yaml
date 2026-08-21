@@ -51,7 +51,7 @@ jobs:
         uses: govuk-one-login/github-actions/beautify-branch-name@f5362528578198e7851e96e0594f593beff0162e
         with:
           usage: Stack name
-          branch-name: preview-oauth-pr-${{ github.event.pull_request.number }}
+          branch-name: pr-oauth-${{ github.event.pull_request.number }}
           length-limit: ${{ env.STACK_NAME_LENGTH }}
 
       - name: Check stacks exist
