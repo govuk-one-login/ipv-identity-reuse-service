@@ -156,6 +156,7 @@ Mappings:
       IPVCoreVPCID: none # Not used in dev
       UniqueVPCEndpointIDs: none
       UseCanary: false
+      DynatraceNodeLayerArn: ""
     "dev":
       TxmaAccountId: "275907361037"
       DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
@@ -169,6 +170,7 @@ Mappings:
       IPVCoreVPCID: none # Not used in dev
       UniqueVPCEndpointIDs: none
       UseCanary: false
+      DynatraceNodeLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
     "build":
       TxmaAccountId: "779873699903"
       DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
@@ -182,6 +184,7 @@ Mappings:
       IPVCoreVPCID: vpc-02e4eb3b0cffc08b0 # This is performance testing VPC ID
       UniqueVPCEndpointIDs: vpce-0edf9e66222007102 # IPV Build VPCE ID
       UseCanary: false
+      DynatraceNodeLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
     "staging":
       TxmaAccountId: "178023842775"
       DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
@@ -195,6 +198,7 @@ Mappings:
       IPVCoreVPCID: vpc-039e664a2b3abb03e # ID Reuse Service Staging VPC ID
       UniqueVPCEndpointIDs: vpce-0cc0de10742b83b8a # IPV Staging VPCE ID
       UseCanary: true
+      DynatraceNodeLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
     "integration":
       TxmaAccountId: "729485541398"
       DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
@@ -208,6 +212,7 @@ Mappings:
       IPVCoreVPCID: vpc-0a9e773e1f32b6697 # ID Reuse Service Integration VPC ID
       UniqueVPCEndpointIDs: vpce-0f47068fdf9ad0c3d # IPV Int VPCE ID
       UseCanary: true
+      DynatraceNodeLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
     "production":
       TxmaAccountId: "451773080033"
       DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables"
@@ -221,6 +226,7 @@ Mappings:
       IPVCoreVPCID: vpc-0274d75007239691f # IPV Reuse Seruice Production VPC ID
       UniqueVPCEndpointIDs: vpce-0e40247a557c2169e # IPV Reuse Seruice Prod VPCE ID
       UseCanary: true
+      DynatraceNodeLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
 
 Conditions:
   UseCodeSigning:
@@ -306,7 +312,7 @@ Globals:
             - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_BASE_URL}}"
             - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, DynatraceSecretArn]
           - !Ref "AWS::NoValue"
-        DT_CLUSTER_ID: !If
+        DT_CLUSTER: !If
           - DynaTraceEnabled
           - !Sub
             - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CLUSTER_ID}}"
@@ -324,7 +330,6 @@ Globals:
             - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_TENANT}}"
             - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, DynatraceSecretArn]
           - !Ref "AWS::NoValue"
-        DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: !If [DynaTraceEnabled, "true", !Ref "AWS::NoValue"]
         SESSION_TABLE_NAME:
           Fn::ImportValue SessionTableName
     CodeSigningConfigArn: !If
@@ -347,7 +352,7 @@ Globals:
     AutoPublishAlias: live
     Layers: !If
       - DynaTraceEnabled
-      - - !Ref DynatraceNodeLayerArn
+      - - !FindInMap [EnvironmentMap, !Ref Environment, DynatraceNodeLayerArn]
       - !Ref AWS::NoValue
     DeploymentPreference:
       Type: !If
@@ -783,7 +788,7 @@ Resources:
         - !Ref GovUKFrontEndLayer
         - !If
           - DynaTraceEnabled
-          - !Ref DynatraceNodeLayerArn
+          - !FindInMap [EnvironmentMap, !Ref Environment, DynatraceNodeLayerArn]
           - !Ref AWS::NoValue
     Metadata:
       BuildMethod: esbuild
@@ -863,7 +868,7 @@ Resources:
         - !Ref GovUKFrontEndLayer
         - !If
           - DynaTraceEnabled
-          - !Ref DynatraceNodeLayerArn
+          - !FindInMap [EnvironmentMap, !Ref Environment, DynatraceNodeLayerArn]
           - !Ref AWS::NoValue
     Metadata:
       BuildMethod: esbuild
@@ -1029,7 +1034,7 @@ Resources:
         - !Ref GovUKFrontEndLayer
         - !If
           - DynaTraceEnabled
-          - !Ref DynatraceNodeLayerArn
+          - !FindInMap [EnvironmentMap, !Ref Environment, DynatraceNodeLayerArn]
           - !Ref AWS::NoValue
     Metadata:
       BuildMethod: esbuild
@@ -1122,7 +1127,7 @@ Resources:
         - !Ref GovUKFrontEndLayer
         - !If
           - DynaTraceEnabled
-          - !Ref DynatraceNodeLayerArn
+          - !FindInMap [EnvironmentMap, !Ref Environment, DynatraceNodeLayerArn]
           - !Ref AWS::NoValue
     Metadata:
       BuildMethod: esbuild
