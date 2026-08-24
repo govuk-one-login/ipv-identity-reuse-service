@@ -94,11 +94,6 @@ Parameters:
     Type: String
     Default: "sis-oauth-internal"
 
-  DynatraceNodeLayerArn:
-    Type: String
-    Description: The ARN of the OneAgent Node layer for Lambda Node functions
-    Default: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
-
   LogGroupRetentionInDays:
     Description: The number of days a log group should retain logs
     Type: Number
