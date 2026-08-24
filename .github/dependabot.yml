@@ -30,11 +30,11 @@ updates:
           - "typescript"
       eslint-rules:
         dependency-type: "development"
-        allow:
+        patterns:
           - "@govuk-one-login/ipv-trust-and-reuse-eslint-rules"
       typescript:
         dependency-type: "development"
-        allow:
+        patterns:
           - "typescript"
 
   - package-ecosystem: "github-actions"
