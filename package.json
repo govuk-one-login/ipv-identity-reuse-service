@@ -17,6 +17,7 @@
     "@aws-sdk/lib-dynamodb": "3.1115.0",
     "@aws-sdk/util-dynamodb": "3.996.7",
     "@govuk-one-login/data-vocab": "2.0.2",
+    "@govuk-one-login/event-catalogue": "47.0.2",
     "@types/aws-lambda": "8.10.161",
     "cfn-response-promise": "1.1.0",
     "did-resolver": "5.0.1",

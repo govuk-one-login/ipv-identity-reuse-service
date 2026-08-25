@@ -1,20 +1,24 @@
 import { SQSClient, SendMessageCommand, SendMessageCommandOutput } from "@aws-sdk/client-sqs";
 import {
-  TxmaEvent,
-  TxmaSisIdentityRecordInvalidated,
-  TxmaSisStoredIdentityReadEvent,
-  TxmaSisStoredIdentityReturnedEvent,
-} from "./audit-events";
+  SIS_STORED_IDENTITY_READ,
+  SisStoredIdentityReadRestricted,
+  SisStoredIdentityReadExtensions,
+} from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_READ";
+import {
+  SIS_IDENTITY_RECORD_INVALIDATED,
+  InterventionCodeEnum,
+} from "@govuk-one-login/event-catalogue/SIS_IDENTITY_RECORD_INVALIDATED";
+import {
+  SIS_STORED_IDENTITY_RETURNED,
+  SisStoredIdentityReturnedExtensions,
+  SisStoredIdentityReturnedRestricted,
+} from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_RETURNED";
 
 const sqsClient = new SQSClient({});
 
-export const sendAuditMessage = async <
-  EventName extends string,
-  ExtensionsT extends object | undefined = undefined,
-  RestrictedT extends object | undefined = undefined,
->(
-  message: TxmaEvent<EventName, ExtensionsT, RestrictedT>
-): Promise<SendMessageCommandOutput> =>
+type MessageType = SIS_STORED_IDENTITY_READ | SIS_IDENTITY_RECORD_INVALIDATED | SIS_STORED_IDENTITY_RETURNED;
+
+export const sendAuditMessage = async (message: MessageType): Promise<SendMessageCommandOutput> =>
   await sqsClient.send(
     new SendMessageCommand({
       QueueUrl: process.env.SQS_AUDIT_EVENT_QUEUE_URL,
@@ -26,7 +30,7 @@ const createDefaultEventFields = <EventName extends string>(
   eventName: EventName,
   userId: string,
   govukSigninJourneyId?: string
-): TxmaEvent<EventName, never, never> => {
+) => {
   return {
     component_id: process.env.COMPONENT_ID || "Unknown",
     event_name: eventName,
@@ -40,12 +44,12 @@ const createDefaultEventFields = <EventName extends string>(
 };
 
 export const auditIdentityRecordRead = async (
-  extensions: TxmaSisStoredIdentityReadEvent["extensions"],
-  restricted: TxmaSisStoredIdentityReadEvent["restricted"],
+  extensions: SisStoredIdentityReadExtensions,
+  restricted: SisStoredIdentityReadRestricted,
   userId: string,
   govukSigninJourneyId?: string
 ): Promise<SendMessageCommandOutput> => {
-  const identityReadEvent: TxmaSisStoredIdentityReadEvent = {
+  const identityReadEvent: SIS_STORED_IDENTITY_READ = {
     ...createDefaultEventFields("SIS_STORED_IDENTITY_READ", userId, govukSigninJourneyId),
     extensions,
     restricted,
@@ -55,12 +59,12 @@ export const auditIdentityRecordRead = async (
 };
 
 export const auditIdentityRecordReturned = async (
-  extensions: TxmaSisStoredIdentityReturnedEvent["extensions"],
-  restricted: TxmaSisStoredIdentityReturnedEvent["restricted"],
+  extensions: SisStoredIdentityReturnedExtensions,
+  restricted: SisStoredIdentityReturnedRestricted,
   userId: string,
   govukSigninJourneyId?: string
 ): Promise<SendMessageCommandOutput> => {
-  const identityReturnedEvent: TxmaSisStoredIdentityReturnedEvent = {
+  const identityReturnedEvent: SIS_STORED_IDENTITY_RETURNED = {
     ...createDefaultEventFields("SIS_STORED_IDENTITY_RETURNED", userId, govukSigninJourneyId),
     extensions,
     restricted,
@@ -71,12 +75,11 @@ export const auditIdentityRecordReturned = async (
 
 export const auditIdentityRecordInvalidated = async (
   userId: string,
-  interventionCode: string
+  interventionCode: InterventionCodeEnum
 ): Promise<SendMessageCommandOutput> => {
-  const identityRecordInvalidatedEvent: TxmaSisIdentityRecordInvalidated = {
+  const identityRecordInvalidatedEvent: SIS_IDENTITY_RECORD_INVALIDATED = {
     ...createDefaultEventFields("SIS_IDENTITY_RECORD_INVALIDATED", userId),
     extensions: { intervention_code: interventionCode },
-    restricted: undefined as never,
   };
 
   return await sendAuditMessage(identityRecordInvalidatedEvent);

@@ -240,7 +240,9 @@ describe("user-identity-handler authorization", () => {
       {
         retrieval_outcome: "service_error",
       },
-      undefined,
+      {
+        stored_identity_jwt: undefined,
+      },
       TEST_USER,
       "govuk_signin_journey_id"
     );
@@ -272,7 +274,9 @@ describe("user-identity-handler authorization", () => {
       {
         retrieval_outcome: "service_error",
       },
-      undefined,
+      {
+        stored_identity_jwt: undefined,
+      },
       TEST_USER,
       "govuk_signin_journey_id"
     );
@@ -304,7 +308,9 @@ describe("user-identity-handler authorization", () => {
       {
         retrieval_outcome: "service_error",
       },
-      undefined,
+      {
+        stored_identity_jwt: undefined,
+      },
       TEST_USER,
       "govuk_signin_journey_id"
     );
@@ -339,7 +345,9 @@ describe("user-identity-handler authorization", () => {
       {
         retrieval_outcome: "no_record",
       },
-      undefined,
+      {
+        stored_identity_jwt: undefined,
+      },
       TEST_USER,
       "govuk_signin_journey_id"
     );

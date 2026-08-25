@@ -1,5 +1,6 @@
 import { Metrics, MetricUnit } from "@aws-lambda-powertools/metrics";
 import { SQSEvent, SQSRecord } from "aws-lambda";
+import { InterventionCodeEnum } from "@govuk-one-login/event-catalogue/SIS_IDENTITY_RECORD_INVALIDATED";
 
 import { MetricDimension, MetricName } from "../../commons/metric-enum";
 import { isAisMessage, AisMessage } from "./ais-message";
@@ -35,7 +36,7 @@ export const handler = async (event: SQSEvent): Promise<void> => {
   }
 };
 
-const invalidateUser = async (userId: string, interventionCode: string) => {
+const invalidateUser = async (userId: string, interventionCode: InterventionCodeEnum) => {
   try {
     const response = await invalidateIdentityInCredentialStore(userId);
 

@@ -23,6 +23,8 @@ import {
   validateIdentityRecords,
 } from "../../commons/validate-records";
 import { CredentialStoreError } from "../../commons/errors";
+import { VotEnum } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_READ";
+import { ResponseBody } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_RETURNED";
 
 export const handler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
   const request = event.body ? (JSON.parse(event.body) as UserIdentityRequest) : undefined;
@@ -84,7 +86,7 @@ const createSuccessResponse = async (
   const { kidValid, signatureValid, isValid } = await validateIdentityRecords(identityResponse);
   const vot: StoredIdentityVectorOfTrust = calculateVot(content, identityResponse.si.unsignedVot, vtr);
   const vtm = `https://oidc.account.gov.uk/trustmark`;
-  const maxVot = content.max_vot || identityResponse.si.unsignedVot;
+  const maxVot = (content.max_vot || identityResponse.si.unsignedVot) as VotEnum;
 
   await auditIdentityRecordRead(
     {
@@ -117,10 +119,10 @@ const createSuccessResponse = async (
       response_outcome: "returned",
       is_valid: successResponse.isValid,
       expired: successResponse.expired,
-      vot: successResponse.content.vot,
+      vot: successResponse.content.vot as VotEnum,
     },
     {
-      response_body: JSON.stringify(successResponse),
+      response_body: JSON.stringify(successResponse) as ResponseBody,
     },
     userId,
     govukSigninJourneyId
