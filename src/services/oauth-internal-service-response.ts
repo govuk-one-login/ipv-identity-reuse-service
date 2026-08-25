@@ -10,6 +10,16 @@ export interface SessionSuccessResponse {
   redirect_uri: string;
 }
 
+export interface GetSessionSuccessResponse {
+  vtr?: string;
+  storageAccessToken?: string;
+  clientSessionId: string;
+  persistentSessionId?: string;
+  subject: string;
+  context?: string;
+  sessionData?: object;
+}
+
 export function isValidAuthorizationSuccessResponse(object: unknown): object is AuthorizationSuccessResponse {
   if (!object || typeof object !== "object") return false;
   return (
@@ -26,6 +36,11 @@ export function isValidSessionSuccessResponse(object: unknown): object is Sessio
     hasNonEmptyString(object, "session_id") &&
     hasNonEmptyString(object, "state")
   );
+}
+
+export function isValidGetSessionSuccessResponse(object: unknown): object is GetSessionSuccessResponse {
+  if (!object || typeof object !== "object") return false;
+  return hasNonEmptyString(object, "clientSessionId") && hasNonEmptyString(object, "subject");
 }
 
 function hasNonEmptyString(object: object, key: string): boolean {

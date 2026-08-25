@@ -7,6 +7,36 @@ info:
 
 paths:
   /api/session:
+    get:
+      summary: "Get session details"
+      parameters:
+        - $ref: "#/components/parameters/SessionHeader"
+      responses:
+        "200":
+          description: "200 response"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetSessionResponse"
+        "400":
+          description: "400 response"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: "500 response"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-request-validator: ALL
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${OAuthCommon.Outputs.LambdaRetrieveSessionFunctionName}:live/invocations
+        passthroughBehavior: never
     post:
       summary: "Create a new session"
       parameters:
@@ -154,6 +184,27 @@ components:
           type: "string"
         redirect_uri:
           type: "string"
+
+    GetSessionResponse:
+      required:
+        - "clientSessionId"
+        - "subject"
+      type: "object"
+      properties:
+        vtr:
+          type: "string"
+        storageAccessToken:
+          type: "string"
+        clientSessionId:
+          type: "string"
+        persistentSessionId:
+          type: "string"
+        subject:
+          type: "string"
+        context:
+          type: "string"
+        sessionData:
+          type: "object"
 
     AuthorizationResponse:
       required:

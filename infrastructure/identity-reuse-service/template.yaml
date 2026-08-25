@@ -855,10 +855,27 @@ Resources:
       FunctionName: !Sub "${AWS::StackName}-GetConfirmDetailsHandler"
       Handler: get-confirm-details-handler.lambdaHandler
       Role: !GetAtt GetConfirmDetailsHandlerRole.Arn
+      VpcConfig: !If
+        - UseVpc
+        - SecurityGroupIds:
+            - Fn::ImportValue: !Sub "${VpcStackName}-AWSServicesEndpointSecurityGroupId"
+          SubnetIds:
+            - Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdA"
+            - Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdB"
+        - !Ref "AWS::NoValue"
       Environment:
         Variables:
+          DOMAIN_NAME: !Ref ReuseIdentityCustomDomain
           NODE_OPTIONS: "--enable-source-maps"
+          OAUTH_INTERNAL_API_URL:
+            Fn::ImportValue: !Sub "${OauthInternalStackName}-PrivateApi"
+          SESSION_TIMEOUT_MS: !Ref ApiTimeoutMilliseconds
           POWERTOOLS_SERVICE_NAME: "GetConfirmDetailsHandler"
+          ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
+          APP_CONFIG_NAME: !Ref ApplicationConfigName
+          APP_CONFIG_APPLICATION: !Ref ApplicationName
+          EVCS_API_KEY_SECRET_ARN:
+            Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
       Layers:
         - !Ref GovUKFrontEndLayer
         - !If
@@ -905,6 +922,8 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+        - Fn::ImportValue: !Sub "${AppConfigStackName}-AppConfigClientPolicyArn"
+        - Fn::ImportValue: !Sub "${SharedStackName}-EvcsApiKeySecretsManagerPolicy"
 
   GetConfirmDetailsHandlerLogGroup:
     Type: AWS::Logs::LogGroup

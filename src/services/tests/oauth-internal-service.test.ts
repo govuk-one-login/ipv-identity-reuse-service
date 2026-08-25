@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vitest } from "vitest";
-import { callSessionApi, getAuthorizationCode } from "../oauth-internal-service";
+import { callSessionApi, getAuthorizationCode, getSessionDetails } from "../oauth-internal-service";
 import { URL } from "node:url";
 
 const { mockError } = vitest.hoisted(() => {
@@ -286,5 +286,117 @@ it("should throw an error if the session endpoint returns a missing redirect URI
 
   await expect(callSessionApi("test-client-id", "test-request")).rejects.toThrow(
     "Invalid response properties received from session endpoint"
+  );
+});
+
+it("should call GET /api/session and return storageAccessToken and subject", async () => {
+  const mockResponse = Response.json(
+    {
+      clientSessionId: "test-client-session-id",
+      subject: "test-subject",
+      storageAccessToken: "test-storage-token",
+    },
+    { status: 200 }
+  );
+
+  const jsonSpy = vitest.spyOn(mockResponse, "json");
+  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+  const response = await getSessionDetails("test-session-id");
+
+  expect(jsonSpy).toHaveBeenCalledTimes(1);
+  expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+  expect(globalThis.fetch).toHaveBeenCalledWith(new URL("https://test.com/api/session"), {
+    method: "GET",
+    headers: { "session-id": "test-session-id" },
+    signal: expect.any(AbortSignal),
+  });
+
+  expect(response.storageAccessToken).toEqual("test-storage-token");
+  expect(response.subject).toEqual("test-subject");
+});
+
+it("should return undefined storageAccessToken when not present in GET /api/session response", async () => {
+  const mockResponse = Response.json(
+    {
+      clientSessionId: "test-client-session-id",
+      subject: "test-subject",
+    },
+    { status: 200 }
+  );
+
+  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+  const response = await getSessionDetails("test-session-id");
+
+  expect(response.storageAccessToken).toBeUndefined();
+  expect(response.subject).toEqual("test-subject");
+});
+
+it("should throw an error if GET /api/session returns a non-200 status code", async () => {
+  const mockResponse = Response.json({}, { status: 400 });
+  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+  await expect(getSessionDetails("test-session-id")).rejects.toThrow("GET session endpoint returned an error response");
+  expect(mockError).toHaveBeenCalledWith(expect.stringContaining("GET session handler returned non-200 status: 400"));
+});
+
+it("should throw an error if GET /api/session response is missing subject", async () => {
+  const mockResponse = Response.json(
+    {
+      clientSessionId: "test-client-session-id",
+      storageAccessToken: "test-storage-token",
+    },
+    { status: 200 }
+  );
+
+  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+  await expect(getSessionDetails("test-session-id")).rejects.toThrow(
+    "Invalid response properties received from GET session endpoint"
+  );
+});
+
+it("should throw an error if GET /api/session response is missing clientSessionId", async () => {
+  const mockResponse = Response.json(
+    {
+      subject: "test-subject",
+      storageAccessToken: "test-storage-token",
+    },
+    { status: 200 }
+  );
+
+  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+  await expect(getSessionDetails("test-session-id")).rejects.toThrow(
+    "Invalid response properties received from GET session endpoint"
+  );
+});
+
+it("should throw an error if GET /api/session response has empty subject", async () => {
+  const mockResponse = Response.json(
+    {
+      clientSessionId: "test-client-session-id",
+      subject: "   ",
+      storageAccessToken: "test-storage-token",
+    },
+    { status: 200 }
+  );
+
+  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+  await expect(getSessionDetails("test-session-id")).rejects.toThrow(
+    "Invalid response properties received from GET session endpoint"
+  );
+});
+
+it("should throw an error if GET /api/session response is null", async () => {
+  // eslint-disable-next-line unicorn/no-null
+  const mockResponse = Response.json(null, { status: 200 });
+
+  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+  await expect(getSessionDetails("test-session-id")).rejects.toThrow(
+    "Invalid response properties received from GET session endpoint"
   );
 });
