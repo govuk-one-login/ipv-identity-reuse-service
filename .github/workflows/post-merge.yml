@@ -70,6 +70,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+      id-token: write
     secrets:
       sonar-token: ${{ secrets.SONAR_TOKEN }}
 
