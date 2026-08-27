@@ -12,6 +12,7 @@ import { UserIdentityErrorResponse } from "../handlers/post-phase2-user-identity
 import { auditIdentityRecordRead, auditIdentityRecordReturned } from "./audit";
 import { StoredIdentityJWT } from "../handlers/post-phase2-user-identity-handler/stored-identity-jwt";
 import { validateStoredIdentityCredentials } from "../identity-reuse/stored-identity-validator";
+import { ErrorCodeEnum, ResponseBody } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_RETURNED";
 
 export const getUserIdFromJwt = (authorizationToken: string): string => {
   let jwt;
@@ -130,7 +131,9 @@ export const createAndLogErrorResponse = async (
     {
       retrieval_outcome: errorCode === HttpCodesEnum.NOT_FOUND ? "no_record" : "service_error",
     },
-    undefined,
+    {
+      stored_identity_jwt: undefined,
+    },
     userId,
     govukSigninJourneyId
   );
@@ -145,7 +148,7 @@ export const createAndLogErrorResponse = async (
       error_code: identityRecordErrorDescription,
     },
     {
-      response_body: errorResponse.body,
+      response_body: errorResponse.body as ResponseBody,
     },
     userId,
     govukSigninJourneyId
@@ -154,8 +157,8 @@ export const createAndLogErrorResponse = async (
   return errorResponse;
 };
 
-const generateErrorCodeDescription = async (errorCode: HttpCodesEnum): Promise<string> => {
-  let error_code_description;
+const generateErrorCodeDescription = async (errorCode: HttpCodesEnum): Promise<ErrorCodeEnum> => {
+  let error_code_description: ErrorCodeEnum;
   switch (errorCode) {
     case HttpCodesEnum.NOT_FOUND: {
       error_code_description = "no_record";

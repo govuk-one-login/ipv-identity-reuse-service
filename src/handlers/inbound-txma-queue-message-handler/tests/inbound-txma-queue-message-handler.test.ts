@@ -26,7 +26,7 @@ const createTestSQSEvent = <T extends object>(...events: T[]): SQSEvent => ({
 
 const DEFAULT_CONFIGURATION: Configuration = Object.freeze({
   evcsApiUrl: "http://api.example.com",
-  interventionCodesToInvalidate: ["12", "34"],
+  interventionCodesToInvalidate: ["05", "06"],
   fraudIssuer: ["fraudCRI"],
   fraudValidityPeriod: 4518,
   controllerAllowList: ["did:web:api.identity.dev.account.gov.uk"],
@@ -35,7 +35,7 @@ const DEFAULT_CONFIGURATION: Configuration = Object.freeze({
 const VALID_TXMA_MESSAGE: AisMessage = Object.freeze({
   user_id: "test-user-id",
   timestamp: Math.floor(Date.now() / 1000),
-  intervention_code: "12",
+  intervention_code: "05",
 });
 
 describe("txma-message-processor", () => {
@@ -131,17 +131,17 @@ describe("txma-message-processor", () => {
       {
         user_id: "jane.smith-12345",
         timestamp: 1_752_755_454,
-        intervention_code: "12",
+        intervention_code: "05",
       },
       {
         user_id: "cyril.jones-12345",
         timestamp: 1_752_755_496,
-        intervention_code: "23",
+        intervention_code: "03",
       },
       {
         user_id: "helen.jones-12345",
         timestamp: 1_752_755_496,
-        intervention_code: "34",
+        intervention_code: "06",
       },
       {
         user_id: "helen.jones-12345",
@@ -165,7 +165,7 @@ describe("txma-message-processor", () => {
     expect(console.log).toHaveEmittedEMFWith(
       expect.objectContaining({
         service: process.env.POWERTOOLS_SERVICE_NAME,
-        [MetricDimension.InterventionCode]: "12",
+        [MetricDimension.InterventionCode]: "05",
         [MetricName.IdentityInvalidatedOnIntervention]: 1,
       })
     );
@@ -173,7 +173,7 @@ describe("txma-message-processor", () => {
     expect(console.log).not.toHaveEmittedEMFWith(
       expect.objectContaining({
         service: process.env.POWERTOOLS_SERVICE_NAME,
-        [MetricDimension.InterventionCode]: "23",
+        [MetricDimension.InterventionCode]: "03",
         [MetricName.IdentityInvalidatedOnIntervention]: 1,
       })
     );
@@ -181,7 +181,7 @@ describe("txma-message-processor", () => {
     expect(console.log).toHaveEmittedEMFWith(
       expect.objectContaining({
         service: process.env.POWERTOOLS_SERVICE_NAME,
-        [MetricDimension.InterventionCode]: "34",
+        [MetricDimension.InterventionCode]: "06",
         [MetricName.IdentityInvalidatedOnIntervention]: 1,
       })
     );
@@ -211,7 +211,7 @@ describe("txma-message-processor", () => {
     const sqsEvent = createTestSQSEvent<AisMessage>({
       user_id: "jane.smith-12345",
       timestamp: 1_752_755_454,
-      intervention_code: "12",
+      intervention_code: "05",
     });
 
     await expect(handler(sqsEvent)).resolves.toBeUndefined();
@@ -222,7 +222,7 @@ describe("txma-message-processor", () => {
     expect(console.log).not.toHaveEmittedEMFWith(
       expect.objectContaining({
         service: process.env.POWERTOOLS_SERVICE_NAME,
-        [MetricDimension.InterventionCode]: "12",
+        [MetricDimension.InterventionCode]: "05",
         [MetricName.IdentityInvalidatedOnIntervention]: 1,
       })
     );
@@ -262,7 +262,7 @@ describe("txma-message-processor", () => {
     const sqsEvent = createTestSQSEvent<AisMessage>({
       user_id: "jane.smith-12345",
       timestamp: 1_752_755_454,
-      intervention_code: "12",
+      intervention_code: "05",
     });
 
     await expect(handler(sqsEvent)).rejects.toThrow("Call to invalidation endpoint failed");
