@@ -1,12 +1,21 @@
 import { URL } from "node:url";
 import logger from "../commons/logger";
-import { isValidAuthorizationSuccessResponse, isValidSessionSuccessResponse } from "./oauth-internal-service-response";
+import {
+  isValidAuthorizationSuccessResponse,
+  isValidGetSessionSuccessResponse,
+  isValidSessionSuccessResponse,
+} from "./oauth-internal-service-response";
 import { getOauthInternalApiUrl, getSessionTimeout } from "../commons/configuration";
 
 export type SessionResult = {
   session_id: string;
   state: string;
   redirect_uri: string;
+};
+
+export type GetSessionResult = {
+  storageAccessToken?: string;
+  subject: string;
 };
 
 type AuthorizationResult = {
@@ -102,5 +111,32 @@ export async function getAuthorizationCode(
   } else {
     logger.error(`${responseFromAuthorizeEndpoint.status} response code returned from the authorization endpoint`);
     throw new Error("Authorize endpoint returned an error response");
+  }
+}
+
+export async function getSessionDetails(sessionId: string): Promise<GetSessionResult> {
+  const oauthInternalApiUrl = getOauthInternalApiUrl();
+  const url = new URL(`${oauthInternalApiUrl}/api/session`);
+
+  const responseFromSessionEndpoint = await fetch(url, {
+    method: "GET",
+    headers: {
+      "session-id": sessionId,
+    },
+    signal: AbortSignal.timeout(SESSION_TIMEOUT_MS),
+  });
+
+  if (responseFromSessionEndpoint.status === 200) {
+    const sessionData = await responseFromSessionEndpoint.json();
+    if (!isValidGetSessionSuccessResponse(sessionData)) {
+      throw new Error("Invalid response properties received from GET session endpoint");
+    }
+    return {
+      storageAccessToken: sessionData.storageAccessToken,
+      subject: sessionData.subject,
+    };
+  } else {
+    logger.error(`GET session handler returned non-200 status: ${responseFromSessionEndpoint.status}`);
+    throw new Error("GET session endpoint returned an error response");
   }
 }

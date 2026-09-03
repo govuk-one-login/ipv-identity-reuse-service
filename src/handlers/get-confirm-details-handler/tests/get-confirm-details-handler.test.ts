@@ -1,13 +1,10 @@
 import { afterEach, describe, expect, it, Mock, vi } from "vitest";
 import { lambdaHandler } from "../get-confirm-details-handler";
 import { APIGatewayProxyEvent } from "aws-lambda";
-import {
-  getUserIdFromJwt,
-  handleGetIdentityFromCredentialStore,
-  validateIdentityRecords,
-} from "../../../commons/validate-records";
+import { handleGetIdentityFromCredentialStore, validateIdentityRecords } from "../../../commons/validate-records";
 import { CredentialStoreError } from "../../../commons/errors";
 import { HttpCodesEnum } from "../../../commons/constants";
+import { getSessionDetails } from "../../../services/oauth-internal-service";
 
 const mockRender = vi.hoisted(() => vi.fn().mockReturnValue("Rendered Confirm Details Screen"));
 
@@ -18,15 +15,27 @@ vi.mock("nunjucks", () => ({
 }));
 
 vi.mock("../../../commons/validate-records", () => ({
-  getUserIdFromJwt: vi.fn().mockReturnValue("user-sub"),
   handleGetIdentityFromCredentialStore: vi.fn(),
   validateIdentityRecords: vi.fn(),
 }));
 
+vi.mock("../../../services/oauth-internal-service", () => ({
+  getSessionDetails: vi.fn().mockResolvedValue({
+    storageAccessToken: "mock-storage-access-token",
+    subject: "user-sub",
+  }),
+}));
+
+vi.mock("../../../commons/cookie-utilities", () => ({
+  getCookieValues: vi.fn().mockReturnValue(new Map([["identity_reuse_service_session", "test-session-id"]])),
+}));
+
+process.env.DOMAIN_NAME = "test-domain";
+
 const validEvent = () =>
   ({
     queryStringParameters: { redirect_uri: "https://example.com", state: "state-id", client_id: "client" },
-    headers: { Authorization: "Bearer good.token.sig" },
+    headers: { cookie: "identity_reuse_service_session=test-session-id" },
   }) as never as APIGatewayProxyEvent;
 
 afterEach(() => {
@@ -37,6 +46,8 @@ it("should render the confirm details screen when all query string parameters ar
   (validateIdentityRecords as Mock).mockResolvedValue({ kidValid: true, signatureValid: true, isValid: true });
   const result = await lambdaHandler(validEvent());
 
+  expect(getSessionDetails).toHaveBeenCalledWith("test-session-id");
+  expect(handleGetIdentityFromCredentialStore).toHaveBeenCalledWith("Bearer mock-storage-access-token", "user-sub");
   expect(mockRender).toHaveBeenCalledExactlyOnceWith(
     expect.toSatisfy((filename) => filename.endsWith("index.njk")),
     {
@@ -102,15 +113,33 @@ describe("handler record validation", () => {
     expect(result).toEqual({ statusCode: 500, body: "" });
   });
 
-  it("returns an error when Authorization header missing", async () => {
+  it("returns an error when session cookie is missing", async () => {
+    const { getCookieValues } = await import("../../../commons/cookie-utilities");
+    (getCookieValues as Mock).mockReturnValueOnce(new Map());
     const result = await lambdaHandler({
       queryStringParameters: { redirect_uri: "test.com", state: "state", client_id: "client_id" },
       headers: {},
     } as never as APIGatewayProxyEvent);
-    expect(getUserIdFromJwt).not.toHaveBeenCalled();
+    expect(getSessionDetails).not.toHaveBeenCalled();
     expect(handleGetIdentityFromCredentialStore).not.toHaveBeenCalled();
     expect(mockRender).not.toHaveBeenCalled();
-    expect(result).toEqual({ statusCode: 500, body: "" });
+    expect(result).toEqual({
+      statusCode: 302,
+      headers: { Location: "https://test-domain/error/unrecoverable" },
+      body: "",
+    });
+  });
+
+  it("returns a failure response with a 500 status code when storageAccessToken is not returned from the session", async () => {
+    (getSessionDetails as Mock).mockResolvedValueOnce({ subject: "user-sub", storageAccessToken: undefined });
+    const result = await lambdaHandler(validEvent());
+    expect(handleGetIdentityFromCredentialStore).not.toHaveBeenCalled();
+    expect(mockRender).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      statusCode: 302,
+      headers: { Location: "https://test-domain/error/unrecoverable" },
+      body: "",
+    });
   });
 
   it("returns a failure response when the EVCS call fails", async () => {
@@ -119,6 +148,28 @@ describe("handler record validation", () => {
     );
     const result = await lambdaHandler(validEvent());
     expect(validateIdentityRecords).not.toHaveBeenCalled();
+    expect(mockRender).not.toHaveBeenCalled();
+    expect(result).toEqual({ statusCode: 500, body: "" });
+  });
+
+  it("redirects to error page when EVCS returns a 404", async () => {
+    (handleGetIdentityFromCredentialStore as Mock).mockRejectedValue(
+      new CredentialStoreError(HttpCodesEnum.NOT_FOUND, "user-id")
+    );
+    const result = await lambdaHandler(validEvent());
+    expect(validateIdentityRecords).not.toHaveBeenCalled();
+    expect(mockRender).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      statusCode: 302,
+      headers: { Location: "https://test-domain/error/unrecoverable" },
+      body: "",
+    });
+  });
+
+  it("returns a failure response when getSessionDetails throws", async () => {
+    (getSessionDetails as Mock).mockRejectedValueOnce(new Error("GET session endpoint returned an error response"));
+    const result = await lambdaHandler(validEvent());
+    expect(handleGetIdentityFromCredentialStore).not.toHaveBeenCalled();
     expect(mockRender).not.toHaveBeenCalled();
     expect(result).toEqual({ statusCode: 500, body: "" });
   });
