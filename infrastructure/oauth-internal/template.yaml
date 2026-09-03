@@ -64,12 +64,6 @@ Parameters:
       - Linear10PercentEvery3Minutes
       - LambdaCanary50Percent5Minutes
 
-  LogGroupRetentionInDays:
-    Description: The number of days a log group should retain logs
-    Type: Number
-    MinValue: "1"
-    Default: "30"
-
   MainCloudWatchMetricNamespace:
     Description: The name of the metric namespace
     Type: String
@@ -130,6 +124,7 @@ Mappings:
     "local":
       DynatraceLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
       DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables" # pragma: allowlist secret
+      LogGroupRetentionInDays: 30
       OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: "https://orch.reuse.dev.stubs.account.gov.uk/.well-known/jwks.json"
       OrchestrationRedirectURI: "https://orch.reuse.dev.stubs.account.gov.uk"
@@ -137,6 +132,7 @@ Mappings:
     "dev":
       DynatraceLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
       DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables" # pragma: allowlist secret
+      LogGroupRetentionInDays: 30
       OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: "https://orch.reuse.dev.stubs.account.gov.uk/.well-known/jwks.json"
       OrchestrationRedirectURI: "https://orch.reuse.dev.stubs.account.gov.uk"
@@ -144,6 +140,7 @@ Mappings:
     "build":
       DynatraceLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
       DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables" # pragma: allowlist secret
+      LogGroupRetentionInDays: 30
       OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: "https://orch.reuse.stubs.account.gov.uk/.well-known/jwks.json"
       OrchestrationRedirectURI: "https://orch.reuse.stubs.account.gov.uk"
@@ -151,6 +148,7 @@ Mappings:
     "staging":
       DynatraceLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
       DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables" # pragma: allowlist secret
+      LogGroupRetentionInDays: 90
       OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: none
       OrchestrationRedirectURI: none
@@ -158,6 +156,7 @@ Mappings:
     "integration":
       DynatraceLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
       DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables" # pragma: allowlist secret
+      LogGroupRetentionInDays: 90
       OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: none
       OrchestrationRedirectURI: none
@@ -165,6 +164,7 @@ Mappings:
     "production":
       DynatraceLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
       DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables" # pragma: allowlist secret
+      LogGroupRetentionInDays: 180
       OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: none
       OrchestrationRedirectURI: none
@@ -327,7 +327,7 @@ Resources:
     Condition: IsNotProduction
     Properties:
       LogGroupName: !Sub "/aws/apigateway/${AWS::StackName}-PrivateApi/${ApiStageName}"
-      RetentionInDays: !Ref LogGroupRetentionInDays
+      RetentionInDays: !FindInMap [ EnvironmentMap, !Ref Environment, LogGroupRetentionInDays]
       KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
         - Key: Product
@@ -636,7 +636,7 @@ Resources:
     UpdateReplacePolicy: !If [ IsDev, Delete, Retain ]
     Properties:
       LogGroupName: !Sub "/aws/lambda/${ProtectedResourceAuthorizerFunction}"
-      RetentionInDays: 30
+      RetentionInDays: !FindInMap [EnvironmentMap, !Ref Environment, LogGroupRetentionInDays]
       KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
         - Key: Product
