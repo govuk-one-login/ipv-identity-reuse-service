@@ -38,4 +38,8 @@ export class OrchestrationStubPage {
   async continue(): Promise<void> {
     await this.continueButton.click();
   }
+
+  async setUserId(userId: string) {
+    await this.page.getByLabel(authorizationRequestFields.subject).fill(userId);
+  }
 }

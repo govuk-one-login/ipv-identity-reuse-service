@@ -2,6 +2,13 @@ import { expect, test } from "./fixtures";
 import { ConfirmDetailsPage } from "./pages/confirm-details.page";
 import type { AuthorizationRequestField } from "./pages/orchestration-stub.page";
 import { UnrecoverableErrorPage } from "./pages/unrecoverable-error.page";
+import { generateRandomTestUserId } from "../shared/utils/user-subject-id";
+import { createStoredIdentityWithVot } from "../shared/helpers/identity-helper";
+import { getDidControllerName, getSigningKeyId } from "../shared/utils/ssm-utilities";
+import {
+  createAndPostDcmawPassportCredential,
+  createAndPostFraudCheckCredential,
+} from "../shared/helpers/credential-helpers";
 
 const AN_HOUR = 60 * 60;
 const TEN_MINUTES = 10 * 60;
@@ -51,9 +58,23 @@ test.describe("Authorization workflow", () => {
     orchestrationStub,
     confirmDetails,
   }) => {
+    const userId = generateRandomTestUserId();
+    const credentialJwts = [
+      await createAndPostDcmawPassportCredential(userId, new Date()),
+      await createAndPostFraudCheckCredential(userId, new Date()),
+    ];
+    await createStoredIdentityWithVot(
+      userId,
+      credentialJwts,
+      "P2",
+      await getDidControllerName(),
+      await getSigningKeyId()
+    );
+
     await orchestrationStub.goto();
     await expect(orchestrationStub.heading).toBeVisible();
 
+    await orchestrationStub.setUserId(userId);
     await orchestrationStub.continue();
 
     await expect(confirmDetails.heading).toBeVisible();
