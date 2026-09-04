@@ -18,7 +18,7 @@ type ReuseJourneyPages = {
 
 export const test = base.extend<ReuseJourneyPages>({
   page: async ({ page, baseURL }, use) => {
-    const sis = sisBaseUrl();
+    const sis = await sisBaseUrl();
 
     if (sis !== SHARED_DEV_SIS) {
       await page.route(`${baseURL}/authorize`, async (route) => {

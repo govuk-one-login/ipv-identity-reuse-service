@@ -21,6 +21,8 @@ export type CloudFormationOutputsType = keyof typeof CloudFormationOutputs;
 
 const cloudFormationStacks: Map<string, DescribeStacksCommandOutput> = new Map();
 
+export const SHARED_SIS_STACK = "preview-main";
+
 export const getCloudFormationStack = async (stackName: string): Promise<DescribeStacksCommandOutput> => {
   let cloudFormationStack = cloudFormationStacks.get(stackName);
   if (!cloudFormationStack) {
@@ -37,7 +39,7 @@ export const getCloudFormationStack = async (stackName: string): Promise<Describ
 };
 
 export const getCloudFormationParameter = async (parameter: string): Promise<string> => {
-  const stackDescription = await getCloudFormationStack(process.env.SAM_STACK_NAME || "");
+  const stackDescription = await getCloudFormationStack(process.env.SAM_STACK_NAME || SHARED_SIS_STACK);
   const output = stackDescription.Stacks?.flatMap((stack) =>
     stack.Parameters?.filter(({ ParameterKey }) => ParameterKey === parameter)
   ).shift();
@@ -50,7 +52,7 @@ export const getCloudFormationParameter = async (parameter: string): Promise<str
 };
 
 export const getCloudFormationOutput = async (logicalResourceId: CloudFormationOutputsType): Promise<string> => {
-  const stackDescription = await getCloudFormationStack(process.env.SAM_STACK_NAME || "");
+  const stackDescription = await getCloudFormationStack(process.env.SAM_STACK_NAME || SHARED_SIS_STACK);
   const output = stackDescription.Stacks?.flatMap((stack) =>
     stack.Outputs?.filter((output) => output.OutputKey === logicalResourceId)
   ).shift();
