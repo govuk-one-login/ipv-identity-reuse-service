@@ -1,13 +1,13 @@
 import { Given } from "@cucumber/cucumber";
 import { WorldDefinition } from "./base-verbs.step";
-import { evcsPatchCredentials } from "./utils/evcs-api";
+import { evcsPatchCredentials } from "../shared/utils/evcs-api";
 import {
   createAndPostCredentials,
   createAndPostFraudCheckCredential,
   createAndPostDcmawDrivingPermitCredential,
   createAndPostFailedDcmawDrivingPermitCredential,
   createAndPostDcmawPassportCredential,
-} from "./helpers/credential-helpers";
+} from "../shared/helpers/credential-helpers";
 
 Given<WorldDefinition>("a user has {int} CURRENT credentials stored", async function (credentials: number) {
   this.credentialJwts = await createAndPostCredentials(credentials, this.userId);

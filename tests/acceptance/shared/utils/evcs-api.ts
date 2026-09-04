@@ -5,7 +5,6 @@ import type { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credenti
 import { getAppConfig } from "@aws-lambda-powertools/parameters/appconfig";
 import { getString } from "../../../../src/commons/string-utilities";
 import { Configuration } from "../../../../src/commons/configuration";
-import { WorldDefinition } from "../base-verbs.step";
 import { CloudFormationOutputs, getCloudFormationOutput } from "./cloudformation";
 import { getEvcsApiKey } from "./ssm-utilities";
 
@@ -59,10 +58,8 @@ export const getEvcsApiEndpoint = async (): Promise<string> => {
 };
 
 export const evcsPostIdentity = async (
-  world: WorldDefinition,
   userId: string,
-  storedIdentity: StoredIdentityObjectDetails,
-  bearerToken: string
+  storedIdentity: StoredIdentityObjectDetails
 ): Promise<Response> => {
   const apiEndpoint = await getEvcsApiEndpoint();
   const apiKey = await getEvcsApiKey();
@@ -76,7 +73,6 @@ export const evcsPostIdentity = async (
       } satisfies PersistStoredIdentity)
     )
     .set("x-api-key", apiKey)
-    .set("Authorization", bearerToken)
     .set("Accept", "*/*")
     .set("Content-Type", "application/json");
 };

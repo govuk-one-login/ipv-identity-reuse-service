@@ -1,6 +1,6 @@
 import { DIDDocument, JsonWebKey as DidJsonWebKey } from "did-resolver";
 import { CompactJWSHeaderParameters, CompactSign, importJWK, JWK, JWTHeaderParameters } from "jose";
-import { signKms } from "../tests/acceptance/steps/utils/kms-utilities";
+import { signKms } from "../tests/acceptance/shared/utils/kms-utilities";
 
 export const privateKeyJwk: JWK = {
   kty: "EC",

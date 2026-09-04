@@ -30,6 +30,7 @@ RUN useradd $USER \
 
 COPY --from=build --chown=$USER /build/dist/ /app/dist/
 COPY --from=build --chown=$USER /build/tests/acceptance/features /app/features
+COPY --from=build --chown=$USER /build/tests/acceptance/shared /app/shared
 COPY --from=build --chown=$USER /build/tests/acceptance/run-tests.sh /
 COPY --from=build --chown=$USER /build/node_modules /app/node_modules
 

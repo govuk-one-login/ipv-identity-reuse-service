@@ -1,12 +1,13 @@
 import { Given, When } from "@cucumber/cucumber";
-import { sisPostUserIdentity } from "./utils/sis-api";
-import { getBearerToken } from "./utils/get-bearer-token";
+import { sisPostUserIdentity } from "../shared/utils/sis-api";
+import { getBearerToken } from "../shared/utils/get-bearer-token";
 import assert from "node:assert";
 import { WorldDefinition } from "./base-verbs.step";
-import { evcsPostIdentity } from "./utils/evcs-api";
+import { evcsPostIdentity } from "../shared/utils/evcs-api";
 import { JWTHeaderParameters, JWTPayload } from "jose";
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
 import { getDefaultJwtHeader, sign, renderDid } from "../../../shared-test/jwt-utilities";
+import { createStoredIdentityWithVot } from "../shared/helpers/identity-helper";
 
 Given<WorldDefinition>("I have a user without a stored identity", async function () {
   this.bearerToken = await getBearerToken(this.userId);
@@ -15,21 +16,36 @@ Given<WorldDefinition>("I have a user without a stored identity", async function
 Given<WorldDefinition>(
   "the user has a stored identity, with VOT {string}",
   async function (vot: IdentityVectorOfTrust) {
-    await createStoredIdentityWithVot.call(this, vot);
+    await createStoredIdentityWithVot(this.userId, this.credentialJwts, vot, this.testDidController, this.keyId);
   }
 );
 
 Given<WorldDefinition>(
   "the user has a stored identity, with VOT {string} in the VC and stored with {string}",
   async function (signedVot: IdentityVectorOfTrust, unsignedVot: IdentityVectorOfTrust) {
-    await createStoredIdentityWithVot.call(this, signedVot, unsignedVot);
+    await createStoredIdentityWithVot(
+      this.userId,
+      this.credentialJwts,
+      signedVot,
+      this.testDidController,
+      this.keyId,
+      unsignedVot
+    );
   }
 );
 
 Given<WorldDefinition>(
   "the user has a stored identity, with VOT {string}, max_vox {string} in the VC and stored with {string}",
   async function (signedVot: IdentityVectorOfTrust, maxVot: IdentityVectorOfTrust, unsignedVot: IdentityVectorOfTrust) {
-    await createStoredIdentityWithVot.call(this, signedVot, unsignedVot, maxVot);
+    await createStoredIdentityWithVot(
+      this.userId,
+      this.credentialJwts,
+      signedVot,
+      this.testDidController,
+      this.keyId,
+      unsignedVot,
+      maxVot
+    );
   }
 );
 
@@ -46,15 +62,10 @@ Given<WorldDefinition>(
 
     const jwt = await sign(header, payload, true);
 
-    const result = await evcsPostIdentity(
-      this,
-      this.userId,
-      {
-        vot: vot as never as IdentityVectorOfTrust,
-        jwt,
-      },
-      this.bearerToken || ""
-    );
+    const result = await evcsPostIdentity(this.userId, {
+      vot: vot as never as IdentityVectorOfTrust,
+      jwt,
+    });
 
     assert.equal(result.status, 202);
 
@@ -70,15 +81,10 @@ Given<WorldDefinition>("I have a user with a Stored Identity, and an invalid sig
     vot: "P2",
   };
   const jwt = await sign(header, payload);
-  const result = await evcsPostIdentity(
-    this,
-    this.userId,
-    {
-      vot: "P2",
-      jwt,
-    },
-    this.bearerToken || ""
-  );
+  const result = await evcsPostIdentity(this.userId, {
+    vot: "P2",
+    jwt,
+  });
 
   assert.equal(result.status, 202);
 
@@ -108,15 +114,10 @@ Given<WorldDefinition>(
     };
     const jwt = await sign(header, payload, true);
 
-    const result = await evcsPostIdentity(
-      this,
-      this.userId,
-      {
-        vot: "P2" as never as IdentityVectorOfTrust,
-        jwt,
-      },
-      this.bearerToken || ""
-    );
+    const result = await evcsPostIdentity(this.userId, {
+      vot: "P2" as never as IdentityVectorOfTrust,
+      jwt,
+    });
 
     assert.equal(result.status, 202);
 
@@ -125,6 +126,7 @@ Given<WorldDefinition>(
 );
 
 When<WorldDefinition>("I make a request for the users identity with a VTR {string}", async function (vtr: string) {
+  this.bearerToken = await getBearerToken(this.userId);
   this.userIdentityPostResponse = await sisPostUserIdentity(
     {
       vtr: vtr.split(",").map((s) => s.trim()),
@@ -135,6 +137,7 @@ When<WorldDefinition>("I make a request for the users identity with a VTR {strin
 });
 
 When<WorldDefinition>("I make a request for the users identity with invalid Authorization header", async function () {
+  this.bearerToken = await getBearerToken(this.userId);
   this.userIdentityPostResponse = await sisPostUserIdentity(
     {
       vtr: this.requestedVtr,
@@ -145,42 +148,9 @@ When<WorldDefinition>("I make a request for the users identity with invalid Auth
 });
 
 When<WorldDefinition>("I make a request for the users identity without Authorization header", async function () {
+  this.bearerToken = await getBearerToken(this.userId);
   this.userIdentityPostResponse = await sisPostUserIdentity({
     vtr: this.requestedVtr,
     govukSigninJourneyId: this.govukSigninJourneyId,
   });
 });
-
-async function createStoredIdentityWithVot(
-  this: WorldDefinition,
-  signedVot: IdentityVectorOfTrust,
-  unsignedVot?: IdentityVectorOfTrust,
-  maxVot?: IdentityVectorOfTrust
-) {
-  const header: JWTHeaderParameters = getDefaultJwtHeader("ES256", renderDid(this.testDidController, this.keyId));
-
-  const allCredentialSignatures = this.credentialJwts.map((jwt) => jwt.split(".").at(-1));
-
-  const payload: JWTPayload = {
-    sub: this.userId,
-    iss: "http://api.example.com",
-    credentials: allCredentialSignatures,
-    vot: signedVot,
-    ...(maxVot && { max_vot: maxVot }),
-  };
-  const jwt = await sign(header, payload, true);
-
-  const result = await evcsPostIdentity(
-    this,
-    this.userId,
-    {
-      vot: unsignedVot || signedVot,
-      jwt,
-    },
-    this.bearerToken || ""
-  );
-
-  assert.equal(result.status, 202);
-
-  this.bearerToken = await getBearerToken(this.userId);
-}

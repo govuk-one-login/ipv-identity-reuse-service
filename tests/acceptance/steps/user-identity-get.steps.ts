@@ -1,6 +1,6 @@
 import { Given, Then } from "@cucumber/cucumber";
 import { WorldDefinition } from "./base-verbs.step";
-import { sisGetUserIdentityHandler } from "./utils/sis-api";
+import { sisGetUserIdentityHandler } from "../shared/utils/sis-api";
 import assert from "node:assert";
 
 Given<WorldDefinition>("I make a request for the user identity without Authorization header", async function () {
