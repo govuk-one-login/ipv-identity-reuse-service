@@ -1,6 +1,8 @@
 import type { Locator, Page } from "@playwright/test";
 
 export class IdentityResponsePage {
+  static readonly path = "/";
+
   readonly heading: Locator;
   readonly identityJson: Locator;
 

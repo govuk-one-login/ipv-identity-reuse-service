@@ -9,6 +9,7 @@ import {
   createAndPostDcmawPassportCredential,
   createAndPostFraudCheckCredential,
 } from "../shared/helpers/credential-helpers";
+import { sisBaseUrl, sisPrivateApiUrl } from "./support/environment";
 
 const AN_HOUR = 60 * 60;
 const TEN_MINUTES = 10 * 60;
@@ -53,6 +54,13 @@ const rejectedRequests: ReadonlyArray<RejectedRequest> = [
 ];
 
 test.describe("Authorization workflow", () => {
+  let sisPublicUrl: string;
+  let sisPrivateUrl: string;
+  test.beforeAll(async () => {
+    sisPublicUrl = await sisBaseUrl();
+    sisPrivateUrl = await sisPrivateApiUrl();
+  });
+
   test("takes the user from the stub to the confirm details page", async ({
     page,
     orchestrationStub,
@@ -74,6 +82,8 @@ test.describe("Authorization workflow", () => {
     await orchestrationStub.goto();
     await expect(orchestrationStub.heading).toBeVisible();
 
+    await orchestrationStub.setPublicUrl(sisPublicUrl);
+    await orchestrationStub.setPrivateUrl(sisPrivateUrl);
     await orchestrationStub.setUserId(userId);
     await orchestrationStub.continue();
 
@@ -93,6 +103,8 @@ test.describe("Authorization workflow", () => {
         await orchestrationStub.goto();
         await orchestrationStub.field(field).fill(value);
 
+        await orchestrationStub.setPublicUrl(sisPublicUrl);
+        await orchestrationStub.setPrivateUrl(sisPrivateUrl);
         await orchestrationStub.continue();
 
         await expect(unrecoverableError.heading).toBeVisible();
