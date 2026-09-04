@@ -94,12 +94,6 @@ Parameters:
     Type: String
     Default: "sis-oauth-internal"
 
-  LogGroupRetentionInDays:
-    Description: The number of days a log group should retain logs
-    Type: Number
-    MinValue: "1"
-    Default: "30"
-
   LambdaDeploymentPreference:
     Description: "Specifies the configuration to enable gradual Lambda deployments."
     Type: String
@@ -152,6 +146,7 @@ Mappings:
       UniqueVPCEndpointIDs: none
       UseCanary: false
       DynatraceNodeLayerArn: ""
+      LogGroupRetentionInDays: 30
     "dev":
       TxmaAccountId: "275907361037"
       DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
@@ -166,6 +161,7 @@ Mappings:
       UniqueVPCEndpointIDs: none
       UseCanary: false
       DynatraceNodeLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
+      LogGroupRetentionInDays: 30
     "build":
       TxmaAccountId: "779873699903"
       DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
@@ -180,6 +176,7 @@ Mappings:
       UniqueVPCEndpointIDs: vpce-0edf9e66222007102 # IPV Build VPCE ID
       UseCanary: false
       DynatraceNodeLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
+      LogGroupRetentionInDays: 30
     "staging":
       TxmaAccountId: "178023842775"
       DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
@@ -194,6 +191,7 @@ Mappings:
       UniqueVPCEndpointIDs: vpce-0cc0de10742b83b8a # IPV Staging VPCE ID
       UseCanary: true
       DynatraceNodeLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
+      LogGroupRetentionInDays: 90
     "integration":
       TxmaAccountId: "729485541398"
       DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables"
@@ -208,6 +206,7 @@ Mappings:
       UniqueVPCEndpointIDs: vpce-0f47068fdf9ad0c3d # IPV Int VPCE ID
       UseCanary: true
       DynatraceNodeLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
+      LogGroupRetentionInDays: 90
     "production":
       TxmaAccountId: "451773080033"
       DynatraceSecretArn: "arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables"
@@ -222,6 +221,7 @@ Mappings:
       UniqueVPCEndpointIDs: vpce-0e40247a557c2169e # IPV Reuse Seruice Prod VPCE ID
       UseCanary: true
       DynatraceNodeLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
+      LogGroupRetentionInDays: 180
 
 Conditions:
   UseCodeSigning:
@@ -465,7 +465,7 @@ Resources:
     Condition: IsNotProduction
     Properties:
       LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-GetAuthorizeHandler"
-      RetentionInDays: 30
+      RetentionInDays: !FindInMap [EnvironmentMap, !Ref Environment, LogGroupRetentionInDays]
       KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
         - Key: Product
@@ -591,7 +591,7 @@ Resources:
     Condition: IsNotProduction
     Properties:
       LogGroupName: !Sub "/aws/lambda/${GetUserIdentityHandler}"
-      RetentionInDays: 30
+      RetentionInDays: !FindInMap [EnvironmentMap, !Ref Environment, LogGroupRetentionInDays]
       KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
         - Key: Product
@@ -699,7 +699,7 @@ Resources:
     Condition: IsNotProduction
     Properties:
       LogGroupName: !Sub "/aws/apigateway/${AWS::StackName}-PublicApi/${ApiStageName}"
-      RetentionInDays: 30
+      RetentionInDays: !FindInMap [EnvironmentMap, !Ref Environment, LogGroupRetentionInDays]
       KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
         - Key: Product
@@ -739,7 +739,7 @@ Resources:
     Condition: IsNotProduction
     Properties:
       LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-UploadGovUKFrontEndResourcesLambda"
-      RetentionInDays: 30
+      RetentionInDays: !FindInMap [EnvironmentMap, !Ref Environment, LogGroupRetentionInDays]
       KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
         - Key: Product
@@ -930,7 +930,7 @@ Resources:
     Condition: IsNotProduction
     Properties:
       LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-GetConfirmDetailsHandler"
-      RetentionInDays: 30
+      RetentionInDays: !FindInMap [EnvironmentMap, !Ref Environment, LogGroupRetentionInDays]
       KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
         - Key: Product
@@ -1007,7 +1007,7 @@ Resources:
     Condition: IsNotProduction
     Properties:
       LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-PostConfirmDetailsHandler"
-      RetentionInDays: 30
+      RetentionInDays: !FindInMap [EnvironmentMap, !Ref Environment, LogGroupRetentionInDays]
       KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
         - Key: Product
@@ -1096,7 +1096,7 @@ Resources:
     Condition: IsNotProduction
     Properties:
       LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-GetUnrecoverableErrorHandler"
-      RetentionInDays: 30
+      RetentionInDays: !FindInMap [EnvironmentMap, !Ref Environment, LogGroupRetentionInDays]
       KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
         - Key: Product
@@ -1185,7 +1185,7 @@ Resources:
     Condition: IsNotProduction
     Properties:
       LogGroupName: !Sub "/aws/lambda/${GetCallbackHandler}"
-      RetentionInDays: 30
+      RetentionInDays: !FindInMap [EnvironmentMap, !Ref Environment, LogGroupRetentionInDays]
       KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
         - Key: Product
@@ -1299,7 +1299,7 @@ Resources:
     Condition: IsNotProduction
     Properties:
       LogGroupName: !Sub "/aws/apigateway/${AWS::StackName}-PrivateApi/${ApiStageName}"
-      RetentionInDays: 30
+      RetentionInDays: !FindInMap [EnvironmentMap, !Ref Environment, LogGroupRetentionInDays]
       KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
         - Key: Product
@@ -1404,7 +1404,7 @@ Resources:
     Condition: IsDev
     Properties:
       LogGroupName: !Sub "/aws/apigateway/${AWS::StackName}-PrivateApiDev/${ApiStageName}"
-      RetentionInDays: 30
+      RetentionInDays: !FindInMap [EnvironmentMap, !Ref Environment, LogGroupRetentionInDays]
       KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
         - Key: Product
@@ -1701,7 +1701,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/apigateway/${PrivateRestApi}/${ApiStageName}"
-      RetentionInDays: 30
+      RetentionInDays: !FindInMap [EnvironmentMap, !Ref Environment, LogGroupRetentionInDays]
       KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
         - Key: Product
@@ -1746,7 +1746,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/lambda/${PostPhase2UserIdentityHandler}"
-      RetentionInDays: 30
+      RetentionInDays: !FindInMap [EnvironmentMap, !Ref Environment, LogGroupRetentionInDays]
       KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
         - Key: Product
@@ -1875,7 +1875,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-InboundTxmaQueueMessageHandler"
-      RetentionInDays: !Ref LogGroupRetentionInDays
+      RetentionInDays: !FindInMap [EnvironmentMap, !Ref Environment, LogGroupRetentionInDays]
       KmsKeyId: !GetAtt LoggingKmsKey.Arn
 
   InboundTxmaQueueMessageHandlerLogGroupSubscriptionFilter:
@@ -2012,7 +2012,7 @@ Resources:
     Condition: IsDev
     Properties:
       LogGroupName: !Sub "/aws/apigateway/${DevPrivateRestApi}/${ApiStageName}"
-      RetentionInDays: 30
+      RetentionInDays: !FindInMap [EnvironmentMap, !Ref Environment, LogGroupRetentionInDays]
       KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
       Tags:
         - Key: Product
