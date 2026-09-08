@@ -1,8 +1,9 @@
-import { setDefaultTimeout, Before, defineParameterType } from "@cucumber/cucumber";
+import { Before, defineParameterType, setDefaultTimeout } from "@cucumber/cucumber";
 import { Response } from "superagent";
 import { randomString } from "../../../shared-test/string-utilities";
 import { getDidControllerName, getSigningKeyId } from "../shared/utils/ssm-utilities";
 import { AuthorizationResponse, OAuthBadRequest, RedirectResponse, TokenResponse } from "../shared/utils/auth-api";
+import { generateRandomTestUserId } from "../shared/utils/user-subject-id";
 
 export type WorldDefinition = {
   testDidController: string;
@@ -41,16 +42,3 @@ Before<WorldDefinition>(async function () {
   this.authorizationResponse = undefined;
   this.tokenResponse = undefined;
 });
-
-function generateRandomTestUserId() {
-  const randomTestUserId = "urn:fdc:gov.uk:2022:TEST_USER-".concat(
-    randomString(10),
-    "-",
-    randomString(4),
-    "-",
-    randomString(1),
-    "-",
-    randomString(18)
-  );
-  return randomTestUserId;
-}

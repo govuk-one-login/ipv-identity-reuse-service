@@ -90,5 +90,9 @@ if $RUN_WITH_DOCKER; then
     exit 1
   fi
 else
+  echo "Run feature tests..."
   npm run test:acceptance -- --format html:test-reports/acceptance.html
+  echo "Run Playwright tests..."
+  npm run test:browser:install
+  npm run test:browser
 fi

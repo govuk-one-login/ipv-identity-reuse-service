@@ -2,6 +2,14 @@ import { expect, test } from "./fixtures";
 import { ConfirmDetailsPage } from "./pages/confirm-details.page";
 import type { AuthorizationRequestField } from "./pages/orchestration-stub.page";
 import { UnrecoverableErrorPage } from "./pages/unrecoverable-error.page";
+import { generateRandomTestUserId } from "../shared/utils/user-subject-id";
+import { createStoredIdentityWithVot } from "../shared/helpers/identity-helper";
+import { getDidControllerName, getSigningKeyId } from "../shared/utils/ssm-utilities";
+import {
+  createAndPostDcmawPassportCredential,
+  createAndPostFraudCheckCredential,
+} from "../shared/helpers/credential-helpers";
+import { sisBaseUrl, sisPrivateApiUrl } from "./support/environment";
 
 const AN_HOUR = 60 * 60;
 const TEN_MINUTES = 10 * 60;
@@ -46,14 +54,37 @@ const rejectedRequests: ReadonlyArray<RejectedRequest> = [
 ];
 
 test.describe("Authorization workflow", () => {
+  let sisPublicUrl: string;
+  let sisPrivateUrl: string;
+  test.beforeAll(async () => {
+    sisPublicUrl = await sisBaseUrl();
+    sisPrivateUrl = await sisPrivateApiUrl();
+  });
+
   test("takes the user from the stub to the confirm details page", async ({
     page,
     orchestrationStub,
     confirmDetails,
   }) => {
+    const userId = generateRandomTestUserId();
+    const credentialJwts = [
+      await createAndPostDcmawPassportCredential(userId, new Date()),
+      await createAndPostFraudCheckCredential(userId, new Date()),
+    ];
+    await createStoredIdentityWithVot(
+      userId,
+      credentialJwts,
+      "P2",
+      await getDidControllerName(),
+      await getSigningKeyId()
+    );
+
     await orchestrationStub.goto();
     await expect(orchestrationStub.heading).toBeVisible();
 
+    await orchestrationStub.setPublicUrl(sisPublicUrl);
+    await orchestrationStub.setPrivateUrl(sisPrivateUrl);
+    await orchestrationStub.setUserId(userId);
     await orchestrationStub.continue();
 
     await expect(confirmDetails.heading).toBeVisible();
@@ -72,6 +103,8 @@ test.describe("Authorization workflow", () => {
         await orchestrationStub.goto();
         await orchestrationStub.field(field).fill(value);
 
+        await orchestrationStub.setPublicUrl(sisPublicUrl);
+        await orchestrationStub.setPrivateUrl(sisPrivateUrl);
         await orchestrationStub.continue();
 
         await expect(unrecoverableError.heading).toBeVisible();

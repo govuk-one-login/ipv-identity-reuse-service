@@ -12,6 +12,8 @@ export const authorizationRequestFields = {
   issuedAt: "Issued at (iat)",
   notBefore: "Not before (nbf)",
   expiry: "Expiry (exp)",
+  sisPublicUrl: "Authorisation server (SIS) public URL",
+  sisPrivateUrl: "Authorisation server (SIS) private URL",
 } as const;
 
 export type AuthorizationRequestField = keyof typeof authorizationRequestFields;
@@ -37,5 +39,17 @@ export class OrchestrationStubPage {
 
   async continue(): Promise<void> {
     await this.continueButton.click();
+  }
+
+  async setUserId(userId: string) {
+    await this.page.getByLabel(authorizationRequestFields.subject).fill(userId);
+  }
+
+  async setPublicUrl(url: string) {
+    await this.page.getByLabel(authorizationRequestFields.sisPublicUrl).fill(url);
+  }
+
+  async setPrivateUrl(url: string) {
+    await this.page.getByLabel(authorizationRequestFields.sisPrivateUrl).fill(url);
   }
 }
