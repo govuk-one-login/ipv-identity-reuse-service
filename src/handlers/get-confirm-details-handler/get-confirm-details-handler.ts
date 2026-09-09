@@ -70,6 +70,7 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
         client_id,
         userDetails,
         translations,
+        govukRebrand: true,
         errorPageUrl: `https://${domainName}/error/unrecoverable`,
       }),
       headers: {
