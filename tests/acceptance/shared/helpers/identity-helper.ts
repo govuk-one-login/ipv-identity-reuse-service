@@ -25,6 +25,7 @@ export async function createStoredIdentityWithVot(
     iss: "https://api.example.com",
     credentials: allCredentialSignatures,
     vot: signedVot,
+    vtm: "https://oidc.account.gov.uk/trustmark",
     claims: {
       "https://vocab.account.gov.uk/v1/coreIdentity": {
         name: [KENNETH_DECERQUEIRA],

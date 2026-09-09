@@ -151,6 +151,7 @@ const createCredentialStoreIdentityResponse = async (
     iss: "http://api.example.com",
     vtm: "https://oidc.account.gov.uk/trustmark",
     credentials: [],
+    claims: { "https://vocab.account.gov.uk/v1/coreIdentity": {}, "https://vocab.account.gov.uk/v1/address": [] },
   };
 
   const defaultStoredIdentityHeader = getDefaultJwtHeader();

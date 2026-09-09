@@ -7,10 +7,13 @@ import { getIdentityFromCredentialStore } from "../credential-store/encrypted-cr
 import { getJwtBody, getJwtHeader } from "./jwt-utilities.js";
 import { HttpCodesEnum } from "./constants.js";
 import { APIGatewayProxyResult } from "aws-lambda";
-import { CredentialStoreError, TokenValidationError } from "./errors.js";
+import { CredentialStoreError, StoredIdentityValidationError, TokenValidationError } from "./errors.js";
 import { UserIdentityErrorResponse } from "../handlers/post-phase2-user-identity-handler/post-phase2-user-identity-error-response.js";
 import { auditIdentityRecordRead, auditIdentityRecordReturned } from "./audit.js";
-import { StoredIdentityJWT } from "../handlers/post-phase2-user-identity-handler/stored-identity-jwt.js";
+import {
+  StoredIdentityJWT,
+  isStoredIdentityJWT,
+} from "../handlers/post-phase2-user-identity-handler/stored-identity-jwt.js";
 import { validateStoredIdentityCredentials } from "../identity-reuse/stored-identity-validator.js";
 import { ErrorCodeEnum, ResponseBody } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_RETURNED.js";
 
@@ -72,19 +75,26 @@ export type RecordValidationResult = {
   kidValid: boolean;
   signatureValid: boolean;
   isValid: boolean;
+  storedIdentityJwt: StoredIdentityJWT;
 };
 
 export const validateIdentityRecords = async (
   identityResponse: CredentialStoreIdentityResponse
 ): Promise<RecordValidationResult> => {
   const content = getJwtBody<StoredIdentityJWT>(identityResponse.si.vc);
+
+  if (!isStoredIdentityJWT(content)) {
+    logger.error("Stored identity JWT does not match expected format");
+    throw new StoredIdentityValidationError();
+  }
+
   const kid = getJwtHeader(identityResponse.si.vc).kid || "";
   const currentVcsEncoded = identityResponse.vcs.map((vc) => vc.vc);
 
   const { kidValid, signatureValid } = await validateCryptography(kid, identityResponse);
   const isValid = validateStoredIdentityCredentials(content, currentVcsEncoded);
 
-  return { kidValid, signatureValid, isValid };
+  return { kidValid, signatureValid, isValid, storedIdentityJwt: content };
 };
 
 export const createErrorResponse = (errorCode: HttpCodesEnum): APIGatewayProxyResult => {

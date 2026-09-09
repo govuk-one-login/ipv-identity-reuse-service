@@ -54,5 +54,9 @@ const createStoredIdentityRecord = (...signatures: string[]): StoredIdentityJWT 
     credentials: signatures,
     vot: "P2",
     vtm: "",
+    claims: {
+      "https://vocab.account.gov.uk/v1/coreIdentity": {},
+      "https://vocab.account.gov.uk/v1/address": [],
+    },
   };
 };

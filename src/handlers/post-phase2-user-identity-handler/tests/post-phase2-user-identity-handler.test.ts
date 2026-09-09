@@ -112,6 +112,20 @@ describe("user-identity-handler authorization", () => {
         vot: "P2",
         vtm: "https://oidc.account.gov.uk/trustmark",
         credentials: credentialSignatures,
+        claims: {
+          "https://vocab.account.gov.uk/v1/coreIdentity": {
+            name: [
+              {
+                nameParts: [
+                  { type: "GivenName", value: "Test" },
+                  { type: "FamilyName", value: "User" },
+                ],
+              },
+            ],
+            birthDate: [{ value: "1990-01-01" }],
+          },
+          "https://vocab.account.gov.uk/v1/address": [{ streetName: "Test Street", postalCode: "TE1 1ST" }],
+        },
       },
       expired: false,
       isValid: true,
@@ -181,7 +195,25 @@ describe("user-identity-handler authorization", () => {
     const body = JSON.parse(result.body) as UserIdentityResponse;
     expect(body).toStrictEqual({
       vot: "P3",
-      content: { sub: "user-sub", vot: "P2", vtm: "https://oidc.account.gov.uk/trustmark" },
+      content: {
+        sub: "user-sub",
+        vot: "P2",
+        vtm: "https://oidc.account.gov.uk/trustmark",
+        claims: {
+          "https://vocab.account.gov.uk/v1/coreIdentity": {
+            name: [
+              {
+                nameParts: [
+                  { type: "GivenName", value: "Test" },
+                  { type: "FamilyName", value: "User" },
+                ],
+              },
+            ],
+            birthDate: [{ value: "1990-01-01" }],
+          },
+          "https://vocab.account.gov.uk/v1/address": [{ streetName: "Test Street", postalCode: "TE1 1ST" }],
+        },
+      },
       expired: false,
       isValid: true,
       kidValid: true,
@@ -419,6 +451,20 @@ describe("user-identity-handler expired", () => {
         vot: "P2",
         vtm: "https://oidc.account.gov.uk/trustmark",
         credentials: credentialSignatures,
+        claims: {
+          "https://vocab.account.gov.uk/v1/coreIdentity": {
+            name: [
+              {
+                nameParts: [
+                  { type: "GivenName", value: "Test" },
+                  { type: "FamilyName", value: "User" },
+                ],
+              },
+            ],
+            birthDate: [{ value: "1990-01-01" }],
+          },
+          "https://vocab.account.gov.uk/v1/address": [{ streetName: "Test Street", postalCode: "TE1 1ST" }],
+        },
       },
       expired: expectedExpired,
       isValid: true,

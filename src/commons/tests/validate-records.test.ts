@@ -84,7 +84,8 @@ describe("validateIdentityRecords", () => {
     ]);
 
     const result = await validateIdentityRecords(mockEVCSData);
-    expect(result).toEqual({ kidValid: true, signatureValid: true, isValid: true });
+    expect(result).toMatchObject({ kidValid: true, signatureValid: true, isValid: true });
+    expect(result.storedIdentityJwt).toBeDefined();
   });
 
   it("isValid is false when a stored identity record is missing a signature", async () => {
@@ -102,7 +103,7 @@ describe("validateIdentityRecords", () => {
     );
     const result = await validateIdentityRecords(mockEVCSData);
 
-    expect(result).toEqual({ kidValid: true, signatureValid: true, isValid: false });
+    expect(result).toMatchObject({ kidValid: true, signatureValid: true, isValid: false });
   });
 
   it("isValid is false when a stored identity record contains an extra signature", async () => {
@@ -122,6 +123,6 @@ describe("validateIdentityRecords", () => {
 
     const result = await validateIdentityRecords(mockEVCSData);
 
-    expect(result).toEqual({ kidValid: true, signatureValid: true, isValid: false });
+    expect(result).toMatchObject({ kidValid: true, signatureValid: true, isValid: false });
   });
 });

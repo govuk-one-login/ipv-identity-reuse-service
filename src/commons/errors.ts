@@ -24,3 +24,10 @@ export class CredentialStoreError extends Error {
     this.name = "CredentialStoreError";
   }
 }
+
+export class StoredIdentityValidationError extends Error {
+  constructor() {
+    super("Stored identity JWT does not match expected format");
+    this.name = "StoredIdentityValidationError";
+  }
+}

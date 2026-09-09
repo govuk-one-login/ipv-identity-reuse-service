@@ -7,11 +7,19 @@ import { getCookieValues } from "../../commons/cookie-utilities.js";
 import { handleGetIdentityFromCredentialStore, validateIdentityRecords } from "../../commons/validate-records.js";
 import { getSessionDetails } from "../../services/oauth-internal-service.js";
 import { redirectToErrorPage } from "../../services/sis-redirect-service.js";
-import { CredentialStoreError } from "../../commons/errors.js";
+import { CredentialStoreError, StoredIdentityValidationError } from "../../commons/errors.js";
 import { HttpCodesEnum } from "../../commons/constants.js";
+import { extractUserDetails } from "./user-details-content.js";
+import translations from "../../../locales/en/translation.json" with { type: "json" };
 
 const govukFrontendDistribution = path.join(path.dirname(require.resolve("govuk-frontend/package.json")), "dist");
-const nunjucksEnvironment = nunjucks.configure([process.env.LAMBDA_TASK_ROOT || "", govukFrontendDistribution]);
+nunjucksEnvironment.addFilter("GDSDate", (dateString: string) => {
+  return new Date(dateString).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+});
 
 export type ConfirmDetailsQueryStringParameters = {
   redirect_uri: string;
@@ -41,15 +49,17 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
     }
 
     const identityResponse = await handleGetIdentityFromCredentialStore(`Bearer ${storageAccessToken}`, subject);
-    const { kidValid, signatureValid, isValid } = await validateIdentityRecords(identityResponse);
+    const { kidValid, signatureValid, isValid, storedIdentityJwt } = await validateIdentityRecords(identityResponse);
 
-    if (!kidValid || !signatureValid || !isValid) {
+    if (!kidValid || !signatureValid || !isValid || !storedIdentityJwt) {
       logger.error("Record validation failed for existing user", { kidValid, signatureValid, isValid });
       return {
         statusCode: 500,
         body: "",
       };
     }
+    const userDetails = extractUserDetails(storedIdentityJwt);
+
     return {
       statusCode: 200,
       body: nunjucksEnvironment.render(mainPageTemplate, {
@@ -58,6 +68,9 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
         redirect_uri,
         state,
         client_id,
+        userDetails,
+        translations,
+        errorPageUrl: `https://${domainName}/error/unrecoverable`,
       }),
       headers: {
         "content-type": "text/html",
@@ -66,6 +79,9 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
   } catch (error) {
     if (error instanceof CredentialStoreError && error.statusCode === HttpCodesEnum.NOT_FOUND) {
       logger.error("No identity record found in EVCS");
+      return redirectToErrorPage(domainName);
+    }
+    if (error instanceof StoredIdentityValidationError) {
       return redirectToErrorPage(domainName);
     }
     logger.error(`Error in lambdaHandler event: ${error}`);
