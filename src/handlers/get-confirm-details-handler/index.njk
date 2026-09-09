@@ -1,9 +1,8 @@
 {% from "govuk/components/input/macro.njk" import govukInput %}
-{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
-{% from "govuk/components/panel/macro.njk" import govukPanel %}
 {% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
 {% from "govuk/components/details/macro.njk" import govukDetails %}
 {% from "govuk/components/phase-banner/macro.njk" import govukPhaseBanner %}
+{% from "@govuk-one-login/frontend-ui/build/components/progress-button/macro.njk" import frontendUiProgressButton %}
 
 {% extends "govuk/template.njk" %}
 {% block head %}
@@ -19,28 +18,18 @@
     }) }}
 {% endblock %}
 {% block content %}
-    {% if errors and errors.length > 0 %}
-        {{ govukErrorSummary({
-            "titleText": "Error",
-            "errorList":  errors
-        }) }}
-    {% endif %}
-
-    <h1 class="govuk-heading-l">You have already proved your identity</h1>
-
     <div class="govuk-grid-row">
-        {% if messageId %}
-            <div class="govuk-grid-column-two-thirds">
+        <div class="govuk-grid-column-two-thirds">
             <h1 class="govuk-heading-l">{{ translations.pages.confirmDetails.header }}</h1>
 
             <p class="govuk-body">{{ translations.pages.confirmDetails.content.paragraph1 }}</p>
 
             {% set rows = [
                 {
-                            key: {
+                    key: {
                         text: translations.pages.confirmDetails.content.userDetailsInformation.fullName
-                            },
-                            value: {
+                    },
+                    value: {
                         text: userDetails.name
                     }
                 }
@@ -58,10 +47,10 @@
             {% endif %}
 
             {% set rows = (rows.push({
-                            key: {
+                key: {
                     text: translations.pages.confirmDetails.content.userDetailsInformation.dateOfBirth
-                            },
-                            value: {
+                },
+                value: {
                     text: userDetails.dateOfBirth | GDSDate
                 }
             }), rows) %}
@@ -88,37 +77,34 @@
                 html: detailsHtml
             }) }}
 
-                <form id="submitForm" action="/confirm-details" method="post">
-                    {{ govukInput({
-                      type: "hidden",
-                      id: "redirectUri",
-                      name: "redirectUri",
-                      value: redirect_uri
-                    }) }}
-                    {{ govukInput({
-                      type: "hidden",
-                      id: "code",
-                      name: "code",
-                      value: code
-                    }) }}
-                    {{ govukInput({
-                      type: "hidden",
-                      id: "state",
-                      name: "state",
-                      value: state
-                    }) }}
-                    {{ govukInput({
-                      type: "hidden",
-                      id: "client_id",
-                      name: "client_id",
-                      value: client_id
-                    }) }}
-                    {{ govukButton({
-                    text: "Continue"
-                    }) }}
-                </form>
-            </div>
-        {% endif %}
+            <form id="submitForm" action="/confirm-details" method="post">
+                {{ govukInput({
+                    type: "hidden",
+                    id: "redirectUri",
+                    name: "redirectUri",
+                    value: redirect_uri
+                }) }}
+                {{ govukInput({
+                    type: "hidden",
+                    id: "state",
+                    name: "state",
+                    value: state
+                }) }}
+                {{ govukInput({
+                    type: "hidden",
+                    id: "client_id",
+                    name: "client_id",
+                    value: client_id
+                }) }}
+                {{ frontendUiProgressButton({
+                    id: "submitButton",
+                    translations: translations.progressButton,
+                    text: translations.pages.confirmDetails.content.continueButton,
+                    element: "button",
+                    errorPage: "/error/unrecoverable"
+                }) }}
+            </form>
+        </div>
     </div>
 {% endblock %}
 
@@ -128,5 +114,10 @@
 <script type="module">
     import { initAll } from '{{ rootPath | default("", true) }}/govuk-frontend.min.js'
     initAll()
+</script>
+<script type="module" src="{{ rootPath | default("", true) }}/frontend-ui.js"></script>
+<script type="module">
+    import { useSpinner } from '{{ rootPath | default("", true) }}/frontend-ui.js'
+    useSpinner()
 </script>
 {% endblock %}
