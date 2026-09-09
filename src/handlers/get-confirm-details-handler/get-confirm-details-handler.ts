@@ -13,6 +13,12 @@ import { extractUserDetails } from "../../commons/user-details";
 import translations from "../../../locales/en/translation.json";
 
 const govukFrontendDistribution = path.join(path.dirname(require.resolve("govuk-frontend/package.json")), "dist");
+const nunjucksEnvironment = nunjucks.configure([
+  process.env.LAMBDA_TASK_ROOT || "",
+  govukFrontendDistribution,
+  path.join(govukFrontendDistribution, "../.."),
+]);
+
 nunjucksEnvironment.addFilter("GDSDate", (dateString: string) => {
   return new Date(dateString).toLocaleDateString("en-GB", {
     day: "numeric",

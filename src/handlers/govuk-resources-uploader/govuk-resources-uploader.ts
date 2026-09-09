@@ -56,6 +56,21 @@ const uploadResources = async (bucket: string) => {
 
     logger.info("Updating file", { Bucket: bucket, Key: key, ContentType: getContentType(key) });
   }
+
+  // Upload frontend-ui ESM bundle
+  const frontendUiCjsPath = require.resolve("@govuk-one-login/frontend-ui/frontend");
+  const frontendUiBundlePath = frontendUiCjsPath.replace("/cjs/", "/esm/").replace(".cjs", ".js");
+  const frontendUiKey = "frontend-ui.js";
+  const frontendUiStream = fs.createReadStream(frontendUiBundlePath);
+  const frontendUiPutCommand = new PutObjectCommand({
+    Bucket: bucket,
+    Key: frontendUiKey,
+    Body: frontendUiStream,
+    ContentType: "text/javascript",
+  });
+
+  await client.send(frontendUiPutCommand);
+  logger.info("Updating file", { Bucket: bucket, Key: frontendUiKey, ContentType: "text/javascript" });
 };
 
 const deleteResources = async (bucket: string) => {
