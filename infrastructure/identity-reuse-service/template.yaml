@@ -325,8 +325,7 @@ Globals:
             - "{{resolve:secretsmanager:${SecretArn}:SecretString:DT_TENANT}}"
             - SecretArn: !FindInMap [EnvironmentMap, !Ref Environment, DynatraceSecretArn]
           - !Ref "AWS::NoValue"
-        SESSION_TABLE_NAME:
-          Fn::ImportValue SessionTableName
+        SESSION_TABLE_NAME: Fn::ImportValue SessionTableName
     CodeSigningConfigArn: !If
       - UseCodeSigning
       - !Ref CodeSigningConfigArn
@@ -791,8 +790,16 @@ Resources:
         UseNpmCi: True
         EntryPoints:
           - src/handlers/govuk-resources-uploader/govuk-resources-uploader.ts
+        Format: esm
+        Minify: true
+        Platform: node
         Sourcemap: true
+        SourcesContent: false
         Target: "es2022"
+        OutExtension:
+          - .js=.mjs
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
 
   GovUKAssetsBucket:
     # checkov:skip=CKV_AWS_18: "Ensure the S3 bucket has access logging enabled"
@@ -980,6 +987,13 @@ Resources:
         Target: es2022
         Minify: true
         Sourcemap: true
+        SourcesContent: false
+        Format: esm
+        Platform: node
+        OutExtension:
+          - .js=.mjs
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
 
   PostConfirmDetailsHandlerRole:
     # checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
@@ -1314,7 +1328,6 @@ Resources:
           Value: !Ref SourceTagValue
         - Key: Name
           Value: !Sub "/aws/apigateway/${AWS::StackName}-PrivateApi/${ApiStageName}"
-
 
   PrivateApiAuthorizerResourcePolicy:
     Type: AWS::Lambda::Permission
