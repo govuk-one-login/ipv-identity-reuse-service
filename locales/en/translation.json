@@ -1,0 +1,39 @@
+{
+  "betaBanner": {
+    "content": "This is a new service. Help us improve it and <a class=\"govuk-link\" href=\"https://home.account.gov.uk/contact-gov-uk-one-login?fromURL=https%3A%2F%2Fsignin.account.gov.uk%2Fsupport\">give your feedback (opens in a new tab)</a>.",
+    "tag": "beta"
+  },
+  "pages": {
+    "confirmDetails": {
+      "content": {
+        "continueButton": "Confirm and continue",
+        "paragraph1": "You completed your identity check online or at a Post Office using these details:",
+        "paragraph2": "Some of these details might be used to automatically fill in the forms within the service you need to use.",
+        "updateUserDetailsInformation": {
+          "detailsChangedHeading": "If your details have changed",
+          "detailsChangedLinkText": "update your details",
+          "detailsChangedParagraph1": "Your proof of identity is still valid even if your details have changed.",
+          "detailsChangedParagraph2": "You do not need to update your details to continue to the service you need to use.",
+          "detailsChangedParagraph3": "When you continue, GOV.UK One Login will share your saved details with the service.",
+          "detailsChangedText": "If you need to, you can",
+          "nameMistakeHeading": "If there is a mistake in your name",
+          "nameMistakeParagraph1": "<a class=\"govuk-link\" href=\"https://home.account.gov.uk/contact-gov-uk-one-login?fromURL=https%3A%2F%2Fsignin.account.gov.uk%2Fsupport\">Contact the GOV.UK One Login team (opens in new tab)</a> if there is a mistake in your name. For example, if your name is missing letters or a hyphen.",
+          "nameMistakeParagraph2": "Do not try to update your details or prove your identity again unless the GOV.UK One Login team has told you to.",
+          "updateDetailsLabel": "If your details are wrong"
+        },
+        "userDetailsInformation": {
+          "dateOfBirth": "Date of birth",
+          "fullName": "Full name"
+        }
+      },
+      "header": "Confirm your details",
+      "title": "Confirm your details"
+    }
+  },
+  "progressButton": {
+    "longWaitingText": "Keep waiting",
+    "noJavascriptMessage": "It can take up to 10 seconds to continue to the next page. After you continue, do not reload or close this page.",
+    "text": "Confirm and continue",
+    "waitingText": "Wait"
+  }
+}

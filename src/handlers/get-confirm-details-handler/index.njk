@@ -1,13 +1,22 @@
-{% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/input/macro.njk" import govukInput %}
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "govuk/components/panel/macro.njk" import govukPanel %}
 {% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+{% from "govuk/components/details/macro.njk" import govukDetails %}
+{% from "govuk/components/phase-banner/macro.njk" import govukPhaseBanner %}
 
 {% extends "govuk/template.njk" %}
 {% block head %}
     <link rel="stylesheet" href="{{ rootPath | default("", true) }}/govuk-frontend.min.css">
     <base href="./confirm-details" />
+{% endblock %}
+{% block beforeContent %}
+    {{ govukPhaseBanner({
+        tag: {
+            text: translations.betaBanner.tag
+        },
+        html: translations.betaBanner.content
+    }) }}
 {% endblock %}
 {% block content %}
     {% if errors and errors.length > 0 %}
@@ -22,36 +31,63 @@
     <div class="govuk-grid-row">
         {% if messageId %}
             <div class="govuk-grid-column-two-thirds">
-                {% set messageIdHtml = 'MessageId<br><strong>' + messageId + '</strong>' %}
-                {{ govukPanel({
-                    titleText: "You have already proved your identity",
-                    html: messageIdHtml
-                }) }}
-                {{ govukSummaryList({
-                    rows: [
-                        {
-                            classes: "govuk-summary-list__row--no-actions",
+            <h1 class="govuk-heading-l">{{ translations.pages.confirmDetails.header }}</h1>
+
+            <p class="govuk-body">{{ translations.pages.confirmDetails.content.paragraph1 }}</p>
+
+            {% set rows = [
+                {
                             key: {
-                                text: "MD5OfMessageBody"
+                        text: translations.pages.confirmDetails.content.userDetailsInformation.fullName
                             },
                             value: {
-                                text: md5OfMessageBody
-                            }
-                        },
-                        {
-                            classes: "govuk-summary-list__row--no-actions",
+                        text: userDetails.name
+                    }
+                }
+            ] %}
+
+            {% if userDetails.addresses | length > 0 %}
+                {% set rows = (rows.push({
+                    key: {
+                        text: userDetails.addresses[0].label
+                    },
+                    value: {
+                        html: userDetails.addresses[0].addressDetailHtml
+                    }
+                }), rows) %}
+            {% endif %}
+
+            {% set rows = (rows.push({
                             key: {
-                                text: "Message"
+                    text: translations.pages.confirmDetails.content.userDetailsInformation.dateOfBirth
                             },
                             value: {
-                                text: message
-                            }
-                        }
-                    ]
-                }) }}
-            </div>
-        {% else %}
-            <div class="govuk-grid-column-two-thirds">
+                    text: userDetails.dateOfBirth | GDSDate
+                }
+            }), rows) %}
+
+            {{ govukSummaryList({
+                rows: rows
+            }) }}
+
+            <p class="govuk-body">{{ translations.pages.confirmDetails.content.paragraph2 }}</p>
+
+            {% set detailsHtml %}
+                <p class="govuk-body"><strong>{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.detailsChangedHeading }}</strong></p>
+                <p class="govuk-body">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.detailsChangedParagraph1 }}</p>
+                <p class="govuk-body">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.detailsChangedParagraph2 }}</p>
+                <p class="govuk-body">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.detailsChangedParagraph3 }}</p>
+                <p class="govuk-body">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.detailsChangedText }} <a class="govuk-link" href="{{ errorPageUrl }}">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.detailsChangedLinkText }}</a>.</p>
+                <p class="govuk-body govuk-!-margin-top-6"><strong>{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.nameMistakeHeading }}</strong></p>
+                <p class="govuk-body">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.nameMistakeParagraph1 }}</p>
+                <p class="govuk-body">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.nameMistakeParagraph2 }}</p>
+            {% endset %}
+
+            {{ govukDetails({
+                summaryText: translations.pages.confirmDetails.content.updateUserDetailsInformation.updateDetailsLabel,
+                html: detailsHtml
+            }) }}
+
                 <form id="submitForm" action="/confirm-details" method="post">
                     {{ govukInput({
                       type: "hidden",
