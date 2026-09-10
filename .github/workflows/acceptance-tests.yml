@@ -43,7 +43,9 @@ jobs:
           scope: "@govuk-one-login"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
 
       - name: Assume AWS role
         uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4

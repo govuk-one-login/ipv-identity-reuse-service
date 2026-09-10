@@ -55,6 +55,8 @@ jobs:
 
       - name: Install Dependencies
         run: npm ci --ignore-scripts
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
 
       - name: Assume AWS Role
         uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4

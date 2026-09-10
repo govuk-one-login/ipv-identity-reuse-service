@@ -36,6 +36,18 @@ export interface UpdateStoredCredentialObjectDetails {
   state: string;
 }
 
+export interface PersistUserVCs {
+  userId: string;
+  govuk_signin_journey_id?: string;
+  vcs: Array<StoredCredentialObjectDetails>;
+}
+
+export interface UpdateUserVCs {
+  userId: string;
+  govuk_signin_journey_id?: string;
+  vcs: Array<UpdateStoredCredentialObjectDetails>;
+}
+
 export const getEvcsApiEndpoint = async (): Promise<string> => {
   const environment = await getCloudFormationOutput(CloudFormationOutputs.AppConfigEnvironment);
 
@@ -64,14 +76,14 @@ export const evcsPostIdentity = async (
   const apiEndpoint = await getEvcsApiEndpoint();
   const apiKey = await getEvcsApiKey();
 
+  const requestObject: PersistStoredIdentity = {
+    userId,
+    si: storedIdentity,
+  };
+
   return request(apiEndpoint)
     .post(EvcsEndpoints.IdentityEndpoint)
-    .send(
-      JSON.stringify({
-        userId,
-        si: storedIdentity,
-      } satisfies PersistStoredIdentity)
-    )
+    .send(requestObject)
     .set("x-api-key", apiKey)
     .set("Accept", "*/*")
     .set("Content-Type", "application/json");
@@ -79,14 +91,21 @@ export const evcsPostIdentity = async (
 
 export const evcsPostCredentials = async (
   userId: string,
-  credentials: StoredCredentialObjectDetails[]
+  credentials: StoredCredentialObjectDetails[],
+  govukSigninJourneyId?: string
 ): Promise<Response> => {
   const apiEndpoint = await getEvcsApiEndpoint();
   const apiKey = await getEvcsApiKey();
 
+  const requestObject: PersistUserVCs = {
+    userId,
+    vcs: credentials,
+    govuk_signin_journey_id: govukSigninJourneyId || userId,
+  };
+
   return request(apiEndpoint)
-    .post(`${EvcsEndpoints.VcsEndpoint}/${userId}`)
-    .send(JSON.stringify(credentials))
+    .post(EvcsEndpoints.VcsEndpoint)
+    .send(requestObject)
     .set("x-api-key", apiKey)
     .set("Accept", "*/*")
     .set("Content-Type", "application/json");
@@ -94,14 +113,21 @@ export const evcsPostCredentials = async (
 
 export const evcsPatchCredentials = async (
   userId: string,
-  credentials: UpdateStoredCredentialObjectDetails[]
+  credentials: UpdateStoredCredentialObjectDetails[],
+  govukSigninJourneyId?: string
 ): Promise<Response> => {
   const apiEndpoint = await getEvcsApiEndpoint();
   const apiKey = await getEvcsApiKey();
 
+  const requestObject: UpdateUserVCs = {
+    userId,
+    vcs: credentials,
+    govuk_signin_journey_id: govukSigninJourneyId || userId,
+  };
+
   return request(apiEndpoint)
-    .patch(`${EvcsEndpoints.VcsEndpoint}/${userId}`)
-    .send(JSON.stringify(credentials))
+    .patch(EvcsEndpoints.VcsEndpoint)
+    .send(requestObject)
     .set("x-api-key", apiKey)
     .set("Accept", "*/*")
     .set("Content-Type", "application/json");

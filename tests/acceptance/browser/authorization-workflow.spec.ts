@@ -56,6 +56,7 @@ const rejectedRequests: ReadonlyArray<RejectedRequest> = [
 test.describe("Authorization workflow", () => {
   let sisPublicUrl: string;
   let sisPrivateUrl: string;
+
   test.beforeAll(async () => {
     sisPublicUrl = await sisBaseUrl();
     sisPrivateUrl = await sisPrivateApiUrl();
