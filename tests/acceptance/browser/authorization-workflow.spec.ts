@@ -66,6 +66,7 @@ test.describe("Authorization workflow", () => {
     page,
     orchestrationStub,
     confirmDetails,
+    identityResponse,
   }) => {
     const userId = generateRandomTestUserId();
     const credentialJwts = [
@@ -92,6 +93,14 @@ test.describe("Authorization workflow", () => {
     await expect(page).toHaveURL((url) => {
       return url.pathname === ConfirmDetailsPage.path;
     });
+
+    await confirmDetails.continue();
+    await expect(identityResponse.heading).toBeVisible();
+    await expect(identityResponse.identityJson).toBeVisible();
+    const userIdentity = await identityResponse.readIdentity();
+    // Once the /user-identity endpoint starts returning non-static data we should
+    // assert that identity information is as expected.
+    expect(userIdentity).toHaveProperty("sub");
   });
 
   test.describe("rejects an untrustworthy authorization request", () => {
