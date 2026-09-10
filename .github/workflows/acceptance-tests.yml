@@ -12,6 +12,11 @@ on:
         default: eu-west-2
         required: false
         type: string
+      use-docker:
+        type: boolean
+        description: Run the tests using Docker
+        default: false
+        required: false
     secrets:
       aws-role-arn:
         required: true
@@ -22,6 +27,7 @@ on:
 permissions:
   id-token: write
   contents: read
+  packages: read
 
 jobs:
   acceptance-tests:
@@ -56,4 +62,12 @@ jobs:
       - name: Run acceptance tests
         env:
           STACK_NAME: ${{ inputs.stack-name }}
-        run: ./run-acceptance-tests.sh --stack-name "$STACK_NAME"
+          NODE_AUTH_TOKEN: ${{ github.token }}
+        run: |
+          DOCKER_FLAG=""
+          if [ "${{ inputs.use-docker }}" == "true" ]; then
+            DOCKER_FLAG="-d"
+            echo //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN} >> ~/.npmrc
+          fi
+
+          ./run-acceptance-tests.sh --stack-name "$STACK_NAME" $DOCKER_FLAG

@@ -68,27 +68,21 @@ export TEST_ENVIRONMENT="dev"
 export SHARED_STACK_NAME
 export SAM_STACK_NAME
 if $RUN_WITH_DOCKER; then
-  if [[ "$AWS_PROFILE" != "" ]]; then
-    docker build \
-      -t acceptance-test-runner \
-      --secret id=npmrc,src=$HOME/.npmrc \
-      -f tests/acceptance/Dockerfile .
+  docker build \
+    -t acceptance-test-runner \
+    --secret id=npmrc,src=$HOME/.npmrc \
+    -f tests/acceptance/Dockerfile .
 
-    docker run -ti --rm \
-      -e AWS_REGION="eu-west-2" \
-      -e AWS_DEFAULT_REGION="eu-west-2" \
-      -e AWS_ACCESS_KEY_ID \
-      -e AWS_SECRET_ACCESS_KEY \
-      -e AWS_SESSION_TOKEN \
-      -e SAM_STACK_NAME \
-      -e TEST_ENVIRONMENT \
-      -e SHARED_STACK_NAME \
-      acceptance-test-runner
-  else
-    echo "Please specify the AWS_PROFILE"
-    usage
-    exit 1
-  fi
+  docker run --rm \
+    -e AWS_REGION="eu-west-2" \
+    -e AWS_DEFAULT_REGION="eu-west-2" \
+    -e AWS_ACCESS_KEY_ID \
+    -e AWS_SECRET_ACCESS_KEY \
+    -e AWS_SESSION_TOKEN \
+    -e SAM_STACK_NAME \
+    -e TEST_ENVIRONMENT \
+    -e SHARED_STACK_NAME \
+    acceptance-test-runner
 else
   echo "Run feature tests..."
   npm run test:acceptance -- --format html:test-reports/acceptance.html
