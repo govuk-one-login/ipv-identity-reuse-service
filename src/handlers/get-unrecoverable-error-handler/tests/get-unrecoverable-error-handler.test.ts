@@ -32,6 +32,7 @@ it("should render the error screen", async () => {
     {
       assetPath: "/assets",
       rootPath: "",
+      govukRebrand: true,
     }
   );
 

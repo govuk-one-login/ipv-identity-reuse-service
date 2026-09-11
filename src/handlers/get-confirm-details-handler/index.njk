@@ -1,88 +1,110 @@
-{% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/input/macro.njk" import govukInput %}
-{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
-{% from "govuk/components/panel/macro.njk" import govukPanel %}
 {% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+{% from "govuk/components/details/macro.njk" import govukDetails %}
+{% from "govuk/components/phase-banner/macro.njk" import govukPhaseBanner %}
+{% from "@govuk-one-login/frontend-ui/build/components/progress-button/macro.njk" import frontendUiProgressButton %}
 
 {% extends "govuk/template.njk" %}
 {% block head %}
     <link rel="stylesheet" href="{{ rootPath | default("", true) }}/govuk-frontend.min.css">
     <base href="./confirm-details" />
 {% endblock %}
+{% block beforeContent %}
+    {{ govukPhaseBanner({
+        tag: {
+            text: translations.betaBanner.tag
+        },
+        html: translations.betaBanner.content
+    }) }}
+{% endblock %}
 {% block content %}
-    {% if errors and errors.length > 0 %}
-        {{ govukErrorSummary({
-            "titleText": "Error",
-            "errorList":  errors
-        }) }}
-    {% endif %}
-
-    <h1 class="govuk-heading-l">You have already proved your identity</h1>
-
     <div class="govuk-grid-row">
-        {% if messageId %}
-            <div class="govuk-grid-column-two-thirds">
-                {% set messageIdHtml = 'MessageId<br><strong>' + messageId + '</strong>' %}
-                {{ govukPanel({
-                    titleText: "You have already proved your identity",
-                    html: messageIdHtml
+        <div class="govuk-grid-column-two-thirds">
+            <h1 class="govuk-heading-l">{{ translations.pages.confirmDetails.header }}</h1>
+
+            <p class="govuk-body">{{ translations.pages.confirmDetails.content.paragraph1 }}</p>
+
+            {% set rows = [
+                {
+                    key: {
+                        text: translations.pages.confirmDetails.content.userDetailsInformation.fullName
+                    },
+                    value: {
+                        text: userDetails.name
+                    }
+                }
+            ] %}
+
+            {% if userDetails.addresses | length > 0 %}
+                {% set rows = (rows.push({
+                    key: {
+                        text: userDetails.addresses[0].label
+                    },
+                    value: {
+                        html: userDetails.addresses[0].addressDetailHtml
+                    }
+                }), rows) %}
+            {% endif %}
+
+            {% set rows = (rows.push({
+                key: {
+                    text: translations.pages.confirmDetails.content.userDetailsInformation.dateOfBirth
+                },
+                value: {
+                    text: userDetails.dateOfBirth | GDSDate
+                }
+            }), rows) %}
+
+            {{ govukSummaryList({
+                rows: rows
+            }) }}
+
+            <p class="govuk-body">{{ translations.pages.confirmDetails.content.paragraph2 }}</p>
+
+            {% set detailsHtml %}
+                <p class="govuk-body"><strong>{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.detailsChangedHeading }}</strong></p>
+                <p class="govuk-body">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.detailsChangedParagraph1 }}</p>
+                <p class="govuk-body">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.detailsChangedParagraph2 }}</p>
+                <p class="govuk-body">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.detailsChangedParagraph3 }}</p>
+                <p class="govuk-body">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.detailsChangedText }} <a class="govuk-link" href="{{ errorPageUrl }}">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.detailsChangedLinkText }}</a>.</p>
+                <p class="govuk-body govuk-!-margin-top-6"><strong>{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.nameMistakeHeading }}</strong></p>
+                <p class="govuk-body">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.nameMistakeParagraph1 }}</p>
+                <p class="govuk-body">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.nameMistakeParagraph2 }}</p>
+            {% endset %}
+
+            {{ govukDetails({
+                summaryText: translations.pages.confirmDetails.content.updateUserDetailsInformation.updateDetailsLabel,
+                html: detailsHtml
+            }) }}
+
+            <form id="submitForm" action="/confirm-details" method="post">
+                {{ govukInput({
+                    type: "hidden",
+                    id: "redirectUri",
+                    name: "redirectUri",
+                    value: redirect_uri
                 }) }}
-                {{ govukSummaryList({
-                    rows: [
-                        {
-                            classes: "govuk-summary-list__row--no-actions",
-                            key: {
-                                text: "MD5OfMessageBody"
-                            },
-                            value: {
-                                text: md5OfMessageBody
-                            }
-                        },
-                        {
-                            classes: "govuk-summary-list__row--no-actions",
-                            key: {
-                                text: "Message"
-                            },
-                            value: {
-                                text: message
-                            }
-                        }
-                    ]
+                {{ govukInput({
+                    type: "hidden",
+                    id: "state",
+                    name: "state",
+                    value: state
                 }) }}
-            </div>
-        {% else %}
-            <div class="govuk-grid-column-two-thirds">
-                <form id="submitForm" action="/confirm-details" method="post">
-                    {{ govukInput({
-                      type: "hidden",
-                      id: "redirectUri",
-                      name: "redirectUri",
-                      value: redirect_uri
-                    }) }}
-                    {{ govukInput({
-                      type: "hidden",
-                      id: "code",
-                      name: "code",
-                      value: code
-                    }) }}
-                    {{ govukInput({
-                      type: "hidden",
-                      id: "state",
-                      name: "state",
-                      value: state
-                    }) }}
-                    {{ govukInput({
-                      type: "hidden",
-                      id: "client_id",
-                      name: "client_id",
-                      value: client_id
-                    }) }}
-                    {{ govukButton({
-                    text: "Continue"
-                    }) }}
-                </form>
-            </div>
-        {% endif %}
+                {{ govukInput({
+                    type: "hidden",
+                    id: "client_id",
+                    name: "client_id",
+                    value: client_id
+                }) }}
+                {{ frontendUiProgressButton({
+                    id: "submitButton",
+                    translations: translations.progressButton,
+                    text: translations.pages.confirmDetails.content.continueButton,
+                    element: "button",
+                    errorPage: "/error/unrecoverable"
+                }) }}
+            </form>
+        </div>
     </div>
 {% endblock %}
 
@@ -92,5 +114,10 @@
 <script type="module">
     import { initAll } from '{{ rootPath | default("", true) }}/govuk-frontend.min.js'
     initAll()
+</script>
+<script type="module" src="{{ rootPath | default("", true) }}/frontend-ui.js"></script>
+<script type="module">
+    import { useSpinner } from '{{ rootPath | default("", true) }}/frontend-ui.js'
+    useSpinner()
 </script>
 {% endblock %}

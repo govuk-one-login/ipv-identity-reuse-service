@@ -5,18 +5,30 @@ import { handleGetIdentityFromCredentialStore, validateIdentityRecords } from ".
 import { CredentialStoreError } from "../../../commons/errors";
 import { HttpCodesEnum } from "../../../commons/constants";
 import { getSessionDetails } from "../../../services/oauth-internal-service";
+import translations from "../../../../locales/en/translation.json";
 
 const mockRender = vi.hoisted(() => vi.fn().mockReturnValue("Rendered Confirm Details Screen"));
 
 vi.mock("nunjucks", () => ({
   default: {
-    configure: vi.fn(() => ({ render: mockRender })),
+    configure: vi.fn(() => ({
+      render: mockRender,
+      addFilter: vi.fn(),
+    })),
   },
 }));
 
 vi.mock("../../../commons/validate-records", () => ({
   handleGetIdentityFromCredentialStore: vi.fn(),
   validateIdentityRecords: vi.fn(),
+}));
+
+vi.mock("../../../commons/user-details", () => ({
+  extractUserDetails: vi.fn().mockReturnValue({
+    name: "Jane Doe",
+    dateOfBirth: "1990-01-15",
+    addresses: [{ label: "Current home address", addressDetailHtml: "10 Downing Street<br>London<br>SW1A 2AA" }],
+  }),
 }));
 
 vi.mock("../../../services/oauth-internal-service", () => ({
@@ -56,6 +68,14 @@ it("should render the confirm details screen when all query string parameters ar
       state: "state-id",
       rootPath: ".",
       client_id: "client",
+      govukRebrand: true,
+      userDetails: {
+        name: "Jane Doe",
+        dateOfBirth: "1990-01-15",
+        addresses: [{ label: "Current home address", addressDetailHtml: "10 Downing Street<br>London<br>SW1A 2AA" }],
+      },
+      translations,
+      errorPageUrl: "https://test-domain/error/unrecoverable",
     }
   );
 

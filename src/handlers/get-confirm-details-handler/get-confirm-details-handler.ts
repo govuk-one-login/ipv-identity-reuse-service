@@ -9,9 +9,23 @@ import { getSessionDetails } from "../../services/oauth-internal-service";
 import { redirectToErrorPage } from "../../services/sis-redirect-service";
 import { CredentialStoreError } from "../../commons/errors";
 import { HttpCodesEnum } from "../../commons/constants";
+import { extractUserDetails } from "../../commons/user-details";
+import translations from "../../../locales/en/translation.json";
 
 const govukFrontendDistribution = path.join(path.dirname(require.resolve("govuk-frontend/package.json")), "dist");
-const nunjucksEnvironment = nunjucks.configure([process.env.LAMBDA_TASK_ROOT || "", govukFrontendDistribution]);
+const nunjucksEnvironment = nunjucks.configure([
+  process.env.LAMBDA_TASK_ROOT || "",
+  govukFrontendDistribution,
+  path.join(govukFrontendDistribution, "../.."),
+]);
+
+nunjucksEnvironment.addFilter("GDSDate", (dateString: string) => {
+  return new Date(dateString).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+});
 
 export type ConfirmDetailsQueryStringParameters = {
   redirect_uri: string;
@@ -50,6 +64,8 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
         body: "",
       };
     }
+    const userDetails = extractUserDetails(identityResponse);
+
     return {
       statusCode: 200,
       body: nunjucksEnvironment.render(mainPageTemplate, {
@@ -58,6 +74,10 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
         redirect_uri,
         state,
         client_id,
+        userDetails,
+        translations,
+        govukRebrand: true,
+        errorPageUrl: `https://${domainName}/error/unrecoverable`,
       }),
       headers: {
         "content-type": "text/html",

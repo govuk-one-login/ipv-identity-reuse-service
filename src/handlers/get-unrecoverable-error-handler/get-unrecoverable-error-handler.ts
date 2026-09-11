@@ -14,6 +14,7 @@ export const lambdaHandler = async (): Promise<APIGatewayProxyResult> => {
       body: nunjucksEnvironment.render(mainPageTemplate, {
         assetPath: "/assets",
         rootPath: "",
+        govukRebrand: true,
       }),
       headers: {
         "content-type": "text/html",
