@@ -1,8 +1,8 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
-import logger from "../../commons/logger";
-import { callSessionApi, SessionResult } from "../../services/oauth-internal-service";
-import { redirectToConfirmDetails, redirectToErrorPage } from "../../services/sis-redirect-service";
-import { getRequiredEnvironment } from "../../commons/get-required-environment";
+import logger from "../../commons/logger.js";
+import { callSessionApi, SessionResult } from "../../services/oauth-internal-service.js";
+import { redirectToConfirmDetails, redirectToErrorPage } from "../../services/sis-redirect-service.js";
+import { getRequiredEnvironment } from "../../commons/get-required-environment.js";
 
 export type AuthorizationQueryStringParameters = {
   client_id: string;

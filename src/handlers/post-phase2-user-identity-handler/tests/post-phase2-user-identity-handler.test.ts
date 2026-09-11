@@ -1,24 +1,24 @@
 import { APIGatewayProxyEvent, Context } from "aws-lambda";
-import { handler } from "../post-phase2-user-identity-handler";
-import { HttpCodesEnum } from "../../../commons/constants";
-import * as configuration from "../../../commons/configuration";
-import { Configuration } from "../../../commons/configuration";
-import { CredentialStoreIdentityResponse } from "../../../credential-store/credential-store-identity-response";
-import { UserIdentityResponse } from "../post-phase2-user-identity-response";
-import { UserIdentityRequest } from "../post-phase2-user-identity-request";
-import * as identityExpiryService from "../../../identity-reuse/identity-expiry-service";
+import { handler } from "../post-phase2-user-identity-handler.js";
+import { HttpCodesEnum } from "../../../commons/constants.js";
+import * as configuration from "../../../commons/configuration.js";
+import { Configuration } from "../../../commons/configuration.js";
+import { CredentialStoreIdentityResponse } from "../../../credential-store/credential-store-identity-response.js";
+import { UserIdentityResponse } from "../post-phase2-user-identity-response.js";
+import { UserIdentityRequest } from "../post-phase2-user-identity-request.js";
+import * as identityExpiryService from "../../../identity-reuse/identity-expiry-service.js";
 
-import * as AuditModule from "../../../commons/audit";
-import * as ValidateRecords from "../../../commons/validate-records";
-import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utilities";
-import logger from "../../../commons/logger";
+import * as AuditModule from "../../../commons/audit.js";
+import * as ValidateRecords from "../../../commons/validate-records.js";
+import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utilities.js";
+import logger from "../../../commons/logger.js";
 import { beforeEach, describe, expect, it, Mock, vi } from "vitest";
 import {
   createCredentialStoreIdentityResponse,
   createCredentialStoreIdentityResponseWithStates,
   createSignedIdentityCheckCredentialJWT,
-} from "../../../../shared-test/credential-store-utilities";
-import { CredentialStoreError, TokenValidationError } from "../../../commons/errors";
+} from "../../../../shared-test/credential-store-utilities.js";
+import { CredentialStoreError, TokenValidationError } from "../../../commons/errors.js";
 
 vi.mock("../../../commons/logger");
 vi.mock("../../../commons/audit");

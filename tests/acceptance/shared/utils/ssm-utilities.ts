@@ -1,6 +1,6 @@
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { getParameter } from "@aws-lambda-powertools/parameters/ssm";
-import { getString } from "../../../../src/commons/string-utilities";
+import { getString } from "../../../../src/commons/string-utilities.js";
 
 const getTestParameter = async (parameterName: string): Promise<string> => {
   const stackName = process.env.SHARED_STACK_NAME || "reuse-identity-shared";

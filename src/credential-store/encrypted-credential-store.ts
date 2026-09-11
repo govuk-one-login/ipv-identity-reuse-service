@@ -1,8 +1,8 @@
-import { getConfiguration, getServiceApiKey } from "../commons/configuration";
-import { CredentialStoreIdentityResponse } from "./credential-store-identity-response";
-import { VerifiableCredentialJWT } from "../identity-reuse/verifiable-credential-jwt";
-import { getJwtBody } from "../commons/jwt-utilities";
-import logger from "../commons/logger";
+import { getConfiguration, getServiceApiKey } from "../commons/configuration.js";
+import { CredentialStoreIdentityResponse } from "./credential-store-identity-response.js";
+import { VerifiableCredentialJWT } from "../identity-reuse/verifiable-credential-jwt.js";
+import { getJwtBody } from "../commons/jwt-utilities.js";
+import logger from "../commons/logger.js";
 
 export const getIdentityFromCredentialStore = async (authorizationToken: string): Promise<Response> => {
   const configuration = await getConfiguration();

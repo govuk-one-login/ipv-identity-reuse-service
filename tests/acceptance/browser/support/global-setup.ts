@@ -1,4 +1,4 @@
-import { SHARED_DEV_STUB, sisBaseUrl, sisPrivateApiUrl, sisStackName } from "./environment";
+import { SHARED_DEV_STUB, sisBaseUrl, sisPrivateApiUrl, sisStackName } from "./environment.js";
 
 export default async function announceTarget(): Promise<void> {
   console.log(`Orchestration stub : ${SHARED_DEV_STUB}`);

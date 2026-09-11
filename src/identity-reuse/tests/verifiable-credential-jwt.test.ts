@@ -1,5 +1,5 @@
-import { isIdentityCheckCredential } from "../verifiable-credential-jwt";
-import { IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials";
+import { isIdentityCheckCredential } from "../verifiable-credential-jwt.js";
+import { IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials.js";
 import { describe, it, expect } from "vitest";
 
 describe("isIdentityCheckCredential", () => {

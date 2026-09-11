@@ -1,4 +1,4 @@
-import { CloudFormationOutputs, getCloudFormationOutput, SHARED_SIS_STACK } from "../../shared/utils/cloudformation";
+import { CloudFormationOutputs, getCloudFormationOutput, SHARED_SIS_STACK } from "../../shared/utils/cloudformation.js";
 
 export const SHARED_DEV_STUB = "https://orch.reuse.dev.stubs.account.gov.uk";
 export const SHARED_DEV_SIS = "https://reuse-identity.dev.account.gov.uk";

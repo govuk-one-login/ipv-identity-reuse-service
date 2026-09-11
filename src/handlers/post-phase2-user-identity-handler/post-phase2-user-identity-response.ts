@@ -1,5 +1,5 @@
-import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
-import { StoredIdentityJWT } from "./stored-identity-jwt";
+import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
+import { StoredIdentityJWT } from "./stored-identity-jwt.js";
 
 export type StoredIdentityVectorOfTrust = IdentityVectorOfTrust | "P0";
 

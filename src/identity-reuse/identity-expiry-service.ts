@@ -1,7 +1,7 @@
-import { Configuration } from "../commons/configuration";
-import { hasDrivingLicenceExpired } from "./driving-licence-expiry-service";
-import { hasFraudCheckExpired, getFraudVc } from "./fraud-check-service";
-import { VerifiableCredentialJWT } from "./verifiable-credential-jwt";
+import { Configuration } from "../commons/configuration.js";
+import { hasDrivingLicenceExpired } from "./driving-licence-expiry-service.js";
+import { hasFraudCheckExpired, getFraudVc } from "./fraud-check-service.js";
+import { VerifiableCredentialJWT } from "./verifiable-credential-jwt.js";
 
 export const hasIdentityExpired = (currentVcs: VerifiableCredentialJWT[], configuration: Configuration): boolean => {
   const fraudVc = getFraudVc(currentVcs, configuration.fraudIssuer);

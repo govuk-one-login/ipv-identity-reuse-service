@@ -1,16 +1,16 @@
 import { Metrics, MetricUnit } from "@aws-lambda-powertools/metrics";
 import { SQSEvent, SQSRecord } from "aws-lambda";
-import { InterventionCodeEnum } from "@govuk-one-login/event-catalogue/SIS_IDENTITY_RECORD_INVALIDATED";
+import { InterventionCodeEnum } from "@govuk-one-login/event-catalogue/SIS_IDENTITY_RECORD_INVALIDATED.js";
 
-import { MetricDimension, MetricName } from "../../commons/metric-enum";
-import { isAisMessage, AisMessage } from "./ais-message";
+import { MetricDimension, MetricName } from "../../commons/metric-enum.js";
+import { isAisMessage, AisMessage } from "./ais-message.js";
 
-import { getConfiguration, type Configuration } from "../../commons/configuration";
-import { isStringWithLength } from "../../commons/string-utilities";
-import logger from "../../commons/logger";
-import { isCredentialStoreErrorResponse } from "../../credential-store/credential-store-error-response";
-import { auditIdentityRecordInvalidated } from "../../commons/audit";
-import { invalidateIdentityInCredentialStore } from "../../credential-store/encrypted-credential-store";
+import { getConfiguration, type Configuration } from "../../commons/configuration.js";
+import { isStringWithLength } from "../../commons/string-utilities.js";
+import logger from "../../commons/logger.js";
+import { isCredentialStoreErrorResponse } from "../../credential-store/credential-store-error-response.js";
+import { auditIdentityRecordInvalidated } from "../../commons/audit.js";
+import { invalidateIdentityInCredentialStore } from "../../credential-store/encrypted-credential-store.js";
 
 const metrics = new Metrics();
 

@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent } from "aws-lambda";
-import logger from "./logger";
+import logger from "./logger.js";
 
 export const getCookieValues = (event: Partial<APIGatewayProxyEvent>): Map<string, string> | undefined => {
   const lowercaseHeaders = Object.fromEntries(

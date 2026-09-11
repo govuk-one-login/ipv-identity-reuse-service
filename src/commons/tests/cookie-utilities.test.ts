@@ -1,6 +1,6 @@
 import { describe, expect, it, vitest } from "vitest";
 import { APIGatewayEventRequestContextWithAuthorizer, APIGatewayProxyEvent } from "aws-lambda";
-import { getCookieValues } from "../cookie-utilities";
+import { getCookieValues } from "../cookie-utilities.js";
 
 describe("cookie-utilities", () => {
   it("should return all cookie values", async () => {

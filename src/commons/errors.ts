@@ -1,4 +1,4 @@
-import { HttpCodesEnum } from "./constants";
+import { HttpCodesEnum } from "./constants.js";
 
 export class PolicyGenerationError extends Error {
   constructor(message?: string) {

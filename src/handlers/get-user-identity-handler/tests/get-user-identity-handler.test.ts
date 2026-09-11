@@ -1,5 +1,5 @@
 import { APIGatewayEventRequestContextWithAuthorizer, APIGatewayProxyEvent, Context } from "aws-lambda";
-import { handler } from "../get-user-identity-handler";
+import { handler } from "../get-user-identity-handler.js";
 import { expect, it } from "vitest";
 
 it("should return an empty response", async () => {

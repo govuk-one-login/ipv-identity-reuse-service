@@ -1,5 +1,5 @@
 import { decodeJwt, decodeProtectedHeader, ProtectedHeaderParameters } from "jose";
-import { JWTClass } from "@govuk-one-login/data-vocab/credentials";
+import { JWTClass } from "@govuk-one-login/data-vocab/credentials.js";
 
 export const getJwtBody = <T extends JWTClass = JWTClass>(token: string): T => {
   return decodeJwt(token) as T;

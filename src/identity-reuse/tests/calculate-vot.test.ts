@@ -1,8 +1,8 @@
-import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
-import { calculateVot } from "../calculate-vot";
-import { StoredIdentityVectorOfTrust } from "../../handlers/post-phase2-user-identity-handler/post-phase2-user-identity-response";
-import { StoredIdentityJWT } from "../../handlers/post-phase2-user-identity-handler/stored-identity-jwt";
-import logger from "../../commons/logger";
+import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
+import { calculateVot } from "../calculate-vot.js";
+import { StoredIdentityVectorOfTrust } from "../../handlers/post-phase2-user-identity-handler/post-phase2-user-identity-response.js";
+import { StoredIdentityJWT } from "../../handlers/post-phase2-user-identity-handler/stored-identity-jwt.js";
+import logger from "../../commons/logger.js";
 import { vi, describe, it, afterEach, expect, Mocked } from "vitest";
 
 vi.mock("../../commons/logger");

@@ -1,7 +1,7 @@
 import { JWTHeaderParameters } from "jose";
-import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utilities";
-import { IdentityCheckCredentialJWTClass, FraudCheckType } from "@govuk-one-login/data-vocab/credentials";
-import { evcsPostCredentials } from "../utils/evcs-api";
+import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utilities.js";
+import { IdentityCheckCredentialJWTClass, FraudCheckType } from "@govuk-one-login/data-vocab/credentials.js";
+import { evcsPostCredentials } from "../utils/evcs-api.js";
 import assert from "node:assert";
 
 const DCMAW_ISSUER = "https://www.review-b.dev.account.gov.uk";

@@ -1,12 +1,12 @@
 import { AttributeValue } from "aws-lambda";
 import request from "supertest";
 import type { Response } from "superagent";
-import type { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
+import type { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
 import { getAppConfig } from "@aws-lambda-powertools/parameters/appconfig";
-import { getString } from "../../../../src/commons/string-utilities";
-import { Configuration } from "../../../../src/commons/configuration";
-import { CloudFormationOutputs, getCloudFormationOutput } from "./cloudformation";
-import { getEvcsApiKey } from "./ssm-utilities";
+import { getString } from "../../../../src/commons/string-utilities.js";
+import { Configuration } from "../../../../src/commons/configuration.js";
+import { CloudFormationOutputs, getCloudFormationOutput } from "./cloudformation.js";
+import { getEvcsApiKey } from "./ssm-utilities.js";
 
 export const EvcsEndpoints = {
   BuildStubBaseUrl: "https://evcs.reuse.stubs.account.gov.uk",

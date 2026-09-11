@@ -1,7 +1,7 @@
-import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
-import { getDefaultJwtHeader, renderDid, sign } from "../../../../shared-test/jwt-utilities";
+import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
+import { getDefaultJwtHeader, renderDid, sign } from "../../../../shared-test/jwt-utilities.js";
 import { JWTHeaderParameters, JWTPayload } from "jose";
-import { evcsPostIdentity } from "../utils/evcs-api";
+import { evcsPostIdentity } from "../utils/evcs-api.js";
 import assert from "node:assert";
 
 export async function createStoredIdentityWithVot(

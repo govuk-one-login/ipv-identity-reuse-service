@@ -1,5 +1,5 @@
 import { defineConfig, devices, type ReporterDescription } from "@playwright/test";
-import { SHARED_DEV_STUB } from "./tests/acceptance/browser/support/environment";
+import { SHARED_DEV_STUB } from "./tests/acceptance/browser/support/environment.js";
 
 const isCI = !!process.env.CI;
 
