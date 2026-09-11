@@ -59,7 +59,7 @@ jobs:
     with:
       stack-name: pr-oauth-${{ github.event.pull_request.number }}
       artifact-name: built-oauth-code
-      capabilities: 'CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND'
+      capabilities: "CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND"
     secrets:
       aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
       aws-s3-bucket: ${{ secrets.GHA_SAM_DEPLOYMENT_BUCKET }}
@@ -87,7 +87,24 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      packages: read
     with:
       stack-name: ${{ needs.preview.outputs.stack-name }}
+      use-docker: false
+    secrets:
+      aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
+
+  acceptance-test-docker:
+    if: ${{ !github.event.pull_request.draft && contains( github.event.pull_request.labels.*.name, 'deploy')}}
+    uses: ./.github/workflows/acceptance-tests.yml
+    needs:
+      - preview
+    permissions:
+      id-token: write
+      contents: read
+      packages: read
+    with:
+      stack-name: ${{ needs.preview.outputs.stack-name }}
+      use-docker: true
     secrets:
       aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}

@@ -8,7 +8,7 @@
     },
     "import": [
       "tests/acceptance/tsx-register.js",
-      "tests/acceptance/steps/**/*.ts"
+      "tests/acceptance/steps/index.ts"
     ],
     "paths": [
       "tests/acceptance/features/**/*.feature"

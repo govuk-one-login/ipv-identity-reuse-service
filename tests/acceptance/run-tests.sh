@@ -11,7 +11,7 @@ echo "Test reports will be written to ${TEST_REPORT_ABSOLUTE_DIR}"
 cd /app
 echo Running acceptance tests...
 ./node_modules/.bin/cucumber-js \
-  --require './dist/tests/acceptance/steps/*.js' \
+  --import './dist/steps.js' \
   --format "json:${TEST_REPORT_ABSOLUTE_DIR}/cucumber.json" \
   --format pretty \
   --tags 'not @ignore' \
