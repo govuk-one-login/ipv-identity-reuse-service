@@ -38,6 +38,7 @@
     "@cucumber/cucumber": "13.2.1",
     "@cucumber/pretty-formatter": "4.0.0",
     "@govuk-one-login/ipv-trust-and-reuse-eslint-rules": "1.0.5",
+    "@govuk-one-login/ipv-trust-and-reuse-test-credentials": "1.0.4",
     "@pact-foundation/pact": "17.1.2",
     "@playwright/test": "1.63.0",
     "@smithy/util-stream": "4.8.2",

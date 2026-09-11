@@ -2,6 +2,9 @@ import { Then } from "@cucumber/cucumber";
 import { WorldDefinition } from "./base-verbs.step.js";
 import assert from "node:assert";
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
+import { KENNETH_DECERQUEIRA } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/names";
+import { KENNETH_DECERQUEIRA_BIRTH_DATE } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/birthdates";
+import { KENNETH_DECERQUERIA_ADDRESS } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/addresses";
 
 Then<WorldDefinition>("the status code should be {int}", function (statusCode: number) {
   assert.ok(this.userIdentityPostResponse);
@@ -36,8 +39,15 @@ Then<WorldDefinition>("the stored identity should be returned", function () {
     {
       content: {
         sub: this.userId,
-        iss: "http://api.example.com",
+        iss: "https://api.example.com",
         credentials: expectedCredentials,
+        claims: {
+          "https://vocab.account.gov.uk/v1/coreIdentity": {
+            birthDate: [KENNETH_DECERQUEIRA_BIRTH_DATE],
+            name: [KENNETH_DECERQUEIRA],
+          },
+          "https://vocab.account.gov.uk/v1/address": [KENNETH_DECERQUERIA_ADDRESS],
+        },
         vot: undefined,
         vtm: "https://oidc.account.gov.uk/trustmark",
       },

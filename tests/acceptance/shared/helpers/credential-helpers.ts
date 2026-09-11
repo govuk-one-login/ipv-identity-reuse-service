@@ -3,6 +3,11 @@ import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utilities
 import { IdentityCheckCredentialJWTClass, FraudCheckType } from "@govuk-one-login/data-vocab/credentials.js";
 import { evcsPostCredentials } from "../utils/evcs-api.js";
 import assert from "node:assert";
+import { KENNETH_DECERQUEIRA } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/names";
+import { KENNETH_DECERQUEIRA_BIRTH_DATE } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/birthdates";
+import { KENNETH_DECERQUEIRA_PASSPORT } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/passports";
+import { KENNETH_DECERQUERIA_ADDRESS } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/addresses";
+import { KENNETH_DECERQUEIRA_DVLA_DRIVING_PERMIT } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/drivinglicenses";
 
 const DCMAW_ISSUER = "https://www.review-b.dev.account.gov.uk";
 
@@ -12,9 +17,13 @@ export const createAndPostCredentials = async (credentials: number, userId: stri
   for (let index = 0; index < credentials; index++) {
     const credentialPayload: IdentityCheckCredentialJWTClass = {
       sub: userId,
-      iss: "http://cri.example.com",
+      iss: "https://cri.example.com",
       nbf: Math.floor(Date.now() / 1000),
       vc: {
+        credentialSubject: {
+          name: [KENNETH_DECERQUEIRA],
+          birthDate: [KENNETH_DECERQUEIRA_BIRTH_DATE],
+        },
         evidence: [],
       },
     };
@@ -68,6 +77,11 @@ export const createAndPostFraudCheckCredential = async (
     nbf: Math.floor(nbfDate.getTime() / 1000),
     vc: {
       type: ["VerifiableCredential", "IdentityCheckCredential"],
+      credentialSubject: {
+        name: [KENNETH_DECERQUEIRA],
+        birthDate: [KENNETH_DECERQUEIRA_BIRTH_DATE],
+        address: [KENNETH_DECERQUERIA_ADDRESS],
+      },
       evidence,
     },
   };
@@ -106,11 +120,12 @@ export const createAndPostDcmawDrivingPermitCredential = async (
         },
       ],
       credentialSubject: {
+        name: [KENNETH_DECERQUEIRA],
+        birthDate: [KENNETH_DECERQUEIRA_BIRTH_DATE],
         drivingPermit: [
           {
+            ...KENNETH_DECERQUEIRA_DVLA_DRIVING_PERMIT,
             expiryDate: licenceExpiryDate,
-            personalNumber: "123",
-            issuedBy: "DVLA",
           },
         ],
       },
@@ -148,11 +163,12 @@ export const createAndPostFailedDcmawDrivingPermitCredential = async (
         },
       ],
       credentialSubject: {
+        name: [KENNETH_DECERQUEIRA],
+        birthDate: [KENNETH_DECERQUEIRA_BIRTH_DATE],
         drivingPermit: [
           {
+            ...KENNETH_DECERQUEIRA_DVLA_DRIVING_PERMIT,
             expiryDate: licenceExpiryDate,
-            personalNumber: "123",
-            issuedBy: "DVLA",
           },
         ],
       },
@@ -189,13 +205,9 @@ export const createAndPostDcmawPassportCredential = async (userId: string, vcNbf
         },
       ],
       credentialSubject: {
-        passport: [
-          {
-            documentNumber: "123456789",
-            expiryDate: "2030-01-01",
-            icaoIssuerCode: "GBR",
-          },
-        ],
+        name: [KENNETH_DECERQUEIRA],
+        birthDate: [KENNETH_DECERQUEIRA_BIRTH_DATE],
+        passport: [KENNETH_DECERQUEIRA_PASSPORT],
       },
     },
   };
