@@ -1,6 +1,6 @@
 import { APIGatewayEventRequestContextWithAuthorizer, APIGatewayProxyEvent } from "aws-lambda";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { lambdaHandler } from "../post-confirm-details-handler";
+import { lambdaHandler } from "../post-confirm-details-handler.js";
 import { randomUUID } from "node:crypto";
 
 const TEST_SESSION_ID = randomUUID();

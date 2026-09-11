@@ -1,13 +1,13 @@
-import { getFraudVc, hasFraudCheckExpired } from "../fraud-check-service";
+import { getFraudVc, hasFraudCheckExpired } from "../fraud-check-service.js";
 import {
   FraudCheckType,
   IdentityCheckClass,
   IdentityCheckCredentialJWTClass,
   RiskAssessmentCredentialJWTClass,
   SecurityCheckCredentialJWTClass,
-} from "@govuk-one-login/data-vocab/credentials";
-import * as configuration from "../../commons/configuration";
-import { Configuration } from "../../commons/configuration";
+} from "@govuk-one-login/data-vocab/credentials.js";
+import * as configuration from "../../commons/configuration.js";
+import { Configuration } from "../../commons/configuration.js";
 import { vi, describe, it, beforeEach, expect } from "vitest";
 
 const mockSuccessfulEvidence: IdentityCheckClass = {

@@ -1,15 +1,15 @@
-import { expect, test } from "./fixtures";
-import { ConfirmDetailsPage } from "./pages/confirm-details.page";
-import type { AuthorizationRequestField } from "./pages/orchestration-stub.page";
-import { UnrecoverableErrorPage } from "./pages/unrecoverable-error.page";
-import { generateRandomTestUserId } from "../shared/utils/user-subject-id";
-import { createStoredIdentityWithVot } from "../shared/helpers/identity-helper";
-import { getDidControllerName, getSigningKeyId } from "../shared/utils/ssm-utilities";
+import { expect, test } from "./fixtures.js";
+import { ConfirmDetailsPage } from "./pages/confirm-details.page.js";
+import type { AuthorizationRequestField } from "./pages/orchestration-stub.page.js";
+import { UnrecoverableErrorPage } from "./pages/unrecoverable-error.page.js";
+import { generateRandomTestUserId } from "../shared/utils/user-subject-id.js";
+import { createStoredIdentityWithVot } from "../shared/helpers/identity-helper.js";
+import { getDidControllerName, getSigningKeyId } from "../shared/utils/ssm-utilities.js";
 import {
   createAndPostDcmawPassportCredential,
   createAndPostFraudCheckCredential,
-} from "../shared/helpers/credential-helpers";
-import { sisBaseUrl, sisPrivateApiUrl } from "./support/environment";
+} from "../shared/helpers/credential-helpers.js";
+import { sisBaseUrl, sisPrivateApiUrl } from "./support/environment.js";
 
 const AN_HOUR = 60 * 60;
 const TEN_MINUTES = 10 * 60;

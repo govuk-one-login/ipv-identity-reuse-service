@@ -1,6 +1,6 @@
 import request from "supertest";
 import type { Response } from "superagent";
-import { CloudFormationOutputs, getCloudFormationOutput } from "./cloudformation";
+import { CloudFormationOutputs, getCloudFormationOutput } from "./cloudformation.js";
 
 export type SisPostBody = {
   govukSigninJourneyId: string;

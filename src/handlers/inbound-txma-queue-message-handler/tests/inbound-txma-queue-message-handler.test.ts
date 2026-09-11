@@ -1,5 +1,5 @@
 import { SQSEvent, SQSRecord } from "aws-lambda";
-import { handler } from "../inbound-txma-queue-message-handler";
+import { handler } from "../inbound-txma-queue-message-handler.js";
 import { mockClient } from "aws-sdk-client-mock";
 import { SecretsManagerClient, GetSecretValueCommand, GetSecretValueResponse } from "@aws-sdk/client-secrets-manager";
 import {
@@ -10,9 +10,9 @@ import {
   GetLatestConfigurationCommandOutput,
 } from "@aws-sdk/client-appconfigdata";
 import { Uint8ArrayBlobAdapter } from "@smithy/util-stream";
-import { Configuration } from "../../../commons/configuration";
-import { MetricDimension, MetricName } from "../../../commons/metric-enum";
-import { AisMessage } from "../ais-message";
+import { Configuration } from "../../../commons/configuration.js";
+import { MetricDimension, MetricName } from "../../../commons/metric-enum.js";
+import { AisMessage } from "../ais-message.js";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
 import { describe, beforeAll, afterEach, it, expect, vi } from "vitest";

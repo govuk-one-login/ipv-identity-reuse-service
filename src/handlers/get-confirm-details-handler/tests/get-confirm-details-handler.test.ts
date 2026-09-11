@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, Mock, vi } from "vitest";
-import { lambdaHandler } from "../get-confirm-details-handler";
+import { lambdaHandler } from "../get-confirm-details-handler.js";
 import { APIGatewayProxyEvent } from "aws-lambda";
-import { handleGetIdentityFromCredentialStore, validateIdentityRecords } from "../../../commons/validate-records";
-import { CredentialStoreError } from "../../../commons/errors";
-import { HttpCodesEnum } from "../../../commons/constants";
-import { getSessionDetails } from "../../../services/oauth-internal-service";
+import { handleGetIdentityFromCredentialStore, validateIdentityRecords } from "../../../commons/validate-records.js";
+import { CredentialStoreError } from "../../../commons/errors.js";
+import { HttpCodesEnum } from "../../../commons/constants.js";
+import { getSessionDetails } from "../../../services/oauth-internal-service.js";
 
 const mockRender = vi.hoisted(() => vi.fn().mockReturnValue("Rendered Confirm Details Screen"));
 
@@ -114,7 +114,7 @@ describe("handler record validation", () => {
   });
 
   it("returns an error when session cookie is missing", async () => {
-    const { getCookieValues } = await import("../../../commons/cookie-utilities");
+    const { getCookieValues } = await import("../../../commons/cookie-utilities.js");
     (getCookieValues as Mock).mockReturnValueOnce(new Map());
     const result = await lambdaHandler({
       queryStringParameters: { redirect_uri: "test.com", state: "state", client_id: "client_id" },

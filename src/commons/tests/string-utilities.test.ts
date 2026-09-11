@@ -1,4 +1,4 @@
-import { isStringWithLength } from "../string-utilities";
+import { isStringWithLength } from "../string-utilities.js";
 import { describe, it, expect } from "vitest";
 
 describe("isStringWithLength", () => {

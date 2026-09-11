@@ -1,30 +1,30 @@
-import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
+import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
-import { auditIdentityRecordRead, auditIdentityRecordReturned } from "../../commons/audit";
-import { getConfiguration } from "../../commons/configuration";
-import { HttpCodesEnum } from "../../commons/constants";
-import { getJwtBody } from "../../commons/jwt-utilities";
-import logger from "../../commons/logger";
-import { CredentialStoreIdentityResponse } from "../../credential-store/credential-store-identity-response";
-import { parseCurrentVerifiableCredentials } from "../../credential-store/encrypted-credential-store";
-import { calculateVot } from "../../identity-reuse/calculate-vot";
-import { getFraudVc } from "../../identity-reuse/fraud-check-service";
-import { hasIdentityExpired } from "../../identity-reuse/identity-expiry-service";
-import { VerifiableCredentialJWT } from "../../identity-reuse/verifiable-credential-jwt";
-import { UserIdentityRequest } from "./post-phase2-user-identity-request";
-import { StoredIdentityJWT } from "./stored-identity-jwt";
-import { StoredIdentityVectorOfTrust, UserIdentityResponse } from "./post-phase2-user-identity-response";
-import { getProperty } from "../../commons/case-insensitive-header-utilities";
+import { auditIdentityRecordRead, auditIdentityRecordReturned } from "../../commons/audit.js";
+import { getConfiguration } from "../../commons/configuration.js";
+import { HttpCodesEnum } from "../../commons/constants.js";
+import { getJwtBody } from "../../commons/jwt-utilities.js";
+import logger from "../../commons/logger.js";
+import { CredentialStoreIdentityResponse } from "../../credential-store/credential-store-identity-response.js";
+import { parseCurrentVerifiableCredentials } from "../../credential-store/encrypted-credential-store.js";
+import { calculateVot } from "../../identity-reuse/calculate-vot.js";
+import { getFraudVc } from "../../identity-reuse/fraud-check-service.js";
+import { hasIdentityExpired } from "../../identity-reuse/identity-expiry-service.js";
+import { VerifiableCredentialJWT } from "../../identity-reuse/verifiable-credential-jwt.js";
+import { UserIdentityRequest } from "./post-phase2-user-identity-request.js";
+import { StoredIdentityJWT } from "./stored-identity-jwt.js";
+import { StoredIdentityVectorOfTrust, UserIdentityResponse } from "./post-phase2-user-identity-response.js";
+import { getProperty } from "../../commons/case-insensitive-header-utilities.js";
 import {
   getUserIdFromJwt,
   handleGetIdentityFromCredentialStore,
   createErrorResponse,
   createAndLogErrorResponse,
   validateIdentityRecords,
-} from "../../commons/validate-records";
-import { CredentialStoreError } from "../../commons/errors";
-import { VotEnum } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_READ";
-import { ResponseBody } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_RETURNED";
+} from "../../commons/validate-records.js";
+import { CredentialStoreError } from "../../commons/errors.js";
+import { VotEnum } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_READ.js";
+import { ResponseBody } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_RETURNED.js";
 
 export const handler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
   const request = event.body ? (JSON.parse(event.body) as UserIdentityRequest) : undefined;

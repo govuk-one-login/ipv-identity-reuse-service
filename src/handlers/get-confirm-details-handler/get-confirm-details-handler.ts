@@ -1,14 +1,14 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import nunjucks from "nunjucks";
 import path from "node:path";
-import logger from "../../commons/logger";
+import logger from "../../commons/logger.js";
 import mainPageTemplate from "./index.njk";
-import { getCookieValues } from "../../commons/cookie-utilities";
-import { handleGetIdentityFromCredentialStore, validateIdentityRecords } from "../../commons/validate-records";
-import { getSessionDetails } from "../../services/oauth-internal-service";
-import { redirectToErrorPage } from "../../services/sis-redirect-service";
-import { CredentialStoreError } from "../../commons/errors";
-import { HttpCodesEnum } from "../../commons/constants";
+import { getCookieValues } from "../../commons/cookie-utilities.js";
+import { handleGetIdentityFromCredentialStore, validateIdentityRecords } from "../../commons/validate-records.js";
+import { getSessionDetails } from "../../services/oauth-internal-service.js";
+import { redirectToErrorPage } from "../../services/sis-redirect-service.js";
+import { CredentialStoreError } from "../../commons/errors.js";
+import { HttpCodesEnum } from "../../commons/constants.js";
 
 const govukFrontendDistribution = path.join(path.dirname(require.resolve("govuk-frontend/package.json")), "dist");
 const nunjucksEnvironment = nunjucks.configure([process.env.LAMBDA_TASK_ROOT || "", govukFrontendDistribution]);

@@ -1,4 +1,4 @@
-import { isAisMessage } from "../ais-message";
+import { isAisMessage } from "../ais-message.js";
 import { describe, it, expect } from "vitest";
 
 describe("isTxmaMessage", () => {

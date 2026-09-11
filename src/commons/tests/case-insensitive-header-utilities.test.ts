@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getProperty } from "../case-insensitive-header-utilities";
+import { getProperty } from "../case-insensitive-header-utilities.js";
 
 describe("case-insensitive-header-utilities", () => {
   const expected = "Bearer 123456";

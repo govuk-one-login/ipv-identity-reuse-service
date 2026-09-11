@@ -1,11 +1,11 @@
 import { URL } from "node:url";
-import logger from "../commons/logger";
+import logger from "../commons/logger.js";
 import {
   isValidAuthorizationSuccessResponse,
   isValidGetSessionSuccessResponse,
   isValidSessionSuccessResponse,
-} from "./oauth-internal-service-response";
-import { getOauthInternalApiUrl, getSessionTimeout } from "../commons/configuration";
+} from "./oauth-internal-service-response.js";
+import { getOauthInternalApiUrl, getSessionTimeout } from "../commons/configuration.js";
 
 export type SessionResult = {
   session_id: string;

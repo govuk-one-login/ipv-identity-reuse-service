@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getRequiredEnvironment } from "../get-required-environment";
+import { getRequiredEnvironment } from "../get-required-environment.js";
 
 const EXPECTED_ERROR = "Environment variable TEST_VAR must be defined";
 

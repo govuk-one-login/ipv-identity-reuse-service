@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import logger from "../../commons/logger";
-import { getCookieValues } from "../../commons/cookie-utilities";
-import { redirectToErrorPage } from "../../services/sis-redirect-service";
+import logger from "../../commons/logger.js";
+import { getCookieValues } from "../../commons/cookie-utilities.js";
+import { redirectToErrorPage } from "../../services/sis-redirect-service.js";
 
 export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const eventValues = new URLSearchParams(event.body || "");

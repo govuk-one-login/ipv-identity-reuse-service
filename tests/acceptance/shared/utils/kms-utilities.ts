@@ -1,6 +1,6 @@
 import { CompactJWSHeaderParameters } from "jose";
 import { KMSClient, SignCommand, SigningAlgorithmSpec } from "@aws-sdk/client-kms";
-import { getDidSigningKeyAlias } from "./ssm-utilities";
+import { getDidSigningKeyAlias } from "./ssm-utilities.js";
 
 const kmsClient = new KMSClient({ region: process.env.AWS_REGION });
 

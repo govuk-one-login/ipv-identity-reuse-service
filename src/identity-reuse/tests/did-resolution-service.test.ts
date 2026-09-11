@@ -1,11 +1,11 @@
-import { did, didDocument, publicKeyJwk, verificationMethodId } from "../../../shared-test/jwt-utilities";
+import { did, didDocument, publicKeyJwk, verificationMethodId } from "../../../shared-test/jwt-utilities.js";
 import {
   clearCache,
   getDidWebController,
   getPublicKeyJwkForKid,
   isValidDidWeb,
   resolver,
-} from "../did-resolution-service";
+} from "../did-resolution-service.js";
 import { DIDDocument, DIDResolutionResult, JsonWebKey as DidJsonWebKey } from "did-resolver";
 import { vi, describe, it, beforeEach, expect } from "vitest";
 

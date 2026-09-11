@@ -1,5 +1,5 @@
-import { StoredIdentityJWT } from "../../handlers/post-phase2-user-identity-handler/stored-identity-jwt";
-import { validateStoredIdentityCredentials } from "../stored-identity-validator";
+import { StoredIdentityJWT } from "../../handlers/post-phase2-user-identity-handler/stored-identity-jwt.js";
+import { validateStoredIdentityCredentials } from "../stored-identity-validator.js";
 import { vi, describe, it, expect } from "vitest";
 
 vi.mock("../../commons/logger");

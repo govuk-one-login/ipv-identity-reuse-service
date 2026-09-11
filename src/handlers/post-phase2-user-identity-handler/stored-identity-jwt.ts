@@ -1,4 +1,4 @@
-import { IdentityVectorOfTrust, JWTClass } from "@govuk-one-login/data-vocab/credentials";
+import { IdentityVectorOfTrust, JWTClass } from "@govuk-one-login/data-vocab/credentials.js";
 
 export interface StoredIdentityJWT<VotT extends string = IdentityVectorOfTrust> extends JWTClass {
   sub: string;

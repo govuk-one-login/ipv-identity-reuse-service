@@ -1,19 +1,19 @@
 import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
 import { mockClient } from "aws-sdk-client-mock";
-import { auditIdentityRecordInvalidated, auditIdentityRecordRead, auditIdentityRecordReturned } from "../audit";
+import { auditIdentityRecordInvalidated, auditIdentityRecordRead, auditIdentityRecordReturned } from "../audit.js";
 import { vi, beforeAll, afterAll, it, expect } from "vitest";
 import "aws-sdk-client-mock-vitest/extend";
-import { SIS_IDENTITY_RECORD_INVALIDATED } from "@govuk-one-login/event-catalogue/SIS_IDENTITY_RECORD_INVALIDATED";
+import { SIS_IDENTITY_RECORD_INVALIDATED } from "@govuk-one-login/event-catalogue/SIS_IDENTITY_RECORD_INVALIDATED.js";
 import {
   SIS_STORED_IDENTITY_READ,
   SisStoredIdentityReadExtensions,
   SisStoredIdentityReadRestricted,
-} from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_READ";
+} from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_READ.js";
 import {
   SIS_STORED_IDENTITY_RETURNED,
   SisStoredIdentityReturnedExtensions,
   SisStoredIdentityReturnedRestricted,
-} from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_RETURNED";
+} from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_RETURNED.js";
 
 const EXAMPLE_USER_ID = "bob.smith";
 

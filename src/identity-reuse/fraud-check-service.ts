@@ -1,7 +1,7 @@
-import logger from "../commons/logger";
-import { hasNbfExpired } from "../commons/date-utilities";
-import { FraudCheckType, IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials";
-import { VerifiableCredentialJWT, isIdentityCheckCredential } from "./verifiable-credential-jwt";
+import logger from "../commons/logger.js";
+import { hasNbfExpired } from "../commons/date-utilities.js";
+import { FraudCheckType, IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials.js";
+import { VerifiableCredentialJWT, isIdentityCheckCredential } from "./verifiable-credential-jwt.js";
 
 export const getFraudVc = (
   vcBundle: VerifiableCredentialJWT[],

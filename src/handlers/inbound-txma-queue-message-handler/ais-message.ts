@@ -1,5 +1,5 @@
-import { isStringWithLength } from "../../commons/string-utilities";
-import { InterventionCodeEnum } from "@govuk-one-login/event-catalogue/SIS_IDENTITY_RECORD_INVALIDATED";
+import { isStringWithLength } from "../../commons/string-utilities.js";
+import { InterventionCodeEnum } from "@govuk-one-login/event-catalogue/SIS_IDENTITY_RECORD_INVALIDATED.js";
 
 export type AisMessage = {
   user_id: string;

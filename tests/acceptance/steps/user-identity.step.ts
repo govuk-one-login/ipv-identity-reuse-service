@@ -1,13 +1,13 @@
 import { Given, When } from "@cucumber/cucumber";
-import { sisPostUserIdentity } from "../shared/utils/sis-api";
-import { getBearerToken } from "../shared/utils/get-bearer-token";
+import { sisPostUserIdentity } from "../shared/utils/sis-api.js";
+import { getBearerToken } from "../shared/utils/get-bearer-token.js";
 import assert from "node:assert";
-import { WorldDefinition } from "./base-verbs.step";
-import { evcsPostIdentity } from "../shared/utils/evcs-api";
+import { WorldDefinition } from "./base-verbs.step.js";
+import { evcsPostIdentity } from "../shared/utils/evcs-api.js";
 import { JWTHeaderParameters, JWTPayload } from "jose";
-import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials";
-import { getDefaultJwtHeader, sign, renderDid } from "../../../shared-test/jwt-utilities";
-import { createStoredIdentityWithVot } from "../shared/helpers/identity-helper";
+import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
+import { getDefaultJwtHeader, sign, renderDid } from "../../../shared-test/jwt-utilities.js";
+import { createStoredIdentityWithVot } from "../shared/helpers/identity-helper.js";
 
 Given<WorldDefinition>("I have a user without a stored identity", async function () {
   this.bearerToken = await getBearerToken(this.userId);

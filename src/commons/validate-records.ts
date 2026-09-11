@@ -1,18 +1,18 @@
-import { CredentialStoreIdentityResponse } from "../credential-store/credential-store-identity-response";
-import { getConfiguration } from "./configuration";
-import * as didResolutionService from "../identity-reuse/did-resolution-service";
+import { CredentialStoreIdentityResponse } from "../credential-store/credential-store-identity-response.js";
+import { getConfiguration } from "./configuration.js";
+import * as didResolutionService from "../identity-reuse/did-resolution-service.js";
 import { jwtVerify } from "jose";
-import logger from "./logger";
-import { getIdentityFromCredentialStore } from "../credential-store/encrypted-credential-store";
-import { getJwtBody, getJwtHeader } from "./jwt-utilities";
-import { HttpCodesEnum } from "./constants";
+import logger from "./logger.js";
+import { getIdentityFromCredentialStore } from "../credential-store/encrypted-credential-store.js";
+import { getJwtBody, getJwtHeader } from "./jwt-utilities.js";
+import { HttpCodesEnum } from "./constants.js";
 import { APIGatewayProxyResult } from "aws-lambda";
-import { CredentialStoreError, TokenValidationError } from "./errors";
-import { UserIdentityErrorResponse } from "../handlers/post-phase2-user-identity-handler/post-phase2-user-identity-error-response";
-import { auditIdentityRecordRead, auditIdentityRecordReturned } from "./audit";
-import { StoredIdentityJWT } from "../handlers/post-phase2-user-identity-handler/stored-identity-jwt";
-import { validateStoredIdentityCredentials } from "../identity-reuse/stored-identity-validator";
-import { ErrorCodeEnum, ResponseBody } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_RETURNED";
+import { CredentialStoreError, TokenValidationError } from "./errors.js";
+import { UserIdentityErrorResponse } from "../handlers/post-phase2-user-identity-handler/post-phase2-user-identity-error-response.js";
+import { auditIdentityRecordRead, auditIdentityRecordReturned } from "./audit.js";
+import { StoredIdentityJWT } from "../handlers/post-phase2-user-identity-handler/stored-identity-jwt.js";
+import { validateStoredIdentityCredentials } from "../identity-reuse/stored-identity-validator.js";
+import { ErrorCodeEnum, ResponseBody } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_RETURNED.js";
 
 export const getUserIdFromJwt = (authorizationToken: string): string => {
   let jwt;

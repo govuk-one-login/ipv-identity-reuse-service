@@ -9,14 +9,14 @@ import {
 } from "aws-lambda";
 import { DynamoDBClient, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
-import logger from "../../commons/logger";
+import logger from "../../commons/logger.js";
 import { Dimensions } from "@aws-lambda-powertools/metrics/types";
 import { Metrics } from "@aws-lambda-powertools/metrics";
-import { PolicyGenerationError } from "../../commons/errors";
+import { PolicyGenerationError } from "../../commons/errors.js";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
-import { sha256Hash } from "../../commons/hashing";
-import { MetricDimension, MetricName } from "../../commons/metric-enum";
-import { getProperty } from "../../commons/case-insensitive-header-utilities";
+import { sha256Hash } from "../../commons/hashing.js";
+import { MetricDimension, MetricName } from "../../commons/metric-enum.js";
+import { getProperty } from "../../commons/case-insensitive-header-utilities.js";
 
 export const metric: Metrics = new Metrics();
 

@@ -1,9 +1,9 @@
 import { Before, defineParameterType, setDefaultTimeout } from "@cucumber/cucumber";
 import { Response } from "superagent";
-import { randomString } from "../../../shared-test/string-utilities";
-import { getDidControllerName, getSigningKeyId } from "../shared/utils/ssm-utilities";
-import { AuthorizationResponse, OAuthBadRequest, RedirectResponse, TokenResponse } from "../shared/utils/auth-api";
-import { generateRandomTestUserId } from "../shared/utils/user-subject-id";
+import { randomString } from "../../../shared-test/string-utilities.js";
+import { getDidControllerName, getSigningKeyId } from "../shared/utils/ssm-utilities.js";
+import { AuthorizationResponse, OAuthBadRequest, RedirectResponse, TokenResponse } from "../shared/utils/auth-api.js";
+import { generateRandomTestUserId } from "../shared/utils/user-subject-id.js";
 
 export type WorldDefinition = {
   testDidController: string;

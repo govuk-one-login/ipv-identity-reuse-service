@@ -3,16 +3,16 @@ import {
   SIS_STORED_IDENTITY_READ,
   SisStoredIdentityReadRestricted,
   SisStoredIdentityReadExtensions,
-} from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_READ";
+} from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_READ.js";
 import {
   SIS_IDENTITY_RECORD_INVALIDATED,
   InterventionCodeEnum,
-} from "@govuk-one-login/event-catalogue/SIS_IDENTITY_RECORD_INVALIDATED";
+} from "@govuk-one-login/event-catalogue/SIS_IDENTITY_RECORD_INVALIDATED.js";
 import {
   SIS_STORED_IDENTITY_RETURNED,
   SisStoredIdentityReturnedExtensions,
   SisStoredIdentityReturnedRestricted,
-} from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_RETURNED";
+} from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_RETURNED.js";
 
 const sqsClient = new SQSClient({});
 

@@ -1,4 +1,4 @@
-import { getCloudFormationOutput, CloudFormationOutputs } from "./cloudformation";
+import { getCloudFormationOutput, CloudFormationOutputs } from "./cloudformation.js";
 import request from "supertest";
 
 export const AuthorizationResponseType = {

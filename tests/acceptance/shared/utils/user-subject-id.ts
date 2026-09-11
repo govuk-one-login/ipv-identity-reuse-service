@@ -1,4 +1,4 @@
-import { randomString } from "../../../../shared-test/string-utilities";
+import { randomString } from "../../../../shared-test/string-utilities.js";
 
 export function generateRandomTestUserId() {
   const randomTestUserId = "urn:fdc:gov.uk:2022:TEST_USER-".concat(

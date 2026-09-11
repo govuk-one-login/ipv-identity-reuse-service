@@ -2,7 +2,7 @@ import {
   IdentityCheckCredentialJWTClass,
   RiskAssessmentCredentialJWTClass,
   SecurityCheckCredentialJWTClass,
-} from "@govuk-one-login/data-vocab/credentials";
+} from "@govuk-one-login/data-vocab/credentials.js";
 
 export type VerifiableCredentialJWT =
   IdentityCheckCredentialJWTClass | RiskAssessmentCredentialJWTClass | SecurityCheckCredentialJWTClass;

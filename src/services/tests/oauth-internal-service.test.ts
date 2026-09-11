@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vitest } from "vitest";
-import { callSessionApi, getAuthorizationCode, getSessionDetails } from "../oauth-internal-service";
+import { callSessionApi, getAuthorizationCode, getSessionDetails } from "../oauth-internal-service.js";
 import { URL } from "node:url";
 
 const { mockError } = vitest.hoisted(() => {

@@ -1,11 +1,11 @@
 import { existsSync } from "node:fs";
 import { rm } from "node:fs/promises";
 import { test as base } from "@playwright/test";
-import { ConfirmDetailsPage } from "./pages/confirm-details.page";
-import { IdentityResponsePage } from "./pages/identity-response.page";
-import { OrchestrationStubPage } from "./pages/orchestration-stub.page";
-import { UnrecoverableErrorPage } from "./pages/unrecoverable-error.page";
-import { SHARED_DEV_SIS, sisBaseUrl } from "./support/environment";
+import { ConfirmDetailsPage } from "./pages/confirm-details.page.js";
+import { IdentityResponsePage } from "./pages/identity-response.page.js";
+import { OrchestrationStubPage } from "./pages/orchestration-stub.page.js";
+import { UnrecoverableErrorPage } from "./pages/unrecoverable-error.page.js";
+import { SHARED_DEV_SIS, sisBaseUrl } from "./support/environment.js";
 
 const HAR_FILENAME = "network.har";
 
