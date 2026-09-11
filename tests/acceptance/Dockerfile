@@ -31,14 +31,21 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-RUN useradd $USER \
+RUN useradd $USER -b /app \
  && chown -R $USER /app
 
 COPY --from=build --chown=$USER /build/package.json /app/dist/
 COPY --from=build --chown=$USER /build/dist/ /app/dist/
-COPY --from=build --chown=$USER /build/tests/acceptance/features /app/features
+COPY --from=build --chown=$USER /build/tests/ /app/tests/
+COPY --from=build --chown=$USER /build/src/ /app/src/
+COPY --from=build --chown=$USER /build/shared-test/ /app/shared-test/
+COPY --from=build --chown=$USER /build/playwright.config.ts /app/
+COPY --from=build --chown=$USER /build/tsconfig.json /app/
 COPY --from=build --chown=$USER /build/tests/acceptance/run-tests.sh /
 COPY --from=build --chown=$USER /build/node_modules /app/node_modules
 
+RUN node_modules/.bin/playwright install-deps chromium
+
 USER $USER
+RUN node_modules/.bin/playwright install chromium
 ENTRYPOINT [ "/run-tests.sh" ]
