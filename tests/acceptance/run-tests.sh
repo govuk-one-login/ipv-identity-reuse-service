@@ -16,3 +16,9 @@ echo Running acceptance tests...
   --format pretty \
   --tags 'not @ignore' \
   ./features
+
+echo Running browser tests...
+export TEST_SRC_DIR="/app/tests/acceptance"
+./node_modules/.bin/playwright test \
+  --add-reporter junit
+
