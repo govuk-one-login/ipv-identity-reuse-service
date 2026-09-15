@@ -59,7 +59,7 @@ jobs:
           role-to-assume: ${{ secrets.aws-role-arn }}
           aws-region: ${{ inputs.aws-region }}
 
-      - name: Run acceptance tests
+      - name: Run cucumber feature tests
         env:
           STACK_NAME: ${{ inputs.stack-name }}
           NODE_AUTH_TOKEN: ${{ github.token }}
@@ -70,4 +70,17 @@ jobs:
             echo //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN} >> ~/.npmrc
           fi
 
-          ./run-acceptance-tests.sh --stack-name "$STACK_NAME" $DOCKER_FLAG
+          ./run-acceptance-tests.sh --stack-name "$STACK_NAME" -f $DOCKER_FLAG
+
+      - name: Run browser acceptance tests
+        env:
+          STACK_NAME: ${{ inputs.stack-name }}
+          NODE_AUTH_TOKEN: ${{ github.token }}
+        run: |
+          DOCKER_FLAG=""
+          if [ "${{ inputs.use-docker }}" == "true" ]; then
+            DOCKER_FLAG="-d"
+            echo //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN} >> ~/.npmrc
+          fi
+
+          ./run-acceptance-tests.sh --stack-name "$STACK_NAME" -b $DOCKER_FLAG

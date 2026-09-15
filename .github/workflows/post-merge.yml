@@ -137,15 +137,33 @@ jobs:
       packages: read
     with:
       environment: build
+      dockerfile: 'tests/acceptance/Dockerfile'
     secrets:
       aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
       ecr-repository: ${{ secrets.TEST_IMAGE_ECR_REPOSITORY }}
+
+  publish-browser-test-image:
+    uses: ./.github/workflows/publish-test-image.yml
+    needs:
+      - acceptance-test
+      - detect-changes
+    if: needs.detect-changes.outputs.acceptance-tests-changed == 'true'
+    permissions:
+      contents: read
+      id-token: write
+      packages: read
+    with:
+      environment: build
+      dockerfile: tests/acceptance/browser-tests.Dockerfile
+    secrets:
+      aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
+      ecr-repository: ${{ secrets.BROWSER_TEST_IMAGE_ECR_REPOSITORY }}
 
   publish-oauth:
     uses: ./.github/workflows/publish.yml
     needs:
       - publish-test-image
-      - acceptance-test
+      - publish-browser-test-image
     if: |
       always() &&
       (needs.publish-test-image.result == 'success' || needs.publish-test-image.result == 'skipped') &&
@@ -165,7 +183,7 @@ jobs:
     uses: ./.github/workflows/publish.yml
     needs:
       - publish-test-image
-      - acceptance-test
+      - publish-browser-test-image
     if: |
       always() &&
       (needs.publish-test-image.result == 'success' || needs.publish-test-image.result == 'skipped') &&

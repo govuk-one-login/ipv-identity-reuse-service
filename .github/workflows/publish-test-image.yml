@@ -7,6 +7,10 @@ on:
         type: string
         required: true
         default: build
+      dockerfile:
+        type: string
+        required: true
+        default: tests/acceptance/Dockerfile
     secrets:
       aws-role-arn:
         required: true
@@ -67,7 +71,7 @@ jobs:
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           platforms: linux/amd64
-          file: tests/acceptance/Dockerfile
+          file: {{ inputs.dockerfile }}
           push: "true"
           tags: ${{ secrets.ecr-repository }}:latest
           secrets: | # pragma: allowlist secret
