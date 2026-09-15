@@ -17,13 +17,22 @@ EOF
   return 0
 }
 
+RUN_BROWSER_TESTS=false
+RUN_FEATURE_TESTS=false
 RUN_WITH_DOCKER=false
 SHARED_STACK_NAME=reuse-identity-shared
+AWS_REGION=eu-west-2
 while [[ "$1" != "" ]]; do
   case $1 in
   -a | --aws-profile)
     shift
     AWS_PROFILE=$1
+    ;;
+  -b | --browser-tests)
+    RUN_BROWSER_TESTS=true
+    ;;
+  -f | --feature-tests)
+    RUN_FEATURE_TESTS=true
     ;;
   -s | --stack-name)
     shift
@@ -49,6 +58,11 @@ while [[ "$1" != "" ]]; do
   shift
 done
 
+if [[ "$RUN_BROWSER_TESTS" == "false" && "$RUN_FEATURE_TESTS" == "false" ]]; then
+  RUN_BROWSER_TESTS=true
+  RUN_FEATURE_TESTS=true
+fi
+
 if [[ -z "$AWS_PROFILE" ]]; then
   echo "Assuming you're already signed in to the target account..."
   echo
@@ -67,26 +81,50 @@ fi
 export TEST_ENVIRONMENT="dev"
 export SHARED_STACK_NAME
 export SAM_STACK_NAME
-if $RUN_WITH_DOCKER; then
-  docker build \
-    -t acceptance-test-runner \
-    --secret id=npmrc,src=$HOME/.npmrc \
-    -f tests/acceptance/Dockerfile .
 
-  docker run --rm \
-    -e AWS_REGION="eu-west-2" \
-    -e AWS_DEFAULT_REGION="eu-west-2" \
-    -e AWS_ACCESS_KEY_ID \
-    -e AWS_SECRET_ACCESS_KEY \
-    -e AWS_SESSION_TOKEN \
-    -e SAM_STACK_NAME \
-    -e TEST_ENVIRONMENT \
-    -e SHARED_STACK_NAME \
-    acceptance-test-runner
-else
-  echo "Run feature tests..."
-  npm run test:acceptance -- --format html:test-reports/acceptance.html
-  echo "Run Playwright tests..."
-  npm run test:browser:install
-  npm run test:browser
+if $RUN_FEATURE_TESTS; then
+  if $RUN_WITH_DOCKER; then
+    docker build \
+      -t acceptance-test-runner \
+      --secret id=npmrc,src=$HOME/.npmrc \
+      -f tests/acceptance/Dockerfile .
+
+    docker run --rm \
+      -e AWS_REGION \
+      -e AWS_DEFAULT_REGION="${AWS_REGION}" \
+      -e AWS_ACCESS_KEY_ID \
+      -e AWS_SECRET_ACCESS_KEY \
+      -e AWS_SESSION_TOKEN \
+      -e SAM_STACK_NAME \
+      -e TEST_ENVIRONMENT \
+      -e SHARED_STACK_NAME \
+      acceptance-test-runner
+  else
+    echo "Run feature tests..."
+    npm run test:acceptance -- --format html:test-reports/acceptance.html
+  fi
+fi
+
+if $RUN_BROWSER_TESTS; then
+  if $RUN_WITH_DOCKER; then
+    docker build \
+      -t acceptance-browser-test-runner \
+      --secret id=npmrc,src=$HOME/.npmrc \
+      -f tests/acceptance/browser-tests.Dockerfile .
+
+    docker run --rm \
+      -e AWS_REGION \
+      -e AWS_DEFAULT_REGION="${AWS_REGION}" \
+      -e AWS_ACCESS_KEY_ID \
+      -e AWS_SECRET_ACCESS_KEY \
+      -e AWS_SESSION_TOKEN \
+      -e SAM_STACK_NAME \
+      -e TEST_ENVIRONMENT \
+      -e SHARED_STACK_NAME \
+      acceptance-browser-test-runner
+  else
+    echo "Run Playwright tests..."
+    npm run test:browser:install
+    npm run test:browser
+  fi
 fi
