@@ -58,6 +58,15 @@ Given<WorldDefinition>(
       sub: this.userId,
       iss: "http://api.example.com",
       vot,
+      vtm: "https://oidc.account.gov.uk/trustmark",
+      credentials: [],
+      claims: {
+        "https://vocab.account.gov.uk/v1/coreIdentity": {
+          name: [{ nameParts: [{ type: "GivenName", value: "Test" }] }],
+          birthDate: [{ value: "1990-01-01" }],
+        },
+        "https://vocab.account.gov.uk/v1/address": [{ streetName: "Test Street", postalCode: "TE1 1ST" }],
+      },
     };
 
     const jwt = await sign(header, payload, true);
@@ -79,6 +88,15 @@ Given<WorldDefinition>("I have a user with a Stored Identity, and an invalid sig
     sub: this.userId,
     iss: "http://api.example.com",
     vot: "P2",
+    vtm: "https://oidc.account.gov.uk/trustmark",
+    credentials: [],
+    claims: {
+      "https://vocab.account.gov.uk/v1/coreIdentity": {
+        name: [{ nameParts: [{ type: "GivenName", value: "Test" }] }],
+        birthDate: [{ value: "1990-01-01" }],
+      },
+      "https://vocab.account.gov.uk/v1/address": [{ streetName: "Test Street", postalCode: "TE1 1ST" }],
+    },
   };
   const jwt = await sign(header, payload);
   const result = await evcsPostIdentity(this.userId, {
@@ -111,6 +129,15 @@ Given<WorldDefinition>(
       sub: this.userId,
       iss: "http://api.example.com",
       vot: "P2",
+      vtm: "https://oidc.account.gov.uk/trustmark",
+      credentials: [],
+      claims: {
+        "https://vocab.account.gov.uk/v1/coreIdentity": {
+          name: [{ nameParts: [{ type: "GivenName", value: "Test" }] }],
+          birthDate: [{ value: "1990-01-01" }],
+        },
+        "https://vocab.account.gov.uk/v1/address": [{ streetName: "Test Street", postalCode: "TE1 1ST" }],
+      },
     };
     const jwt = await sign(header, payload, true);
 

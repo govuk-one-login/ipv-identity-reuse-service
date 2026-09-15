@@ -100,6 +100,32 @@ Then<WorldDefinition>("the untrusted stored identity should be returned", functi
     },
     {
       content: {
+        claims: {
+          "https://vocab.account.gov.uk/v1/address": [
+            {
+              postalCode: "TE1 1ST",
+              streetName: "Test Street",
+            },
+          ],
+          "https://vocab.account.gov.uk/v1/coreIdentity": {
+            birthDate: [
+              {
+                value: "1990-01-01",
+              },
+            ],
+            name: [
+              {
+                nameParts: [
+                  {
+                    type: "GivenName",
+                    value: "Test",
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        credentials: [],
         sub: this.userId,
         iss: "http://api.example.com",
         vot: undefined,
