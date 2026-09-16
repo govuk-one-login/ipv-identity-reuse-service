@@ -10,7 +10,7 @@ const advisoryRules = Object.fromEntries(
 );
 
 export default defineConfig(
-  globalIgnores([".aws-sam/", "coverage/", "test-reports/"]),
+  globalIgnores([".aws-sam/", "coverage/", "test-reports/", "dist/"]),
   sharedRules,
   {
     ...playwrightRecommended,
