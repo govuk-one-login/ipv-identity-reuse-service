@@ -25,7 +25,7 @@ on:
           The URL of the ECR repository to publish the test image to.
 
 concurrency:
-  group: publish-test-image-${{ github.head_ref || github.ref_name }}
+  group: publish-test-image-${{ github.head_ref || github.ref_name }}-${{ inputs.dockerfile }}
   cancel-in-progress: true
 
 permissions:
