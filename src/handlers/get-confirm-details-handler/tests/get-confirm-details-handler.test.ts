@@ -2,21 +2,33 @@ import { afterEach, describe, expect, it, Mock, vi } from "vitest";
 import { lambdaHandler } from "../get-confirm-details-handler.js";
 import { APIGatewayProxyEvent } from "aws-lambda";
 import { handleGetIdentityFromCredentialStore, validateIdentityRecords } from "../../../commons/validate-records.js";
-import { CredentialStoreError } from "../../../commons/errors.js";
+import { CredentialStoreError, StoredIdentityValidationError } from "../../../commons/errors.js";
 import { HttpCodesEnum } from "../../../commons/constants.js";
 import { getSessionDetails } from "../../../services/oauth-internal-service.js";
+import translations from "../../../../locales/en/translation.json" with { type: "json" };
 
 const mockRender = vi.hoisted(() => vi.fn().mockReturnValue("Rendered Confirm Details Screen"));
 
 vi.mock("nunjucks", () => ({
   default: {
-    configure: vi.fn(() => ({ render: mockRender })),
+    configure: vi.fn(() => ({
+      render: mockRender,
+      addFilter: vi.fn(),
+    })),
   },
 }));
 
 vi.mock("../../../commons/validate-records", () => ({
   handleGetIdentityFromCredentialStore: vi.fn(),
   validateIdentityRecords: vi.fn(),
+}));
+
+vi.mock("../user-details-content", () => ({
+  extractUserDetails: vi.fn().mockReturnValue({
+    name: "Jane Doe",
+    dateOfBirth: "1990-01-15",
+    addressDetailHtml: "10 Downing Street<br>London<br>SW1A 2AA",
+  }),
 }));
 
 vi.mock("../../../services/oauth-internal-service", () => ({
@@ -43,7 +55,18 @@ afterEach(() => {
 });
 
 it("should render the confirm details screen when all query string parameters are provided", async () => {
-  (validateIdentityRecords as Mock).mockResolvedValue({ kidValid: true, signatureValid: true, isValid: true });
+  (validateIdentityRecords as Mock).mockResolvedValue({
+    kidValid: true,
+    signatureValid: true,
+    isValid: true,
+    storedIdentityJwt: {
+      sub: "user-sub",
+      credentials: [],
+      vot: "P2",
+      vtm: "https://oidc.account.gov.uk/trustmark",
+      claims: {},
+    },
+  });
   const result = await lambdaHandler(validEvent());
 
   expect(getSessionDetails).toHaveBeenCalledWith("test-session-id");
@@ -56,6 +79,14 @@ it("should render the confirm details screen when all query string parameters ar
       state: "state-id",
       rootPath: ".",
       client_id: "client",
+      govukRebrand: true,
+      userDetails: {
+        name: "Jane Doe",
+        dateOfBirth: "1990-01-15",
+        addressDetailHtml: "10 Downing Street<br>London<br>SW1A 2AA",
+      },
+      translations,
+      errorPageUrl: "https://test-domain/error/unrecoverable",
     }
   );
 
@@ -97,7 +128,18 @@ it("should return an error when some required query string parameters are empty"
 
 describe("handler record validation", () => {
   it("renders confirm-details page when all records are valid and validated", async () => {
-    (validateIdentityRecords as Mock).mockResolvedValue({ kidValid: true, signatureValid: true, isValid: true });
+    (validateIdentityRecords as Mock).mockResolvedValue({
+      kidValid: true,
+      signatureValid: true,
+      isValid: true,
+      storedIdentityJwt: {
+        sub: "user-sub",
+        credentials: [],
+        vot: "P2",
+        vtm: "https://oidc.account.gov.uk/trustmark",
+        claims: {},
+      },
+    });
     const result = await lambdaHandler(validEvent());
     expect(mockRender).toHaveBeenCalledWith(expect.stringContaining("index.njk"), expect.any(Object));
     expect(result.statusCode).toBe(200);
@@ -172,5 +214,16 @@ describe("handler record validation", () => {
     expect(handleGetIdentityFromCredentialStore).not.toHaveBeenCalled();
     expect(mockRender).not.toHaveBeenCalled();
     expect(result).toEqual({ statusCode: 500, body: "" });
+  });
+
+  it("redirects to error page when stored identity JWT validation fails", async () => {
+    (validateIdentityRecords as Mock).mockRejectedValue(new StoredIdentityValidationError());
+    const result = await lambdaHandler(validEvent());
+    expect(mockRender).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      statusCode: 302,
+      headers: { Location: "https://test-domain/error/unrecoverable" },
+      body: "",
+    });
   });
 });

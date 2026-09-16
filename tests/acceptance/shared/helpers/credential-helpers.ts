@@ -1,6 +1,11 @@
 import { JWTHeaderParameters } from "jose";
 import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utilities.js";
-import { IdentityCheckCredentialJWTClass, FraudCheckType } from "@govuk-one-login/data-vocab/credentials.js";
+import {
+  IdentityCheckCredentialJWTClass,
+  FraudCheckType,
+  NameClass,
+  PostalAddressClass,
+} from "@govuk-one-login/data-vocab/credentials.js";
 import { evcsPostCredentials } from "../utils/evcs-api.js";
 import assert from "node:assert";
 import { KENNETH_DECERQUEIRA } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/names";
@@ -208,6 +213,58 @@ export const createAndPostDcmawPassportCredential = async (userId: string, vcNbf
         name: [KENNETH_DECERQUEIRA],
         birthDate: [KENNETH_DECERQUEIRA_BIRTH_DATE],
         passport: [KENNETH_DECERQUEIRA_PASSPORT],
+      },
+    },
+  };
+
+  const dcmawJwt = await sign(header, credentialPayload);
+  const result = await evcsPostCredentials(userId, [{ vc: dcmawJwt, state: "CURRENT" }]);
+  assert.equal(result.status, 202);
+
+  return dcmawJwt;
+};
+
+export const createAndPostDcmawPassportCredentialWithUserDetails = async (
+  userId: string,
+  vcNbfDate: Date,
+  userDetails: {
+    name: NameClass[];
+    birthDate: { value: string }[];
+    address: PostalAddressClass[];
+  }
+): Promise<string> => {
+  const header: JWTHeaderParameters = getDefaultJwtHeader();
+
+  const credentialPayload: IdentityCheckCredentialJWTClass = {
+    sub: userId,
+    iss: DCMAW_ISSUER,
+    nbf: Math.floor(vcNbfDate.getTime() / 1000),
+    vc: {
+      type: ["VerifiableCredential", "IdentityCheckCredential"],
+      evidence: [
+        {
+          strengthScore: 4,
+          validityScore: 2,
+          checkDetails: [
+            { checkMethod: "vcrypt" as const },
+            {
+              checkMethod: "bvr" as const,
+              biometricVerificationProcessLevel: 2,
+            },
+          ],
+        },
+      ],
+      credentialSubject: {
+        passport: [
+          {
+            documentNumber: "123456789",
+            expiryDate: "2030-01-01",
+            icaoIssuerCode: "GBR",
+          },
+        ],
+        name: userDetails.name,
+        birthDate: userDetails.birthDate,
+        address: userDetails.address,
       },
     },
   };

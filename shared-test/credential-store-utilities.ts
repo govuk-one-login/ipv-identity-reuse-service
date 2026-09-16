@@ -4,8 +4,23 @@ import { getDefaultJwtHeader, sign } from "./jwt-utilities.js";
 
 const CURRENT = "CURRENT";
 
+const DEFAULT_CLAIMS = {
+  "https://vocab.account.gov.uk/v1/coreIdentity": {
+    name: [
+      {
+        nameParts: [
+          { type: "GivenName", value: "Test" },
+          { type: "FamilyName", value: "User" },
+        ],
+      },
+    ],
+    birthDate: [{ value: "1990-01-01" }],
+  },
+  "https://vocab.account.gov.uk/v1/address": [{ streetName: "Test Street", postalCode: "TE1 1ST" }],
+};
+
 export const createStoredIdentityRecord = (...credentialSignatures: string[]) => {
-  const base = { sub: "user-sub", vot: "P2", vtm: "https://oidc.account.gov.uk/trustmark" };
+  const base = { sub: "user-sub", vot: "P2", vtm: "https://oidc.account.gov.uk/trustmark", claims: DEFAULT_CLAIMS };
   return credentialSignatures.length > 0 ? { ...base, credentials: credentialSignatures } : base;
 };
 
