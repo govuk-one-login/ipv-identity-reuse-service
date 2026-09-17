@@ -1,0 +1,89 @@
+name: dev-pipeline-test
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - spt-2050
+
+concurrency:
+  group: dev-pipeline-test
+  cancel-in-progress: true
+
+run-name: push-${{ github.ref }}-to-dev-pipeline
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      artifact-name: built-code
+      aws-region: eu-west-2
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    secrets:
+      aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
+
+  publish-test-image:
+    needs: build
+    uses: ./.github/workflows/publish-test-image.yml
+    permissions:
+      contents: read
+      id-token: write
+      packages: read
+    with:
+      environment: development
+      dockerfile: 'tests/acceptance/Dockerfile'
+    secrets:
+      aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
+      ecr-repository: ${{ secrets.TEST_IMAGE_ECR_REPOSITORY }}
+
+  publish-browser-test-image:
+    needs: build
+    uses: ./.github/workflows/publish-test-image.yml
+    permissions:
+      contents: read
+      id-token: write
+      packages: read
+    with:
+      environment: development
+      dockerfile: tests/acceptance/browser-tests.Dockerfile
+    secrets:
+      aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
+      ecr-repository: ${{ secrets.BROWSER_TEST_IMAGE_ECR_REPOSITORY }}
+
+  publish-oauth:
+    uses: ./.github/workflows/publish.yml
+    needs:
+      - publish-test-image
+      - publish-browser-test-image
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      artifact-name: built-oauth-code
+      aws-region: eu-west-2
+      environment: development
+    secrets:
+      aws-role-arn: ${{ secrets.GHA_PIPELINE_OAUTH_AWS_ROLE_ARN }}
+      sam-s3-bucket: ${{ secrets.GHA_OAUTH_SAM_DEPLOYMENT_BUCKET }}
+      signing-profile-name: ${{ secrets.SIGNING_PROFILE_NAME }}
+
+  publish-sis:
+    uses: ./.github/workflows/publish.yml
+    needs:
+      - publish-test-image
+      - publish-browser-test-image
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      artifact-name: built-code
+      aws-region: eu-west-2
+      environment: development
+    secrets:
+      aws-role-arn: ${{ secrets.GHA_PIPELINE_AWS_ROLE_ARN }}
+      sam-s3-bucket: ${{ secrets.GHA_SAM_DEPLOYMENT_BUCKET }}
+      signing-profile-name: ${{ secrets.SIGNING_PROFILE_NAME }}
