@@ -34,6 +34,6 @@ RUN --mount=type=secret,id=npmrc \
 RUN node_modules/.bin/playwright install-deps chromium
 
 USER $USER
-RUN node_modules/.bin/playwright install chromium
+
 ENV TEST_SRC_DIR=/app/tests/acceptance
 ENTRYPOINT [ "/run-tests.sh" ]
