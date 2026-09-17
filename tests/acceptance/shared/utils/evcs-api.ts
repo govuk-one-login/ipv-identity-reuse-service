@@ -55,18 +55,21 @@ export const getEvcsApiEndpoint = async (): Promise<string> => {
     return EvcsEndpoints.BuildStubBaseUrl;
   }
 
-  const result = await getAppConfig(await getCloudFormationOutput(CloudFormationOutputs.AppConfigName), {
-    environment: environment === "local" ? "dev" : environment,
-    application: await getCloudFormationOutput(CloudFormationOutputs.AppConfigApplication),
-  });
+  try {
+    const result = await getAppConfig(await getCloudFormationOutput(CloudFormationOutputs.AppConfigName), {
+      environment: environment === "local" ? "dev" : environment,
+      application: await getCloudFormationOutput(CloudFormationOutputs.AppConfigApplication),
+    });
 
-  if (!result) {
-    throw new Error("AppConfig returned no data");
+    if (!result) {
+      throw new Error("AppConfig returned no data");
+    }
+    const configuration = JSON.parse(getString(result) || "") as Configuration;
+
+    return configuration.evcsApiUrl || EvcsEndpoints.DevStubBaseUrl;
+  } catch {
+    return EvcsEndpoints.DevStubBaseUrl;
   }
-
-  const configuration = JSON.parse(getString(result) || "") as Configuration;
-
-  return configuration.evcsApiUrl || EvcsEndpoints.DevStubBaseUrl;
 };
 
 export const evcsPostIdentity = async (
