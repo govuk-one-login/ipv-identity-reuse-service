@@ -1,6 +1,5 @@
-
 import { getConfiguration } from "./configuration.js";
-import * as didResolutionService from "../identity-reuse/did-resolution-service.js";
+import * as didResolutionService from "../api/did-resolution-api.js";
 import { jwtVerify } from "jose";
 import logger from "./logger.js";
 import { CredentialStoreIdentityResponse, getIdentityFromCredentialStore } from "../api/evcs-api.js";
