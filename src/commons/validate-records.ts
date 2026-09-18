@@ -1,20 +1,17 @@
-import { CredentialStoreIdentityResponse } from "../credential-store/credential-store-identity-response.js";
+import { CredentialStoreIdentityResponse } from "../types/credential-store-api-types.js";
 import { getConfiguration } from "./configuration.js";
-import * as didResolutionService from "../identity-reuse/did-resolution-service.js";
+import * as didResolutionService from "../services/did-resolution-service-api.js";
 import { jwtVerify } from "jose";
 import logger from "./logger.js";
-import { getIdentityFromCredentialStore } from "../credential-store/encrypted-credential-store.js";
+import { getIdentityFromCredentialStore } from "../services/credential-store-api.js";
 import { getJwtBody, getJwtHeader } from "./jwt-utilities.js";
 import { HttpCodesEnum } from "./constants.js";
 import { APIGatewayProxyResult } from "aws-lambda";
 import { CredentialStoreError, StoredIdentityValidationError, TokenValidationError } from "./errors.js";
-import { UserIdentityErrorResponse } from "../handlers/post-phase2-user-identity-handler/post-phase2-user-identity-error-response.js";
+import { UserIdentityErrorResponse } from "../types/stored-identity-api-types.js";
 import { auditIdentityRecordRead, auditIdentityRecordReturned } from "./audit.js";
-import {
-  StoredIdentityJWT,
-  isStoredIdentityJWT,
-} from "../handlers/post-phase2-user-identity-handler/stored-identity-jwt.js";
-import { validateStoredIdentityCredentials } from "../identity-reuse/stored-identity-validator.js";
+import { StoredIdentityJWT, isStoredIdentityJWT } from "../types/stored-identity-jwt.js";
+import { validateStoredIdentityCredentials } from "../identity-reuse/sis-vc-utilities.js";
 import { ErrorCodeEnum, ResponseBody } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_RETURNED.js";
 
 export const getUserIdFromJwt = (authorizationToken: string): string => {

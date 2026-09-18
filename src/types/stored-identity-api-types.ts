@@ -11,3 +11,13 @@ export type UserIdentityResponse = {
   kidValid: boolean;
   signatureValid: boolean;
 };
+
+export type UserIdentityRequest = {
+  vtr: IdentityVectorOfTrust[];
+  govukSigninJourneyId: string;
+};
+
+export type UserIdentityErrorResponse = {
+  error: string;
+  error_description: string;
+};

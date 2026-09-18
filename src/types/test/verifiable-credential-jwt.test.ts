@@ -1,7 +1,7 @@
-import { hasIdentityExpired } from "../identity-expiry-service.js";
+import { hasIdentityExpired } from "../vc-utilities.js";
 import { Configuration } from "../../commons/configuration.js";
-import * as fraudCheckService from "../fraud-check-service.js";
-import * as drivingLicenceExpiryService from "../driving-licence-expiry-service.js";
+import * as fraudCheckService from "../fraud-vc-utilities.js";
+import * as drivingLicenceExpiryService from "../driving-permit-utilities.js";
 import { VerifiableCredentialJWT } from "../verifiable-credential-jwt.js";
 import { vi, describe, it, beforeEach, expect } from "vitest";
 

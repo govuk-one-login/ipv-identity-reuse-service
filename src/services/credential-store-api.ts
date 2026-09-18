@@ -1,14 +1,11 @@
 import { getConfiguration, getServiceApiKey } from "../commons/configuration.js";
-import { CredentialStoreIdentityResponse } from "./credential-store-identity-response.js";
-import { VerifiableCredentialJWT } from "../identity-reuse/verifiable-credential-jwt.js";
+import { CredentialStoreIdentityResponse } from "../types/credential-store-api-types.js";
+import { VerifiableCredentialJWT } from "../types/verifiable-credential-jwt.js";
 import { getJwtBody } from "../commons/jwt-utilities.js";
-import logger from "../commons/logger.js";
 
 export const getIdentityFromCredentialStore = async (authorizationToken: string): Promise<Response> => {
   const configuration = await getConfiguration();
   const apiKey = await getServiceApiKey();
-
-  logger.info("Retrieving identity");
 
   return await fetch(`${configuration.evcsApiUrl}/identity`, {
     method: "GET",
@@ -22,8 +19,6 @@ export const getIdentityFromCredentialStore = async (authorizationToken: string)
 export const invalidateIdentityInCredentialStore = async (userId: string): Promise<Response> => {
   const configuration = await getConfiguration();
   const apiKey = await getServiceApiKey();
-
-  logger.info("Invalidating identity");
 
   return await fetch(`${configuration.evcsApiUrl}/identity/invalidate`, {
     method: "POST",

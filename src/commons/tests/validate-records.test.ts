@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
 import * as configuration from "../configuration.js";
-import * as DidResolutionService from "../../identity-reuse/did-resolution-service.js";
+import * as DidResolutionService from "../../services/did-resolution-service-api.js";
 import { publicKeyJwk, getDefaultJwtHeader } from "../../../shared-test/jwt-utilities.js";
 import {
   createCredentialStoreIdentityResponse,
@@ -8,7 +8,7 @@ import {
   createSignedIdentityCheckCredentialJWT,
 } from "../../../shared-test/credential-store-utilities.js";
 import { validateCryptography, validateIdentityRecords } from "../validate-records.js";
-import { CredentialStoreIdentityResponse } from "../../credential-store/credential-store-identity-response.js";
+import { CredentialStoreIdentityResponse } from "../../types/credential-store-api-types.js";
 import { getJwtSignature } from "../jwt-utilities.js";
 
 const mockEVCSResponse = (response: CredentialStoreIdentityResponse) => {

@@ -5,7 +5,7 @@ import logger from "../../commons/logger.js";
 import mainPageTemplate from "./index.njk";
 import { getCookieValues } from "../../commons/cookie-utilities.js";
 import { handleGetIdentityFromCredentialStore, validateIdentityRecords } from "../../commons/validate-records.js";
-import { getSessionDetails } from "../../services/oauth-internal-service.js";
+import { getSessionDetails } from "../../services/oauth-internal-service-api.js";
 import { redirectToErrorPage } from "../../services/sis-redirect-service.js";
 import { CredentialStoreError, StoredIdentityValidationError } from "../../commons/errors.js";
 import { HttpCodesEnum } from "../../commons/constants.js";

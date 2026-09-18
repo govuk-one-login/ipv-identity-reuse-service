@@ -2,7 +2,7 @@ import { APIGatewayEventRequestContextWithAuthorizer, APIGatewayProxyEvent } fro
 import { afterEach, beforeEach, expect, it, vitest } from "vitest";
 import { handler } from "../get-callback-handler.js";
 import { getCookieValues } from "../../../commons/cookie-utilities.js";
-import * as oauthInternalService from "../../../services/oauth-internal-service.js";
+import * as oauthInternalService from "../../../services/oauth-internal-service-api.js";
 
 process.env.DOMAIN_NAME = "test-domain";
 process.env.OAUTH_INTERNAL_API_URL = "https://test.com";

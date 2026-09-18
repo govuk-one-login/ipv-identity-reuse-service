@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { extractUserDetails, formatAddress } from "../user-details-content.js";
-import { StoredIdentityJWT } from "../../post-phase2-user-identity-handler/stored-identity-jwt.js";
-import { StoredIdentityClaims } from "../../post-phase2-user-identity-handler/stored-identity-jwt.js";
+import { StoredIdentityJWT } from "../../../types/stored-identity-jwt.js";
+import { StoredIdentityClaims } from "../../../types/stored-identity-jwt.js";
 import { StoredIdentityValidationError } from "../../../commons/errors.js";
 
 const buildStoredIdentityJwt = (claims: StoredIdentityClaims): StoredIdentityJWT => ({

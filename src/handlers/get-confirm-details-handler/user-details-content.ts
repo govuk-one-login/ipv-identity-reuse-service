@@ -1,5 +1,5 @@
 import { PostalAddressClass } from "@govuk-one-login/data-vocab/credentials.js";
-import { StoredIdentityJWT } from "../post-phase2-user-identity-handler/stored-identity-jwt.js";
+import { StoredIdentityJWT } from "../../types/stored-identity-jwt.js";
 import { StoredIdentityValidationError } from "../../commons/errors.js";
 
 export interface UserDetailsContent {

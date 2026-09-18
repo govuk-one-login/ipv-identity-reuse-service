@@ -11,8 +11,8 @@ import {
 } from "@aws-sdk/client-appconfigdata";
 import { Uint8ArrayBlobAdapter } from "@smithy/util-stream";
 import { Configuration } from "../../../commons/configuration.js";
-import { MetricDimension, MetricName } from "../../../commons/metric-enum.js";
-import { AisMessage } from "../ais-message.js";
+import { MetricDimension, MetricName } from "../../../types/metric-enum.js";
+import { AisMessage } from "../../../types/ais-message.js";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
 import { describe, beforeAll, afterEach, it, expect, vi } from "vitest";

@@ -3,10 +3,10 @@ import { handler } from "../post-phase2-user-identity-handler.js";
 import { HttpCodesEnum } from "../../../commons/constants.js";
 import * as configuration from "../../../commons/configuration.js";
 import { Configuration } from "../../../commons/configuration.js";
-import { CredentialStoreIdentityResponse } from "../../../credential-store/credential-store-identity-response.js";
+import { CredentialStoreIdentityResponse } from "../../../types/credential-store-api-types.js";
 import { UserIdentityResponse } from "../post-phase2-user-identity-response.js";
 import { UserIdentityRequest } from "../post-phase2-user-identity-request.js";
-import * as identityExpiryService from "../../../identity-reuse/identity-expiry-service.js";
+import * as identityExpiryService from "../../../identity-reuse/vc-utilities.js";
 
 import * as AuditModule from "../../../commons/audit.js";
 import * as ValidateRecords from "../../../commons/validate-records.js";

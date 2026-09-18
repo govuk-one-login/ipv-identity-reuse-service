@@ -4,7 +4,7 @@ import { APIGatewayProxyEvent } from "aws-lambda";
 import { handleGetIdentityFromCredentialStore, validateIdentityRecords } from "../../../commons/validate-records.js";
 import { CredentialStoreError, StoredIdentityValidationError } from "../../../commons/errors.js";
 import { HttpCodesEnum } from "../../../commons/constants.js";
-import { getSessionDetails } from "../../../services/oauth-internal-service.js";
+import { getSessionDetails } from "../../../services/oauth-internal-service-api.js";
 import translations from "../../../../locales/en/translation.json" with { type: "json" };
 
 const mockRender = vi.hoisted(() => vi.fn().mockReturnValue("Rendered Confirm Details Screen"));

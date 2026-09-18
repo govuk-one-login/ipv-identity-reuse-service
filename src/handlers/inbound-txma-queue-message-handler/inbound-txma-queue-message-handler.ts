@@ -2,15 +2,15 @@ import { Metrics, MetricUnit } from "@aws-lambda-powertools/metrics";
 import { SQSEvent, SQSRecord } from "aws-lambda";
 import { InterventionCodeEnum } from "@govuk-one-login/event-catalogue/SIS_IDENTITY_RECORD_INVALIDATED.js";
 
-import { MetricDimension, MetricName } from "../../commons/metric-enum.js";
-import { isAisMessage, AisMessage } from "./ais-message.js";
+import { MetricDimension, MetricName } from "../../types/metric-enum.js";
+import { isAisMessage, AisMessage } from "../../types/ais-message.js";
 
 import { getConfiguration, type Configuration } from "../../commons/configuration.js";
 import { isStringWithLength } from "../../commons/string-utilities.js";
 import logger from "../../commons/logger.js";
-import { isCredentialStoreErrorResponse } from "../../credential-store/credential-store-error-response.js";
+import { isCredentialStoreErrorResponse } from "../../types/credential-store-api-types.js";
 import { auditIdentityRecordInvalidated } from "../../commons/audit.js";
-import { invalidateIdentityInCredentialStore } from "../../credential-store/encrypted-credential-store.js";
+import { invalidateIdentityInCredentialStore } from "../../services/credential-store-api.js";
 
 const metrics = new Metrics();
 

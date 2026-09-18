@@ -1,4 +1,4 @@
-import { isStringWithLength } from "../../commons/string-utilities.js";
+import { isStringWithLength } from "../commons/string-utilities.js";
 import { InterventionCodeEnum } from "@govuk-one-login/event-catalogue/SIS_IDENTITY_RECORD_INVALIDATED.js";
 
 export type AisMessage = {

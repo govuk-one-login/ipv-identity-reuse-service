@@ -4,9 +4,9 @@ import {
   isDcmawVcSuccessful,
   wasDrivingLicenceExpiredAtIssuance,
   hasDrivingLicenceExpired,
-} from "../driving-licence-expiry-service.js";
+} from "../driving-permit-vc-utilities.js";
 import { IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials.js";
-import { VerifiableCredentialJWT } from "../verifiable-credential-jwt.js";
+import { VerifiableCredentialJWT } from "../../types/verifiable-credential-jwt.js";
 import logger from "../../commons/logger.js";
 import { vi, describe, it, beforeEach, afterEach, expect } from "vitest";
 

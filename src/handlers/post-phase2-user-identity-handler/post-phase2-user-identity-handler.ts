@@ -5,15 +5,12 @@ import { getConfiguration } from "../../commons/configuration.js";
 import { HttpCodesEnum } from "../../commons/constants.js";
 import { getJwtBody } from "../../commons/jwt-utilities.js";
 import logger from "../../commons/logger.js";
-import { CredentialStoreIdentityResponse } from "../../credential-store/credential-store-identity-response.js";
-import { parseCurrentVerifiableCredentials } from "../../credential-store/encrypted-credential-store.js";
-import { calculateVot } from "../../identity-reuse/calculate-vot.js";
-import { getFraudVc } from "../../identity-reuse/fraud-check-service.js";
-import { hasIdentityExpired } from "../../identity-reuse/identity-expiry-service.js";
-import { VerifiableCredentialJWT } from "../../identity-reuse/verifiable-credential-jwt.js";
-import { UserIdentityRequest } from "./post-phase2-user-identity-request.js";
-import { StoredIdentityJWT } from "./stored-identity-jwt.js";
-import { StoredIdentityVectorOfTrust, UserIdentityResponse } from "./post-phase2-user-identity-response.js";
+import { CredentialStoreIdentityResponse } from "../../types/credential-store-api-types.js";
+import { parseCurrentVerifiableCredentials } from "../../services/credential-store-api.js";
+import { getFraudVc } from "../../identity-reuse/fraud-vc-utilities.js";
+import { hasIdentityExpired } from "../../identity-reuse/vc-utilities.js";
+import { VerifiableCredentialJWT } from "../../types/verifiable-credential-jwt.js";
+import { StoredIdentityJWT } from "../../types/stored-identity-jwt.js";
 import { getProperty } from "../../commons/case-insensitive-header-utilities.js";
 import {
   getUserIdFromJwt,
@@ -25,6 +22,12 @@ import {
 import { CredentialStoreError } from "../../commons/errors.js";
 import { VotEnum } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_READ.js";
 import { ResponseBody } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_RETURNED.js";
+import {
+  UserIdentityRequest,
+  UserIdentityResponse,
+  StoredIdentityVectorOfTrust,
+} from "../../types/stored-identity-api-types.js";
+import { calculateVot } from "../../identity-reuse/sis-vc-utilities.js";
 
 export const handler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
   const request = event.body ? (JSON.parse(event.body) as UserIdentityRequest) : undefined;

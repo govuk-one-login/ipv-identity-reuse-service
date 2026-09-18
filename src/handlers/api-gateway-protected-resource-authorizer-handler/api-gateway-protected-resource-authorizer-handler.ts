@@ -15,7 +15,7 @@ import { Metrics } from "@aws-lambda-powertools/metrics";
 import { PolicyGenerationError } from "../../commons/errors.js";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
 import { sha256Hash } from "../../commons/hashing.js";
-import { MetricDimension, MetricName } from "../../commons/metric-enum.js";
+import { MetricDimension, MetricName } from "../../types/metric-enum.js";
 import { getProperty } from "../../commons/case-insensitive-header-utilities.js";
 
 export const metric: Metrics = new Metrics();

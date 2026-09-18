@@ -1,4 +1,4 @@
-import { getFraudVc, hasFraudCheckExpired } from "../fraud-check-service.js";
+import { getFraudVc, hasFraudCheckExpired } from "../fraud-vc-utilities.js";
 import {
   FraudCheckType,
   IdentityCheckClass,
