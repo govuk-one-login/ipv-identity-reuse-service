@@ -13,8 +13,7 @@ import { extractUserDetails } from "./user-details-content.js";
 import translations from "../../../locales/en/translation.json" with { type: "json" };
 
 import { getConfiguration } from "../../commons/configuration.js";
-import { parseCurrentVerifiableCredentials } from "../../credential-store/encrypted-credential-store.js";
-import { CredentialStoreIdentityResponse } from "../../credential-store/credential-store-identity-response.js";
+import { parseCurrentVerifiableCredentials, CredentialStoreIdentityResponse } from "../../api/evcs-api.js";
 import { hasIdentityExpired } from "../../identity-reuse/identity-expiry-service.js";
 import { calculateVot } from "../../identity-reuse/calculate-vot.js";
 import { StoredIdentityJWT } from "../post-phase2-user-identity-handler/stored-identity-jwt.js";

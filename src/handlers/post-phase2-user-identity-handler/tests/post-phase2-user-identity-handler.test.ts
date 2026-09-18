@@ -3,7 +3,6 @@ import { handler } from "../post-phase2-user-identity-handler.js";
 import { HttpCodesEnum } from "../../../commons/constants.js";
 import * as configuration from "../../../commons/configuration.js";
 import { Configuration } from "../../../commons/configuration.js";
-import { CredentialStoreIdentityResponse } from "../../../api/evcs-api-identity-response.js";
 import { UserIdentityResponse } from "../post-phase2-user-identity-response.js";
 import { UserIdentityRequest } from "../post-phase2-user-identity-request.js";
 import * as identityExpiryService from "../../../identity-reuse/identity-expiry-service.js";
@@ -19,6 +18,7 @@ import {
   createSignedIdentityCheckCredentialJWT,
 } from "../../../../shared-test/evcs-api-utilities.js";
 import { CredentialStoreError, TokenValidationError } from "../../../commons/errors.js";
+import { CredentialStoreIdentityResponse } from "../../../api/evcs-api.js";
 
 vi.mock("../../../commons/logger");
 vi.mock("../../../commons/audit");

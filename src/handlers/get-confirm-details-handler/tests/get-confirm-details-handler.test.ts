@@ -9,10 +9,10 @@ import translations from "../../../../locales/en/translation.json" with { type: 
 import * as identityExpiryService from "../../../identity-reuse/identity-expiry-service.js";
 import * as calculateVotModule from "../../../identity-reuse/calculate-vot.js";
 import * as validateRecords from "../../../commons/validate-records.js";
-import * as credentialStore from "../../../credential-store/encrypted-credential-store.js";
+import * as credentialStore from "../../../api/evcs-api.js";
 import * as configuration from "../../../commons/configuration.js";
 import * as jwtUtilities from "../../../commons/jwt-utilities.js";
-import { CredentialStoreIdentityResponse } from "../../../credential-store/credential-store-identity-response.js";
+import { CredentialStoreIdentityResponse } from "../../../api/evcs-api.js";
 
 const mockRender = vi.hoisted(() => vi.fn().mockReturnValue("Rendered Confirm Details Screen"));
 
