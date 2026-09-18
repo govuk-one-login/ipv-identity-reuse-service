@@ -1,7 +1,10 @@
-import { CredentialStoreIdentityResponse, VerifiableCredentialObject } from "../evcs-api-identity-response.js";
 import { IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials.js";
 import { getDefaultJwtHeader, sign } from "../../../shared-test/jwt-utilities.js";
-import { parseCurrentVerifiableCredentials } from "../evcs-api.js";
+import {
+  CredentialStoreIdentityResponse,
+  parseCurrentVerifiableCredentials,
+  VerifiableCredentialObject,
+} from "../evcs-api.js";
 import { describe, it, expect } from "vitest";
 
 describe("parseCurrentVerifiableCredentials", () => {

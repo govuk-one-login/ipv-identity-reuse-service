@@ -8,9 +8,8 @@ import { isAisMessage, AisMessage } from "./ais-message.js";
 import { getConfiguration, type Configuration } from "../../commons/configuration.js";
 import { isStringWithLength } from "../../commons/string-utilities.js";
 import logger from "../../commons/logger.js";
-import { isCredentialStoreErrorResponse } from "../../api/evcs-api-error-response.js";
 import { auditIdentityRecordInvalidated } from "../../commons/audit.js";
-import { invalidateIdentityInCredentialStore } from "../../api/evcs-api.js";
+import { invalidateIdentityInCredentialStore, isCredentialStoreErrorResponse } from "../../api/evcs-api.js";
 
 const metrics = new Metrics();
 

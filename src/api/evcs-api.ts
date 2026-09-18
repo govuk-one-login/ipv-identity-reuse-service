@@ -1,8 +1,8 @@
 import { getConfiguration, getServiceApiKey } from "../commons/configuration.js";
-import { CredentialStoreIdentityResponse } from "./evcs-api-identity-response.js";
 import { VerifiableCredentialJWT } from "../identity-reuse/verifiable-credential-jwt.js";
 import { getJwtBody } from "../commons/jwt-utilities.js";
 import logger from "../commons/logger.js";
+import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
 
 export const getIdentityFromCredentialStore = async (authorizationToken: string): Promise<Response> => {
   const configuration = await getConfiguration();
@@ -41,3 +41,32 @@ export const parseCurrentVerifiableCredentials = (
     .filter((encodedVcWithState) => encodedVcWithState.state === "CURRENT")
     .map((encodedVcWithState) => getJwtBody<VerifiableCredentialJWT>(encodedVcWithState.vc));
 };
+
+export type CredentialStoreIdentityResponse = {
+  si: StoredIdentityObject;
+  vcs: VerifiableCredentialObject[];
+  afterKey?: string;
+};
+
+interface StoredIdentityObject {
+  vc: string;
+  metadata: Metadata | string | undefined;
+  unsignedVot: IdentityVectorOfTrust;
+}
+
+export interface VerifiableCredentialObject {
+  state: string;
+  vc: string;
+  metadata: Metadata | string | undefined;
+  signature?: string;
+}
+
+interface Metadata {
+  [key: string]: unknown;
+}
+
+export type CredentialStoreErrorResponse = {
+  message: string;
+};
+export const isCredentialStoreErrorResponse = (message: unknown): message is CredentialStoreErrorResponse =>
+  !!message && typeof message === "object" && (message as Record<string, never>).message;

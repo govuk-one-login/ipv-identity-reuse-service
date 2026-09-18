@@ -8,8 +8,8 @@ import {
   createSignedIdentityCheckCredentialJWT,
 } from "../../../shared-test/evcs-api-utilities.js";
 import { validateCryptography, validateIdentityRecords } from "../validate-records.js";
-import { CredentialStoreIdentityResponse } from "../../api/evcs-api-identity-response.js";
 import { getJwtSignature } from "../jwt-utilities.js";
+import { CredentialStoreIdentityResponse } from "../../api/evcs-api.js";
 
 const mockEVCSResponse = (response: CredentialStoreIdentityResponse) => {
   (globalThis.fetch as Mock) = vi.fn().mockResolvedValue(
