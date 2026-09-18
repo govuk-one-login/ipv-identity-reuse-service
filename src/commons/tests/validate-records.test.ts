@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
 import * as configuration from "../configuration.js";
-import * as DidResolutionService from "../../identity-reuse/did-resolution-service.js";
+import * as DidResolutionService from "../../api/did-resolution-api.js";
 import { publicKeyJwk, getDefaultJwtHeader } from "../../../shared-test/jwt-utilities.js";
 import {
   createCredentialStoreIdentityResponse,
