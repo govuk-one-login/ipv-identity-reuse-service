@@ -1,5 +1,5 @@
 import { JWTHeaderParameters } from "jose";
-import { CredentialStoreIdentityResponse } from "../src/credential-store/credential-store-identity-response.js";
+import { CredentialStoreIdentityResponse } from "../src/api/evcs-api-identity-response.js";
 import { getDefaultJwtHeader, sign } from "./jwt-utilities.js";
 
 const CURRENT = "CURRENT";

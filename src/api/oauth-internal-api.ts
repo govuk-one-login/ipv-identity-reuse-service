@@ -4,7 +4,7 @@ import {
   isValidAuthorizationSuccessResponse,
   isValidGetSessionSuccessResponse,
   isValidSessionSuccessResponse,
-} from "./oauth-internal-service-response.js";
+} from "./oauth-internal-api-response.js";
 import { getOauthInternalApiUrl, getSessionTimeout } from "../commons/configuration.js";
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
 

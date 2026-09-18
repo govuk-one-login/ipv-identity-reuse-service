@@ -6,9 +6,9 @@ import {
   createCredentialStoreIdentityResponse,
   createInvalidIdentityCheckCredentialJWT,
   createSignedIdentityCheckCredentialJWT,
-} from "../../../shared-test/credential-store-utilities.js";
+} from "../../../shared-test/evcs-api-utilities.js";
 import { validateCryptography, validateIdentityRecords } from "../validate-records.js";
-import { CredentialStoreIdentityResponse } from "../../credential-store/credential-store-identity-response.js";
+import { CredentialStoreIdentityResponse } from "../../api/evcs-api-identity-response.js";
 import { getJwtSignature } from "../jwt-utilities.js";
 
 const mockEVCSResponse = (response: CredentialStoreIdentityResponse) => {

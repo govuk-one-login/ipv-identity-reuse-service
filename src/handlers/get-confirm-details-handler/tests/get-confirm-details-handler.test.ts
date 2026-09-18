@@ -4,7 +4,7 @@ import { APIGatewayProxyEvent } from "aws-lambda";
 import { handleGetIdentityFromCredentialStore, validateIdentityRecords } from "../../../commons/validate-records.js";
 import { CredentialStoreError, StoredIdentityValidationError } from "../../../commons/errors.js";
 import { HttpCodesEnum } from "../../../commons/constants.js";
-import { getSessionDetails } from "../../../services/oauth-internal-service.js";
+import { getSessionDetails } from "../../../api/oauth-internal-api.js";
 import translations from "../../../../locales/en/translation.json" with { type: "json" };
 import * as identityExpiryService from "../../../identity-reuse/identity-expiry-service.js";
 import * as calculateVotModule from "../../../identity-reuse/calculate-vot.js";
@@ -47,7 +47,7 @@ vi.mock("../user-details-content", () => ({
   }),
 }));
 
-vi.mock("../../../services/oauth-internal-service", () => ({
+vi.mock("../../../api/oauth-internal-api", () => ({
   getSessionDetails: vi.fn().mockResolvedValue({
     storageAccessToken: "mock-storage-access-token",
     subject: "user-sub",

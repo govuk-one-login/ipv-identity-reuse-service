@@ -1,9 +1,9 @@
-import { CredentialStoreIdentityResponse } from "../credential-store/credential-store-identity-response.js";
+import { CredentialStoreIdentityResponse } from "../api/evcs-api-identity-response.js";
 import { getConfiguration } from "./configuration.js";
 import * as didResolutionService from "../identity-reuse/did-resolution-service.js";
 import { jwtVerify } from "jose";
 import logger from "./logger.js";
-import { getIdentityFromCredentialStore } from "../credential-store/encrypted-credential-store.js";
+import { getIdentityFromCredentialStore } from "../api/evcs-api.js";
 import { getJwtBody, getJwtHeader } from "./jwt-utilities.js";
 import { HttpCodesEnum } from "./constants.js";
 import { APIGatewayProxyResult } from "aws-lambda";
