@@ -6,13 +6,12 @@ import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utilities
 import * as AuditModule from "../../../commons/audit.js";
 import type { Configuration } from "../../../commons/configuration.js";
 import * as ConfigurationModule from "../../../commons/configuration.js";
-import { CredentialStoreErrorResponse } from "../../../credential-store/credential-store-error-response.js";
-import type { CredentialStoreIdentityResponse } from "../../../credential-store/credential-store-identity-response.js";
 import { StoredIdentityJWT } from "../../../handlers/post-phase2-user-identity-handler/stored-identity-jwt.js";
 import * as FraudCheckService from "../../../identity-reuse/fraud-check-service.js";
 import type { VerifiableCredentialJWT } from "../../../identity-reuse/verifiable-credential-jwt.js";
 import { createServer as createProviderServer } from "./sis-provider-app.js";
 import { vi, describe, it, beforeAll, beforeEach, afterAll, expect } from "vitest";
+import { CredentialStoreErrorResponse, CredentialStoreIdentityResponse } from "../../../api/evcs-api.js";
 
 vi.mock("../../../commons/audit");
 

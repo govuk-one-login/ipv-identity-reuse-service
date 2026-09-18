@@ -1,10 +1,5 @@
 import { URL } from "node:url";
 import logger from "../commons/logger.js";
-import {
-  isValidAuthorizationSuccessResponse,
-  isValidGetSessionSuccessResponse,
-  isValidSessionSuccessResponse,
-} from "./oauth-internal-service-response.js";
 import { getOauthInternalApiUrl, getSessionTimeout } from "../commons/configuration.js";
 
 export type SessionResult = {
@@ -139,4 +134,66 @@ export async function getSessionDetails(sessionId: string): Promise<GetSessionRe
     logger.error(`GET session handler returned non-200 status: ${responseFromSessionEndpoint.status}`);
     throw new Error("GET session endpoint returned an error response");
   }
+}
+
+interface AuthorizationSuccessResponse {
+  redirectionURI: string;
+  authorizationCode: { value: string };
+  state: { value: string };
+}
+
+interface SessionSuccessResponse {
+  session_id: string;
+  state: string;
+  redirect_uri: string;
+}
+
+interface GetSessionSuccessResponse {
+  vtr?: string;
+  storageAccessToken?: string;
+  clientSessionId: string;
+  persistentSessionId?: string;
+  subject: string;
+  context?: string;
+  sessionData?: object;
+}
+
+function isValidAuthorizationSuccessResponse(object: unknown): object is AuthorizationSuccessResponse {
+  if (!object || typeof object !== "object") return false;
+  return (
+    hasNonEmptyString(object, "redirectionURI") &&
+    hasObjectWithNonEmptyValue(object, "authorizationCode") &&
+    hasObjectWithNonEmptyValue(object, "state")
+  );
+}
+
+function isValidSessionSuccessResponse(object: unknown): object is SessionSuccessResponse {
+  if (!object || typeof object !== "object") return false;
+  return (
+    hasNonEmptyString(object, "redirect_uri") &&
+    hasNonEmptyString(object, "session_id") &&
+    hasNonEmptyString(object, "state")
+  );
+}
+
+function isValidGetSessionSuccessResponse(object: unknown): object is GetSessionSuccessResponse {
+  if (!object || typeof object !== "object") return false;
+  return hasNonEmptyString(object, "clientSessionId") && hasNonEmptyString(object, "subject");
+}
+
+function hasNonEmptyString(object: object, key: string): boolean {
+  return (
+    key in object &&
+    typeof (object as Record<string, unknown>)[key] === "string" &&
+    ((object as Record<string, unknown>)[key] as string).trim().length > 0
+  );
+}
+
+function hasObjectWithNonEmptyValue(object: object, key: string): boolean {
+  return (
+    key in object &&
+    !!(object as Record<string, unknown>)[key] &&
+    typeof (object as Record<string, unknown>)[key] === "object" &&
+    hasNonEmptyString((object as Record<string, unknown>)[key] as object, "value")
+  );
 }

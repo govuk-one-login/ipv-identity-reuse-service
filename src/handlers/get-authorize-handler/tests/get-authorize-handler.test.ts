@@ -1,12 +1,12 @@
 import { APIGatewayEventRequestContextWithAuthorizer, APIGatewayProxyEvent, Context } from "aws-lambda";
 import { beforeEach, describe, expect, it, MockInstance, vi, vitest } from "vitest";
 import { AuthorizationQueryStringParameters, handler } from "../get-authorize-handler.js";
-import * as oauthInternalService from "../../../services/oauth-internal-service.js";
+import * as oauthInternalService from "../../../api/oauth-internal-api.js";
 
 process.env.DOMAIN_NAME = "test-domain";
 process.env.OAUTH_INTERNAL_API_URL = "https://example.com/v1";
 
-vi.mock("../../../services/oauth-internal-service", () => ({
+vi.mock("../../../api/oauth-internal-api", () => ({
   callSessionApi: vi.fn(),
 }));
 

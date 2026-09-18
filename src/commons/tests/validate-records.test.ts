@@ -1,15 +1,15 @@
 import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
 import * as configuration from "../configuration.js";
-import * as DidResolutionService from "../../identity-reuse/did-resolution-service.js";
+import * as DidResolutionService from "../../api/did-resolution-api.js";
 import { publicKeyJwk, getDefaultJwtHeader } from "../../../shared-test/jwt-utilities.js";
 import {
   createCredentialStoreIdentityResponse,
   createInvalidIdentityCheckCredentialJWT,
   createSignedIdentityCheckCredentialJWT,
-} from "../../../shared-test/credential-store-utilities.js";
+} from "../../../shared-test/evcs-api-utilities.js";
 import { validateCryptography, validateIdentityRecords } from "../validate-records.js";
-import { CredentialStoreIdentityResponse } from "../../credential-store/credential-store-identity-response.js";
 import { getJwtSignature } from "../jwt-utilities.js";
+import { CredentialStoreIdentityResponse } from "../../api/evcs-api.js";
 
 const mockEVCSResponse = (response: CredentialStoreIdentityResponse) => {
   (globalThis.fetch as Mock) = vi.fn().mockResolvedValue(
