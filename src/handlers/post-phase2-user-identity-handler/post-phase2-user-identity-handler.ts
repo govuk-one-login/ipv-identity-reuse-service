@@ -103,7 +103,7 @@ const createSuccessResponse = async (
 
   delete content.max_vot;
 
-  const expired = hasIdentityExpired(currentVcs, configuration);
+  const { expired } = hasIdentityExpired(currentVcs, configuration);
 
   const successResponse: UserIdentityResponse = {
     content: { ...content, vot, vtm },

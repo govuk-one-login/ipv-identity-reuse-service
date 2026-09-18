@@ -4,9 +4,13 @@ export enum MetricName {
   MessagesReceived = "MessagesReceived",
   IdentityInvalidatedOnIntervention = "IdentityInvalidatedOnIntervention",
   IdentityDoesNotExist = "IdentityDoesNotExist",
+  IdentityReuseValidation = "IdentityReuseValidation",
 }
 
 export enum MetricDimension {
   InterventionCode = "InterventionCode",
   Reason = "Reason",
+  FraudCheckExpired = "FraudCheckExpired",
+  DrivingLicenceExpired = "DrivingLicenceExpired",
+  VotSufficient = "VotSufficient",
 }

@@ -12,6 +12,17 @@ import { HttpCodesEnum } from "../../commons/constants.js";
 import { extractUserDetails } from "./user-details-content.js";
 import translations from "../../../locales/en/translation.json" with { type: "json" };
 
+import { getConfiguration } from "../../commons/configuration.js";
+import { parseCurrentVerifiableCredentials } from "../../credential-store/encrypted-credential-store.js";
+import { CredentialStoreIdentityResponse } from "../../credential-store/credential-store-identity-response.js";
+import { hasIdentityExpired } from "../../identity-reuse/identity-expiry-service.js";
+import { calculateVot } from "../../identity-reuse/calculate-vot.js";
+import { StoredIdentityJWT } from "../post-phase2-user-identity-handler/stored-identity-jwt.js";
+import { getJwtBody } from "../../commons/jwt-utilities.js";
+import { Metrics } from "@aws-lambda-powertools/metrics";
+import { MetricDimension, MetricName } from "../../commons/metric-enum.js";
+import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
+
 const govukFrontendDistribution = path.join(path.dirname(require.resolve("govuk-frontend/package.json")), "dist");
 const nunjucksEnvironment = nunjucks.configure([
   process.env.LAMBDA_TASK_ROOT || "",
@@ -33,6 +44,37 @@ export type ConfirmDetailsQueryStringParameters = {
   state: string;
 };
 
+const metrics = new Metrics();
+
+const validateUserIdentity = async (
+  identityResponse: CredentialStoreIdentityResponse,
+  vtr: IdentityVectorOfTrust[]
+): Promise<boolean> => {
+  const configuration = await getConfiguration();
+  const currentVcs = parseCurrentVerifiableCredentials(identityResponse);
+  const { expired, fraudExpired, drivingLicenceExpired } = hasIdentityExpired(currentVcs, configuration);
+  const content = getJwtBody<StoredIdentityJWT>(identityResponse.si.vc);
+  const vot = calculateVot(content, identityResponse.si.unsignedVot, vtr);
+  const votSufficient = vot !== "P0";
+
+  metrics.addDimensions({
+    [MetricDimension.FraudCheckExpired]: fraudExpired ? "fail" : "pass",
+    [MetricDimension.DrivingLicenceExpired]: drivingLicenceExpired ? "fail" : "pass",
+    [MetricDimension.VotSufficient]: votSufficient ? "pass" : "fail",
+  });
+  metrics.addMetric(MetricName.IdentityReuseValidation, "Count", 1);
+  metrics.publishStoredMetrics();
+
+  if (expired) {
+    logger.error("User identity expired");
+  }
+  if (!votSufficient) {
+    logger.error("Identity does not meet required level of confidence", { vtr });
+  }
+
+  return !expired && votSufficient;
+};
+
 export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const { redirect_uri, client_id, state } = event.queryStringParameters as ConfirmDetailsQueryStringParameters;
   if (!redirect_uri || !state || !client_id) {
@@ -47,10 +89,15 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
       return redirectToErrorPage(domainName);
     }
 
-    const { storageAccessToken, subject } = await getSessionDetails(sessionId);
+    const { storageAccessToken, subject, vtr } = await getSessionDetails(sessionId);
 
     if (!storageAccessToken) {
       logger.error("No storageAccessToken returned from session endpoint");
+      return redirectToErrorPage(domainName);
+    }
+
+    if (!vtr) {
+      logger.error("No vtr value returned from session endpoint");
       return redirectToErrorPage(domainName);
     }
 
@@ -64,6 +111,13 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
         body: "",
       };
     }
+
+    const identityReuseValid = await validateUserIdentity(identityResponse, vtr);
+
+    if (!identityReuseValid) {
+      return redirectToErrorPage(domainName);
+    }
+
     const userDetails = extractUserDetails(storedIdentityJwt);
 
     return {
