@@ -4,7 +4,7 @@ import {
   isValidAuthorizationSuccessResponse,
   isValidGetSessionSuccessResponse,
   isValidSessionSuccessResponse,
-} from "./oauth-internal-service-response.js";
+} from "./oauth-internal-api-response.js";
 import { getOauthInternalApiUrl, getSessionTimeout } from "../commons/configuration.js";
 
 export type SessionResult = {

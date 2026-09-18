@@ -1,5 +1,5 @@
 import { getConfiguration, getServiceApiKey } from "../commons/configuration.js";
-import { CredentialStoreIdentityResponse } from "./credential-store-identity-response.js";
+import { CredentialStoreIdentityResponse } from "./evcs-api-identity-response.js";
 import { VerifiableCredentialJWT } from "../identity-reuse/verifiable-credential-jwt.js";
 import { getJwtBody } from "../commons/jwt-utilities.js";
 import logger from "../commons/logger.js";
