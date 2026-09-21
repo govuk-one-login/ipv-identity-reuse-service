@@ -31,7 +31,8 @@ RUN --mount=type=secret,id=npmrc \
     NPM_CONFIG_USERCONFIG=/run/secrets/npmrc \
     npm ci
 
-RUN node_modules/.bin/playwright install-deps chromium
+ENV PLAYWRIGHT_BROWSERS_PATH=/app/browsers/
+RUN node_modules/.bin/playwright install --with-deps chromium
 
 USER $USER
 
