@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, Mock, vi, vitest } from "v
 import { lambdaHandler } from "../get-confirm-details-handler.js";
 import { APIGatewayProxyEvent } from "aws-lambda";
 import { handleGetIdentityFromCredentialStore, validateIdentityRecords } from "../../../commons/validate-records.js";
-import { CredentialStoreError, StoredIdentityValidationError } from "../../../commons/errors.js";
+import { EVCSError, StoredIdentityValidationError } from "../../../commons/errors.js";
 import { HttpCodesEnum } from "../../../commons/constants.js";
 import { getSessionDetails } from "../../../api/oauth-internal-api.js";
 import translations from "../../../../locales/en/translation.json" with { type: "json" };
@@ -12,7 +12,7 @@ import * as validateRecords from "../../../commons/validate-records.js";
 import * as credentialStore from "../../../api/evcs-api.js";
 import * as configuration from "../../../commons/configuration.js";
 import * as jwtUtilities from "../../../commons/jwt-utilities.js";
-import { CredentialStoreIdentityResponse } from "../../../api/evcs-api.js";
+import { EVCSIdentityResponse } from "../../../api/evcs-api.js";
 
 const mockRender = vi.hoisted(() => vi.fn().mockReturnValue("Rendered Confirm Details Screen"));
 
@@ -61,7 +61,7 @@ vi.mock("../../../commons/cookie-utilities", () => ({
 
 process.env.DOMAIN_NAME = "test-domain";
 
-const mockIdentityResponse: CredentialStoreIdentityResponse = {
+const mockIdentityResponse: EVCSIdentityResponse = {
   si: {
     vc: "header.payload.signature",
     metadata: undefined,
@@ -251,7 +251,7 @@ describe("handler record validation", () => {
 
   it("returns a failure response when the EVCS call fails", async () => {
     (handleGetIdentityFromCredentialStore as Mock).mockRejectedValue(
-      new CredentialStoreError(HttpCodesEnum.INTERNAL_SERVER_ERROR, "user-id")
+      new EVCSError(HttpCodesEnum.INTERNAL_SERVER_ERROR, "user-id")
     );
     const result = await lambdaHandler(validEvent());
     expect(validateIdentityRecords).not.toHaveBeenCalled();
@@ -260,9 +260,7 @@ describe("handler record validation", () => {
   });
 
   it("redirects to error page when EVCS returns a 404", async () => {
-    (handleGetIdentityFromCredentialStore as Mock).mockRejectedValue(
-      new CredentialStoreError(HttpCodesEnum.NOT_FOUND, "user-id")
-    );
+    (handleGetIdentityFromCredentialStore as Mock).mockRejectedValue(new EVCSError(HttpCodesEnum.NOT_FOUND, "user-id"));
     const result = await lambdaHandler(validEvent());
     expect(validateIdentityRecords).not.toHaveBeenCalled();
     expect(mockRender).not.toHaveBeenCalled();
