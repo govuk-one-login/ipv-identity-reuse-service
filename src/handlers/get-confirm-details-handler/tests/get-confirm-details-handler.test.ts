@@ -9,8 +9,8 @@ import { EVCSError, StoredIdentityValidationError } from "../../../commons/error
 import { HttpCodesEnum } from "../../../commons/constants.js";
 import { getSessionDetails } from "../../../api/oauth-internal-api.js";
 import translations from "../../../../locales/en/translation.json" with { type: "json" };
-import * as identityExpiryService from "../../../identity-reuse/identity-expiry-service.js";
-import * as calculateVotModule from "../../../identity-reuse/calculate-vot.js";
+import * as identityExpiryService from "../../../domain/verifiable-credential/identity-expiry-service.js";
+import * as calculateVotModule from "../../../domain/stored-identity/calculate-vot.js";
 import * as storedIdentityValidator from "../../../domain/stored-identity/stored-identity-validator.js";
 import * as evcsApi from "../../../api/evcs-api.js";
 import * as configuration from "../../../commons/configuration.js";
@@ -91,7 +91,7 @@ beforeEach(() => {
     kidValid: true,
     signatureValid: true,
     isValid: true,
-    storedIdentityJwt: {
+    storedIdentityRecord: {
       sub: "user-sub",
       credentials: [],
       vot: "P2",
@@ -127,7 +127,7 @@ it("should render the confirm details screen when all query string parameters ar
     kidValid: true,
     signatureValid: true,
     isValid: true,
-    storedIdentityJwt: {
+    storedIdentityRecord: {
       sub: "user-sub",
       credentials: [],
       vot: "P2",
@@ -200,7 +200,7 @@ describe("handler record validation", () => {
       kidValid: true,
       signatureValid: true,
       isValid: true,
-      storedIdentityJwt: {
+      storedIdentityRecord: {
         sub: "user-sub",
         credentials: [],
         vot: "P2",
