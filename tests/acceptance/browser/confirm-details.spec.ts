@@ -37,6 +37,7 @@ test.describe("Confirm details page", () => {
     await orchestrationStub.setPublicUrl(sisPublicUrl);
     await orchestrationStub.setPrivateUrl(sisPrivateUrl);
     await orchestrationStub.setUserId(userId);
+    await orchestrationStub.uncheckCreateIdentity();
     await orchestrationStub.continue();
 
     await expect(confirmDetails.fullNameValue).toHaveText("KENNETH DECERQUEIRA");

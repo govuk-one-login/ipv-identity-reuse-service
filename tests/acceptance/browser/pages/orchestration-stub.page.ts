@@ -22,11 +22,13 @@ export class OrchestrationStubPage {
   readonly heading: Locator;
   readonly continueButton: Locator;
   readonly errorSummary: Locator;
+  readonly createIdentityCheckbox: Locator;
 
   constructor(private readonly page: Page) {
     this.heading = page.getByRole("heading", { name: "Orchestration stub", exact: true });
     this.continueButton = page.getByRole("button", { name: "Continue" });
     this.errorSummary = page.getByRole("alert");
+    this.createIdentityCheckbox = page.getByRole("checkbox", { name: "Yes" });
   }
 
   async goto(): Promise<void> {
@@ -35,6 +37,10 @@ export class OrchestrationStubPage {
 
   field(name: AuthorizationRequestField): Locator {
     return this.page.getByLabel(authorizationRequestFields[name], { exact: true });
+  }
+
+  async uncheckCreateIdentity(): Promise<void> {
+    await this.createIdentityCheckbox.uncheck();
   }
 
   async continue(): Promise<void> {

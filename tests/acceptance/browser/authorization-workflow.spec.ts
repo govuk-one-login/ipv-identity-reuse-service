@@ -89,6 +89,7 @@ test.describe("Authorization workflow", () => {
     await orchestrationStub.setPublicUrl(sisPublicUrl);
     await orchestrationStub.setPrivateUrl(sisPrivateUrl);
     await orchestrationStub.setUserId(userId);
+    await orchestrationStub.uncheckCreateIdentity();
     await orchestrationStub.continue();
 
     await expect(confirmDetails.heading).toBeVisible();
