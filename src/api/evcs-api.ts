@@ -1,10 +1,10 @@
 import { getConfiguration, getServiceApiKey } from "../commons/configuration.js";
-import { CredentialStoreIdentityResponse } from "./credential-store-identity-response.js";
 import { VerifiableCredentialJWT } from "../identity-reuse/verifiable-credential-jwt.js";
 import { getJwtBody } from "../commons/jwt-utilities.js";
 import logger from "../commons/logger.js";
+import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
 
-export const getIdentityFromCredentialStore = async (authorizationToken: string): Promise<Response> => {
+export const getIdentityFromEVCS = async (authorizationToken: string): Promise<Response> => {
   const configuration = await getConfiguration();
   const apiKey = await getServiceApiKey();
 
@@ -19,7 +19,7 @@ export const getIdentityFromCredentialStore = async (authorizationToken: string)
   });
 };
 
-export const invalidateIdentityInCredentialStore = async (userId: string): Promise<Response> => {
+export const invalidateIdentityInEVCS = async (userId: string): Promise<Response> => {
   const configuration = await getConfiguration();
   const apiKey = await getServiceApiKey();
 
@@ -35,9 +35,38 @@ export const invalidateIdentityInCredentialStore = async (userId: string): Promi
 };
 
 export const parseCurrentVerifiableCredentials = (
-  identityResponse: CredentialStoreIdentityResponse
+  identityResponse: EVCSIdentityResponse
 ): VerifiableCredentialJWT[] => {
   return identityResponse.vcs
     .filter((encodedVcWithState) => encodedVcWithState.state === "CURRENT")
     .map((encodedVcWithState) => getJwtBody<VerifiableCredentialJWT>(encodedVcWithState.vc));
 };
+
+export type EVCSIdentityResponse = {
+  si: StoredIdentityObject;
+  vcs: VerifiableCredentialObject[];
+  afterKey?: string;
+};
+
+interface StoredIdentityObject {
+  vc: string;
+  metadata: Metadata | string | undefined;
+  unsignedVot: IdentityVectorOfTrust;
+}
+
+export interface VerifiableCredentialObject {
+  state: string;
+  vc: string;
+  metadata: Metadata | string | undefined;
+  signature?: string;
+}
+
+interface Metadata {
+  [key: string]: unknown;
+}
+
+export type EVCSErrorResponse = {
+  message: string;
+};
+export const isEVCSErrorResponse = (message: unknown): message is EVCSErrorResponse =>
+  !!message && typeof message === "object" && (message as Record<string, never>).message;

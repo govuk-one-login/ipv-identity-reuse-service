@@ -1,5 +1,5 @@
 import { it, expect } from "vitest";
-import { redirectToClient, redirectToConfirmDetails, redirectToErrorPage } from "../sis-redirect-service.js";
+import { redirectToClient, redirectToConfirmDetails, redirectToErrorPage } from "../sis-api.js";
 
 it("should redirect to error page", async () => {
   const result = redirectToErrorPage("test.com");

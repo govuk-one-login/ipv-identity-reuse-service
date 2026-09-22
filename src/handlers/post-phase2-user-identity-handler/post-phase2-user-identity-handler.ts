@@ -5,8 +5,7 @@ import { getConfiguration } from "../../commons/configuration.js";
 import { HttpCodesEnum } from "../../commons/constants.js";
 import { getJwtBody } from "../../commons/jwt-utilities.js";
 import logger from "../../commons/logger.js";
-import { CredentialStoreIdentityResponse } from "../../credential-store/credential-store-identity-response.js";
-import { parseCurrentVerifiableCredentials } from "../../credential-store/encrypted-credential-store.js";
+import { EVCSIdentityResponse, parseCurrentVerifiableCredentials } from "../../api/evcs-api.js";
 import { calculateVot } from "../../identity-reuse/calculate-vot.js";
 import { getFraudVc } from "../../identity-reuse/fraud-check-service.js";
 import { hasIdentityExpired } from "../../identity-reuse/identity-expiry-service.js";
@@ -22,7 +21,7 @@ import {
   createAndLogErrorResponse,
   validateIdentityRecords,
 } from "../../commons/validate-records.js";
-import { CredentialStoreError } from "../../commons/errors.js";
+import { EVCSError } from "../../commons/errors.js";
 import { VotEnum } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_READ.js";
 import { ResponseBody } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_RETURNED.js";
 
@@ -65,7 +64,7 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
 
     return { statusCode: HttpCodesEnum.OK, body: JSON.stringify(response) };
   } catch (error) {
-    if (error instanceof CredentialStoreError) {
+    if (error instanceof EVCSError) {
       return await createAndLogErrorResponse(error.statusCode, error.userId, error.journeyId);
     }
     logger.error("Error retrieving user identity", { error });
@@ -74,7 +73,7 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
 };
 
 const createSuccessResponse = async (
-  identityResponse: CredentialStoreIdentityResponse,
+  identityResponse: EVCSIdentityResponse,
   vtr: IdentityVectorOfTrust[],
   userId: string,
   govukSigninJourneyId: string

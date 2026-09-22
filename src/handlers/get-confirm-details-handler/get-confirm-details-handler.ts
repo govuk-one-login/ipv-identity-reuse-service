@@ -5,16 +5,15 @@ import logger from "../../commons/logger.js";
 import mainPageTemplate from "./index.njk";
 import { getCookieValues } from "../../commons/cookie-utilities.js";
 import { handleGetIdentityFromCredentialStore, validateIdentityRecords } from "../../commons/validate-records.js";
-import { getSessionDetails } from "../../services/oauth-internal-service.js";
-import { redirectToErrorPage } from "../../services/sis-redirect-service.js";
-import { CredentialStoreError, StoredIdentityValidationError } from "../../commons/errors.js";
+import { getSessionDetails } from "../../api/oauth-internal-api.js";
+import { redirectToErrorPage } from "../../api/sis-api.js";
+import { EVCSError, StoredIdentityValidationError } from "../../commons/errors.js";
 import { HttpCodesEnum } from "../../commons/constants.js";
 import { extractUserDetails } from "./user-details-content.js";
 import translations from "../../../locales/en/translation.json" with { type: "json" };
 
 import { getConfiguration } from "../../commons/configuration.js";
-import { parseCurrentVerifiableCredentials } from "../../credential-store/encrypted-credential-store.js";
-import { CredentialStoreIdentityResponse } from "../../credential-store/credential-store-identity-response.js";
+import { parseCurrentVerifiableCredentials, EVCSIdentityResponse } from "../../api/evcs-api.js";
 import { hasIdentityExpired } from "../../identity-reuse/identity-expiry-service.js";
 import { calculateVot } from "../../identity-reuse/calculate-vot.js";
 import { StoredIdentityJWT } from "../post-phase2-user-identity-handler/stored-identity-jwt.js";
@@ -47,7 +46,7 @@ export type ConfirmDetailsQueryStringParameters = {
 const metrics = new Metrics();
 
 const validateUserIdentity = async (
-  identityResponse: CredentialStoreIdentityResponse,
+  identityResponse: EVCSIdentityResponse,
   vtr: IdentityVectorOfTrust[]
 ): Promise<boolean> => {
   const configuration = await getConfiguration();
@@ -138,7 +137,7 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
       },
     };
   } catch (error) {
-    if (error instanceof CredentialStoreError && error.statusCode === HttpCodesEnum.NOT_FOUND) {
+    if (error instanceof EVCSError && error.statusCode === HttpCodesEnum.NOT_FOUND) {
       logger.error("No identity record found in EVCS");
       return redirectToErrorPage(domainName);
     }

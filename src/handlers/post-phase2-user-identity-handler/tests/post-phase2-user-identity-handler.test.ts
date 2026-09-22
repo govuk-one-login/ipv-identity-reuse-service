@@ -3,7 +3,6 @@ import { handler } from "../post-phase2-user-identity-handler.js";
 import { HttpCodesEnum } from "../../../commons/constants.js";
 import * as configuration from "../../../commons/configuration.js";
 import { Configuration } from "../../../commons/configuration.js";
-import { CredentialStoreIdentityResponse } from "../../../credential-store/credential-store-identity-response.js";
 import { UserIdentityResponse } from "../post-phase2-user-identity-response.js";
 import { UserIdentityRequest } from "../post-phase2-user-identity-request.js";
 import * as identityExpiryService from "../../../identity-reuse/identity-expiry-service.js";
@@ -17,8 +16,9 @@ import {
   createCredentialStoreIdentityResponse,
   createCredentialStoreIdentityResponseWithStates,
   createSignedIdentityCheckCredentialJWT,
-} from "../../../../shared-test/credential-store-utilities.js";
-import { CredentialStoreError, TokenValidationError } from "../../../commons/errors.js";
+} from "../../../../shared-test/evcs-api-utilities.js";
+import { EVCSError, TokenValidationError } from "../../../commons/errors.js";
+import { EVCSIdentityResponse } from "../../../api/evcs-api.js";
 
 vi.mock("../../../commons/logger");
 vi.mock("../../../commons/audit");
@@ -57,7 +57,7 @@ const event = () => {
   } as unknown as APIGatewayProxyEvent;
 };
 
-const mockEVCSResponse = (response: CredentialStoreIdentityResponse) => {
+const mockEVCSResponse = (response: EVCSIdentityResponse) => {
   (globalThis.fetch as Mock) = vi.fn().mockResolvedValue(
     Response.json(response, {
       status: 200,
@@ -264,7 +264,7 @@ describe("user-identity-handler authorization", () => {
     const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
 
     (ValidateRecords.handleGetIdentityFromCredentialStore as Mock).mockRejectedValue(
-      new CredentialStoreError(HttpCodesEnum.FORBIDDEN, TEST_USER, "govuk_signin_journey_id")
+      new EVCSError(HttpCodesEnum.FORBIDDEN, TEST_USER, "govuk_signin_journey_id")
     );
 
     const result = handler(newEvent, {} as Context);
@@ -299,7 +299,7 @@ describe("user-identity-handler authorization", () => {
     const auditIdentityRecordReadSpy = vi.spyOn(AuditModule, "auditIdentityRecordRead");
     const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
     (ValidateRecords.handleGetIdentityFromCredentialStore as Mock).mockRejectedValue(
-      new CredentialStoreError(HttpCodesEnum.UNAUTHORIZED, TEST_USER, "govuk_signin_journey_id")
+      new EVCSError(HttpCodesEnum.UNAUTHORIZED, TEST_USER, "govuk_signin_journey_id")
     );
     const result = handler(newEvent, {} as Context);
     await expect(result).resolves.toEqual({
@@ -333,7 +333,7 @@ describe("user-identity-handler authorization", () => {
     const auditIdentityRecordReadSpy = vi.spyOn(AuditModule, "auditIdentityRecordRead");
     const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
     (ValidateRecords.handleGetIdentityFromCredentialStore as Mock).mockRejectedValue(
-      new CredentialStoreError(HttpCodesEnum.INTERNAL_SERVER_ERROR, TEST_USER, "govuk_signin_journey_id")
+      new EVCSError(HttpCodesEnum.INTERNAL_SERVER_ERROR, TEST_USER, "govuk_signin_journey_id")
     );
     const result = handler(newEvent, {} as Context);
     await expect(result).resolves.toEqual({
@@ -367,7 +367,7 @@ describe("user-identity-handler authorization", () => {
     const auditIdentityRecordReadSpy = vi.spyOn(AuditModule, "auditIdentityRecordRead");
     const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
     (ValidateRecords.handleGetIdentityFromCredentialStore as Mock).mockRejectedValue(
-      new CredentialStoreError(HttpCodesEnum.NOT_FOUND, TEST_USER, "govuk_signin_journey_id")
+      new EVCSError(HttpCodesEnum.NOT_FOUND, TEST_USER, "govuk_signin_journey_id")
     );
     const result = handler(newEvent, {} as Context);
     await expect(result).resolves.toEqual({
@@ -529,7 +529,7 @@ describe("user-identity-handler max_vot", () => {
       credentials: [],
     });
 
-    const mockEVCSData: CredentialStoreIdentityResponse = {
+    const mockEVCSData: EVCSIdentityResponse = {
       si: {
         vc: storedIdentityRecordJwt,
         metadata: undefined,
@@ -555,7 +555,7 @@ describe("user-identity-handler max_vot", () => {
       credentials: [],
     });
 
-    const mockEVCSData: CredentialStoreIdentityResponse = {
+    const mockEVCSData: EVCSIdentityResponse = {
       si: {
         vc: storedIdentityRecordJwt,
         metadata: undefined,

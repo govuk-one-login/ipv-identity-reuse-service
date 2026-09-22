@@ -5,7 +5,7 @@ import {
   getPublicKeyJwkForKid,
   isValidDidWeb,
   resolver,
-} from "../did-resolution-service.js";
+} from "../did-resolution-api.js";
 import { DIDDocument, DIDResolutionResult, JsonWebKey as DidJsonWebKey } from "did-resolver";
 import { vi, describe, it, beforeEach, expect } from "vitest";
 
