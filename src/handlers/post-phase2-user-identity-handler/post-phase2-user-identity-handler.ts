@@ -6,21 +6,24 @@ import { HttpCodesEnum } from "../../commons/constants.js";
 import { getJwtBody } from "../../commons/jwt-utilities.js";
 import logger from "../../commons/logger.js";
 import { EVCSIdentityResponse, parseCurrentVerifiableCredentials } from "../../api/evcs-api.js";
-import { calculateVot } from "../../identity-reuse/calculate-vot.js";
-import { getFraudVc } from "../../identity-reuse/fraud-check-service.js";
-import { hasIdentityExpired } from "../../identity-reuse/identity-expiry-service.js";
-import { VerifiableCredentialJWT } from "../../identity-reuse/verifiable-credential-jwt.js";
+import { calculateVot } from "../../domain/stored-identity/calculate-vot.js";
+import { getFraudVc } from "../../domain/verifiable-credential/fraud-check-service.js";
+import { hasIdentityExpired } from "../../domain/verifiable-credential/identity-expiry-service.js";
+import { VerifiableCredentialJWT } from "../../domain/verifiable-credential/verifiable-credential-types.js";
 import { UserIdentityRequest } from "./post-phase2-user-identity-request.js";
-import { StoredIdentityJWT } from "./stored-identity-jwt.js";
-import { StoredIdentityVectorOfTrust, UserIdentityResponse } from "./post-phase2-user-identity-response.js";
+import {
+  StoredIdentityRecord,
+  StoredIdentityVectorOfTrust,
+} from "../../domain/stored-identity/stored-identity-types.js";
+import { UserIdentityResponse } from "./post-phase2-user-identity-response.js";
 import { getProperty } from "../../commons/case-insensitive-header-utilities.js";
 import {
   getUserIdFromJwt,
   handleGetIdentityFromCredentialStore,
   createErrorResponse,
   createAndLogErrorResponse,
-  validateIdentityRecords,
-} from "../../commons/validate-records.js";
+  validateStoredIdentity,
+} from "../../domain/stored-identity/stored-identity-validator.js";
 import { EVCSError } from "../../commons/errors.js";
 import { VotEnum } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_READ.js";
 import { ResponseBody } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_RETURNED.js";
@@ -81,8 +84,8 @@ const createSuccessResponse = async (
   const configuration = await getConfiguration();
   const currentVcs: VerifiableCredentialJWT[] = parseCurrentVerifiableCredentials(identityResponse);
   const fraudVc = getFraudVc(currentVcs, configuration.fraudIssuer);
-  const content = getJwtBody<StoredIdentityJWT>(identityResponse.si.vc);
-  const { kidValid, signatureValid, isValid } = await validateIdentityRecords(identityResponse);
+  const content = getJwtBody<StoredIdentityRecord>(identityResponse.si.vc);
+  const { kidValid, signatureValid, isValid } = await validateStoredIdentity(identityResponse);
   const vot: StoredIdentityVectorOfTrust = calculateVot(content, identityResponse.si.unsignedVot, vtr);
   const vtm = `https://oidc.account.gov.uk/trustmark`;
   const maxVot = (content.max_vot || identityResponse.si.unsignedVot) as VotEnum;

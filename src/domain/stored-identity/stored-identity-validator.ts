@@ -1,19 +1,20 @@
-import { getConfiguration } from "./configuration.js";
-import * as didResolutionService from "../api/did-resolution-api.js";
+import { getConfiguration } from "../../commons/configuration.js";
+import * as didResolutionService from "../../api/did-resolution-api.js";
 import { jwtVerify } from "jose";
-import logger from "./logger.js";
-import { EVCSIdentityResponse, getIdentityFromEVCS } from "../api/evcs-api.js";
-import { getJwtBody, getJwtHeader } from "./jwt-utilities.js";
-import { HttpCodesEnum } from "./constants.js";
+import logger from "../../commons/logger.js";
+import { EVCSIdentityResponse, getIdentityFromEVCS } from "../../api/evcs-api.js";
+import { getJwtBody, getJwtHeader } from "../../commons/jwt-utilities.js";
+import { HttpCodesEnum } from "../../commons/constants.js";
 import { APIGatewayProxyResult } from "aws-lambda";
-import { EVCSError, StoredIdentityValidationError, TokenValidationError } from "./errors.js";
-import { UserIdentityErrorResponse } from "../handlers/post-phase2-user-identity-handler/post-phase2-user-identity-error-response.js";
-import { auditIdentityRecordRead, auditIdentityRecordReturned } from "./audit.js";
+import { EVCSError, StoredIdentityValidationError, TokenValidationError } from "../../commons/errors.js";
+import { UserIdentityErrorResponse } from "../../handlers/post-phase2-user-identity-handler/post-phase2-user-identity-error-response.js";
+import { auditIdentityRecordRead, auditIdentityRecordReturned } from "../../commons/audit.js";
 import {
-  StoredIdentityJWT,
-  isStoredIdentityJWT,
-} from "../handlers/post-phase2-user-identity-handler/stored-identity-jwt.js";
-import { validateStoredIdentityCredentials } from "../identity-reuse/stored-identity-validator.js";
+  StoredIdentityRecord,
+  isStoredIdentityRecord,
+  StoredIdentityValidationResult,
+} from "./stored-identity-types.js";
+import { correlateCredentials } from "./credential-correlator.js";
 import { ErrorCodeEnum, ResponseBody } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_RETURNED.js";
 
 export const getUserIdFromJwt = (authorizationToken: string): string => {
@@ -70,19 +71,12 @@ const verifySignature = async (kid: string, jwt: string): Promise<boolean> => {
   return true;
 };
 
-export type RecordValidationResult = {
-  kidValid: boolean;
-  signatureValid: boolean;
-  isValid: boolean;
-  storedIdentityJwt: StoredIdentityJWT;
-};
-
-export const validateIdentityRecords = async (
+export const validateStoredIdentity = async (
   identityResponse: EVCSIdentityResponse
-): Promise<RecordValidationResult> => {
-  const content = getJwtBody<StoredIdentityJWT>(identityResponse.si.vc);
+): Promise<StoredIdentityValidationResult> => {
+  const content = getJwtBody<StoredIdentityRecord>(identityResponse.si.vc);
 
-  if (!isStoredIdentityJWT(content)) {
+  if (!isStoredIdentityRecord(content)) {
     logger.error("Stored identity JWT does not match expected format");
     throw new StoredIdentityValidationError();
   }
@@ -91,9 +85,9 @@ export const validateIdentityRecords = async (
   const currentVcsEncoded = identityResponse.vcs.map((vc) => vc.vc);
 
   const { kidValid, signatureValid } = await validateCryptography(kid, identityResponse);
-  const isValid = validateStoredIdentityCredentials(content, currentVcsEncoded);
+  const isValid = correlateCredentials(content, currentVcsEncoded);
 
-  return { kidValid, signatureValid, isValid, storedIdentityJwt: content };
+  return { kidValid, signatureValid, isValid, storedIdentityRecord: content };
 };
 
 export const createErrorResponse = (errorCode: HttpCodesEnum): APIGatewayProxyResult => {

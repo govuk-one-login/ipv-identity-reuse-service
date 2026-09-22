@@ -4,23 +4,25 @@ import path from "node:path";
 import logger from "../../commons/logger.js";
 import mainPageTemplate from "./index.njk";
 import { getCookieValues } from "../../commons/cookie-utilities.js";
-import { handleGetIdentityFromCredentialStore, validateIdentityRecords } from "../../commons/validate-records.js";
+import {
+  handleGetIdentityFromCredentialStore,
+  validateStoredIdentity,
+} from "../../domain/stored-identity/stored-identity-validator.js";
 import { getSessionDetails } from "../../api/oauth-internal-api.js";
 import { redirectToErrorPage } from "../../api/sis-api.js";
 import { EVCSError, StoredIdentityValidationError } from "../../commons/errors.js";
 import { HttpCodesEnum } from "../../commons/constants.js";
 import { extractUserDetails } from "./user-details-content.js";
 import translations from "../../../locales/en/translation.json" with { type: "json" };
-
 import { getConfiguration } from "../../commons/configuration.js";
 import { parseCurrentVerifiableCredentials, EVCSIdentityResponse } from "../../api/evcs-api.js";
-import { hasIdentityExpired } from "../../identity-reuse/identity-expiry-service.js";
-import { calculateVot } from "../../identity-reuse/calculate-vot.js";
-import { StoredIdentityJWT } from "../post-phase2-user-identity-handler/stored-identity-jwt.js";
 import { getJwtBody } from "../../commons/jwt-utilities.js";
 import { Metrics } from "@aws-lambda-powertools/metrics";
 import { MetricDimension, MetricName } from "../../commons/metric-enum.js";
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
+import { calculateVot } from "../../domain/stored-identity/calculate-vot.js";
+import { StoredIdentityRecord } from "../../domain/stored-identity/stored-identity-types.js";
+import { hasIdentityExpired } from "../../domain/verifiable-credential/identity-expiry-service.js";
 
 const govukFrontendDistribution = path.join(path.dirname(require.resolve("govuk-frontend/package.json")), "dist");
 const nunjucksEnvironment = nunjucks.configure([
@@ -52,7 +54,7 @@ const validateUserIdentity = async (
   const configuration = await getConfiguration();
   const currentVcs = parseCurrentVerifiableCredentials(identityResponse);
   const { expired, fraudExpired, drivingLicenceExpired } = hasIdentityExpired(currentVcs, configuration);
-  const content = getJwtBody<StoredIdentityJWT>(identityResponse.si.vc);
+  const content = getJwtBody<StoredIdentityRecord>(identityResponse.si.vc);
   const vot = calculateVot(content, identityResponse.si.unsignedVot, vtr);
   const votSufficient = vot !== "P0";
 
@@ -101,9 +103,9 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
     }
 
     const identityResponse = await handleGetIdentityFromCredentialStore(`Bearer ${storageAccessToken}`, subject);
-    const { kidValid, signatureValid, isValid, storedIdentityJwt } = await validateIdentityRecords(identityResponse);
+    const { kidValid, signatureValid, isValid, storedIdentityRecord } = await validateStoredIdentity(identityResponse);
 
-    if (!kidValid || !signatureValid || !isValid || !storedIdentityJwt) {
+    if (!kidValid || !signatureValid || !isValid || !storedIdentityRecord) {
       logger.error("Record validation failed for existing user", { kidValid, signatureValid, isValid });
       return {
         statusCode: 500,
@@ -117,7 +119,7 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
       return redirectToErrorPage(domainName);
     }
 
-    const userDetails = extractUserDetails(storedIdentityJwt);
+    const userDetails = extractUserDetails(storedIdentityRecord);
 
     return {
       statusCode: 200,
