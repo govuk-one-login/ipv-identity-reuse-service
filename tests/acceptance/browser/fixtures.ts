@@ -5,7 +5,6 @@ import { ConfirmDetailsPage } from "./pages/confirm-details.page.js";
 import { IdentityResponsePage } from "./pages/identity-response.page.js";
 import { OrchestrationStubPage } from "./pages/orchestration-stub.page.js";
 import { UnrecoverableErrorPage } from "./pages/unrecoverable-error.page.js";
-import { SHARED_DEV_SIS, sisBaseUrl } from "./support/environment.js";
 
 const HAR_FILENAME = "network.har";
 
@@ -17,27 +16,6 @@ type ReuseJourneyPages = {
 };
 
 export const test = base.extend<ReuseJourneyPages>({
-  page: async ({ page, baseURL }, use) => {
-    const sis = await sisBaseUrl();
-
-    if (sis !== SHARED_DEV_SIS) {
-      await page.route(`${baseURL}/authorize`, async (route) => {
-        const response = await route.fetch({ maxRedirects: 0 });
-        const headers = response.headers();
-        const location = headers["location"];
-
-        if (location?.startsWith(SHARED_DEV_SIS)) {
-          const { pathname, search } = new URL(location);
-          headers["location"] = `${sis}${pathname}${search}`;
-        }
-
-        await route.fulfill({ response, headers });
-      });
-    }
-
-    await use(page);
-  },
-
   contextOptions: async ({ contextOptions }, use, testInfo) => {
     const harPath = testInfo.outputPath(HAR_FILENAME);
 

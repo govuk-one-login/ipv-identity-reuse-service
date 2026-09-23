@@ -1,5 +1,5 @@
 import { defineConfig, devices, type ReporterDescription } from "@playwright/test";
-import { SHARED_DEV_STUB } from "./tests/acceptance/browser/support/environment.js";
+import { getOrchestrationStubUrl } from "./tests/acceptance/shared/utils/ssm-utilities.js";
 
 const isCI = !!process.env.CI;
 const testBaseDirectory = process.env.TEST_SRC_DIR || "./tests/acceptance";
@@ -29,7 +29,7 @@ export default defineConfig({
   reporter: reporters,
 
   use: {
-    baseURL: SHARED_DEV_STUB,
+    baseURL: await getOrchestrationStubUrl(),
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
