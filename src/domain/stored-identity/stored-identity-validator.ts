@@ -6,7 +6,7 @@ import { EVCSIdentityResponse, getIdentityFromEVCS } from "../../api/evcs-api.js
 import { getJwtBody, getJwtHeader } from "../../commons/jwt-utilities.js";
 import { HttpCodesEnum } from "../../commons/constants.js";
 import { APIGatewayProxyResult } from "aws-lambda";
-import { EVCSError, StoredIdentityValidationError, TokenValidationError } from "../../commons/errors.js";
+import { EVCSError, TokenValidationError } from "../../commons/errors.js";
 import { UserIdentityErrorResponse } from "../../handlers/post-phase2-user-identity-handler/post-phase2-user-identity-types.js";
 import { auditIdentityRecordRead, auditIdentityRecordReturned } from "../../commons/audit.js";
 import {
@@ -74,18 +74,16 @@ const verifySignature = async (kid: string, jwt: string): Promise<boolean> => {
 export const validateStoredIdentity = async (
   identityResponse: EVCSIdentityResponse
 ): Promise<StoredIdentityValidationResult> => {
-  const content = getJwtBody<StoredIdentityRecord>(identityResponse.si.vc);
-
-  if (!isStoredIdentityRecord(content)) {
-    logger.error("Stored identity JWT does not match expected format");
-    throw new StoredIdentityValidationError();
-  }
-
   const kid = getJwtHeader(identityResponse.si.vc).kid || "";
-  const currentVcsEncoded = identityResponse.vcs.map((vc) => vc.vc);
 
   const { kidValid, signatureValid } = await validateCryptography(kid, identityResponse);
-  const isValid = correlateCredentials(content, currentVcsEncoded);
+
+  const content = getJwtBody<StoredIdentityRecord>(identityResponse.si.vc);
+
+  const isValidStoredIdentityObject = isStoredIdentityRecord(content);
+  if (!isValidStoredIdentityObject) logger.error("Stored identity JWT does not match expected format");
+  const currentVcsEncoded = identityResponse.vcs.map((vc) => vc.vc);
+  const isValid = isValidStoredIdentityObject && correlateCredentials(content, currentVcsEncoded);
 
   return { kidValid, signatureValid, isValid, storedIdentityRecord: content };
 };
