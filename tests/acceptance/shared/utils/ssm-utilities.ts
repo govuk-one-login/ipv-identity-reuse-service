@@ -33,3 +33,7 @@ export const getSigningKeyId = async (): Promise<string> => {
   const keyArn = await getTestParameter("DidStubSigningKeyArn");
   return keyArn.split("/")[1];
 };
+
+export const getOrchestrationStubUrl = async (): Promise<string> => {
+  return await getTestParameter("OrchestrationStubUrl");
+};
