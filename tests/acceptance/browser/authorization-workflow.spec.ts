@@ -62,7 +62,7 @@ test.describe("Authorization workflow", () => {
     sisPrivateUrl = await sisPrivateApiUrl();
   });
 
-  test("takes the user from the stub to the confirm details page", async ({
+  test("takes the user, with a valid identity, from orchestration to the confirm your details page and back the stub", async ({
     page,
     orchestrationStub,
     confirmDetails,
@@ -89,12 +89,16 @@ test.describe("Authorization workflow", () => {
     await orchestrationStub.setPublicUrl(sisPublicUrl);
     await orchestrationStub.setPrivateUrl(sisPrivateUrl);
     await orchestrationStub.setUserId(userId);
+    await orchestrationStub.uncheckCreateIdentity();
     await orchestrationStub.continue();
 
     await expect(confirmDetails.heading).toBeVisible();
     await expect(page).toHaveURL((url) => {
       return url.pathname === ConfirmDetailsPage.path;
     });
+    await expect(confirmDetails.fullNameValue).toHaveText("KENNETH DECERQUEIRA");
+    await expect(confirmDetails.dateOfBirthValue).toHaveText("8 July 1965");
+    await expect(confirmDetails.addressValue).toContainText("8, HADLEY ROAD");
 
     await confirmDetails.continue();
     await expect(identityResponse.heading).toBeVisible();

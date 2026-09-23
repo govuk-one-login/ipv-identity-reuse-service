@@ -8,8 +8,6 @@ if [ ! -d "${TEST_REPORT_ABSOLUTE_DIR}" ]; then
 fi
 
 echo "Test reports will be written to ${TEST_REPORT_ABSOLUTE_DIR}"
-echo "Installing browser..."
-./node_modules/.bin/playwright install chromium
 
 echo Running browser tests...
 cd /app

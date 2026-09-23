@@ -248,6 +248,14 @@ Conditions:
       - Fn::Equals: [!Ref Environment, "local"]
       - Fn::Equals: [!Ref Environment, "dev"]
 
+  IsDevAndNotMain:
+    Fn::And:
+      - Fn::Or:
+        - Fn::Equals: [!Ref Environment, "local"]
+        - Fn::Equals: [!Ref Environment, "dev"]
+      - Fn::Not:
+        - Fn::Equals: [!Ref AWS::StackName, "sis-main"]
+
   IsNotDev: !Not [!Condition IsDev]
 
   IsNotDevOrBuild: !Not [!Condition IsDevOrBuild]
@@ -2670,7 +2678,7 @@ Outputs:
   ApiEndpoint:
     Description: The URL of the Stored Identity Service API
     Value: !If
-      - IsDev
+      - IsDevAndNotMain
       - !Sub "https://${DevPrivateRestApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"
       - !Sub "https://${PrivateRestApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"
 
@@ -2712,6 +2720,6 @@ Outputs:
     Condition: IsDevOrBuild
     Description: "URL for the Stored Identity Service Private API (development)"
     Value: !If
-      - IsDev
+      - IsDevAndNotMain
       - !Sub "https://${PrivateApiDev}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"
       - !Sub "https://${PrivateApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}"
