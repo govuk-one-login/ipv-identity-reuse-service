@@ -36,12 +36,6 @@ describe("isStoredIdentityRecord", () => {
     expect(isStoredIdentityRecord(jwt)).toBe(false);
   });
 
-  it("should return false when vtm is missing", () => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { vtm, ...jwt } = validJwt();
-    expect(isStoredIdentityRecord(jwt)).toBe(false);
-  });
-
   it("should return false when claims is missing", () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { claims, ...jwt } = validJwt();

@@ -36,7 +36,6 @@ export const isStoredIdentityRecord = (value: unknown): value is StoredIdentityR
     typeof storedIdentityRecordObject.sub !== "string" ||
     !Array.isArray(storedIdentityRecordObject.credentials) ||
     typeof storedIdentityRecordObject.vot !== "string" ||
-    typeof storedIdentityRecordObject.vtm !== "string" ||
     typeof storedIdentityRecordObject.claims !== "object" ||
     storedIdentityRecordObject.claims === null
   ) {
