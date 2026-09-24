@@ -116,7 +116,16 @@ it("should call the /api/authorisation fetch and return the AuthorizationResult 
 });
 
 it("should return redirect_uri and state without authorizationCode when the /api/authorization API call returns 403", async () => {
-  const mockResponse = Response.json({}, { status: 403 });
+  const mockResponse = Response.json(
+    {
+      message: "record_unavailable",
+      code: "access_denied",
+      errorSummary: "access_denied: record_unavailable",
+      redirectionUri: "https://test-uri.com",
+      state: "test-state",
+    },
+    { status: 403 }
+  );
   vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
 
   const response = await getAuthorizationCode(
@@ -140,9 +149,26 @@ it("should return redirect_uri and state without authorizationCode when the /api
   expect(response.redirect_uri).toEqual("https://test-uri.com/");
   expect(response.state).toEqual("test-state");
   expect(response.authorizationCode).toBeUndefined();
+  expect(response.message).toEqual("record_unavailable");
+  expect(response.code).toEqual("access_denied");
 });
 
-it("should throw an error when the call to the /api/authorisation returns an empty state object", async () => {
+it("should throw an error when the /api/authorization returns 403 with missing required fields", async () => {
+  const mockResponse = Response.json(
+    {
+      message: "record_unavailable",
+    },
+    { status: 403 }
+  );
+
+  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+  await expect(
+    getAuthorizationCode("test-client-id", "https://test-uri.com", "test-state", "test-session-id")
+  ).rejects.toThrow("Invalid response properties received from authorization error response");
+});
+
+it("should throw an error when the call to the /api/authorization returns an empty state object", async () => {
   const mockResponse = Response.json(
     {
       redirectionURI: "https://api.example.com",

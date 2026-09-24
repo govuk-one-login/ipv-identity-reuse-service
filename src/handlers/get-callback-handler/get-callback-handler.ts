@@ -30,13 +30,13 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       sessionId
     );
 
-    return responseFromAuthorizeEndpoint.authorizationCode
-      ? redirectToClient(
-          responseFromAuthorizeEndpoint.redirect_uri,
-          responseFromAuthorizeEndpoint.state,
-          responseFromAuthorizeEndpoint.authorizationCode
-        )
-      : redirectToClient(responseFromAuthorizeEndpoint.redirect_uri, responseFromAuthorizeEndpoint.state);
+    return redirectToClient({
+      redirectUri: responseFromAuthorizeEndpoint.redirect_uri,
+      state: responseFromAuthorizeEndpoint.state,
+      authorizationCode: responseFromAuthorizeEndpoint.authorizationCode,
+      errorDescription: responseFromAuthorizeEndpoint.message,
+      error: responseFromAuthorizeEndpoint.code,
+    });
   } catch (error) {
     logger.error(`Error in OAuth Callback handler event: ${error}`);
     return redirectToErrorPage(domainName);

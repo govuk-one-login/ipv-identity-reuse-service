@@ -49,7 +49,11 @@ it("should redirect to confirm details page", async () => {
 });
 
 it("should redirect to the client page", async () => {
-  const result = redirectToClient("https://api.example.com", "test-state", "test-auth-code");
+  const result = redirectToClient({
+    redirectUri: "https://api.example.com",
+    state: "test-state",
+    authorizationCode: "test-auth-code",
+  });
   expect(result).toEqual({
     statusCode: 302,
     headers: {
@@ -60,11 +64,16 @@ it("should redirect to the client page", async () => {
 });
 
 it("should redirect to the client page with an error", async () => {
-  const result = redirectToClient("https://api.example.com", "test-state");
+  const result = redirectToClient({
+    redirectUri: "https://api.example.com",
+    state: "test-state",
+    errorDescription: "record_unavailable",
+    error: "access_denied",
+  });
   expect(result).toEqual({
     statusCode: 302,
     headers: {
-      Location: "https://api.example.com/?error=access_denied&state=test-state",
+      Location: "https://api.example.com/?error=access_denied&error_description=record_unavailable&state=test-state",
     },
     body: "",
   });

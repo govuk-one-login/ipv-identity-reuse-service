@@ -19,6 +19,8 @@ type AuthorizationResult = {
   authorizationCode?: string;
   redirect_uri: string;
   state: string;
+  message?: string;
+  code?: string;
 };
 
 export class CreateSessionError extends Error {
@@ -100,10 +102,16 @@ export async function getAuthorizationCode(
       state: authorizationData.state.value,
     };
   } else if (responseFromAuthorizeEndpoint.status === 403) {
-    const orchestrationRedirectUrl = new URL(redirectUri);
+    const errorData = await responseFromAuthorizeEndpoint.json();
+    if (!isValidAuthorizationErrorResponse(errorData)) {
+      throw new Error("Invalid response properties received from authorization error response");
+    }
+    const orchestrationRedirectUrl = new URL(errorData.redirectionUri);
     return {
       redirect_uri: orchestrationRedirectUrl.href,
-      state: state,
+      state: errorData.state,
+      message: errorData.message,
+      code: errorData.code,
     };
   } else {
     logger.error(`${responseFromAuthorizeEndpoint.status} response code returned from the authorization endpoint`);
@@ -145,6 +153,13 @@ interface AuthorizationSuccessResponse {
   state: { value: string };
 }
 
+interface AuthorizationErrorResponse {
+  redirectionUri: string;
+  state: string;
+  message: string;
+  code: string;
+}
+
 interface SessionSuccessResponse {
   session_id: string;
   state: string;
@@ -167,6 +182,15 @@ function isValidAuthorizationSuccessResponse(object: unknown): object is Authori
     hasNonEmptyString(object, "redirectionURI") &&
     hasObjectWithNonEmptyValue(object, "authorizationCode") &&
     hasObjectWithNonEmptyValue(object, "state")
+  );
+}
+
+function isValidAuthorizationErrorResponse(object: unknown): object is AuthorizationErrorResponse {
+  if (!object || typeof object !== "object") return false;
+  return (
+    hasNonEmptyString(object, "redirectionUri") &&
+    hasNonEmptyString(object, "state") &&
+    hasNonEmptyString(object, "code")
   );
 }
 
