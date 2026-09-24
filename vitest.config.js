@@ -17,7 +17,7 @@ export default defineConfig({
     },
   ],
   test: {
-    exclude: ["**/node_modules/**", "**/.git/**", "src/tests/contract-tests", "tests/acceptance/browser"],
+    exclude: ["**/node_modules/**", "**/.git/**", "src/tests/contract-tests", "tests/acceptance/browser", "tests/shared"],
     setupFiles: ["setup-vitest.ts"],
     coverage: {
       reporter: ["text", "lcov"],

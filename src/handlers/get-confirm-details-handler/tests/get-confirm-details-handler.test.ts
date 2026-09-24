@@ -55,6 +55,7 @@ vi.mock("../../../api/oauth-internal-api", () => ({
     subject: "user-sub",
     vtr: ["P2"],
   }),
+  updateSessionData: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("../../../commons/cookie-utilities", () => ({

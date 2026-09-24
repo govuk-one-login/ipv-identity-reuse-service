@@ -17,7 +17,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
   }
 
   const sessionId = getCookieValues(event)?.get("identity_reuse_service_session");
-
   if (!sessionId) {
     return redirectToErrorPage(domainName);
   }
@@ -30,6 +29,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       sessionId
     );
 
+<<<<<<< HEAD
     return redirectToClient({
       redirectUri: responseFromAuthorizeEndpoint.redirect_uri,
       state: responseFromAuthorizeEndpoint.state,
@@ -37,6 +37,13 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       errorDescription: responseFromAuthorizeEndpoint.message,
       error: responseFromAuthorizeEndpoint.code,
     });
+=======
+    return redirectToClient(
+      responseFromAuthorizeEndpoint.redirect_uri,
+      responseFromAuthorizeEndpoint.state,
+      responseFromAuthorizeEndpoint.authorizationCode
+    );
+>>>>>>> 8d1e1cd (SPT-1912: Updated unit tests and refactored)
   } catch (error) {
     logger.error(`Error in OAuth Callback handler event: ${error}`);
     return redirectToErrorPage(domainName);

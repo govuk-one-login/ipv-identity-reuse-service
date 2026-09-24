@@ -40,14 +40,14 @@ export type EVCSIdentityResponse = {
 
 interface StoredIdentityObject {
   vc: string;
-  metadata: Metadata | string | undefined;
+  metadata?: Metadata | string;
   unsignedVot: IdentityVectorOfTrust;
 }
 
 export interface VerifiableCredentialObject {
   state: string;
   vc: string;
-  metadata: Metadata | string | undefined;
+  metadata?: Metadata | string;
   signature?: string;
 }
 

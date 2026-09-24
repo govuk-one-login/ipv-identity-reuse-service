@@ -8,7 +8,7 @@ import {
   handleGetIdentityFromCredentialStore,
   validateStoredIdentity,
 } from "../../domain/stored-identity/stored-identity-validator.js";
-import { getSessionDetails } from "../../api/oauth-internal-api.js";
+import { getSessionDetails, updateSessionData } from "../../api/oauth-internal-api.js";
 import { redirectToErrorPage } from "../../api/sis-api.js";
 import { EVCSError, StoredIdentityValidationError } from "../../commons/errors.js";
 import { HttpCodesEnum } from "../../commons/constants.js";
@@ -22,6 +22,8 @@ import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.j
 import { calculateVot } from "../../domain/stored-identity/calculate-vot.js";
 import { StoredIdentityRecord } from "../../domain/stored-identity/stored-identity-types.js";
 import { hasIdentityExpired } from "../../domain/verifiable-credential/identity-expiry-service.js";
+import { ConfirmDetailsQueryStringParameters } from "./get-confirm-details-handler-types.js";
+import { createStoredIdentityHash } from "../../domain/stored-identity/stored-identity-hashing.js";
 
 const govukFrontendDistribution = path.join(path.dirname(require.resolve("govuk-frontend/package.json")), "dist");
 const nunjucksEnvironment = nunjucks.configure([
@@ -38,42 +40,7 @@ nunjucksEnvironment.addFilter("GDSDate", (dateString: string) => {
   });
 });
 
-export type ConfirmDetailsQueryStringParameters = {
-  redirect_uri: string;
-  client_id: string;
-  state: string;
-};
-
 const metrics = new Metrics();
-
-const validateUserIdentity = async (
-  identityResponse: EVCSIdentityResponse,
-  vtr: IdentityVectorOfTrust[]
-): Promise<boolean> => {
-  const { expired, fraudExpired, drivingLicenceExpired } = await hasIdentityExpired(
-    identityResponse.vcs.map((vcObject) => vcObject.vc)
-  );
-  const content = getJwtBody<StoredIdentityRecord>(identityResponse.si.vc);
-  const vot = calculateVot(content, identityResponse.si.unsignedVot, vtr);
-  const votSufficient = vot !== "P0";
-
-  metrics.addDimensions({
-    [MetricDimension.FraudCheckExpired]: fraudExpired ? "fail" : "pass",
-    [MetricDimension.DrivingLicenceExpired]: drivingLicenceExpired ? "fail" : "pass",
-    [MetricDimension.VotSufficient]: votSufficient ? "pass" : "fail",
-  });
-  metrics.addMetric(MetricName.IdentityReuseValidation, "Count", 1);
-  metrics.publishStoredMetrics();
-
-  if (expired) {
-    logger.error("User identity expired");
-  }
-  if (!votSufficient) {
-    logger.error("Identity does not meet required level of confidence", { vtr });
-  }
-
-  return !expired && votSufficient;
-};
 
 export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const { redirect_uri, client_id, state } = event.queryStringParameters as ConfirmDetailsQueryStringParameters;
@@ -113,10 +80,11 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
     }
 
     const identityReuseValid = await validateUserIdentity(identityResponse, vtr);
-
     if (!identityReuseValid) {
       return redirectToErrorPage(domainName);
     }
+
+    await sessionStoreHashedStoredIdentity(sessionId, identityResponse);
 
     const userDetails = extractUserDetails(storedIdentityRecord);
 
@@ -151,4 +119,38 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
       body: "",
     };
   }
+};
+
+const validateUserIdentity = async (
+  identityResponse: EVCSIdentityResponse,
+  vtr: IdentityVectorOfTrust[]
+): Promise<boolean> => {
+  const { expired, fraudExpired, drivingLicenceExpired } = await hasIdentityExpired(
+    identityResponse.vcs.map((vcObject) => vcObject.vc)
+  );
+  const content = getJwtBody<StoredIdentityRecord>(identityResponse.si.vc);
+  const vot = calculateVot(content, identityResponse.si.unsignedVot, vtr);
+  const votSufficient = vot !== "P0";
+
+  metrics.addDimensions({
+    [MetricDimension.FraudCheckExpired]: fraudExpired ? "fail" : "pass",
+    [MetricDimension.DrivingLicenceExpired]: drivingLicenceExpired ? "fail" : "pass",
+    [MetricDimension.VotSufficient]: votSufficient ? "pass" : "fail",
+  });
+  metrics.addMetric(MetricName.IdentityReuseValidation, "Count", 1);
+  metrics.publishStoredMetrics();
+
+  if (expired) {
+    logger.error("User identity expired");
+  }
+  if (!votSufficient) {
+    logger.error("Identity does not meet required level of confidence", { vtr });
+  }
+
+  return !expired && votSufficient;
+};
+
+const sessionStoreHashedStoredIdentity = async (sessionId: string, identityResponse: EVCSIdentityResponse) => {
+  const hash = createStoredIdentityHash(identityResponse);
+  await updateSessionData(sessionId, { storedIdentitySha256: hash });
 };

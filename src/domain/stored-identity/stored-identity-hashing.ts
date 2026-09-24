@@ -1,4 +1,4 @@
-import { EVCSIdentityResponse } from "../../api/evcs-api.js";
+import type { EVCSIdentityResponse } from "../../api/evcs-api.js";
 import { createHash } from "node:crypto";
 import { compareStringAscending } from "../../commons/string-utilities.js";
 

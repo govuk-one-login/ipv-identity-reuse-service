@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="{{ rootPath | default("", true) }}/govuk-frontend.min.css">
     <base href="./confirm-details" />
 {% endblock %}
+
+{% block pageTitle %}{{ translations.pages.confirmDetails.title }}{% endblock %}
 {% block beforeContent %}
     {{ govukPhaseBanner({
         tag: {
