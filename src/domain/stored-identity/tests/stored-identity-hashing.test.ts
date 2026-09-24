@@ -37,9 +37,13 @@ describe("createStoredIdentityHash", () => {
   });
 
   it("should produce a different hash when different vot", () => {
-    const response: EVCSIdentityResponse = { ...BASE_TEST_RESPONSE, si: {
-      ...BASE_TEST_RESPONSE.si, unsignedVot: "P2",
-    } };
+    const response: EVCSIdentityResponse = {
+      ...BASE_TEST_RESPONSE,
+      si: {
+        ...BASE_TEST_RESPONSE.si,
+        unsignedVot: "P2",
+      },
+    };
     expect(createStoredIdentityHash(response)).toEqual(
       "ffe84162fdbabd8c86e49bad2d46beeaa9df75adf7330e7ed7cf6bcecddb5f1d"
     );

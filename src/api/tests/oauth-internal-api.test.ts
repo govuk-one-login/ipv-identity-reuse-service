@@ -1,7 +1,6 @@
-import { afterEach, beforeEach, expect, it, vitest } from "vitest";
+import { afterEach, beforeEach, expect, it, vitest, describe } from "vitest";
 import { callSessionApi, getAuthorizationCode, getSessionDetails, updateSessionData } from "../oauth-internal-api.js";
 import { URL } from "node:url";
-import { describe } from "node:test";
 
 const { mockError } = vitest.hoisted(() => {
   return {
@@ -438,6 +437,7 @@ describe("getSessionDetails", () => {
 
 describe("updateSessionData", () => {
   it("should create a request with the correct values", async () => {
+    // eslint-disable-next-line unicorn/no-null
     const mockResponse = Response.json(null, { status: 200 });
 
     vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
@@ -459,11 +459,12 @@ describe("updateSessionData", () => {
   });
 
   it("should throw an Error if the endpoint fails", async () => {
+    // eslint-disable-next-line unicorn/no-null
     const mockResponse = Response.json(null, { status: 403 });
 
     vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
 
-    await expect(async () => await updateSessionData("session-1234", { foo: "bar" })).rejects.toThrow(
+    await expect(updateSessionData("session-1234", { foo: "bar" })).rejects.toThrow(
       "POST session endpoint returned an error response"
     );
 

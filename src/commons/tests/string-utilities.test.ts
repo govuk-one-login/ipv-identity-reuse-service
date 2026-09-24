@@ -20,6 +20,7 @@ describe("getString", () => {
   });
 
   it("should return undefined when given undefined", () => {
+    // eslint-disable-next-line unicorn/no-useless-undefined -- Parameter required
     expect(getString(undefined)).toBeUndefined();
   });
 });

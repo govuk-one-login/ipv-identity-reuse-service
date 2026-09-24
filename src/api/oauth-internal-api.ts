@@ -27,20 +27,20 @@ type AuthorizationSuccessResponse = {
   redirectionURI: string;
   authorizationCode: { value: string };
   state: { value: string };
-}
+};
 
 type AuthorizationErrorResponse = {
   redirectionUri: string;
   state: string;
   message: string;
   code: string;
-}
+};
 
 type SessionSuccessResponse = {
   session_id: string;
   state: string;
   redirect_uri: string;
-}
+};
 
 type GetSessionSuccessResponse = {
   vtr?: IdentityVectorOfTrust[];
@@ -50,7 +50,7 @@ type GetSessionSuccessResponse = {
   subject: string;
   context?: string;
   sessionData?: object;
-}
+};
 
 export class CreateSessionError extends Error {
   constructor(message: string) {
@@ -193,7 +193,7 @@ export async function updateSessionData(sessionId: string, data: Record<string, 
     logger.error(`POST session handler returned non-200 status: ${responseFromSessionEndpoint.status}`);
     throw new Error("POST session endpoint returned an error response");
   }
-};
+}
 
 function isValidAuthorizationSuccessResponse(object: unknown): object is AuthorizationSuccessResponse {
   if (!object || typeof object !== "object") return false;
