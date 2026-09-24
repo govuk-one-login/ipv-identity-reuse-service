@@ -128,7 +128,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: "#/components/schemas/AuthorizationAccessDeniedError"
         "500":
           description: "500 response"
           content:
@@ -257,6 +257,26 @@ components:
       properties:
         message:
           type: "string"
+
+    AuthorizationAccessDeniedError:
+      title: "Authorization Access Denied Error Schema"
+      type: "object"
+      properties:
+        message:
+          type: "string"
+          example: "record_update_requested"
+        code:
+          type: "string"
+          example: "access_denied"
+        errorSummary:
+          type: "string"
+          example: "access_denied: record_update_requested"
+        redirectionUri:
+          type: "string"
+          example: "https://orch.stubs.account.gov.uk/callback"
+        state:
+          type: "string"
+          example: "state"
 
 x-amazon-apigateway-request-validators:
   ALL:
