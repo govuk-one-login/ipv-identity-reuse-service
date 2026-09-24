@@ -23,6 +23,8 @@ updates:
         dependency-type: "production"
         patterns:
           - "*"
+        exclude-patterns:
+          - "govuk-frontend"
       development-dependencies:
         dependency-type: "development"
         patterns:
@@ -38,6 +40,10 @@ updates:
         dependency-type: "development"
         patterns:
           - "typescript"
+      frontend:
+        dependency-type: "production"
+        patterns:
+          - "govuk-frontend"
 
   - package-ecosystem: "github-actions"
     # Workflow files stored in the default location of `.github/workflows`
