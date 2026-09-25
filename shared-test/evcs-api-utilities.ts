@@ -34,7 +34,7 @@ export const createSignedIdentityCheckCredentialJWT = async (issuer: string, nbf
   });
 };
 
-export const createCredentialStoreIdentityResponseWithStates = async (
+const createCredentialStoreIdentityResponseWithStates = async (
   credentialsAndStates: { signedVc: string; state: string }[],
   header: JWTHeaderParameters = getDefaultJwtHeader(),
   forcedCredentialSignatures?: string[]
