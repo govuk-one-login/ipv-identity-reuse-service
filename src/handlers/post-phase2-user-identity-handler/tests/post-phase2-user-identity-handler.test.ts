@@ -13,11 +13,11 @@ import logger from "../../../commons/logger.js";
 import { beforeEach, describe, expect, it, Mock, vi } from "vitest";
 import {
   createCredentialStoreIdentityResponse,
-  createCredentialStoreIdentityResponseWithStates,
   createSignedIdentityCheckCredentialJWT,
 } from "../../../../shared-test/evcs-api-utilities.js";
 import { EVCSError, TokenValidationError } from "../../../commons/errors.js";
 import { EVCSIdentityResponse } from "../../../api/evcs-api.js";
+import { VerifiableCredentialJWT } from "../../../domain/verifiable-credential/verifiable-credential-types.js";
 
 vi.mock("../../../commons/logger");
 vi.mock("../../../commons/audit");
@@ -28,13 +28,9 @@ vi.mock("../../../domain/stored-identity/stored-identity-validator", async (impo
   validateStoredIdentity: vi.fn(),
 }));
 
-const CURRENT = "CURRENT";
-const HISTORIC = "HISTORIC";
 const TEST_USER = "urn:fdc:gov.uk:2022:TEST_USER-S7jcrHLGBj-2kgB-8-cYhVrMdo3CV0LlD7An";
 const FRAUD_ISSUER = "fraudCRI";
 const PASSPORT_ISSUER = "passportCRI";
-
-const TEST_FRAUD_VALIDITY_DAYS: number = 180; // ~6 months
 
 const event = () => {
   return {
@@ -75,13 +71,12 @@ beforeEach(() => {
   vi.spyOn(configuration, "getConfiguration").mockResolvedValue({
     evcsApiUrl: "https://evcs.gov.uk",
     controllerAllowList: ["api.identity.dev.account.gov.uk"],
-    fraudIssuer: [FRAUD_ISSUER],
-    fraudValidityPeriod: TEST_FRAUD_VALIDITY_DAYS,
   } as Configuration);
-  vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue({
+  vi.spyOn(identityExpiryService, "hasIdentityExpired").mockResolvedValue({
     fraudExpired: false,
     drivingLicenceExpired: false,
     expired: false,
+    fraudVc: { nbf: Math.floor(Date.now() / 1000) } as VerifiableCredentialJWT,
   });
   (ValidateStoredIdentity.getUserIdFromJwt as Mock).mockReturnValue(TEST_USER);
   (ValidateStoredIdentity.validateStoredIdentity as Mock).mockResolvedValue({
@@ -401,88 +396,13 @@ describe("user-identity-handler authorization", () => {
   });
 });
 
-describe("user-identity-handler expired", () => {
-  const NOW: string = "2025-08-24T15:35:58.000Z";
-  const NOT_EXPIRED_NBF: string = "2025-02-26T16:30:04.000Z";
-  const EXPIRED_NBF: string = "2025-01-12T10:02:54.000Z";
-  const RANDOM_NBF: string = "2023-04-25T15:01:36.000Z";
-
-  beforeEach(() => {
-    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockRestore();
-    vi.setSystemTime(new Date(NOW));
-  });
-
-  it.each([
-    { fraudCheckInputs: [{ nbf: NOT_EXPIRED_NBF, state: CURRENT }], expectedExpired: false },
-    { fraudCheckInputs: [{ nbf: EXPIRED_NBF, state: CURRENT }], expectedExpired: true },
-    {
-      fraudCheckInputs: [
-        { nbf: NOT_EXPIRED_NBF, state: CURRENT },
-        { nbf: EXPIRED_NBF, state: HISTORIC },
-      ],
-      expectedExpired: false,
-    },
-    {
-      fraudCheckInputs: [
-        { nbf: EXPIRED_NBF, state: CURRENT },
-        { nbf: NOT_EXPIRED_NBF, state: HISTORIC },
-      ],
-      expectedExpired: true,
-    },
-  ])(`should set expired value based on NBF of CURRENT fraud check`, async ({ fraudCheckInputs, expectedExpired }) => {
-    const fraudChecks = await Promise.all(
-      fraudCheckInputs.map(async (input) => {
-        return { signedVc: await createSignedIdentityCheckCredentialJWT(FRAUD_ISSUER, input.nbf), state: input.state };
-      })
-    );
-    const passportCheck = await createSignedIdentityCheckCredentialJWT(PASSPORT_ISSUER, RANDOM_NBF);
-
-    const { mockEVCSData, credentialSignatures } = await createCredentialStoreIdentityResponseWithStates([
-      ...fraudChecks,
-      { signedVc: passportCheck, state: CURRENT },
-    ]);
-    (ValidateStoredIdentity.handleGetIdentityFromCredentialStore as Mock).mockResolvedValue(mockEVCSData);
-
-    const result = await handler(newEvent, {} as Context);
-
-    expect(result.statusCode).toBe(HttpCodesEnum.OK);
-    const body = JSON.parse(result.body) as UserIdentityResponse;
-    expect(body).toStrictEqual({
-      vot: "P3",
-      content: {
-        sub: "user-sub",
-        vot: "P2",
-        vtm: "https://oidc.account.gov.uk/trustmark",
-        credentials: credentialSignatures,
-        claims: {
-          "https://vocab.account.gov.uk/v1/coreIdentity": {
-            name: [
-              {
-                nameParts: [
-                  { type: "GivenName", value: "Test" },
-                  { type: "FamilyName", value: "User" },
-                ],
-              },
-            ],
-            birthDate: [{ value: "1990-01-01" }],
-          },
-          "https://vocab.account.gov.uk/v1/address": [{ streetName: "Test Street", postalCode: "TE1 1ST" }],
-        },
-      },
-      expired: expectedExpired,
-      isValid: true,
-      kidValid: true,
-      signatureValid: true,
-    });
-  });
-});
-
 describe("user-identity-handler expired field", () => {
   it("should set expired to true when hasIdentityExpired returns true", async () => {
-    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue({
+    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockResolvedValue({
       fraudExpired: true,
       drivingLicenceExpired: false,
       expired: true,
+      fraudVc: { nbf: 123_456 } as VerifiableCredentialJWT,
     });
 
     const { mockEVCSData } = await createCredentialStoreIdentityResponse([
@@ -499,10 +419,11 @@ describe("user-identity-handler expired field", () => {
   });
 
   it("should set expired to false when hasIdentityExpired returns false", async () => {
-    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue({
+    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockResolvedValue({
       fraudExpired: false,
       drivingLicenceExpired: false,
       expired: false,
+      fraudVc: { nbf: 123_456 } as VerifiableCredentialJWT,
     });
 
     const { mockEVCSData } = await createCredentialStoreIdentityResponse([

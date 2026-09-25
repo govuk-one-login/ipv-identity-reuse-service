@@ -1,6 +1,4 @@
 import { getConfiguration, getServiceApiKey } from "../commons/configuration.js";
-import { VerifiableCredentialJWT } from "../domain/verifiable-credential/verifiable-credential-types.js";
-import { getJwtBody } from "../commons/jwt-utilities.js";
 import logger from "../commons/logger.js";
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
 
@@ -32,14 +30,6 @@ export const invalidateIdentityInEVCS = async (userId: string): Promise<Response
       ...(apiKey && { "x-api-key": apiKey }),
     },
   });
-};
-
-export const parseCurrentVerifiableCredentials = (
-  identityResponse: EVCSIdentityResponse
-): VerifiableCredentialJWT[] => {
-  return identityResponse.vcs
-    .filter((encodedVcWithState) => encodedVcWithState.state === "CURRENT")
-    .map((encodedVcWithState) => getJwtBody<VerifiableCredentialJWT>(encodedVcWithState.vc));
 };
 
 export type EVCSIdentityResponse = {

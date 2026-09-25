@@ -12,7 +12,6 @@ import translations from "../../../../locales/en/translation.json" with { type: 
 import * as identityExpiryService from "../../../domain/verifiable-credential/identity-expiry-service.js";
 import * as calculateVotModule from "../../../domain/stored-identity/calculate-vot.js";
 import * as storedIdentityValidator from "../../../domain/stored-identity/stored-identity-validator.js";
-import * as evcsApi from "../../../api/evcs-api.js";
 import * as configuration from "../../../commons/configuration.js";
 import * as jwtUtilities from "../../../commons/jwt-utilities.js";
 import { EVCSIdentityResponse } from "../../../api/evcs-api.js";
@@ -108,8 +107,7 @@ beforeEach(() => {
     fraudIssuer: ["fraudCRI"],
     fraudValidityPeriod: 180,
   } as never);
-  vi.spyOn(evcsApi, "parseCurrentVerifiableCredentials").mockReturnValue([]);
-  vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue({
+  vi.spyOn(identityExpiryService, "hasIdentityExpired").mockResolvedValue({
     fraudExpired: false,
     drivingLicenceExpired: false,
     expired: false,
@@ -296,7 +294,7 @@ describe("handler record validation", () => {
 
 describe("combined expiry and VoT checks", () => {
   it("should redirect when both identity is expired and VoT is insufficient", async () => {
-    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue({
+    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockResolvedValue({
       fraudExpired: true,
       drivingLicenceExpired: true,
       expired: true,
@@ -315,7 +313,7 @@ describe("combined expiry and VoT checks", () => {
   });
 
   it("should redirect when only fraud check is expired but VoT is sufficient", async () => {
-    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue({
+    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockResolvedValue({
       fraudExpired: true,
       drivingLicenceExpired: false,
       expired: true,
@@ -334,7 +332,7 @@ describe("combined expiry and VoT checks", () => {
   });
 
   it("should redirect when only driving licence is expired but VoT is sufficient", async () => {
-    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue({
+    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockResolvedValue({
       fraudExpired: false,
       drivingLicenceExpired: true,
       expired: true,
@@ -353,7 +351,7 @@ describe("combined expiry and VoT checks", () => {
   });
 
   it("should redirect when only VoT is insufficient but identity is not expired", async () => {
-    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue({
+    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockResolvedValue({
       fraudExpired: false,
       drivingLicenceExpired: false,
       expired: false,
@@ -372,7 +370,7 @@ describe("combined expiry and VoT checks", () => {
   });
 
   it("should render confirm details page when neither check fails", async () => {
-    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue({
+    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockResolvedValue({
       fraudExpired: false,
       drivingLicenceExpired: false,
       expired: false,
@@ -386,7 +384,7 @@ describe("combined expiry and VoT checks", () => {
   });
 
   it("should always execute both checks before failing", async () => {
-    const hasIdentityExpiredSpy = vi.spyOn(identityExpiryService, "hasIdentityExpired").mockReturnValue({
+    const hasIdentityExpiredSpy = vi.spyOn(identityExpiryService, "hasIdentityExpired").mockResolvedValue({
       fraudExpired: true,
       drivingLicenceExpired: true,
       expired: true,

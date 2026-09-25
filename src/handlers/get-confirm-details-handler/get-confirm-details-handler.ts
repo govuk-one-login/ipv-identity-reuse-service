@@ -14,8 +14,7 @@ import { EVCSError, StoredIdentityValidationError } from "../../commons/errors.j
 import { HttpCodesEnum } from "../../commons/constants.js";
 import { extractUserDetails } from "./user-details-content.js";
 import translations from "../../../locales/en/translation.json" with { type: "json" };
-import { getConfiguration } from "../../commons/configuration.js";
-import { parseCurrentVerifiableCredentials, EVCSIdentityResponse } from "../../api/evcs-api.js";
+import { EVCSIdentityResponse } from "../../api/evcs-api.js";
 import { getJwtBody } from "../../commons/jwt-utilities.js";
 import { Metrics } from "@aws-lambda-powertools/metrics";
 import { MetricDimension, MetricName } from "../../commons/metric-enum.js";
@@ -51,9 +50,9 @@ const validateUserIdentity = async (
   identityResponse: EVCSIdentityResponse,
   vtr: IdentityVectorOfTrust[]
 ): Promise<boolean> => {
-  const configuration = await getConfiguration();
-  const currentVcs = parseCurrentVerifiableCredentials(identityResponse);
-  const { expired, fraudExpired, drivingLicenceExpired } = hasIdentityExpired(currentVcs, configuration);
+  const { expired, fraudExpired, drivingLicenceExpired } = await hasIdentityExpired(
+    identityResponse.vcs.map((vcObject) => vcObject.vc)
+  );
   const content = getJwtBody<StoredIdentityRecord>(identityResponse.si.vc);
   const vot = calculateVot(content, identityResponse.si.unsignedVot, vtr);
   const votSufficient = vot !== "P0";

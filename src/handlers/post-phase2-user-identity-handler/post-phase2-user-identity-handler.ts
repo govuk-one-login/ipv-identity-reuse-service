@@ -1,15 +1,12 @@
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
 import { auditIdentityRecordRead, auditIdentityRecordReturned } from "../../commons/audit.js";
-import { getConfiguration } from "../../commons/configuration.js";
 import { HttpCodesEnum } from "../../commons/constants.js";
 import { getJwtBody } from "../../commons/jwt-utilities.js";
 import logger from "../../commons/logger.js";
-import { EVCSIdentityResponse, parseCurrentVerifiableCredentials } from "../../api/evcs-api.js";
+import { EVCSIdentityResponse } from "../../api/evcs-api.js";
 import { calculateVot } from "../../domain/stored-identity/calculate-vot.js";
-import { getFraudVc } from "../../domain/verifiable-credential/fraud-check-service.js";
 import { hasIdentityExpired } from "../../domain/verifiable-credential/identity-expiry-service.js";
-import { VerifiableCredentialJWT } from "../../domain/verifiable-credential/verifiable-credential-types.js";
 import { UserIdentityRequest, UserIdentityResponse } from "./post-phase2-user-identity-types.js";
 import {
   StoredIdentityRecord,
@@ -80,14 +77,12 @@ const createSuccessResponse = async (
   userId: string,
   govukSigninJourneyId: string
 ): Promise<UserIdentityResponse> => {
-  const configuration = await getConfiguration();
-  const currentVcs: VerifiableCredentialJWT[] = parseCurrentVerifiableCredentials(identityResponse);
-  const fraudVc = getFraudVc(currentVcs, configuration.fraudIssuer);
   const content = getJwtBody<StoredIdentityRecord>(identityResponse.si.vc);
   const { kidValid, signatureValid, isValid } = await validateStoredIdentity(identityResponse);
   const vot: StoredIdentityVectorOfTrust = calculateVot(content, identityResponse.si.unsignedVot, vtr);
   const vtm = `https://oidc.account.gov.uk/trustmark`;
   const maxVot = (content.max_vot || identityResponse.si.unsignedVot) as VotEnum;
+  const { expired, fraudVc } = await hasIdentityExpired(identityResponse.vcs.map((vcObject) => vcObject.vc));
 
   await auditIdentityRecordRead(
     {
@@ -103,8 +98,6 @@ const createSuccessResponse = async (
   );
 
   delete content.max_vot;
-
-  const { expired } = hasIdentityExpired(currentVcs, configuration);
 
   const successResponse: UserIdentityResponse = {
     content: { ...content, vot, vtm },
