@@ -33,13 +33,26 @@ export function redirectToConfirmDetails({
   return redirect({ location: url.href, body: "", cookie: cookie });
 }
 
-export function redirectToClient(redirectUri: string, state: string, authorizationCode?: string) {
+export function redirectToClient({
+  redirectUri,
+  state,
+  authorizationCode,
+  errorDescription,
+  error,
+}: {
+  redirectUri: string;
+  state: string;
+  authorizationCode?: string;
+  errorDescription?: string;
+  error?: string;
+}) {
   const orchestrationRedirectUrl = new URL(redirectUri);
 
   if (authorizationCode) {
     orchestrationRedirectUrl.searchParams.append("code", authorizationCode);
   } else {
-    orchestrationRedirectUrl.searchParams.append("error", "access_denied");
+    orchestrationRedirectUrl.searchParams.append("error", error!);
+    orchestrationRedirectUrl.searchParams.append("error_description", errorDescription!);
   }
   orchestrationRedirectUrl.searchParams.append("state", state);
 

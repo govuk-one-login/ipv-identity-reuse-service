@@ -59,7 +59,7 @@ it("should return a 302 status code and redirect with an auth code and state on 
   });
 });
 
-it("should return a 302 status code and redirect with an access_denied error and state when /api/authorization API call returns without an authorization code", async () => {
+it("should return a 302 status code and redirect with an access_denied error, record_unavailable error description, and state when /api/authorization API call returns without an authorization code", async () => {
   const event = createMockAPIGatewayProxyEvent({}, "");
 
   const fetchAuthCodeSpy = vitest.spyOn(oauthInternalService, "getAuthorizationCode");
@@ -67,6 +67,8 @@ it("should return a 302 status code and redirect with an access_denied error and
   const mockResponse = {
     redirect_uri: "https://api.example.com",
     state: "test-state",
+    message: "record_unavailable",
+    code: "access_denied",
   };
 
   fetchAuthCodeSpy.mockResolvedValueOnce(mockResponse);
@@ -76,7 +78,32 @@ it("should return a 302 status code and redirect with an access_denied error and
     statusCode: 302,
     body: "",
     headers: {
-      Location: "https://api.example.com/?error=access_denied&state=test-state",
+      Location: "https://api.example.com/?error=access_denied&error_description=record_unavailable&state=test-state",
+    },
+  });
+});
+
+it("should return a 302 status code and redirect with an access_denied error, record_update_requested error description, and state when /api/authorization API call returns without an authorization code", async () => {
+  const event = createMockAPIGatewayProxyEvent({}, "");
+
+  const fetchAuthCodeSpy = vitest.spyOn(oauthInternalService, "getAuthorizationCode");
+
+  const mockResponse = {
+    redirect_uri: "https://api.example.com",
+    state: "test-state",
+    message: "record_update_requested",
+    code: "access_denied",
+  };
+
+  fetchAuthCodeSpy.mockResolvedValueOnce(mockResponse);
+
+  const response = await handler(event);
+  expect(response).toStrictEqual({
+    statusCode: 302,
+    body: "",
+    headers: {
+      Location:
+        "https://api.example.com/?error=access_denied&error_description=record_update_requested&state=test-state",
     },
   });
 });
