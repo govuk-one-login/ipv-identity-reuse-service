@@ -55,8 +55,7 @@ vi.mock("../../../api/oauth-internal-api", () => ({
     subject: "user-sub",
     vtr: ["P2"],
   }),
-  // eslint-disable-next-line unicorn/no-useless-undefined -- Parameter required
-  updateSessionData: vi.fn().mockResolvedValue(undefined),
+  updateSessionData: vi.fn(),
 }));
 
 vi.mock("../../../commons/cookie-utilities", () => ({

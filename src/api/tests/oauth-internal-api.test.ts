@@ -465,7 +465,7 @@ describe("updateSessionData", () => {
     vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
 
     await expect(updateSessionData("session-1234", { foo: "bar" })).rejects.toThrow(
-      "POST session endpoint returned an error response"
+      "PATCH session endpoint returned an error response"
     );
 
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);

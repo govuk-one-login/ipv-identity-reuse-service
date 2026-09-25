@@ -1,4 +1,4 @@
-import { compareStringAscending, getString, isStringWithLength } from "../string-utilities.js";
+import { compareStringAscending, compareStringDescending, getString, isStringWithLength } from "../string-utilities.js";
 import { describe, it, expect } from "vitest";
 
 describe("getString", () => {
@@ -59,5 +59,22 @@ describe("compareStringAscending", () => {
   });
   it("random sorted string should be sorted", () => {
     expect(["P2", "P3", "P1", "P0"].toSorted(compareStringAscending)).toEqual(["P0", "P1", "P2", "P3"]);
+  });
+});
+
+describe("compareStringDescending", () => {
+  it("should return the correct values", () => {
+    expect(compareStringDescending("P1", "P2")).equals(1);
+    expect(compareStringDescending("P1", "P1")).equals(-1);
+    expect(compareStringDescending("P2", "P1")).equals(-1);
+  });
+  it("already sorted string should be the same", () => {
+    expect(["P3", "P2", "P1"].toSorted(compareStringDescending)).toEqual(["P3", "P2", "P1"]);
+  });
+  it("opposite sorted string should be sorted", () => {
+    expect(["P1", "P2", "P3"].toSorted(compareStringDescending)).toEqual(["P3", "P2", "P1"]);
+  });
+  it("random sorted string should be sorted", () => {
+    expect(["P2", "P3", "P1", "P0"].toSorted(compareStringDescending)).toEqual(["P3", "P2", "P1", "P0"]);
   });
 });

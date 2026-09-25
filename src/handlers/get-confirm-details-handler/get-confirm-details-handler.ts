@@ -1,29 +1,31 @@
+import { Metrics } from "@aws-lambda-powertools/metrics";
+import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import nunjucks from "nunjucks";
 import path from "node:path";
-import logger from "../../commons/logger.js";
-import mainPageTemplate from "./index.njk";
+import nunjucks from "nunjucks";
+import translations from "../../../locales/en/translation.json" with { type: "json" };
+import { getSessionDetails, updateSessionData } from "../../api/oauth-internal-api.js";
+import { redirectToErrorPage } from "../../api/sis-api.js";
+import { HttpCodesEnum } from "../../commons/constants.js";
 import { getCookieValues } from "../../commons/cookie-utilities.js";
+import { EVCSError, StoredIdentityValidationError } from "../../commons/errors.js";
+import { getJwtBody } from "../../commons/jwt-utilities.js";
+import logger from "../../commons/logger.js";
+import { MetricDimension, MetricName } from "../../commons/metric-enum.js";
+import { calculateVot } from "../../domain/stored-identity/calculate-vot.js";
+import { createStoredIdentityHash } from "../../domain/stored-identity/stored-identity-hashing.js";
+import {
+  StoredIdentityRecord,
+  StoredIdentityVectorOfTrust,
+} from "../../domain/stored-identity/stored-identity-types.js";
 import {
   handleGetIdentityFromCredentialStore,
   validateStoredIdentity,
 } from "../../domain/stored-identity/stored-identity-validator.js";
-import { getSessionDetails, updateSessionData } from "../../api/oauth-internal-api.js";
-import { redirectToErrorPage } from "../../api/sis-api.js";
-import { EVCSError, StoredIdentityValidationError } from "../../commons/errors.js";
-import { HttpCodesEnum } from "../../commons/constants.js";
-import { extractUserDetails } from "./user-details-content.js";
-import translations from "../../../locales/en/translation.json" with { type: "json" };
-import { EVCSIdentityResponse } from "../../api/evcs-api.js";
-import { getJwtBody } from "../../commons/jwt-utilities.js";
-import { Metrics } from "@aws-lambda-powertools/metrics";
-import { MetricDimension, MetricName } from "../../commons/metric-enum.js";
-import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
-import { calculateVot } from "../../domain/stored-identity/calculate-vot.js";
-import { StoredIdentityRecord } from "../../domain/stored-identity/stored-identity-types.js";
 import { hasIdentityExpired } from "../../domain/verifiable-credential/identity-expiry-service.js";
 import { ConfirmDetailsQueryStringParameters } from "./get-confirm-details-handler-types.js";
-import { createStoredIdentityHash } from "../../domain/stored-identity/stored-identity-hashing.js";
+import mainPageTemplate from "./index.njk";
+import { extractUserDetails } from "./user-details-content.js";
 
 const govukFrontendDistribution = path.join(path.dirname(require.resolve("govuk-frontend/package.json")), "dist");
 const nunjucksEnvironment = nunjucks.configure([
@@ -79,12 +81,18 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
       };
     }
 
-    const identityReuseValid = await validateUserIdentity(identityResponse, vtr);
+    const storedIdentityJwt = identityResponse.si.vc;
+    const content = getJwtBody<StoredIdentityRecord>(storedIdentityJwt);
+    const unsignedVot: IdentityVectorOfTrust = identityResponse.si.unsignedVot;
+    const storedIdentityVcJwts: string[] = identityResponse.vcs.map((vcObject) => vcObject.vc);
+    const vot = calculateVot(content, unsignedVot, vtr);
+
+    const identityReuseValid = await validateUserIdentity(vot, storedIdentityVcJwts, vtr);
     if (!identityReuseValid) {
       return redirectToErrorPage(domainName);
     }
 
-    await sessionStoreHashedStoredIdentity(sessionId, identityResponse);
+    await sessionStoreHashedStoredIdentity(sessionId, storedIdentityJwt, vot, storedIdentityVcJwts);
 
     const userDetails = extractUserDetails(storedIdentityRecord);
 
@@ -122,14 +130,11 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
 };
 
 const validateUserIdentity = async (
-  identityResponse: EVCSIdentityResponse,
+  vot: StoredIdentityVectorOfTrust,
+  storedIdentityVcJwts: string[],
   vtr: IdentityVectorOfTrust[]
 ): Promise<boolean> => {
-  const { expired, fraudExpired, drivingLicenceExpired } = await hasIdentityExpired(
-    identityResponse.vcs.map((vcObject) => vcObject.vc)
-  );
-  const content = getJwtBody<StoredIdentityRecord>(identityResponse.si.vc);
-  const vot = calculateVot(content, identityResponse.si.unsignedVot, vtr);
+  const { expired, fraudExpired, drivingLicenceExpired } = await hasIdentityExpired(storedIdentityVcJwts);
   const votSufficient = vot !== "P0";
 
   metrics.addDimensions({
@@ -150,7 +155,12 @@ const validateUserIdentity = async (
   return !expired && votSufficient;
 };
 
-const sessionStoreHashedStoredIdentity = async (sessionId: string, identityResponse: EVCSIdentityResponse) => {
-  const hash = createStoredIdentityHash(identityResponse);
+const sessionStoreHashedStoredIdentity = async (
+  sessionId: string,
+  storedIdentityJwt: string,
+  vot: StoredIdentityVectorOfTrust,
+  vcJwts: string[]
+) => {
+  const hash = createStoredIdentityHash(storedIdentityJwt, vot, vcJwts);
   await updateSessionData(sessionId, { storedIdentitySha256: hash });
 };

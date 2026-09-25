@@ -1,15 +1,19 @@
-import type { EVCSIdentityResponse } from "../../api/evcs-api.js";
 import { createHash } from "node:crypto";
 import { compareStringAscending } from "../../commons/string-utilities.js";
+import { StoredIdentityVectorOfTrust } from "./stored-identity-types.js";
 
-export const createStoredIdentityHash = (identityResponse: EVCSIdentityResponse): string => {
+export const createStoredIdentityHash = (
+  storedIdentityJwt: string,
+  vot: StoredIdentityVectorOfTrust,
+  vcJwts: string[]
+): string => {
   const hash = createHash("sha256");
-  const sortedVcs = identityResponse.vcs.map((vcObject) => vcObject.vc).toSorted(compareStringAscending);
+  const sortedJwts = vcJwts.toSorted(compareStringAscending);
 
-  hash.update(identityResponse.si.vc);
-  hash.update(identityResponse.si.unsignedVot);
+  hash.update(storedIdentityJwt);
+  hash.update(vot);
 
-  for (const vc in sortedVcs) {
+  for (const vc in sortedJwts) {
     hash.update(vc);
   }
 

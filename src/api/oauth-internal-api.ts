@@ -190,8 +190,8 @@ export async function updateSessionData(sessionId: string, data: Record<string, 
   });
 
   if (responseFromSessionEndpoint.status !== 200) {
-    logger.error(`POST session handler returned non-200 status: ${responseFromSessionEndpoint.status}`);
-    throw new Error("POST session endpoint returned an error response");
+    logger.error(`PATCH session handler returned non-200 status: ${responseFromSessionEndpoint.status}`);
+    throw new Error("PATCH session endpoint returned an error response");
   }
 }
 
