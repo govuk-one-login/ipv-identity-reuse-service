@@ -79,8 +79,8 @@
   "scripts": {
     "detect-secrets:audit": "detect-secrets audit --json .secrets.baseline",
     "detect-secrets:scan": "detect-secrets scan --baseline .secrets.baseline",
-    "lint": "eslint .",
-    "lint-fix": "eslint . --fix",
+    "lint": "eslint . --ignore-pattern \"**/.aws-sam/**\"",
+    "lint-fix": "eslint . --ignore-pattern \"**/.aws-sam/**\" --fix",
     "test": "vitest --coverage",
     "test:acceptance": "cucumber-js",
     "test:browser": "playwright test",

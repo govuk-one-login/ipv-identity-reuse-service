@@ -17,7 +17,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
   }
 
   const sessionId = getCookieValues(event)?.get("identity_reuse_service_session");
-
   if (!sessionId) {
     return redirectToErrorPage(domainName);
   }

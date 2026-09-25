@@ -1,6 +1,7 @@
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
 import { StoredIdentityRecord, StoredIdentityVectorOfTrust } from "./stored-identity-types.js";
 import logger from "../../commons/logger.js";
+import { compareStringDescending } from "../../commons/string-utilities.js";
 
 export const calculateVot = (
   content: StoredIdentityRecord,
@@ -15,8 +16,7 @@ export const calculateVot = (
 
   const foundVot: IdentityVectorOfTrust | undefined = vtr
     .map((s) => s.trim())
-    // eslint-disable-next-line unicorn/no-array-sort -- toSorted not supported by current configuration
-    .sort((a, b) => (a < b ? 1 : -1))
+    .toSorted(compareStringDescending)
     .find((s): s is IdentityVectorOfTrust => s <= vot);
 
   return foundVot || "P0";

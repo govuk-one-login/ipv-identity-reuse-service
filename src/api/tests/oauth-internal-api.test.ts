@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, expect, it, vitest } from "vitest";
-import { callSessionApi, getAuthorizationCode, getSessionDetails } from "../oauth-internal-api.js";
+import { afterEach, beforeEach, expect, it, vitest, describe } from "vitest";
+import { callSessionApi, getAuthorizationCode, getSessionDetails, updateSessionData } from "../oauth-internal-api.js";
 import { URL } from "node:url";
 
 const { mockError } = vitest.hoisted(() => {
@@ -32,397 +32,453 @@ afterEach(() => {
   vitest.unstubAllGlobals();
 });
 
-it("should call the /api/session fetch and return the SessionResult response", async () => {
-  const mockResponse = Response.json(
-    { state: "test-state", redirect_uri: "https://test-uri.com", session_id: "test-session-id" },
-    {
-      status: 201,
-      headers: { "Content-Type": "application/json" },
-    }
-  );
+describe("callSessionApi", () => {
+  it("should call the /api/session fetch and return the SessionResult response", async () => {
+    const mockResponse = Response.json(
+      { state: "test-state", redirect_uri: "https://test-uri.com", session_id: "test-session-id" },
+      {
+        status: 201,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
 
-  const jsonSpy = vitest.spyOn(mockResponse, "json");
+    const jsonSpy = vitest.spyOn(mockResponse, "json");
 
-  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
 
-  const response = await callSessionApi("test-client-id", "test-request");
+    const response = await callSessionApi("test-client-id", "test-request");
 
-  expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-  expect(globalThis.fetch).toHaveBeenCalledWith(
-    "https://test.com/api/session",
-    expect.objectContaining({
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        client_id: "test-client-id",
-        request: "test-request",
-      }),
-      signal: expect.any(AbortSignal),
-    })
-  );
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "https://test.com/api/session",
+      expect.objectContaining({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          client_id: "test-client-id",
+          request: "test-request",
+        }),
+        signal: expect.any(AbortSignal),
+      })
+    );
 
-  expect(jsonSpy).toHaveBeenCalledTimes(1);
-  expect(response.state).toEqual("test-state");
-  expect(response.redirect_uri).toEqual("https://test-uri.com");
-  expect(response.session_id).toEqual("test-session-id");
-});
-
-it("should throw an error if the /api/session fetch returns a 403 status code", async () => {
-  const mockResponse = Response.json({}, { status: 403 });
-  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
-
-  await expect(callSessionApi("test-client-id", "test-request")).rejects.toThrow(
-    "Session endpoint returned an error response"
-  );
-  expect(mockError).toHaveBeenCalledWith(expect.stringContaining("Session handler returned non-201 status: 403"));
-});
-
-it("should call the /api/authorisation fetch and return the AuthorizationResult response, reading the JSON only once", async () => {
-  const mockResponse = Response.json(
-    {
-      redirectionURI: "https://api.example.com",
-      authorizationCode: { value: "test-auth-code" },
-      state: { value: "test-state" },
-    },
-    { status: 200 }
-  );
-
-  const jsonSpy = vitest.spyOn(mockResponse, "json");
-  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
-
-  const response = await getAuthorizationCode(
-    "test-client-id",
-    "https://test-uri.com",
-    "test-state",
-    "test-session-id"
-  );
-
-  expect(jsonSpy).toHaveBeenCalledTimes(1);
-  expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-  expect(globalThis.fetch).toHaveBeenCalledWith(
-    new URL(
-      "https://test.com/api/authorization?client_id=test-client-id&redirect_uri=https%3A%2F%2Ftest-uri.com&state=test-state&response_type=code"
-    ),
-    {
-      method: "GET",
-      headers: { "session-id": "test-session-id" },
-      signal: expect.any(AbortSignal),
-    }
-  );
-
-  expect(response.redirect_uri).toEqual("https://api.example.com/");
-  expect(response.authorizationCode).toEqual("test-auth-code");
-  expect(response.state).toEqual("test-state");
-});
-
-it("should return redirect_uri and state without authorizationCode when the /api/authorization API call returns 403", async () => {
-  const mockResponse = Response.json(
-    {
-      message: "record_unavailable",
-      code: "access_denied",
-      errorSummary: "access_denied: record_unavailable",
-      redirectionUri: "https://test-uri.com",
-      state: "test-state",
-    },
-    { status: 403 }
-  );
-  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
-
-  const response = await getAuthorizationCode(
-    "test-client-id",
-    "https://test-uri.com",
-    "test-state",
-    "test-session-id"
-  );
-
-  expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-  expect(globalThis.fetch).toHaveBeenCalledWith(
-    new URL(
-      "https://test.com/api/authorization?client_id=test-client-id&redirect_uri=https%3A%2F%2Ftest-uri.com&state=test-state&response_type=code"
-    ),
-    {
-      method: "GET",
-      headers: { "session-id": "test-session-id" },
-      signal: expect.any(AbortSignal),
-    }
-  );
-  expect(response.redirect_uri).toEqual("https://test-uri.com/");
-  expect(response.state).toEqual("test-state");
-  expect(response.authorizationCode).toBeUndefined();
-  expect(response.message).toEqual("record_unavailable");
-  expect(response.code).toEqual("access_denied");
-});
-
-it("should throw an error when the /api/authorization returns 403 with missing required fields", async () => {
-  const mockResponse = Response.json(
-    {
-      message: "record_unavailable",
-    },
-    { status: 403 }
-  );
-
-  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
-
-  await expect(
-    getAuthorizationCode("test-client-id", "https://test-uri.com", "test-state", "test-session-id")
-  ).rejects.toThrow("Invalid response properties received from authorization error response");
-});
-
-it("should throw an error when the call to the /api/authorization returns an empty state object", async () => {
-  const mockResponse = Response.json(
-    {
-      redirectionURI: "https://api.example.com",
-      authorizationCode: { value: "test-auth-code" },
-      state: {},
-    },
-    { status: 200 }
-  );
-
-  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
-
-  await expect(
-    getAuthorizationCode("test-client-id", "https://test-uri.com", "test-state", "test-session-id")
-  ).rejects.toThrow("Invalid response properties received from authorization endpoint");
-});
-
-it("should throw an error when the /api/authorization API call returns 400", async () => {
-  const mockResponse = Response.json(
-    {
-      redirectionURI: "https://api.example.com",
-      authorizationCode: { value: "test-auth-code" },
-      state: {},
-    },
-    { status: 400 }
-  );
-
-  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
-
-  await expect(
-    getAuthorizationCode("test-client-id", "https://test-uri.com", "test-state", "test-session-id")
-  ).rejects.toThrow("Authorize endpoint returned an error response");
-});
-
-it("should throw an error when the /api/authorization API call returns 500", async () => {
-  const mockResponse = Response.json(
-    {
-      redirectionURI: "https://api.example.com",
-      authorizationCode: { value: "test-auth-code" },
-      state: {},
-    },
-    { status: 500 }
-  );
-
-  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
-
-  await expect(
-    getAuthorizationCode("test-client-id", "https://test-uri.com", "test-state", "test-session-id")
-  ).rejects.toThrow("Authorize endpoint returned an error response");
-});
-
-it("should throw an error if the authorization endpoint returns a missing redirection URI", async () => {
-  const mockResponse = Response.json(
-    {
-      authorizationCode: { value: "test-auth-code" },
-      state: { value: "test-state" },
-    },
-    { status: 200 }
-  );
-
-  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
-
-  await expect(
-    getAuthorizationCode("test-client-id", "https://test-uri.com", "test-state", "test-session-id")
-  ).rejects.toThrow("Invalid response properties received from authorization endpoint");
-});
-
-it("should throw an error if the authorization endpoint returns a missing auth code", async () => {
-  const mockResponse = Response.json(
-    {
-      redirectionURI: "https://api.example.com",
-      state: { value: "test-state" },
-    },
-    { status: 200 }
-  );
-
-  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
-
-  await expect(
-    getAuthorizationCode("test-client-id", "https://test-uri.com", "test-state", "test-session-id")
-  ).rejects.toThrow("Invalid response properties received from authorization endpoint");
-});
-
-it("should throw an error if the authorization endpoint returns a missing state", async () => {
-  const mockResponse = Response.json(
-    {
-      redirectionURI: "https://api.example.com",
-      authorizationCode: { value: "test-auth-code" },
-    },
-    { status: 200 }
-  );
-
-  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
-
-  await expect(
-    getAuthorizationCode("test-client-id", "https://test-uri.com", "test-state", "test-session-id")
-  ).rejects.toThrow("Invalid response properties received from authorization endpoint");
-});
-
-it("should throw an error if the session endpoint returns a missing session id", async () => {
-  const mockResponse = Response.json(
-    {
-      state: "test-state",
-      redirect_uri: "https://api.example.com",
-    },
-    { status: 201 }
-  );
-
-  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
-
-  await expect(callSessionApi("test-client-id", "test-request")).rejects.toThrow(
-    "Invalid response properties received from session endpoint"
-  );
-});
-
-it("should throw an error if the session endpoint returns a missing state", async () => {
-  const mockResponse = Response.json(
-    {
-      session_id: "test-session-id",
-      redirect_uri: "https://api.example.com",
-    },
-    { status: 201 }
-  );
-
-  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
-
-  await expect(callSessionApi("test-client-id", "test-request")).rejects.toThrow(
-    "Invalid response properties received from session endpoint"
-  );
-});
-
-it("should throw an error if the session endpoint returns a missing redirect URI", async () => {
-  const mockResponse = Response.json(
-    {
-      state: "test-state",
-      session_id: "test-session-id",
-    },
-    { status: 201 }
-  );
-
-  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
-
-  await expect(callSessionApi("test-client-id", "test-request")).rejects.toThrow(
-    "Invalid response properties received from session endpoint"
-  );
-});
-
-it("should call GET /api/session and return storageAccessToken and subject", async () => {
-  const mockResponse = Response.json(
-    {
-      clientSessionId: "test-client-session-id",
-      subject: "test-subject",
-      storageAccessToken: "test-storage-token",
-    },
-    { status: 200 }
-  );
-
-  const jsonSpy = vitest.spyOn(mockResponse, "json");
-  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
-
-  const response = await getSessionDetails("test-session-id");
-
-  expect(jsonSpy).toHaveBeenCalledTimes(1);
-  expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-  expect(globalThis.fetch).toHaveBeenCalledWith(new URL("https://test.com/api/session"), {
-    method: "GET",
-    headers: { "session-id": "test-session-id" },
-    signal: expect.any(AbortSignal),
+    expect(jsonSpy).toHaveBeenCalledTimes(1);
+    expect(response.state).toEqual("test-state");
+    expect(response.redirect_uri).toEqual("https://test-uri.com");
+    expect(response.session_id).toEqual("test-session-id");
   });
 
-  expect(response.storageAccessToken).toEqual("test-storage-token");
-  expect(response.subject).toEqual("test-subject");
+  it("should throw an error if the /api/session fetch returns a 403 status code", async () => {
+    const mockResponse = Response.json({}, { status: 403 });
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+    await expect(callSessionApi("test-client-id", "test-request")).rejects.toThrow(
+      "Session endpoint returned an error response"
+    );
+    expect(mockError).toHaveBeenCalledWith(expect.stringContaining("Session handler returned non-201 status: 403"));
+  });
+
+  it("should throw an error if the session endpoint returns a missing session id", async () => {
+    const mockResponse = Response.json(
+      {
+        state: "test-state",
+        redirect_uri: "https://api.example.com",
+      },
+      { status: 201 }
+    );
+
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+    await expect(callSessionApi("test-client-id", "test-request")).rejects.toThrow(
+      "Invalid response properties received from session endpoint"
+    );
+  });
+
+  it("should throw an error if the session endpoint returns a missing state", async () => {
+    const mockResponse = Response.json(
+      {
+        session_id: "test-session-id",
+        redirect_uri: "https://api.example.com",
+      },
+      { status: 201 }
+    );
+
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+    await expect(callSessionApi("test-client-id", "test-request")).rejects.toThrow(
+      "Invalid response properties received from session endpoint"
+    );
+  });
+
+  it("should throw an error if the session endpoint returns a missing redirect URI", async () => {
+    const mockResponse = Response.json(
+      {
+        state: "test-state",
+        session_id: "test-session-id",
+      },
+      { status: 201 }
+    );
+
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+    await expect(callSessionApi("test-client-id", "test-request")).rejects.toThrow(
+      "Invalid response properties received from session endpoint"
+    );
+  });
 });
 
-it("should return undefined storageAccessToken when not present in GET /api/session response", async () => {
-  const mockResponse = Response.json(
-    {
-      clientSessionId: "test-client-session-id",
-      subject: "test-subject",
-    },
-    { status: 200 }
-  );
+describe("getAuthorizationCode", () => {
+  it("should call the /api/authorisation fetch and return the AuthorizationResult response, reading the JSON only once", async () => {
+    const mockResponse = Response.json(
+      {
+        redirectionURI: "https://api.example.com",
+        authorizationCode: { value: "test-auth-code" },
+        state: { value: "test-state" },
+      },
+      { status: 200 }
+    );
 
-  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+    const jsonSpy = vitest.spyOn(mockResponse, "json");
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
 
-  const response = await getSessionDetails("test-session-id");
+    const response = await getAuthorizationCode(
+      "test-client-id",
+      "https://test-uri.com",
+      "test-state",
+      "test-session-id"
+    );
 
-  expect(response.storageAccessToken).toBeUndefined();
-  expect(response.subject).toEqual("test-subject");
+    expect(jsonSpy).toHaveBeenCalledTimes(1);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      new URL(
+        "https://test.com/api/authorization?client_id=test-client-id&redirect_uri=https%3A%2F%2Ftest-uri.com&state=test-state&response_type=code"
+      ),
+      {
+        method: "GET",
+        headers: { "session-id": "test-session-id" },
+        signal: expect.any(AbortSignal),
+      }
+    );
+
+    expect(response.redirect_uri).toEqual("https://api.example.com/");
+    expect(response.authorizationCode).toEqual("test-auth-code");
+    expect(response.state).toEqual("test-state");
+  });
+
+  it("should return redirect_uri and state without authorizationCode when the /api/authorization API call returns 403", async () => {
+    const mockResponse = Response.json(
+      {
+        message: "record_unavailable",
+        code: "access_denied",
+        errorSummary: "access_denied: record_unavailable",
+        redirectionUri: "https://test-uri.com",
+        state: "test-state",
+      },
+      { status: 403 }
+    );
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+    const response = await getAuthorizationCode(
+      "test-client-id",
+      "https://test-uri.com",
+      "test-state",
+      "test-session-id"
+    );
+
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      new URL(
+        "https://test.com/api/authorization?client_id=test-client-id&redirect_uri=https%3A%2F%2Ftest-uri.com&state=test-state&response_type=code"
+      ),
+      {
+        method: "GET",
+        headers: { "session-id": "test-session-id" },
+        signal: expect.any(AbortSignal),
+      }
+    );
+    expect(response.redirect_uri).toEqual("https://test-uri.com/");
+    expect(response.state).toEqual("test-state");
+    expect(response.authorizationCode).toBeUndefined();
+    expect(response.message).toEqual("record_unavailable");
+    expect(response.code).toEqual("access_denied");
+  });
+
+  it("should throw an error when the /api/authorization returns 403 with missing required fields", async () => {
+    const mockResponse = Response.json(
+      {
+        message: "record_unavailable",
+      },
+      { status: 403 }
+    );
+
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+    await expect(
+      getAuthorizationCode("test-client-id", "https://test-uri.com", "test-state", "test-session-id")
+    ).rejects.toThrow("Invalid response properties received from authorization error response");
+  });
+
+  it("should throw an error when the call to the /api/authorization returns an empty state object", async () => {
+    const mockResponse = Response.json(
+      {
+        redirectionURI: "https://api.example.com",
+        authorizationCode: { value: "test-auth-code" },
+        state: {},
+      },
+      { status: 200 }
+    );
+
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+    await expect(
+      getAuthorizationCode("test-client-id", "https://test-uri.com", "test-state", "test-session-id")
+    ).rejects.toThrow("Invalid response properties received from authorization endpoint");
+  });
+
+  it("should throw an error when the /api/authorization API call returns 400", async () => {
+    const mockResponse = Response.json(
+      {
+        redirectionURI: "https://api.example.com",
+        authorizationCode: { value: "test-auth-code" },
+        state: {},
+      },
+      { status: 400 }
+    );
+
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+    await expect(
+      getAuthorizationCode("test-client-id", "https://test-uri.com", "test-state", "test-session-id")
+    ).rejects.toThrow("Authorize endpoint returned an error response");
+  });
+
+  it("should throw an error when the /api/authorization API call returns 500", async () => {
+    const mockResponse = Response.json(
+      {
+        redirectionURI: "https://api.example.com",
+        authorizationCode: { value: "test-auth-code" },
+        state: {},
+      },
+      { status: 500 }
+    );
+
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+    await expect(
+      getAuthorizationCode("test-client-id", "https://test-uri.com", "test-state", "test-session-id")
+    ).rejects.toThrow("Authorize endpoint returned an error response");
+  });
+
+  it("should throw an error if the authorization endpoint returns a missing redirection URI", async () => {
+    const mockResponse = Response.json(
+      {
+        authorizationCode: { value: "test-auth-code" },
+        state: { value: "test-state" },
+      },
+      { status: 200 }
+    );
+
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+    await expect(
+      getAuthorizationCode("test-client-id", "https://test-uri.com", "test-state", "test-session-id")
+    ).rejects.toThrow("Invalid response properties received from authorization endpoint");
+  });
+
+  it("should throw an error if the authorization endpoint returns a missing auth code", async () => {
+    const mockResponse = Response.json(
+      {
+        redirectionURI: "https://api.example.com",
+        state: { value: "test-state" },
+      },
+      { status: 200 }
+    );
+
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+    await expect(
+      getAuthorizationCode("test-client-id", "https://test-uri.com", "test-state", "test-session-id")
+    ).rejects.toThrow("Invalid response properties received from authorization endpoint");
+  });
+
+  it("should throw an error if the authorization endpoint returns a missing state", async () => {
+    const mockResponse = Response.json(
+      {
+        redirectionURI: "https://api.example.com",
+        authorizationCode: { value: "test-auth-code" },
+      },
+      { status: 200 }
+    );
+
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+    await expect(
+      getAuthorizationCode("test-client-id", "https://test-uri.com", "test-state", "test-session-id")
+    ).rejects.toThrow("Invalid response properties received from authorization endpoint");
+  });
 });
 
-it("should throw an error if GET /api/session returns a non-200 status code", async () => {
-  const mockResponse = Response.json({}, { status: 400 });
-  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+describe("getSessionDetails", () => {
+  it("should call GET /api/session and return storageAccessToken and subject", async () => {
+    const mockResponse = Response.json(
+      {
+        clientSessionId: "test-client-session-id",
+        subject: "test-subject",
+        storageAccessToken: "test-storage-token",
+      },
+      { status: 200 }
+    );
 
-  await expect(getSessionDetails("test-session-id")).rejects.toThrow("GET session endpoint returned an error response");
-  expect(mockError).toHaveBeenCalledWith(expect.stringContaining("GET session handler returned non-200 status: 400"));
+    const jsonSpy = vitest.spyOn(mockResponse, "json");
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+    const response = await getSessionDetails("test-session-id");
+
+    expect(jsonSpy).toHaveBeenCalledTimes(1);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    expect(globalThis.fetch).toHaveBeenCalledWith(new URL("https://test.com/api/session"), {
+      method: "GET",
+      headers: { "session-id": "test-session-id" },
+      signal: expect.any(AbortSignal),
+    });
+
+    expect(response.storageAccessToken).toEqual("test-storage-token");
+    expect(response.subject).toEqual("test-subject");
+  });
+
+  it("should return undefined storageAccessToken when not present in GET /api/session response", async () => {
+    const mockResponse = Response.json(
+      {
+        clientSessionId: "test-client-session-id",
+        subject: "test-subject",
+      },
+      { status: 200 }
+    );
+
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+    const response = await getSessionDetails("test-session-id");
+
+    expect(response.storageAccessToken).toBeUndefined();
+    expect(response.subject).toEqual("test-subject");
+  });
+
+  it("should throw an error if GET /api/session returns a non-200 status code", async () => {
+    const mockResponse = Response.json({}, { status: 400 });
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+    await expect(getSessionDetails("test-session-id")).rejects.toThrow(
+      "GET session endpoint returned an error response"
+    );
+    expect(mockError).toHaveBeenCalledWith(expect.stringContaining("GET session handler returned non-200 status: 400"));
+  });
+
+  it("should throw an error if GET /api/session response is missing subject", async () => {
+    const mockResponse = Response.json(
+      {
+        clientSessionId: "test-client-session-id",
+        storageAccessToken: "test-storage-token",
+      },
+      { status: 200 }
+    );
+
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+    await expect(getSessionDetails("test-session-id")).rejects.toThrow(
+      "Invalid response properties received from GET session endpoint"
+    );
+  });
+
+  it("should throw an error if GET /api/session response is missing clientSessionId", async () => {
+    const mockResponse = Response.json(
+      {
+        subject: "test-subject",
+        storageAccessToken: "test-storage-token",
+      },
+      { status: 200 }
+    );
+
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+    await expect(getSessionDetails("test-session-id")).rejects.toThrow(
+      "Invalid response properties received from GET session endpoint"
+    );
+  });
+
+  it("should throw an error if GET /api/session response has empty subject", async () => {
+    const mockResponse = Response.json(
+      {
+        clientSessionId: "test-client-session-id",
+        subject: "   ",
+        storageAccessToken: "test-storage-token",
+      },
+      { status: 200 }
+    );
+
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+    await expect(getSessionDetails("test-session-id")).rejects.toThrow(
+      "Invalid response properties received from GET session endpoint"
+    );
+  });
+
+  it("should throw an error if GET /api/session response is null", async () => {
+    // eslint-disable-next-line unicorn/no-null
+    const mockResponse = Response.json(null, { status: 200 });
+
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+    await expect(getSessionDetails("test-session-id")).rejects.toThrow(
+      "Invalid response properties received from GET session endpoint"
+    );
+  });
 });
 
-it("should throw an error if GET /api/session response is missing subject", async () => {
-  const mockResponse = Response.json(
-    {
-      clientSessionId: "test-client-session-id",
-      storageAccessToken: "test-storage-token",
-    },
-    { status: 200 }
-  );
+describe("updateSessionData", () => {
+  it("should create a request with the correct values", async () => {
+    // eslint-disable-next-line unicorn/no-null
+    const mockResponse = Response.json(null, { status: 200 });
 
-  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
 
-  await expect(getSessionDetails("test-session-id")).rejects.toThrow(
-    "Invalid response properties received from GET session endpoint"
-  );
-});
+    await updateSessionData("session-1234", { foo: "bar" });
 
-it("should throw an error if GET /api/session response is missing clientSessionId", async () => {
-  const mockResponse = Response.json(
-    {
-      subject: "test-subject",
-      storageAccessToken: "test-storage-token",
-    },
-    { status: 200 }
-  );
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      new URL("https://test.com/api/session"),
+      expect.objectContaining({
+        method: "PATCH",
+        headers: {
+          "session-id": "session-1234",
+        },
+        body: '{"foo":"bar"}',
+        signal: expect.any(AbortSignal),
+      })
+    );
+  });
 
-  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+  it("should throw an Error if the endpoint fails", async () => {
+    // eslint-disable-next-line unicorn/no-null
+    const mockResponse = Response.json(null, { status: 403 });
 
-  await expect(getSessionDetails("test-session-id")).rejects.toThrow(
-    "Invalid response properties received from GET session endpoint"
-  );
-});
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
 
-it("should throw an error if GET /api/session response has empty subject", async () => {
-  const mockResponse = Response.json(
-    {
-      clientSessionId: "test-client-session-id",
-      subject: "   ",
-      storageAccessToken: "test-storage-token",
-    },
-    { status: 200 }
-  );
+    await expect(updateSessionData("session-1234", { foo: "bar" })).rejects.toThrow(
+      "PATCH session endpoint returned an error response"
+    );
 
-  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
-
-  await expect(getSessionDetails("test-session-id")).rejects.toThrow(
-    "Invalid response properties received from GET session endpoint"
-  );
-});
-
-it("should throw an error if GET /api/session response is null", async () => {
-  // eslint-disable-next-line unicorn/no-null
-  const mockResponse = Response.json(null, { status: 200 });
-
-  vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
-
-  await expect(getSessionDetails("test-session-id")).rejects.toThrow(
-    "Invalid response properties received from GET session endpoint"
-  );
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      new URL("https://test.com/api/session"),
+      expect.objectContaining({
+        method: "PATCH",
+        headers: {
+          "session-id": "session-1234",
+        },
+        body: '{"foo":"bar"}',
+        signal: expect.any(AbortSignal),
+      })
+    );
+  });
 });

@@ -7,7 +7,7 @@ import {
 } from "../../../domain/stored-identity/stored-identity-validator.js";
 import { EVCSError, StoredIdentityValidationError } from "../../../commons/errors.js";
 import { HttpCodesEnum } from "../../../commons/constants.js";
-import { getSessionDetails } from "../../../api/oauth-internal-api.js";
+import { getSessionDetails, updateSessionData } from "../../../api/oauth-internal-api.js";
 import translations from "../../../../locales/en/translation.json" with { type: "json" };
 import * as identityExpiryService from "../../../domain/verifiable-credential/identity-expiry-service.js";
 import * as calculateVotModule from "../../../domain/stored-identity/calculate-vot.js";
@@ -55,6 +55,7 @@ vi.mock("../../../api/oauth-internal-api", () => ({
     subject: "user-sub",
     vtr: ["P2"],
   }),
+  updateSessionData: vi.fn(),
 }));
 
 vi.mock("../../../commons/cookie-utilities", () => ({
@@ -155,6 +156,11 @@ it("should render the confirm details screen when all query string parameters ar
       errorPageUrl: "https://test-domain/error/unrecoverable",
     }
   );
+
+  expect(updateSessionData).toHaveBeenCalledTimes(1);
+  expect(updateSessionData).toHaveBeenCalledWith("test-session-id", {
+    storedIdentitySha256: "02d6bdfbfb3bf45077a34e2252816c1ddc906a8947b29d0ba7185381f2c1a794",
+  });
 
   expect(result).toEqual({
     body: "Rendered Confirm Details Screen",
