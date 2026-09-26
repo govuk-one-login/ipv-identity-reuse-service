@@ -15,11 +15,7 @@ export class TokenValidationError extends Error {
 }
 
 export class EVCSError extends Error {
-  constructor(
-    public readonly statusCode: HttpCodesEnum,
-    public readonly userId: string,
-    public readonly journeyId?: string
-  ) {
+  constructor(public readonly statusCode: HttpCodesEnum) {
     super("EVCS request failed");
     this.name = "EVCSError";
   }

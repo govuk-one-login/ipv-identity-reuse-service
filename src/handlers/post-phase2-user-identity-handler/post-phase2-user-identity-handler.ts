@@ -54,17 +54,13 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
   }
 
   try {
-    const identityResponse = await handleGetIdentityFromCredentialStore(
-      authorisation,
-      subject,
-      request.govukSigninJourneyId
-    );
+    const identityResponse = await handleGetIdentityFromCredentialStore(authorisation);
     const response = await createSuccessResponse(identityResponse, request.vtr, subject, request.govukSigninJourneyId);
 
     return { statusCode: HttpCodesEnum.OK, body: JSON.stringify(response) };
   } catch (error) {
     if (error instanceof EVCSError) {
-      return await createAndLogErrorResponse(error.statusCode, error.userId, error.journeyId);
+      return await createAndLogErrorResponse(error.statusCode, subject, request.govukSigninJourneyId);
     }
     logger.error("Error retrieving user identity", { error });
     return await createAndLogErrorResponse(HttpCodesEnum.INTERNAL_SERVER_ERROR, subject, request.govukSigninJourneyId);

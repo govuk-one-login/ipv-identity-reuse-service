@@ -58,7 +58,7 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
       return redirectToErrorPage(domainName);
     }
 
-    const { storageAccessToken, subject, vtr } = await getSessionDetails(sessionId);
+    const { storageAccessToken, vtr } = await getSessionDetails(sessionId);
 
     if (!storageAccessToken) {
       logger.error("No storageAccessToken returned from session endpoint");
@@ -70,7 +70,7 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
       return redirectToErrorPage(domainName);
     }
 
-    const identityResponse = await handleGetIdentityFromCredentialStore(`Bearer ${storageAccessToken}`, subject);
+    const identityResponse = await handleGetIdentityFromCredentialStore(`Bearer ${storageAccessToken}`);
     const { kidValid, signatureValid, isValid, storedIdentityRecord } = await validateStoredIdentity(identityResponse);
 
     if (!kidValid || !signatureValid || !isValid || !storedIdentityRecord) {

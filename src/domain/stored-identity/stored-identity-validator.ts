@@ -18,14 +18,12 @@ import { correlateCredentials } from "./credential-correlator.js";
 import { ErrorCodeEnum, ResponseBody } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_RETURNED.js";
 
 export const handleGetIdentityFromCredentialStore = async (
-  authorizationToken: string,
-  userId: string,
-  journeyId?: string
+  authorizationToken: string
 ): Promise<EVCSIdentityResponse> => {
   const result = await getIdentityFromEVCS(authorizationToken);
   if (!result.ok) {
     logger.error("Error received from EVCS", { status: result.status });
-    throw new EVCSError(result.status, userId, journeyId);
+    throw new EVCSError(result.status);
   }
 
   return await result.json();

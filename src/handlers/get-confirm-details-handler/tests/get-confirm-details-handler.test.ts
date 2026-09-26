@@ -137,7 +137,7 @@ it("should render the confirm details screen when all query string parameters ar
   const result = await lambdaHandler(validEvent());
 
   expect(getSessionDetails).toHaveBeenCalledWith("test-session-id");
-  expect(handleGetIdentityFromCredentialStore).toHaveBeenCalledWith("Bearer mock-storage-access-token", "user-sub");
+  expect(handleGetIdentityFromCredentialStore).toHaveBeenCalledWith("Bearer mock-storage-access-token");
   expect(mockRender).toHaveBeenCalledExactlyOnceWith(
     expect.toSatisfy((filename: string) => filename.endsWith("index.njk")),
     {
@@ -258,7 +258,7 @@ describe("handler record validation", () => {
 
   it("returns a failure response when the EVCS call fails", async () => {
     (handleGetIdentityFromCredentialStore as Mock).mockRejectedValue(
-      new EVCSError(HttpCodesEnum.INTERNAL_SERVER_ERROR, "user-id")
+      new EVCSError(HttpCodesEnum.INTERNAL_SERVER_ERROR)
     );
     const result = await lambdaHandler(validEvent());
     expect(validateStoredIdentity).not.toHaveBeenCalled();
@@ -267,7 +267,7 @@ describe("handler record validation", () => {
   });
 
   it("redirects to error page when EVCS returns a 404", async () => {
-    (handleGetIdentityFromCredentialStore as Mock).mockRejectedValue(new EVCSError(HttpCodesEnum.NOT_FOUND, "user-id"));
+    (handleGetIdentityFromCredentialStore as Mock).mockRejectedValue(new EVCSError(HttpCodesEnum.NOT_FOUND));
     const result = await lambdaHandler(validEvent());
     expect(validateStoredIdentity).not.toHaveBeenCalled();
     expect(mockRender).not.toHaveBeenCalled();
