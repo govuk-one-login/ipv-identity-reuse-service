@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, Mock, vi, vitest } from "v
 import { lambdaHandler } from "../get-confirm-details-handler.js";
 import { APIGatewayProxyEvent } from "aws-lambda";
 import {
-  handleGetIdentityFromCredentialStore,
+  getIdentityFromCredentialStore,
   validateStoredIdentity,
 } from "../../../domain/stored-identity/stored-identity-validator.js";
 import { EVCSError, StoredIdentityValidationError } from "../../../commons/errors.js";
@@ -38,7 +38,7 @@ vitest.mock("@aws-lambda-powertools/metrics", () => ({
 }));
 
 vi.mock("../../../domain/stored-identity/stored-identity-validator", () => ({
-  handleGetIdentityFromCredentialStore: vi.fn(),
+  getIdentityFromCredentialStore: vi.fn(),
   validateStoredIdentity: vi.fn(),
 }));
 
@@ -88,7 +88,7 @@ const validEvent = () =>
   }) as never as APIGatewayProxyEvent;
 
 beforeEach(() => {
-  vi.spyOn(storedIdentityValidator, "handleGetIdentityFromCredentialStore").mockResolvedValue(mockIdentityResponse);
+  vi.spyOn(storedIdentityValidator, "getIdentityFromCredentialStore").mockResolvedValue(mockIdentityResponse);
   vi.spyOn(storedIdentityValidator, "validateStoredIdentity").mockResolvedValue({
     kidValid: true,
     signatureValid: true,
@@ -139,7 +139,7 @@ it("should render the confirm details screen when all query string parameters ar
   const result = await lambdaHandler(validEvent());
 
   expect(getSessionDetails).toHaveBeenCalledWith("test-session-id");
-  expect(handleGetIdentityFromCredentialStore).toHaveBeenCalledWith("Bearer mock-storage-access-token");
+  expect(getIdentityFromCredentialStore).toHaveBeenCalledWith("Bearer mock-storage-access-token");
   expect(mockRender).toHaveBeenCalledExactlyOnceWith(
     expect.toSatisfy((filename: string) => filename.endsWith("index.njk")),
     {
@@ -245,7 +245,7 @@ describe("handler record validation", () => {
       headers: {},
     } as never as APIGatewayProxyEvent);
     expect(getSessionDetails).not.toHaveBeenCalled();
-    expect(handleGetIdentityFromCredentialStore).not.toHaveBeenCalled();
+    expect(getIdentityFromCredentialStore).not.toHaveBeenCalled();
     expect(mockRender).not.toHaveBeenCalled();
     expect(result).toEqual({
       statusCode: 302,
@@ -257,7 +257,7 @@ describe("handler record validation", () => {
   it("returns a failure response with a 500 status code when storageAccessToken is not returned from the session", async () => {
     (getSessionDetails as Mock).mockResolvedValueOnce({ subject: "user-sub", storageAccessToken: undefined });
     const result = await lambdaHandler(validEvent());
-    expect(handleGetIdentityFromCredentialStore).not.toHaveBeenCalled();
+    expect(getIdentityFromCredentialStore).not.toHaveBeenCalled();
     expect(mockRender).not.toHaveBeenCalled();
     expect(result).toEqual({
       statusCode: 302,
@@ -267,9 +267,7 @@ describe("handler record validation", () => {
   });
 
   it("returns a failure response when the EVCS call fails", async () => {
-    (handleGetIdentityFromCredentialStore as Mock).mockRejectedValue(
-      new EVCSError(HttpCodesEnum.INTERNAL_SERVER_ERROR)
-    );
+    (getIdentityFromCredentialStore as Mock).mockRejectedValue(new EVCSError(HttpCodesEnum.INTERNAL_SERVER_ERROR));
     const result = await lambdaHandler(validEvent());
     expect(validateStoredIdentity).not.toHaveBeenCalled();
     expect(mockRender).not.toHaveBeenCalled();
@@ -283,7 +281,8 @@ describe("handler record validation", () => {
   });
 
   it("redirects to client when EVCS returns a 404", async () => {
-    (handleGetIdentityFromCredentialStore as Mock).mockRejectedValue(new EVCSError(HttpCodesEnum.NOT_FOUND));
+    // eslint-disable-next-line unicorn/no-useless-undefined
+    (getIdentityFromCredentialStore as Mock).mockResolvedValue(undefined);
     const result = await lambdaHandler(validEvent());
     expect(validateStoredIdentity).not.toHaveBeenCalled();
     expect(mockRender).not.toHaveBeenCalled();
@@ -301,7 +300,7 @@ describe("handler record validation", () => {
   it("returns a failure response when getSessionDetails throws", async () => {
     (getSessionDetails as Mock).mockRejectedValueOnce(new Error("GET session endpoint returned an error response"));
     const result = await lambdaHandler(validEvent());
-    expect(handleGetIdentityFromCredentialStore).not.toHaveBeenCalled();
+    expect(getIdentityFromCredentialStore).not.toHaveBeenCalled();
     expect(mockRender).not.toHaveBeenCalled();
     expect(result).toEqual({
       headers: {

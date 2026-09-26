@@ -15,7 +15,7 @@ import {
 import { getProperty } from "../../commons/case-insensitive-header-utilities.js";
 import {
   getUserIdFromJwt,
-  handleGetIdentityFromCredentialStore,
+  getIdentityFromCredentialStore,
   createErrorResponse,
   createAndLogErrorResponse,
   validateStoredIdentity,
@@ -54,10 +54,19 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
   }
 
   try {
-    const identityResponse = await handleGetIdentityFromCredentialStore(authorisation);
-    const response = await createSuccessResponse(identityResponse, request.vtr, subject, request.govukSigninJourneyId);
+    const identityResponse = await getIdentityFromCredentialStore(authorisation);
 
-    return { statusCode: HttpCodesEnum.OK, body: JSON.stringify(response) };
+    if (identityResponse) {
+      const response = await createSuccessResponse(
+        identityResponse,
+        request.vtr,
+        subject,
+        request.govukSigninJourneyId
+      );
+      return { statusCode: HttpCodesEnum.OK, body: JSON.stringify(response) };
+    } else {
+      return await createAndLogErrorResponse(HttpCodesEnum.NOT_FOUND, subject, request.govukSigninJourneyId);
+    }
   } catch (error) {
     if (error instanceof EVCSError) {
       return await createAndLogErrorResponse(error.statusCode, subject, request.govukSigninJourneyId);
