@@ -6,9 +6,8 @@ import nunjucks from "nunjucks";
 import translations from "../../../locales/en/translation.json" with { type: "json" };
 import { getSessionDetails, updateSessionData } from "../../api/oauth-internal-api.js";
 import { redirectToErrorPage } from "../../api/sis-api.js";
-import { HttpCodesEnum } from "../../commons/constants.js";
 import { getCookieValues } from "../../commons/cookie-utilities.js";
-import { EVCSError, StoredIdentityValidationError } from "../../commons/errors.js";
+import { StoredIdentityValidationError } from "../../commons/errors.js";
 import { getJwtBody } from "../../commons/jwt-utilities.js";
 import logger from "../../commons/logger.js";
 import { MetricDimension, MetricName } from "../../commons/metric-enum.js";
@@ -19,7 +18,7 @@ import {
   StoredIdentityVectorOfTrust,
 } from "../../domain/stored-identity/stored-identity-types.js";
 import {
-  handleGetIdentityFromCredentialStore,
+  getIdentityFromCredentialStore,
   validateStoredIdentity,
 } from "../../domain/stored-identity/stored-identity-validator.js";
 import { hasIdentityExpired } from "../../domain/verifiable-credential/identity-expiry-service.js";
@@ -70,54 +69,57 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
       return redirectToErrorPage(domainName);
     }
 
-    const identityResponse = await handleGetIdentityFromCredentialStore(`Bearer ${storageAccessToken}`);
-    const { kidValid, signatureValid, isValid, storedIdentityRecord } = await validateStoredIdentity(identityResponse);
+    const identityResponse = await getIdentityFromCredentialStore(`Bearer ${storageAccessToken}`);
 
-    if (!kidValid || !signatureValid || !isValid || !storedIdentityRecord) {
-      logger.error("Record validation failed for existing user", { kidValid, signatureValid, isValid });
+    if (identityResponse) {
+      const { kidValid, signatureValid, isValid, storedIdentityRecord } =
+        await validateStoredIdentity(identityResponse);
+
+      if (!kidValid || !signatureValid || !isValid || !storedIdentityRecord) {
+        logger.error("Record validation failed for existing user", { kidValid, signatureValid, isValid });
+        return {
+          statusCode: 500,
+          body: "",
+        };
+      }
+
+      const storedIdentityJwt = identityResponse.si.vc;
+      const content = getJwtBody<StoredIdentityRecord>(storedIdentityJwt);
+      const unsignedVot: IdentityVectorOfTrust = identityResponse.si.unsignedVot;
+      const storedIdentityVcJwts: string[] = identityResponse.vcs.map((vcObject) => vcObject.vc);
+      const vot = calculateVot(content, unsignedVot, vtr);
+
+      const identityReuseValid = await validateUserIdentity(vot, storedIdentityVcJwts, vtr);
+      if (!identityReuseValid) {
+        return redirectToErrorPage(domainName);
+      }
+
+      await sessionStoreHashedStoredIdentity(sessionId, storedIdentityJwt, vot, storedIdentityVcJwts);
+
+      const userDetails = extractUserDetails(storedIdentityRecord);
+
       return {
-        statusCode: 500,
-        body: "",
+        statusCode: 200,
+        body: nunjucksEnvironment.render(mainPageTemplate, {
+          assetPath: "./assets",
+          rootPath: ".",
+          redirect_uri,
+          state,
+          client_id,
+          userDetails,
+          translations,
+          govukRebrand: true,
+          errorPageUrl: `https://${domainName}/error/unrecoverable`,
+        }),
+        headers: {
+          "content-type": "text/html",
+        },
       };
-    }
-
-    const storedIdentityJwt = identityResponse.si.vc;
-    const content = getJwtBody<StoredIdentityRecord>(storedIdentityJwt);
-    const unsignedVot: IdentityVectorOfTrust = identityResponse.si.unsignedVot;
-    const storedIdentityVcJwts: string[] = identityResponse.vcs.map((vcObject) => vcObject.vc);
-    const vot = calculateVot(content, unsignedVot, vtr);
-
-    const identityReuseValid = await validateUserIdentity(vot, storedIdentityVcJwts, vtr);
-    if (!identityReuseValid) {
-      return redirectToErrorPage(domainName);
-    }
-
-    await sessionStoreHashedStoredIdentity(sessionId, storedIdentityJwt, vot, storedIdentityVcJwts);
-
-    const userDetails = extractUserDetails(storedIdentityRecord);
-
-    return {
-      statusCode: 200,
-      body: nunjucksEnvironment.render(mainPageTemplate, {
-        assetPath: "./assets",
-        rootPath: ".",
-        redirect_uri,
-        state,
-        client_id,
-        userDetails,
-        translations,
-        govukRebrand: true,
-        errorPageUrl: `https://${domainName}/error/unrecoverable`,
-      }),
-      headers: {
-        "content-type": "text/html",
-      },
-    };
-  } catch (error) {
-    if (error instanceof EVCSError && error.statusCode === HttpCodesEnum.NOT_FOUND) {
+    } else {
       logger.error("No identity record found in EVCS");
       return redirectToErrorPage(domainName);
     }
+  } catch (error) {
     if (error instanceof StoredIdentityValidationError) {
       return redirectToErrorPage(domainName);
     }

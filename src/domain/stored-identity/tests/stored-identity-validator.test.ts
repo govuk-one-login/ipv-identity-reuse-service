@@ -7,9 +7,15 @@ import {
   createInvalidIdentityCheckCredentialJWT,
   createSignedIdentityCheckCredentialJWT,
 } from "../../../../shared-test/evcs-api-utilities.js";
-import { validateCryptography, validateStoredIdentity } from "../stored-identity-validator.js";
+import {
+  getIdentityFromCredentialStore,
+  validateCryptography,
+  validateStoredIdentity,
+} from "../stored-identity-validator.js";
 import { getJwtSignature } from "../../../commons/jwt-utilities.js";
 import { EVCSIdentityResponse } from "../../../api/evcs-api.js";
+import { Configuration } from "../../../commons/configuration.js";
+import { EVCSError } from "../../../commons/errors.js";
 
 const mockEVCSResponse = (response: EVCSIdentityResponse) => {
   (globalThis.fetch as Mock) = vi.fn().mockResolvedValue(
@@ -28,10 +34,35 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(configuration, "getConfiguration").mockResolvedValue({
     controllerAllowList: [ALLOWED_CONTROLLER],
-  } as never);
+    evcsApiUrl: "https://evcs.account.gov.uk",
+  } as Configuration);
+  vi.spyOn(configuration, "getServiceApiKey").mockResolvedValue("apiKey");
   vi.spyOn(DidResolutionService, "getPublicKeyJwkForKid").mockResolvedValue(publicKeyJwk);
   vi.spyOn(DidResolutionService, "isValidDidWeb").mockReturnValue(true);
   vi.spyOn(DidResolutionService, "getDidWebController").mockReturnValue(ALLOWED_CONTROLLER);
+});
+
+describe("getIdentityFromCredentialStore", () => {
+  it("returns data for 200 response from EVCS", async () => {
+    (globalThis.fetch as Mock) = vi.fn().mockResolvedValue({ status: 404 });
+    expect(await getIdentityFromCredentialStore("token")).toBe(undefined);
+  });
+
+  it("returns responseBody for 200 response from EVCS", async () => {
+    const responseBody = { key: "value" };
+    (globalThis.fetch as Mock) = vi.fn().mockResolvedValue(
+      Response.json(responseBody, {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      })
+    );
+    expect(await getIdentityFromCredentialStore("token")).toEqual(responseBody);
+  });
+
+  it("returns EVCSError for 500 response from EVCS", async () => {
+    (globalThis.fetch as Mock) = vi.fn().mockResolvedValue({ status: 500 });
+    await expect(getIdentityFromCredentialStore("token")).rejects.toThrow(new EVCSError(500));
+  });
 });
 
 describe("validateCryptography", () => {

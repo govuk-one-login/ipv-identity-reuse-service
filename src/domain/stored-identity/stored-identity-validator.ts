@@ -17,16 +17,19 @@ import {
 import { correlateCredentials } from "./credential-correlator.js";
 import { ErrorCodeEnum, ResponseBody } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_RETURNED.js";
 
-export const handleGetIdentityFromCredentialStore = async (
+export const getIdentityFromCredentialStore = async (
   authorizationToken: string
-): Promise<EVCSIdentityResponse> => {
+): Promise<EVCSIdentityResponse | undefined> => {
   const result = await getIdentityFromEVCS(authorizationToken);
-  if (!result.ok) {
+  if (result.ok) {
+    return await result.json();
+  } else if (result.status === HttpCodesEnum.NOT_FOUND) {
+    logger.info("No stored identity found for user");
+    return undefined;
+  } else {
     logger.error("Error received from EVCS", { status: result.status });
     throw new EVCSError(result.status);
   }
-
-  return await result.json();
 };
 
 export const validateStoredIdentity = async (
