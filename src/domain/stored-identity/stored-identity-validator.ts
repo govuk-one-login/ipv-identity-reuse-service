@@ -17,21 +17,6 @@ import {
 import { correlateCredentials } from "./credential-correlator.js";
 import { ErrorCodeEnum, ResponseBody } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_RETURNED.js";
 
-export const getUserIdFromJwt = (authorizationToken: string): string => {
-  let jwt;
-  try {
-    jwt = getJwtBody(authorizationToken.split(" ").at(1) || "");
-  } catch {
-    logger.error("Error whilst decoding Bearer token body");
-    throw new TokenValidationError(HttpCodesEnum.UNAUTHORIZED);
-  }
-  if (!jwt.sub) {
-    logger.error("Bearer token does not include subject");
-    throw new TokenValidationError(HttpCodesEnum.UNAUTHORIZED);
-  }
-  return jwt.sub;
-};
-
 export const handleGetIdentityFromCredentialStore = async (
   authorizationToken: string,
   userId: string,
@@ -44,6 +29,23 @@ export const handleGetIdentityFromCredentialStore = async (
   }
 
   return await result.json();
+};
+
+export const validateStoredIdentity = async (
+  identityResponse: EVCSIdentityResponse
+): Promise<StoredIdentityValidationResult> => {
+  const kid = getJwtHeader(identityResponse.si.vc).kid || "";
+
+  const { kidValid, signatureValid } = await validateCryptography(kid, identityResponse);
+
+  const content = getJwtBody<StoredIdentityRecord>(identityResponse.si.vc);
+
+  const isValidStoredIdentityObject = isStoredIdentityRecord(content);
+  if (!isValidStoredIdentityObject) logger.error("Stored identity JWT does not match expected format");
+  const currentVcsEncoded = identityResponse.vcs.map((vc) => vc.vc);
+  const isValid = isValidStoredIdentityObject && correlateCredentials(content, currentVcsEncoded);
+
+  return { kidValid, signatureValid, isValid, storedIdentityRecord: content };
 };
 
 export const validateCryptography = async (
@@ -71,21 +73,19 @@ const verifySignature = async (kid: string, jwt: string): Promise<boolean> => {
   return true;
 };
 
-export const validateStoredIdentity = async (
-  identityResponse: EVCSIdentityResponse
-): Promise<StoredIdentityValidationResult> => {
-  const kid = getJwtHeader(identityResponse.si.vc).kid || "";
-
-  const { kidValid, signatureValid } = await validateCryptography(kid, identityResponse);
-
-  const content = getJwtBody<StoredIdentityRecord>(identityResponse.si.vc);
-
-  const isValidStoredIdentityObject = isStoredIdentityRecord(content);
-  if (!isValidStoredIdentityObject) logger.error("Stored identity JWT does not match expected format");
-  const currentVcsEncoded = identityResponse.vcs.map((vc) => vc.vc);
-  const isValid = isValidStoredIdentityObject && correlateCredentials(content, currentVcsEncoded);
-
-  return { kidValid, signatureValid, isValid, storedIdentityRecord: content };
+export const getUserIdFromJwt = (authorizationToken: string): string => {
+  let jwt;
+  try {
+    jwt = getJwtBody(authorizationToken.split(" ").at(1) || "");
+  } catch {
+    logger.error("Error whilst decoding Bearer token body");
+    throw new TokenValidationError(HttpCodesEnum.UNAUTHORIZED);
+  }
+  if (!jwt.sub) {
+    logger.error("Bearer token does not include subject");
+    throw new TokenValidationError(HttpCodesEnum.UNAUTHORIZED);
+  }
+  return jwt.sub;
 };
 
 export const createErrorResponse = (errorCode: HttpCodesEnum): APIGatewayProxyResult => {
