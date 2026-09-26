@@ -5,7 +5,6 @@ import * as configuration from "../../../commons/configuration.js";
 import { Configuration } from "../../../commons/configuration.js";
 import { UserIdentityRequest, UserIdentityResponse } from "../post-phase2-user-identity-types.js";
 import * as identityExpiryService from "../../../domain/verifiable-credential/identity-expiry-service.js";
-
 import * as AuditModule from "../../../commons/audit.js";
 import * as ValidateStoredIdentity from "../../../domain/stored-identity/stored-identity-validator.js";
 import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utilities.js";
@@ -131,9 +130,7 @@ describe("user-identity-handler authorization", () => {
       signatureValid: true,
     });
     expect(ValidateStoredIdentity.handleGetIdentityFromCredentialStore).toHaveBeenCalledWith(
-      "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6ImVjS2lkMTIzIn0.eyJzdWIiOiJ1cm46ZmRjOmdvdi51azoyMDIyOlRFU1RfVVNFUi1TN2pjckhMR0JqLTJrZ0ItOC1jWWhWck1kbzNDVjBMbEQ3QW4iLCJleHAiOjE3NTczMjQyMTcsImlhdCI6MTc1NzMyMzkxNywiaXNzIjoiaHR0cHM6Ly9tb2NrLmNyZWRlbnRpYWwtc3RvcmUuYnVpbGQuYWNjb3VudC5nb3YudWsvb3JjaGVzdHJhdGlvbiIsImF1ZCI6Imh0dHBzOi8vY3JlZGVudGlhbC1zdG9yZS5idWlsZC5hY2NvdW50Lmdvdi51ayIsInNjb3BlIjoicHJvdmluZyJ9.Sj-2jA6mLdfkU1ryoBCNHxpBCT49o9qfqpKPMLkKwY1D6V6SvVIERGbC0X-fh8SYk2z-strc9vahvacvkrNDUQ",
-      TEST_USER,
-      "govuk_signin_journey_id"
+      "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6ImVjS2lkMTIzIn0.eyJzdWIiOiJ1cm46ZmRjOmdvdi51azoyMDIyOlRFU1RfVVNFUi1TN2pjckhMR0JqLTJrZ0ItOC1jWWhWck1kbzNDVjBMbEQ3QW4iLCJleHAiOjE3NTczMjQyMTcsImlhdCI6MTc1NzMyMzkxNywiaXNzIjoiaHR0cHM6Ly9tb2NrLmNyZWRlbnRpYWwtc3RvcmUuYnVpbGQuYWNjb3VudC5nb3YudWsvb3JjaGVzdHJhdGlvbiIsImF1ZCI6Imh0dHBzOi8vY3JlZGVudGlhbC1zdG9yZS5idWlsZC5hY2NvdW50Lmdvdi51ayIsInNjb3BlIjoicHJvdmluZyJ9.Sj-2jA6mLdfkU1ryoBCNHxpBCT49o9qfqpKPMLkKwY1D6V6SvVIERGbC0X-fh8SYk2z-strc9vahvacvkrNDUQ"
     );
     expect(ValidateStoredIdentity.validateStoredIdentity).toHaveBeenCalledWith(mockEVCSData);
     expect(auditIdentityRecordReadSpy).toHaveBeenCalledWith(
@@ -258,7 +255,7 @@ describe("user-identity-handler authorization", () => {
     const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
 
     (ValidateStoredIdentity.handleGetIdentityFromCredentialStore as Mock).mockRejectedValue(
-      new EVCSError(HttpCodesEnum.FORBIDDEN, TEST_USER, "govuk_signin_journey_id")
+      new EVCSError(HttpCodesEnum.FORBIDDEN)
     );
 
     const result = handler(newEvent, {} as Context);
@@ -293,7 +290,7 @@ describe("user-identity-handler authorization", () => {
     const auditIdentityRecordReadSpy = vi.spyOn(AuditModule, "auditIdentityRecordRead");
     const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
     (ValidateStoredIdentity.handleGetIdentityFromCredentialStore as Mock).mockRejectedValue(
-      new EVCSError(HttpCodesEnum.UNAUTHORIZED, TEST_USER, "govuk_signin_journey_id")
+      new EVCSError(HttpCodesEnum.UNAUTHORIZED)
     );
     const result = handler(newEvent, {} as Context);
     await expect(result).resolves.toEqual({
@@ -327,7 +324,7 @@ describe("user-identity-handler authorization", () => {
     const auditIdentityRecordReadSpy = vi.spyOn(AuditModule, "auditIdentityRecordRead");
     const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
     (ValidateStoredIdentity.handleGetIdentityFromCredentialStore as Mock).mockRejectedValue(
-      new EVCSError(HttpCodesEnum.INTERNAL_SERVER_ERROR, TEST_USER, "govuk_signin_journey_id")
+      new EVCSError(HttpCodesEnum.INTERNAL_SERVER_ERROR)
     );
     const result = handler(newEvent, {} as Context);
     await expect(result).resolves.toEqual({
@@ -361,7 +358,7 @@ describe("user-identity-handler authorization", () => {
     const auditIdentityRecordReadSpy = vi.spyOn(AuditModule, "auditIdentityRecordRead");
     const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
     (ValidateStoredIdentity.handleGetIdentityFromCredentialStore as Mock).mockRejectedValue(
-      new EVCSError(HttpCodesEnum.NOT_FOUND, TEST_USER, "govuk_signin_journey_id")
+      new EVCSError(HttpCodesEnum.NOT_FOUND)
     );
     const result = handler(newEvent, {} as Context);
     await expect(result).resolves.toEqual({
