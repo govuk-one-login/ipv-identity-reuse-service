@@ -1469,6 +1469,22 @@ Resources:
           - !Sub "${AWS::StackName}.reuse-identity.dev.account.gov.uk"
         - !Sub "reuse-identity.${Environment}.account.gov.uk"
 
+  OriginReuseIdentityDomain:
+    Type: AWS::SSM::Parameter
+    Condition: IsNotProduction
+    Properties:
+      Name: !Sub "/${AWS::StackName}/OriginDomainName"
+      Type: "String"
+      Value: !If
+        - IsDev
+        - !If
+          - IsMainStack
+          - !Sub "origin.reuse-identity.dev.account.gov.uk"
+          - !Sub
+            - "origin.${ReuseIdentityDomain}"
+            - ReuseIdentityDomain: !GetAtt ReuseIdentityDomain.Value
+        - !Sub "origin.reuse-identity.${Environment}.account.gov.uk"
+
   ReuseIdentityCredentialStoreSSLCert:
     Type: AWS::CertificateManager::Certificate
     Condition: IsNotProduction
@@ -1478,6 +1494,11 @@ Resources:
         - DomainName: !GetAtt ReuseIdentityDomain.Value
           HostedZoneId:
             Fn::ImportValue: !Sub "${DnsStackName}-ReuseIdentityServiceHostedZoneId"
+        - DomainName: !GetAtt OriginReuseIdentityDomain.Value
+          HostedZoneId:
+            Fn::ImportValue: !Sub "${DnsStackName}-ReuseIdentityServiceHostedZoneId"
+      SubjectAlternativeNames:
+        - !GetAtt OriginReuseIdentityDomain.Value
       ValidationMethod: DNS
 
   ReuseIdentityCustomDomain:
@@ -1485,6 +1506,17 @@ Resources:
     Condition: IsNotProduction
     Properties:
       DomainName: !GetAtt ReuseIdentityDomain.Value
+      RegionalCertificateArn: !Ref ReuseIdentityCredentialStoreSSLCert
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      SecurityPolicy: TLS_1_2
+
+  OriginReuseIdentityCustomDomain:
+    Type: AWS::ApiGateway::DomainName
+    Condition: IsNotProduction
+    Properties:
+      DomainName: !GetAtt OriginReuseIdentityDomain.Value
       RegionalCertificateArn: !Ref ReuseIdentityCredentialStoreSSLCert
       EndpointConfiguration:
         Types:
@@ -1504,11 +1536,34 @@ Resources:
         HostedZoneId: !GetAtt ReuseIdentityCustomDomain.RegionalHostedZoneId
         EvaluateTargetHealth: false
 
+  OriginApiRecord:
+    Type: AWS::Route53::RecordSet
+    Condition: IsNotProduction
+    Properties:
+      Name: !Ref OriginReuseIdentityCustomDomain
+      Type: A
+      HostedZoneId:
+        Fn::ImportValue: !Sub "${DnsStackName}-ReuseIdentityServiceHostedZoneId"
+      AliasTarget:
+        DNSName: !GetAtt OriginReuseIdentityCustomDomain.RegionalDomainName
+        HostedZoneId: !GetAtt ReuseIdentityCustomDomain.RegionalHostedZoneId
+        EvaluateTargetHealth: false
+
   ApiMapping:
     Type: AWS::ApiGateway::BasePathMapping
     Condition: IsNotProduction
     Properties:
       DomainName: !Ref ReuseIdentityCustomDomain
+      RestApiId: !Ref PublicApi
+      Stage: !Ref ApiStageName
+    DependsOn:
+      - PublicApiStage
+
+  OriginApiMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Condition: IsNotProduction
+    Properties:
+      DomainName: !Ref OriginReuseIdentityCustomDomain
       RestApiId: !Ref PublicApi
       Stage: !Ref ApiStageName
     DependsOn:
