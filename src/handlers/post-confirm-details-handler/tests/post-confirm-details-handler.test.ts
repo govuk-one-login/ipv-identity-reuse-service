@@ -2,6 +2,7 @@ import { APIGatewayEventRequestContextWithAuthorizer, APIGatewayProxyEvent } fro
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { lambdaHandler } from "../post-confirm-details-handler.js";
 import { randomUUID } from "node:crypto";
+import { patchSessionData } from "../../../api/oauth-internal-api.js";
 
 const TEST_SESSION_ID = randomUUID();
 
@@ -13,6 +14,10 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllEnvs();
 });
+
+vi.mock("../../../api/oauth-internal-api", () => ({
+  patchSessionData: vi.fn(),
+}));
 
 it("should redirect to the error page if the session is not provided", async () => {
   const event = createMockAPIGatewayProxyEvent(
@@ -42,6 +47,11 @@ it("should return a 302 status code on a successful request", async () => {
   );
 
   const response = await lambdaHandler(event);
+
+  expect(vi.mocked(patchSessionData)).toHaveBeenCalledWith(TEST_SESSION_ID, {
+    error_description: "record_update_requested",
+  });
+
   expect(response).toStrictEqual({
     statusCode: 302,
     body: "",

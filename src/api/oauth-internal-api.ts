@@ -195,6 +195,27 @@ export async function updateSessionData(sessionId: string, data: Record<string, 
   }
 }
 
+export async function patchSessionData(sessionId: string, data: Record<string, string>): Promise<void> {
+  const url = new URL(`${getOauthInternalApiUrl()}/api/session/data`);
+
+  const responseFromEndpoint = await fetch(url, {
+    method: "PATCH",
+    headers: {
+      "session-id": sessionId,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+    signal: AbortSignal.timeout(SESSION_TIMEOUT_MS),
+  });
+
+  if (responseFromEndpoint.status == 200) {
+    return;
+  }
+
+  logger.error(`PATCH /session/data returned non-200 response: ${responseFromEndpoint.status}`);
+  throw new Error(`PATCH /session/data endpoint returned an error response`);
+}
+
 function isValidAuthorizationSuccessResponse(object: unknown): object is AuthorizationSuccessResponse {
   if (!object || typeof object !== "object") return false;
   return (
