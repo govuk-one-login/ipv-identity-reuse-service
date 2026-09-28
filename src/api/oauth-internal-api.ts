@@ -23,6 +23,35 @@ type AuthorizationResult = {
   code?: string;
 };
 
+type AuthorizationSuccessResponse = {
+  redirectionURI: string;
+  authorizationCode: { value: string };
+  state: { value: string };
+};
+
+type AuthorizationErrorResponse = {
+  redirectionUri: string;
+  state: string;
+  message: string;
+  code: string;
+};
+
+type SessionSuccessResponse = {
+  session_id: string;
+  state: string;
+  redirect_uri: string;
+};
+
+type GetSessionSuccessResponse = {
+  vtr?: IdentityVectorOfTrust[];
+  storageAccessToken?: string;
+  clientSessionId: string;
+  persistentSessionId?: string;
+  subject: string;
+  context?: string;
+  sessionData?: object;
+};
+
 export class CreateSessionError extends Error {
   constructor(message: string) {
     super(message);
@@ -147,33 +176,23 @@ export async function getSessionDetails(sessionId: string): Promise<GetSessionRe
   }
 }
 
-interface AuthorizationSuccessResponse {
-  redirectionURI: string;
-  authorizationCode: { value: string };
-  state: { value: string };
-}
+export async function updateSessionData(sessionId: string, data: Record<string, string | null>): Promise<void> {
+  const oauthInternalApiUrl = getOauthInternalApiUrl();
+  const url = new URL(`${oauthInternalApiUrl}/api/session`);
 
-interface AuthorizationErrorResponse {
-  redirectionUri: string;
-  state: string;
-  message: string;
-  code: string;
-}
+  const responseFromSessionEndpoint = await fetch(url, {
+    method: "PATCH",
+    headers: {
+      "session-id": sessionId,
+    },
+    body: JSON.stringify(data),
+    signal: AbortSignal.timeout(SESSION_TIMEOUT_MS),
+  });
 
-interface SessionSuccessResponse {
-  session_id: string;
-  state: string;
-  redirect_uri: string;
-}
-
-interface GetSessionSuccessResponse {
-  vtr?: IdentityVectorOfTrust[];
-  storageAccessToken?: string;
-  clientSessionId: string;
-  persistentSessionId?: string;
-  subject: string;
-  context?: string;
-  sessionData?: object;
+  if (responseFromSessionEndpoint.status !== 200) {
+    logger.error(`PATCH session handler returned non-200 status: ${responseFromSessionEndpoint.status}`);
+    throw new Error("PATCH session endpoint returned an error response");
+  }
 }
 
 function isValidAuthorizationSuccessResponse(object: unknown): object is AuthorizationSuccessResponse {
