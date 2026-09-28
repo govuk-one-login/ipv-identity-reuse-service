@@ -1,8 +1,11 @@
-export interface AuthorizationQueryStringParameters {
-  redirect_uri: string;
-  state: string;
+export type AuthorizationQueryStringParameters = {
   client_id: string;
-}
+  response_type: string;
+  redirect_uri: string;
+  scope?: string;
+  state: string;
+  request?: string;
+};
 
 export function isValidQueryParameters(object: unknown): object is AuthorizationQueryStringParameters {
   if (!object || typeof object !== "object") return false;
