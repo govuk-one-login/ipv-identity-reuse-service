@@ -3,15 +3,7 @@ import logger from "../../utilities/logger.js";
 import { callSessionApi, SessionResult } from "../../api/oauth-internal-api.js";
 import { redirectToConfirmDetails, redirectToErrorPage } from "../../api/sis-api.js";
 import { getRequiredEnvironment } from "../../configuration/get-required-environment.js";
-
-export type AuthorizationQueryStringParameters = {
-  client_id: string;
-  response_type: string;
-  redirect_uri: string;
-  scope?: string;
-  state: string;
-  request?: string;
-};
+import type { AuthorizationQueryStringParameters } from "../../domain/authorization/authorization-types.js";
 
 export async function handler(event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> {
   logger.addContext(context);

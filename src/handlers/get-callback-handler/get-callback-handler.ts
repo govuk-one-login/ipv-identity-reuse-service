@@ -1,11 +1,11 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import logger from "../../utilities/logger.js";
 import { getCookieValues } from "../../utilities/cookie-utilities.js";
-import { isValidQueryParameters } from "./get-callback-types.js";
 import { getAuthorizationCode } from "../../api/oauth-internal-api.js";
 import { redirectToClient, redirectToErrorPage, redirectToSessionExpiredPage } from "../../api/sis-api.js";
 import { getRequiredEnvironment } from "../../configuration/get-required-environment.js";
 import { SessionInvalidError } from "../../utilities/errors.js";
+import { isValidQueryParameters } from "../../domain/authorization/authorization-types.js";
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const queryParameters = event.queryStringParameters || {};
