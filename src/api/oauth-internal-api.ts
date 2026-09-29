@@ -188,8 +188,6 @@ export async function updateSessionData(sessionId: string, data: Record<string, 
     body: JSON.stringify(data),
     signal: AbortSignal.timeout(SESSION_TIMEOUT_MS),
   });
-  logger.info(`RESPONSE BODY: ${responseFromSessionEndpoint.body}`);
-  logger.info(`RESP HEADERS: ${responseFromSessionEndpoint.headers}`);
 
   if (responseFromSessionEndpoint.status !== 200) {
     logger.error(`PATCH session/data endpoint returned non-200 status: ${responseFromSessionEndpoint.status}`);

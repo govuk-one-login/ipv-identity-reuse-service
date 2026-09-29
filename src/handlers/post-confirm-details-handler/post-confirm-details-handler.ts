@@ -21,9 +21,9 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
   }
 
   try {
-    await updateSessionData(sessionId, { error_description: "record_update_requested" });
-
     await createAuthCode(sessionId);
+
+    await updateSessionData(sessionId, { error_description: "record_update_requested" });
 
     const url = new URL(`https://${process.env.PUBLIC_API}/oauth2/callback`);
     url.searchParams.append("redirect_uri", redirectUri);
