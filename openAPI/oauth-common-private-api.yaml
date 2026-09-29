@@ -7,36 +7,6 @@ info:
 
 paths:
   /api/session:
-    patch:
-      summary: "Update session details"
-      parameters:
-        - $ref: "#/components/parameters/SessionHeader"
-      responses:
-        "200":
-          description: "200 response"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GetSessionResponse"
-        "400":
-          description: "400 response"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-        "500":
-          description: "500 response"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-      x-amazon-apigateway-request-validator: ALL
-      x-amazon-apigateway-integration:
-        type: aws_proxy
-        httpMethod: POST
-        uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${OAuthCommon.Outputs.LambdaUpdateSessionDataFunctionName}:live/invocations
-        passthroughBehavior: never
     get:
       summary: "Get session details"
       parameters:
@@ -205,7 +175,7 @@ paths:
 
   /api/session/data:
     patch:
-      summary: "Patch endpoint to update session data"
+      summary: "Update session details"
       parameters:
         - $ref: "#/components/parameters/SessionHeader"
       requestBody:
@@ -229,7 +199,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-      x-amazon-apigateway-request-validator: "Validate both"
+      x-amazon-apigateway-request-validator: ALL
       x-amazon-apigateway-integration:
         type: "aws_proxy"
         httpMethod: "POST"

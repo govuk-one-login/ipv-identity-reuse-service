@@ -1,11 +1,5 @@
 import { afterEach, beforeEach, expect, it, vitest, describe } from "vitest";
-import {
-  callSessionApi,
-  getAuthorizationCode,
-  getSessionDetails,
-  updateSessionData,
-  patchSessionData,
-} from "../oauth-internal-api.js";
+import { callSessionApi, getAuthorizationCode, getSessionDetails, updateSessionData } from "../oauth-internal-api.js";
 import { URL } from "node:url";
 
 const { mockError } = vitest.hoisted(() => {
@@ -452,7 +446,7 @@ describe("updateSessionData", () => {
 
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      new URL("https://test.com/api/session"),
+      new URL("https://test.com/api/session/data"),
       expect.objectContaining({
         method: "PATCH",
         headers: {
@@ -471,12 +465,12 @@ describe("updateSessionData", () => {
     vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
 
     await expect(updateSessionData("session-1234", { foo: "bar" })).rejects.toThrow(
-      "PATCH session endpoint returned an error response"
+      "PATCH session/data endpoint returned an error response"
     );
 
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      new URL("https://test.com/api/session"),
+      new URL("https://test.com/api/session/data"),
       expect.objectContaining({
         method: "PATCH",
         headers: {
@@ -485,41 +479,6 @@ describe("updateSessionData", () => {
         body: '{"foo":"bar"}',
         signal: expect.any(AbortSignal),
       })
-    );
-  });
-});
-
-describe("patchSessionData", () => {
-  it("should call PATCH /api/session/data with the session-id header and data body, returning a 200 response", async () => {
-    const mockResponse = Response.json("", { status: 200 });
-    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
-
-    await expect(
-      patchSessionData("test-session-id", { error_description: "record_update_requested" })
-    ).resolves.toBeUndefined();
-
-    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-    expect(globalThis.fetch).toHaveBeenCalledWith(new URL("https://test.com/api/session/data"), {
-      method: "PATCH",
-      headers: {
-        "session-id": "test-session-id",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ error_description: "record_update_requested" }),
-      signal: expect.any(AbortSignal),
-    });
-  });
-
-  it.each([400, 404, 500])("should throw error when PATCH /api/session/data returns %i", async (status) => {
-    const mockResponse = Response.json({ message: "error" }, { status });
-    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
-
-    await expect(patchSessionData("test-session-id", { error_description: "record_update_requested" })).rejects.toThrow(
-      "PATCH /session/data endpoint returned an error response"
-    );
-
-    expect(mockError).toHaveBeenCalledWith(
-      expect.stringContaining(`PATCH /session/data returned non-200 response: ${status}`)
     );
   });
 });

@@ -2,7 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import logger from "../../commons/logger.js";
 import { getCookieValues } from "../../commons/cookie-utilities.js";
 import { redirectToErrorPage } from "../../api/sis-api.js";
-import { patchSessionData } from "../../api/oauth-internal-api.js";
+import { updateSessionData } from "../../api/oauth-internal-api.js";
 
 export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const eventValues = new URLSearchParams(event.body || "");
@@ -21,14 +21,14 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
   }
 
   try {
+    await updateSessionData(sessionId, { error_description: "record_update_requested" });
+
     await createAuthCode(sessionId);
 
     const url = new URL(`https://${process.env.PUBLIC_API}/oauth2/callback`);
     url.searchParams.append("redirect_uri", redirectUri);
     url.searchParams.append("state", state);
     url.searchParams.append("client_id", clientId);
-
-    await patchSessionData(sessionId, { error_description: "record_update_requested" });
 
     return {
       statusCode: 302,

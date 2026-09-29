@@ -178,7 +178,7 @@ export async function getSessionDetails(sessionId: string): Promise<GetSessionRe
 
 export async function updateSessionData(sessionId: string, data: Record<string, string | null>): Promise<void> {
   const oauthInternalApiUrl = getOauthInternalApiUrl();
-  const url = new URL(`${oauthInternalApiUrl}/api/session`);
+  const url = new URL(`${oauthInternalApiUrl}/api/session/data`);
 
   const responseFromSessionEndpoint = await fetch(url, {
     method: "PATCH",
@@ -188,32 +188,13 @@ export async function updateSessionData(sessionId: string, data: Record<string, 
     body: JSON.stringify(data),
     signal: AbortSignal.timeout(SESSION_TIMEOUT_MS),
   });
+  logger.info(`RESPONSE BODY: ${responseFromSessionEndpoint.body}`);
+  logger.info(`RESP HEADERS: ${responseFromSessionEndpoint.headers}`);
 
   if (responseFromSessionEndpoint.status !== 200) {
-    logger.error(`PATCH session handler returned non-200 status: ${responseFromSessionEndpoint.status}`);
-    throw new Error("PATCH session endpoint returned an error response");
+    logger.error(`PATCH session/data endpoint returned non-200 status: ${responseFromSessionEndpoint.status}`);
+    throw new Error("PATCH session/data endpoint returned an error response");
   }
-}
-
-export async function patchSessionData(sessionId: string, data: Record<string, string>): Promise<void> {
-  const url = new URL(`${getOauthInternalApiUrl()}/api/session/data`);
-
-  const responseFromEndpoint = await fetch(url, {
-    method: "PATCH",
-    headers: {
-      "session-id": sessionId,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-    signal: AbortSignal.timeout(SESSION_TIMEOUT_MS),
-  });
-
-  if (responseFromEndpoint.status == 200) {
-    return;
-  }
-
-  logger.error(`PATCH /session/data returned non-200 response: ${responseFromEndpoint.status}`);
-  throw new Error(`PATCH /session/data endpoint returned an error response`);
 }
 
 function isValidAuthorizationSuccessResponse(object: unknown): object is AuthorizationSuccessResponse {
