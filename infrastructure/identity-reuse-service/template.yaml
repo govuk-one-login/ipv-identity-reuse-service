@@ -881,6 +881,7 @@ Resources:
       Environment:
         Variables:
           DOMAIN_NAME: !Ref ReuseIdentityCustomDomain
+          PUBLIC_API: !GetAtt ReuseIdentityDomain.Value
           NODE_OPTIONS: "--enable-source-maps"
           OAUTH_INTERNAL_API_URL:
             Fn::ImportValue: !Sub "${OauthInternalStackName}-PrivateApi"

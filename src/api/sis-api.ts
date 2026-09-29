@@ -59,6 +59,22 @@ export function redirectToClient({
   return redirect({ location: `${orchestrationRedirectUrl}`, body: "" });
 }
 
+export function redirectToOauthCallBack({
+  redirectUri,
+  state,
+  clientId,
+}: {
+  redirectUri: string;
+  state: string;
+  clientId: string;
+}) {
+  const url = new URL(`https://${process.env.PUBLIC_API}/oauth2/callback`);
+  url.searchParams.append("redirect_uri", redirectUri);
+  url.searchParams.append("state", state);
+  url.searchParams.append("client_id", clientId);
+  return redirect({ location: url.href, body: "" });
+}
+
 export function redirect({ location, body, cookie }: RedirectOptions) {
   return {
     statusCode: 302,

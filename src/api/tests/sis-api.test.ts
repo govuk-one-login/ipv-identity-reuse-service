@@ -1,5 +1,10 @@
 import { it, expect } from "vitest";
-import { redirectToClient, redirectToConfirmDetails, redirectToErrorPage } from "../sis-api.js";
+import {
+  redirectToClient,
+  redirectToConfirmDetails,
+  redirectToErrorPage,
+  redirectToOauthCallBack,
+} from "../sis-api.js";
 
 it("should redirect to error page", async () => {
   const result = redirectToErrorPage("test.com");
@@ -74,6 +79,23 @@ it("should redirect to the client page with an error", async () => {
     statusCode: 302,
     headers: {
       Location: "https://api.example.com/?error=access_denied&error_description=record_unavailable&state=test-state",
+    },
+    body: "",
+  });
+});
+
+it("should redirect to oauth callback with query params", async () => {
+  process.env.PUBLIC_API = "api.example.com";
+  const result = redirectToOauthCallBack({
+    redirectUri: "https://api.example.com",
+    state: "test-state",
+    clientId: "test-client-id",
+  });
+  expect(result).toEqual({
+    statusCode: 302,
+    headers: {
+      Location:
+        "https://api.example.com/oauth2/callback?redirect_uri=https%3A%2F%2Fapi.example.com&state=test-state&client_id=test-client-id",
     },
     body: "",
   });
