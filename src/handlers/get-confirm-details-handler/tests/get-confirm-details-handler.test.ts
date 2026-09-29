@@ -15,6 +15,7 @@ import * as storedIdentityValidator from "../../../domain/stored-identity/stored
 import * as configuration from "../../../commons/configuration.js";
 import * as jwtUtilities from "../../../commons/jwt-utilities.js";
 import { EVCSIdentityResponse } from "../../../api/evcs-api.js";
+import logger from "../../../commons/logger.js";
 
 const mockRender = vi.hoisted(() => vi.fn().mockReturnValue("Rendered Confirm Details Screen"));
 
@@ -55,7 +56,7 @@ vi.mock("../../../api/oauth-internal-api", () => ({
     subject: "user-sub",
     vtr: ["P2"],
   }),
-  updateSessionData: vi.fn(),
+  updateSessionData: vi.fn().mockImplementation(() => Promise.resolve()),
 }));
 
 vi.mock("../../../commons/cookie-utilities", () => ({
@@ -63,6 +64,7 @@ vi.mock("../../../commons/cookie-utilities", () => ({
 }));
 
 process.env.DOMAIN_NAME = "test-domain";
+process.env.PUBLIC_API = "example-api.com";
 
 const mockIdentityResponse: EVCSIdentityResponse = {
   si: {
@@ -221,10 +223,18 @@ describe("handler record validation", () => {
     { kidValid: false, signatureValid: true, isValid: true },
     { kidValid: false, signatureValid: false, isValid: true },
     { kidValid: false, signatureValid: true, isValid: false },
-  ])("returns failure response when validation fails (%o)", async (verdict) => {
+  ])("redirects to client when validation fails (%o)", async (verdict) => {
     (validateStoredIdentity as Mock).mockResolvedValue(verdict);
     const result = await lambdaHandler(validEvent());
-    expect(result).toEqual({ statusCode: 500, body: "" });
+    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_update_requested" });
+    expect(result).toEqual({
+      statusCode: 302,
+      headers: {
+        Location:
+          "https://example-api.com/oauth2/callback?redirect_uri=https%3A%2F%2Fexample.com&state=state-id&client_id=client",
+      },
+      body: "",
+    });
   });
 
   it("returns an error when session cookie is missing", async () => {
@@ -263,17 +273,27 @@ describe("handler record validation", () => {
     const result = await lambdaHandler(validEvent());
     expect(validateStoredIdentity).not.toHaveBeenCalled();
     expect(mockRender).not.toHaveBeenCalled();
-    expect(result).toEqual({ statusCode: 500, body: "" });
+    expect(result).toEqual({
+      headers: {
+        Location: "https://test-domain/error/unrecoverable",
+      },
+      statusCode: 302,
+      body: "",
+    });
   });
 
-  it("redirects to error page when EVCS returns a 404", async () => {
+  it("redirects to client when EVCS returns a 404", async () => {
     (handleGetIdentityFromCredentialStore as Mock).mockRejectedValue(new EVCSError(HttpCodesEnum.NOT_FOUND, "user-id"));
     const result = await lambdaHandler(validEvent());
     expect(validateStoredIdentity).not.toHaveBeenCalled();
     expect(mockRender).not.toHaveBeenCalled();
+    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_update_requested" });
     expect(result).toEqual({
       statusCode: 302,
-      headers: { Location: "https://test-domain/error/unrecoverable" },
+      headers: {
+        Location:
+          "https://example-api.com/oauth2/callback?redirect_uri=https%3A%2F%2Fexample.com&state=state-id&client_id=client",
+      },
       body: "",
     });
   });
@@ -283,23 +303,33 @@ describe("handler record validation", () => {
     const result = await lambdaHandler(validEvent());
     expect(handleGetIdentityFromCredentialStore).not.toHaveBeenCalled();
     expect(mockRender).not.toHaveBeenCalled();
-    expect(result).toEqual({ statusCode: 500, body: "" });
+    expect(result).toEqual({
+      headers: {
+        Location: "https://test-domain/error/unrecoverable",
+      },
+      statusCode: 302,
+      body: "",
+    });
   });
 
-  it("redirects to error page when stored identity JWT validation fails", async () => {
+  it("redirects to client when stored identity record is missing required user details", async () => {
     (validateStoredIdentity as Mock).mockRejectedValue(new StoredIdentityValidationError());
     const result = await lambdaHandler(validEvent());
     expect(mockRender).not.toHaveBeenCalled();
+    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_update_requested" });
     expect(result).toEqual({
       statusCode: 302,
-      headers: { Location: "https://test-domain/error/unrecoverable" },
+      headers: {
+        Location:
+          "https://example-api.com/oauth2/callback?redirect_uri=https%3A%2F%2Fexample.com&state=state-id&client_id=client",
+      },
       body: "",
     });
   });
 });
 
 describe("combined expiry and VoT checks", () => {
-  it("should redirect when both identity is expired and VoT is insufficient", async () => {
+  it("should redirect to client when both identity is expired and VoT is insufficient", async () => {
     vi.spyOn(identityExpiryService, "hasIdentityExpired").mockResolvedValue({
       fraudExpired: true,
       drivingLicenceExpired: true,
@@ -309,6 +339,34 @@ describe("combined expiry and VoT checks", () => {
 
     const result = await lambdaHandler(validEvent());
 
+    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_update_requested" });
+    expect(result).toEqual({
+      statusCode: 302,
+      body: "",
+      headers: {
+        Location:
+          "https://example-api.com/oauth2/callback?redirect_uri=https%3A%2F%2Fexample.com&state=state-id&client_id=client",
+      },
+    });
+  });
+
+  it("should redirect to client when both identity is expired and VoT is insufficient and log an error if the session update fails", async () => {
+    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockResolvedValue({
+      fraudExpired: true,
+      drivingLicenceExpired: true,
+      expired: true,
+    });
+    vi.spyOn(calculateVotModule, "calculateVot").mockReturnValue("P0");
+    vi.mocked(updateSessionData).mockRejectedValueOnce(
+      new Error("PATCH session/data endpoint returned an error response")
+    );
+
+    const result = await lambdaHandler(validEvent());
+
+    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_update_requested" });
+    expect(logger.error).toHaveBeenCalledWith(
+      "Failed to update session data: Error: PATCH session/data endpoint returned an error response"
+    );
     expect(result).toEqual({
       statusCode: 302,
       body: "",
@@ -318,7 +376,7 @@ describe("combined expiry and VoT checks", () => {
     });
   });
 
-  it("should redirect when only fraud check is expired but VoT is sufficient", async () => {
+  it("should redirect to client when only fraud check is expired but VoT is sufficient", async () => {
     vi.spyOn(identityExpiryService, "hasIdentityExpired").mockResolvedValue({
       fraudExpired: true,
       drivingLicenceExpired: false,
@@ -328,16 +386,18 @@ describe("combined expiry and VoT checks", () => {
 
     const result = await lambdaHandler(validEvent());
 
+    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_update_requested" });
     expect(result).toEqual({
       statusCode: 302,
       body: "",
       headers: {
-        Location: "https://test-domain/error/unrecoverable",
+        Location:
+          "https://example-api.com/oauth2/callback?redirect_uri=https%3A%2F%2Fexample.com&state=state-id&client_id=client",
       },
     });
   });
 
-  it("should redirect when only driving licence is expired but VoT is sufficient", async () => {
+  it("should redirect to client when only driving licence is expired but VoT is sufficient", async () => {
     vi.spyOn(identityExpiryService, "hasIdentityExpired").mockResolvedValue({
       fraudExpired: false,
       drivingLicenceExpired: true,
@@ -347,16 +407,18 @@ describe("combined expiry and VoT checks", () => {
 
     const result = await lambdaHandler(validEvent());
 
+    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_update_requested" });
     expect(result).toEqual({
       statusCode: 302,
       body: "",
       headers: {
-        Location: "https://test-domain/error/unrecoverable",
+        Location:
+          "https://example-api.com/oauth2/callback?redirect_uri=https%3A%2F%2Fexample.com&state=state-id&client_id=client",
       },
     });
   });
 
-  it("should redirect when only VoT is insufficient but identity is not expired", async () => {
+  it("should redirect to client when only VoT is insufficient but identity is not expired", async () => {
     vi.spyOn(identityExpiryService, "hasIdentityExpired").mockResolvedValue({
       fraudExpired: false,
       drivingLicenceExpired: false,
@@ -366,11 +428,13 @@ describe("combined expiry and VoT checks", () => {
 
     const result = await lambdaHandler(validEvent());
 
+    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_update_requested" });
     expect(result).toEqual({
       statusCode: 302,
       body: "",
       headers: {
-        Location: "https://test-domain/error/unrecoverable",
+        Location:
+          "https://example-api.com/oauth2/callback?redirect_uri=https%3A%2F%2Fexample.com&state=state-id&client_id=client",
       },
     });
   });

@@ -5,7 +5,7 @@ import path from "node:path";
 import nunjucks from "nunjucks";
 import translations from "../../../locales/en/translation.json" with { type: "json" };
 import { getSessionDetails, updateSessionData } from "../../api/oauth-internal-api.js";
-import { redirectToErrorPage } from "../../api/sis-api.js";
+import { redirectToErrorPage, redirectToOauthCallBack } from "../../api/sis-api.js";
 import { HttpCodesEnum } from "../../commons/constants.js";
 import { getCookieValues } from "../../commons/cookie-utilities.js";
 import { EVCSError, StoredIdentityValidationError } from "../../commons/errors.js";
@@ -44,6 +44,15 @@ nunjucksEnvironment.addFilter("GDSDate", (dateString: string) => {
 
 const metrics = new Metrics();
 
+const tryUpdateSessionData = async (sessionId: string, data: Record<string, string>): Promise<void> => {
+  try {
+    await updateSessionData(sessionId, data);
+  } catch (error) {
+    logger.error(`Failed to update session data: ${error}`);
+    throw error;
+  }
+};
+
 export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const { redirect_uri, client_id, state } = event.queryStringParameters as ConfirmDetailsQueryStringParameters;
   if (!redirect_uri || !state || !client_id) {
@@ -75,10 +84,9 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
 
     if (!kidValid || !signatureValid || !isValid || !storedIdentityRecord) {
       logger.error("Record validation failed for existing user", { kidValid, signatureValid, isValid });
-      return {
-        statusCode: 500,
-        body: "",
-      };
+      await tryUpdateSessionData(sessionId, { errorDescription: "record_update_requested" });
+
+      return redirectToOauthCallBack({ redirectUri: redirect_uri, state, clientId: client_id });
     }
 
     const storedIdentityJwt = identityResponse.si.vc;
@@ -89,7 +97,8 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
 
     const identityReuseValid = await validateUserIdentity(vot, storedIdentityVcJwts, vtr);
     if (!identityReuseValid) {
-      return redirectToErrorPage(domainName);
+      await tryUpdateSessionData(sessionId, { errorDescription: "record_update_requested" });
+      return redirectToOauthCallBack({ redirectUri: redirect_uri, state, clientId: client_id });
     }
 
     await sessionStoreHashedStoredIdentity(sessionId, storedIdentityJwt, vot, storedIdentityVcJwts);
@@ -116,16 +125,16 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
   } catch (error) {
     if (error instanceof EVCSError && error.statusCode === HttpCodesEnum.NOT_FOUND) {
       logger.error("No identity record found in EVCS");
-      return redirectToErrorPage(domainName);
+      await tryUpdateSessionData(sessionId!, { errorDescription: "record_update_requested" });
+      return redirectToOauthCallBack({ redirectUri: redirect_uri, state, clientId: client_id });
     }
     if (error instanceof StoredIdentityValidationError) {
-      return redirectToErrorPage(domainName);
+      logger.error("Stored identity record is missing required user details");
+      await tryUpdateSessionData(sessionId!, { errorDescription: "record_update_requested" });
+      return redirectToOauthCallBack({ redirectUri: redirect_uri, state, clientId: client_id });
     }
     logger.error(`Error in lambdaHandler event: ${error}`);
-    return {
-      statusCode: 500,
-      body: "",
-    };
+    return redirectToErrorPage(domainName);
   }
 };
 
