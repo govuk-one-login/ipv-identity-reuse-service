@@ -3,19 +3,22 @@ import logger from "../../commons/logger.js";
 import { callSessionApi, SessionResult } from "../../api/oauth-internal-api.js";
 import { redirectToConfirmDetails, redirectToErrorPage } from "../../api/sis-api.js";
 import { getRequiredEnvironment } from "../../commons/get-required-environment.js";
-import type { AuthorizationQueryStringParameters } from "../../domain/authorization/authorization-types.js";
+import {
+  type AuthorizationQueryStringParameters,
+  isValidQueryParameters,
+} from "../../domain/authorization/authorization-types.js";
 
 export async function handler(event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> {
   logger.addContext(context);
 
-  const {
-    client_id: clientId,
-    redirect_uri: redirectUri,
-    state,
-    request,
-  } = event.queryStringParameters as AuthorizationQueryStringParameters;
-
   const domainName = getRequiredEnvironment("DOMAIN_NAME");
+
+  if (!isValidQueryParameters(event.queryStringParameters)) {
+    logger.error("Parameters are invalid");
+    return redirectToErrorPage(domainName);
+  }
+
+  const { client_id: clientId, request } = event.queryStringParameters as AuthorizationQueryStringParameters;
 
   if (request) {
     let response: SessionResult;
@@ -26,21 +29,10 @@ export async function handler(event: APIGatewayProxyEvent, context: Context): Pr
       return redirectToErrorPage(domainName);
     }
     const cookie = buildSessionCookie(response.session_id);
-    return redirectToConfirmDetails({
-      domainName: domainName,
-      state: response.state,
-      redirectUri: response.redirect_uri,
-      clientId: clientId,
-      cookie: cookie,
-    });
+    return redirectToConfirmDetails(domainName, cookie);
   }
 
-  return redirectToConfirmDetails({
-    domainName: domainName,
-    state: state,
-    redirectUri: redirectUri,
-    clientId: clientId,
-  });
+  return redirectToConfirmDetails(domainName);
 }
 
 function buildSessionCookie(sessionId: string): string {

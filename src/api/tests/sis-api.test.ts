@@ -13,18 +13,14 @@ it("should redirect to error page", async () => {
 });
 
 it("should redirect to confirm details page with cookie", async () => {
-  const result = redirectToConfirmDetails({
-    domainName: "test.com",
-    state: "test-state",
-    redirectUri: "https://api.example.com",
-    clientId: "test-client-id",
-    cookie: "identity_reuse_service_session=test-session-id; Path=/; Secure; HttpOnly; SameSite=Lax",
-  });
+  const result = redirectToConfirmDetails(
+    "test.com",
+    "identity_reuse_service_session=test-session-id; Path=/; Secure; HttpOnly; SameSite=Lax"
+  );
   expect(result).toEqual({
     statusCode: 302,
     headers: {
-      Location:
-        "https://test.com/confirm-details?state=test-state&redirect_uri=https%3A%2F%2Fapi.example.com&client_id=test-client-id",
+      Location: "https://test.com/confirm-details",
       "Set-Cookie": "identity_reuse_service_session=test-session-id; Path=/; Secure; HttpOnly; SameSite=Lax",
     },
     body: "",
@@ -32,17 +28,11 @@ it("should redirect to confirm details page with cookie", async () => {
 });
 
 it("should redirect to confirm details page", async () => {
-  const result = redirectToConfirmDetails({
-    domainName: "test.com",
-    state: "test-state",
-    redirectUri: "https://api.example.com",
-    clientId: "test-client-id",
-  });
+  const result = redirectToConfirmDetails("test.com");
   expect(result).toEqual({
     statusCode: 302,
     headers: {
-      Location:
-        "https://test.com/confirm-details?state=test-state&redirect_uri=https%3A%2F%2Fapi.example.com&client_id=test-client-id",
+      Location: "https://test.com/confirm-details",
     },
     body: "",
   });
