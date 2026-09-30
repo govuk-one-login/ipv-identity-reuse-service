@@ -1,6 +1,13 @@
 import { afterEach, beforeEach, expect, it, vitest, describe } from "vitest";
-import { callSessionApi, getAuthorizationCode, getSessionDetails, updateSessionData } from "../oauth-internal-api.js";
 import { GetSessionError, SessionInvalidError } from "../../utilities/errors.js";
+import {
+  callSessionApi,
+  createAuthCode,
+  getAuthorizationCode,
+  getSessionDetails,
+  updateSessionData,
+  CreateAuthorizationCodeError,
+} from "../oauth-internal-api.js";
 import { URL } from "node:url";
 
 const { mockError } = vitest.hoisted(() => {
@@ -31,6 +38,36 @@ afterEach(() => {
   vitest.restoreAllMocks();
   vitest.unstubAllEnvs();
   vitest.unstubAllGlobals();
+});
+
+describe("createAuthCode", () => {
+  it("should create a successful request to create an auth code", async () => {
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(Response.json({}, { status: 201 })));
+
+    await createAuthCode("session-id");
+
+    expect(globalThis.fetch).toHaveBeenCalledExactlyOnceWith("https://test.com/api/create-auth-code", {
+      method: "POST",
+      headers: {
+        "session-id": "session-id",
+      },
+    });
+  });
+
+  it("should throw an exception if the error code is invalid", async () => {
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(Response.json({}, { status: 400 })));
+
+    await expect(createAuthCode("session-id")).rejects.toThrow(
+      new CreateAuthorizationCodeError("Create auth code endpoint returned an error response")
+    );
+
+    expect(globalThis.fetch).toHaveBeenCalledExactlyOnceWith("https://test.com/api/create-auth-code", {
+      method: "POST",
+      headers: {
+        "session-id": "session-id",
+      },
+    });
+  });
 });
 
 describe("callSessionApi", () => {
@@ -142,25 +179,15 @@ describe("getAuthorizationCode", () => {
     const jsonSpy = vitest.spyOn(mockResponse, "json");
     vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
 
-    const response = await getAuthorizationCode(
-      "test-client-id",
-      "https://test-uri.com",
-      "test-state",
-      "test-session-id"
-    );
+    const response = await getAuthorizationCode("test-session-id");
 
     expect(jsonSpy).toHaveBeenCalledTimes(1);
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-    expect(globalThis.fetch).toHaveBeenCalledWith(
-      new URL(
-        "https://test.com/api/authorization?client_id=test-client-id&redirect_uri=https%3A%2F%2Ftest-uri.com&state=test-state&response_type=code"
-      ),
-      {
-        method: "GET",
-        headers: { "session-id": "test-session-id" },
-        signal: expect.any(AbortSignal),
-      }
-    );
+    expect(globalThis.fetch).toHaveBeenCalledWith("https://test.com/api/authorization", {
+      method: "GET",
+      headers: { "session-id": "test-session-id" },
+      signal: expect.any(AbortSignal),
+    });
 
     expect(response.redirect_uri).toEqual("https://api.example.com/");
     expect(response.authorizationCode).toEqual("test-auth-code");
@@ -180,24 +207,14 @@ describe("getAuthorizationCode", () => {
     );
     vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
 
-    const response = await getAuthorizationCode(
-      "test-client-id",
-      "https://test-uri.com",
-      "test-state",
-      "test-session-id"
-    );
+    const response = await getAuthorizationCode("test-session-id");
 
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-    expect(globalThis.fetch).toHaveBeenCalledWith(
-      new URL(
-        "https://test.com/api/authorization?client_id=test-client-id&redirect_uri=https%3A%2F%2Ftest-uri.com&state=test-state&response_type=code"
-      ),
-      {
-        method: "GET",
-        headers: { "session-id": "test-session-id" },
-        signal: expect.any(AbortSignal),
-      }
-    );
+    expect(globalThis.fetch).toHaveBeenCalledWith("https://test.com/api/authorization", {
+      method: "GET",
+      headers: { "session-id": "test-session-id" },
+      signal: expect.any(AbortSignal),
+    });
     expect(response.redirect_uri).toEqual("https://test-uri.com/");
     expect(response.state).toEqual("test-state");
     expect(response.authorizationCode).toBeUndefined();
@@ -215,9 +232,9 @@ describe("getAuthorizationCode", () => {
 
     vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
 
-    await expect(
-      getAuthorizationCode("test-client-id", "https://test-uri.com", "test-state", "test-session-id")
-    ).rejects.toThrow("Invalid response properties received from authorization error response");
+    await expect(getAuthorizationCode("test-session-id")).rejects.toThrow(
+      "Invalid response properties received from authorization error response"
+    );
   });
 
   it("should throw an error when the call to the /api/authorization returns an empty state object", async () => {
@@ -232,9 +249,9 @@ describe("getAuthorizationCode", () => {
 
     vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
 
-    await expect(
-      getAuthorizationCode("test-client-id", "https://test-uri.com", "test-state", "test-session-id")
-    ).rejects.toThrow("Invalid response properties received from authorization endpoint");
+    await expect(getAuthorizationCode("test-session-id")).rejects.toThrow(
+      "Invalid response properties received from authorization endpoint"
+    );
   });
 
   it("should throw a SessionInvalidError when the /api/authorization API call returns 400", async () => {
@@ -249,9 +266,9 @@ describe("getAuthorizationCode", () => {
 
     vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
 
-    await expect(
-      getAuthorizationCode("test-client-id", "https://test-uri.com", "test-state", "test-session-id")
-    ).rejects.toThrow(new SessionInvalidError("Session not found for given session id"));
+    await expect(getAuthorizationCode("test-session-id")).rejects.toThrow(
+      new SessionInvalidError("Session not found for given session id")
+    );
   });
 
   it("should throw an error when the /api/authorization API call returns 500", async () => {
@@ -266,9 +283,9 @@ describe("getAuthorizationCode", () => {
 
     vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
 
-    await expect(
-      getAuthorizationCode("test-client-id", "https://test-uri.com", "test-state", "test-session-id")
-    ).rejects.toThrow("Authorize endpoint returned an error response");
+    await expect(getAuthorizationCode("test-session-id")).rejects.toThrow(
+      "Authorize endpoint returned an error response"
+    );
   });
 
   it("should throw an error if the authorization endpoint returns a missing redirection URI", async () => {
@@ -282,9 +299,9 @@ describe("getAuthorizationCode", () => {
 
     vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
 
-    await expect(
-      getAuthorizationCode("test-client-id", "https://test-uri.com", "test-state", "test-session-id")
-    ).rejects.toThrow("Invalid response properties received from authorization endpoint");
+    await expect(getAuthorizationCode("test-session-id")).rejects.toThrow(
+      "Invalid response properties received from authorization endpoint"
+    );
   });
 
   it("should throw an error if the authorization endpoint returns a missing auth code", async () => {
@@ -298,9 +315,9 @@ describe("getAuthorizationCode", () => {
 
     vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
 
-    await expect(
-      getAuthorizationCode("test-client-id", "https://test-uri.com", "test-state", "test-session-id")
-    ).rejects.toThrow("Invalid response properties received from authorization endpoint");
+    await expect(getAuthorizationCode("test-session-id")).rejects.toThrow(
+      "Invalid response properties received from authorization endpoint"
+    );
   });
 
   it("should throw an error if the authorization endpoint returns a missing state", async () => {
@@ -314,9 +331,9 @@ describe("getAuthorizationCode", () => {
 
     vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
 
-    await expect(
-      getAuthorizationCode("test-client-id", "https://test-uri.com", "test-state", "test-session-id")
-    ).rejects.toThrow("Invalid response properties received from authorization endpoint");
+    await expect(getAuthorizationCode("test-session-id")).rejects.toThrow(
+      "Invalid response properties received from authorization endpoint"
+    );
   });
 });
 

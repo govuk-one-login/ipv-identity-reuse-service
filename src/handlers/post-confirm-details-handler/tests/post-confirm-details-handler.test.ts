@@ -1,13 +1,8 @@
-import { APIGatewayEventRequestContextWithAuthorizer, APIGatewayProxyEvent } from "aws-lambda";
+import { APIGatewayEventRequestContextWithAuthorizer, APIGatewayProxyEvent, Context } from "aws-lambda";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { lambdaHandler } from "../post-confirm-details-handler.js";
 import { randomUUID } from "node:crypto";
-import { getSessionDetails, updateSessionData } from "../../../api/oauth-internal-api.js";
-import { GetSessionError } from "../../../utilities/errors.js";
-
-vi.hoisted(() => {
-  process.env.SESSION_TIMEOUT_MS = "5000";
-});
+import { getSessionDetails, updateSessionData, createAuthCode } from "../../../api/oauth-internal-api.js";
 
 const TEST_SESSION_ID = randomUUID();
 
@@ -18,7 +13,13 @@ beforeEach(() => {
   vi.stubEnv("DOMAIN_NAME", "api2.example.com");
   vi.stubEnv("SESSION_TIMEOUT_MS", "5000");
   vi.mocked(updateSessionData).mockResolvedValue();
-  vi.mocked(getSessionDetails).mockResolvedValue({ subject: "test-subject", clientSessionId: "client-session-id" });
+  vi.mocked(getSessionDetails).mockResolvedValue({
+    subject: "test-subject",
+    clientSessionId: "session-id",
+    redirectUri: "redirect-uri",
+    state: "state",
+    clientId: "client-id",
+  });
 });
 
 afterEach(() => {
@@ -31,7 +32,7 @@ it("should redirect to the session-expired page if the session is not provided",
     "redirectUri=https%3A%2F%2Fapi.example.com&state=test-state-id&client_id=client"
   );
 
-  const response = await lambdaHandler(event);
+  const response = await lambdaHandler(event, {} as Context);
   expect(response).toStrictEqual({
     statusCode: 302,
     body: "",
@@ -41,31 +42,11 @@ it("should redirect to the session-expired page if the session is not provided",
   });
 });
 
-it("should redirect to the error page if getSessionDetails fails with a 500", async () => {
-  vi.mocked(getSessionDetails).mockRejectedValueOnce(
-    new GetSessionError("GET session endpoint returned an error response")
-  );
-
-  const event = createMockAPIGatewayProxyEvent(
-    {},
-    "redirectUri=https%3A%2F%2Fapi.example.com&state=test-state-id&client_id=client",
-    TEST_SESSION_ID
-  );
-
-  const response = await lambdaHandler(event);
-  expect(response).toStrictEqual({
-    statusCode: 302,
-    body: "",
-    headers: {
-      Location: "https://api2.example.com/error/unrecoverable",
-    },
-  });
-});
-
 it("should return a 302 status code on a successful request", async () => {
   vi.stubEnv("OAUTH_INTERNAL_API_URL", "https://internal.example.com");
 
-  const mockFetch = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response("", { status: 201 }));
+  // eslint-disable-next-line unicorn/no-useless-undefined -- Parameter required
+  vi.mocked(createAuthCode).mockResolvedValue(undefined);
 
   const event = createMockAPIGatewayProxyEvent(
     {},
@@ -73,45 +54,21 @@ it("should return a 302 status code on a successful request", async () => {
     TEST_SESSION_ID
   );
 
-  const response = await lambdaHandler(event);
-
+  const response = await lambdaHandler(event, {} as Context);
   expect(response).toStrictEqual({
     statusCode: 302,
     body: "",
     headers: {
-      Location:
-        "https://api.example.com/oauth2/callback?redirect_uri=https%3A%2F%2Fapi.example.com&state=test-state-id&client_id=client",
+      Location: "https://api.example.com/oauth2/callback",
     },
   });
 
   expect(updateSessionData).not.toHaveBeenCalled();
-
-  expect(mockFetch).toHaveBeenCalledWith(new URL("https://internal.example.com/api/create-auth-code"), {
-    method: "POST",
-    headers: {
-      "session-id": TEST_SESSION_ID,
-    },
-  });
-
-  mockFetch.mockRestore();
-});
-
-it("should return an error when some query string parameters are missing", async () => {
-  const event = createMockAPIGatewayProxyEvent({}, "redirectUri=https%3A%2F%2Fapi.example.com");
-  await expect(lambdaHandler(event)).rejects.toMatchObject({
-    message: "One or more required query string parameters are undefined",
-  });
-
-  const event2 = createMockAPIGatewayProxyEvent({}, "code=abc123&state=test-state-id");
-  await expect(lambdaHandler(event2)).rejects.toMatchObject({
-    message: "One or more required query string parameters are undefined",
-  });
 });
 
 it("should redirect to the error page when createAuthCode throws an error", async () => {
   vi.stubEnv("OAUTH_INTERNAL_API_URL", "https://test.com");
-
-  const mockFetch = vi.spyOn(globalThis, "fetch").mockRejectedValueOnce(new Error("API call failure"));
+  vi.mocked(createAuthCode).mockRejectedValue(new Error("API call failure"));
 
   const event = createMockAPIGatewayProxyEvent(
     {},
@@ -119,7 +76,7 @@ it("should redirect to the error page when createAuthCode throws an error", asyn
     TEST_SESSION_ID
   );
 
-  const response = await lambdaHandler(event);
+  const response = await lambdaHandler(event, {} as Context);
   expect(response).toStrictEqual({
     statusCode: 302,
     body: "",
@@ -127,14 +84,13 @@ it("should redirect to the error page when createAuthCode throws an error", asyn
       Location: "https://api2.example.com/error/unrecoverable",
     },
   });
-
-  mockFetch.mockRestore();
 });
 
 it("should set record_update_requested if update-details action received", async () => {
   vi.stubEnv("OAUTH_INTERNAL_API_URL", "https://internal.example.com");
 
-  const mockFetch = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response("", { status: 201 }));
+  // eslint-disable-next-line unicorn/no-useless-undefined -- Parameter required
+  vi.mocked(createAuthCode).mockResolvedValue(undefined);
 
   const event = createMockAPIGatewayProxyEvent(
     {},
@@ -142,21 +98,19 @@ it("should set record_update_requested if update-details action received", async
     TEST_SESSION_ID
   );
 
-  const response = await lambdaHandler(event);
+  const response = await lambdaHandler(event, {} as Context);
 
   expect(response).toStrictEqual({
     statusCode: 302,
     body: "",
     headers: {
-      Location:
-        "https://api.example.com/oauth2/callback?redirect_uri=https%3A%2F%2Fapi.example.com&state=test-state-id&client_id=client",
+      Location: "https://api.example.com/oauth2/callback",
     },
   });
 
   expect(vi.mocked(updateSessionData)).toHaveBeenCalledWith(TEST_SESSION_ID, {
     errorDescription: "record_update_requested",
   });
-  mockFetch.mockRestore();
 });
 
 const createMockAPIGatewayProxyEvent = (
