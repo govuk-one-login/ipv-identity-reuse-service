@@ -43,6 +43,9 @@ export type GetSessionSuccessResponse = {
   clientSessionId: string;
   persistentSessionId?: string;
   subject: string;
+  redirectUri: string;
+  state: string;
+  clientId: string;
   context?: string;
   sessionData?: SessionData;
 };
@@ -60,7 +63,21 @@ export class CreateSessionError extends Error {
   }
 }
 
-const getSessionTimeoutMs = (): number => Number(getSessionTimeout());
+export async function createAuthCode(sessionId: string) {
+  const oauthInternalApiUrl = process.env.OAUTH_INTERNAL_API_URL;
+
+  const responseFromCreateAuthCode = await fetch(`${oauthInternalApiUrl}/api/create-auth-code`, {
+    method: "POST",
+    headers: {
+      "session-id": sessionId,
+    },
+  });
+
+  if (responseFromCreateAuthCode.status !== 201) {
+    logger.error(`Session handler returned non-201 status: ${responseFromCreateAuthCode.status}`);
+    throw new CreateSessionError("Create auth code endpoint returned an error response");
+  }
+}
 
 export async function callSessionApi(clientId: string, request: string): Promise<SessionResult> {
   const oauthInternalApiUrl = getOauthInternalApiUrl();
@@ -77,7 +94,7 @@ export async function callSessionApi(clientId: string, request: string): Promise
       "Content-Type": "application/json",
     },
     body,
-    signal: AbortSignal.timeout(getSessionTimeoutMs()),
+    signal: AbortSignal.timeout(getSessionTimeout()),
   });
 
   if (responseFromSessionEndpoint.status === 201) {
@@ -115,7 +132,7 @@ export async function getAuthorizationCode(
     headers: {
       "session-id": sessionId,
     },
-    signal: AbortSignal.timeout(getSessionTimeoutMs()),
+    signal: AbortSignal.timeout(getSessionTimeout()),
   });
 
   if (responseFromAuthorizeEndpoint.status === 200) {
@@ -157,7 +174,7 @@ export async function getSessionDetails(sessionId: string): Promise<GetSessionSu
     headers: {
       "session-id": sessionId,
     },
-    signal: AbortSignal.timeout(getSessionTimeoutMs()),
+    signal: AbortSignal.timeout(getSessionTimeout()),
   });
 
   if (responseFromSessionEndpoint.status === 200) {
@@ -182,7 +199,7 @@ export async function updateSessionData(sessionId: string, data: Record<string, 
       "session-id": sessionId,
     },
     body: JSON.stringify(data),
-    signal: AbortSignal.timeout(getSessionTimeoutMs()),
+    signal: AbortSignal.timeout(getSessionTimeout()),
   });
 
   if (responseFromSessionEndpoint.status !== 200) {
