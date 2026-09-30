@@ -1,23 +1,19 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import logger from "../../commons/logger.js";
-import { getCookieValues } from "../../commons/cookie-utilities.js";
+import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
+import { createAuthCode, updateSessionData } from "../../api/oauth-internal-api.js";
 import { redirectToErrorPage } from "../../api/sis-api.js";
-import { updateSessionData } from "../../api/oauth-internal-api.js";
+import { getCookieValues } from "../../commons/cookie-utilities.js";
+import logger from "../../commons/logger.js";
 
-export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const lambdaHandler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
   const eventValues = new URLSearchParams(event.body || "");
   const action = eventValues.get("action");
   const domainName = process.env.DOMAIN_NAME || "";
 
-  const redirectUri = eventValues.get("redirectUri");
-  const clientId = eventValues.get("client_id");
-  const state = eventValues.get("state");
-  const sessionId = getCookieValues(event)?.get("identity_reuse_service_session");
+  logger.addContext(context);
 
-  if (!redirectUri || !state || !clientId) {
-    throw new Error("One or more required query string parameters are undefined");
-  }
+  const sessionId = getCookieValues(event)?.get("identity_reuse_service_session");
   if (!sessionId) {
+    logger.error("Session ID parameter is missing");
     return redirectToErrorPage(domainName);
   }
 
@@ -27,34 +23,15 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
       await updateSessionData(sessionId, { errorDescription: "record_update_requested" });
     }
 
-    const url = new URL(`https://${process.env.PUBLIC_API}/oauth2/callback`);
-    url.searchParams.append("redirect_uri", redirectUri);
-    url.searchParams.append("state", state);
-    url.searchParams.append("client_id", clientId);
-
     return {
       statusCode: 302,
       body: "",
       headers: {
-        Location: url.href,
+        Location: `https://${process.env.PUBLIC_API}/oauth2/callback`,
       },
     };
   } catch (error) {
     logger.error(`Error in lambdaHandler event`, { error });
     return redirectToErrorPage(domainName);
   }
-};
-
-const createAuthCode = async (sessionId: string) => {
-  const oauthInternalApiUrl = process.env.OAUTH_INTERNAL_API_URL;
-  const url = new URL(`${oauthInternalApiUrl}/api/create-auth-code`);
-
-  const responseFromCreateAuthCode = await fetch(url, {
-    method: "POST",
-    headers: {
-      "session-id": sessionId,
-    },
-  });
-
-  logger.info("Response from create-auth-code", { sessionId, statusCode: responseFromCreateAuthCode.status });
 };

@@ -7,7 +7,8 @@ export const getString = (input: string | Uint8Array | undefined): string | unde
   }
 };
 
-export const isStringWithLength = (value: unknown): value is string => typeof value === "string" && value.length > 0;
+export const isStringWithLength = (value: unknown): value is string =>
+  typeof value === "string" && value.trim().length > 0;
 
 export const compareStringAscending = (a: string, b: string) => (a > b ? 1 : -1);
 export const compareStringDescending = (a: string, b: string) => (a < b ? 1 : -1);
