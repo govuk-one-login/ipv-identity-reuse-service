@@ -126,7 +126,7 @@ afterEach(() => {
   vitest.clearAllMocks();
 });
 
-it("should render the confirm details screen when all query string parameters are provided", async () => {
+it("should store the calculated vot and identity hash in the session and render the confirm details screen", async () => {
   (validateStoredIdentity as Mock).mockResolvedValue({
     kidValid: true,
     signatureValid: true,
@@ -165,6 +165,7 @@ it("should render the confirm details screen when all query string parameters ar
   expect(updateSessionData).toHaveBeenCalledTimes(1);
   expect(updateSessionData).toHaveBeenCalledWith("test-session-id", {
     storedIdentitySha256: "02d6bdfbfb3bf45077a34e2252816c1ddc906a8947b29d0ba7185381f2c1a794",
+    vot: "P2",
   });
 
   expect(result).toEqual({

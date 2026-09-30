@@ -161,5 +161,5 @@ const sessionStoreHashedStoredIdentity = async (
   vcJwts: string[]
 ) => {
   const hash = createStoredIdentityHash(storedIdentityJwt, vot, vcJwts);
-  await updateSessionData(sessionId, { storedIdentitySha256: hash });
+  await updateSessionData(sessionId, { vot: vot, storedIdentitySha256: hash });
 };

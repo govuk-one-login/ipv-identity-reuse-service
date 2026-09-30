@@ -2,17 +2,12 @@ import { URL } from "node:url";
 import logger from "../commons/logger.js";
 import { getOauthInternalApiUrl, getSessionTimeout } from "../commons/configuration.js";
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
+import { GetSessionError } from "../commons/errors.js";
 
 export type SessionResult = {
   session_id: string;
   state: string;
   redirect_uri: string;
-};
-
-export type GetSessionResult = {
-  storageAccessToken?: string;
-  subject: string;
-  vtr?: IdentityVectorOfTrust[];
 };
 
 type AuthorizationResult = {
@@ -42,14 +37,19 @@ type SessionSuccessResponse = {
   redirect_uri: string;
 };
 
-type GetSessionSuccessResponse = {
+export type GetSessionSuccessResponse = {
   vtr?: IdentityVectorOfTrust[];
   storageAccessToken?: string;
   clientSessionId: string;
   persistentSessionId?: string;
   subject: string;
   context?: string;
-  sessionData?: object;
+  sessionData?: SessionData;
+};
+
+export type SessionData = {
+  vot: IdentityVectorOfTrust;
+  storedIdentitySha256: string;
 };
 
 export class CreateSessionError extends Error {
@@ -148,7 +148,7 @@ export async function getAuthorizationCode(
   }
 }
 
-export async function getSessionDetails(sessionId: string): Promise<GetSessionResult> {
+export async function getSessionDetails(sessionId: string): Promise<GetSessionSuccessResponse> {
   const oauthInternalApiUrl = getOauthInternalApiUrl();
   const url = new URL(`${oauthInternalApiUrl}/api/session`);
 
@@ -163,16 +163,12 @@ export async function getSessionDetails(sessionId: string): Promise<GetSessionRe
   if (responseFromSessionEndpoint.status === 200) {
     const sessionData = await responseFromSessionEndpoint.json();
     if (!isValidGetSessionSuccessResponse(sessionData)) {
-      throw new Error("Invalid response properties received from GET session endpoint");
+      throw new GetSessionError("Invalid response properties received from GET session endpoint");
     }
-    return {
-      storageAccessToken: sessionData.storageAccessToken,
-      subject: sessionData.subject,
-      vtr: sessionData.vtr,
-    };
+    return sessionData;
   } else {
     logger.error(`GET session handler returned non-200 status: ${responseFromSessionEndpoint.status}`);
-    throw new Error("GET session endpoint returned an error response");
+    throw new GetSessionError("GET session endpoint returned an error response");
   }
 }
 

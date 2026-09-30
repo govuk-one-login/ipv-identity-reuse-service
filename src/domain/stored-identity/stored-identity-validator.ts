@@ -6,13 +6,14 @@ import { EVCSIdentityResponse, getIdentityFromEVCS } from "../../api/evcs-api.js
 import { getJwtBody, getJwtHeader } from "../../commons/jwt-utilities.js";
 import { HttpCodesEnum } from "../../commons/constants.js";
 import { APIGatewayProxyResult } from "aws-lambda";
-import { EVCSError, TokenValidationError } from "../../commons/errors.js";
+import { EVCSError, StoredIdentityValidationError, TokenValidationError } from "../../commons/errors.js";
 import { UserIdentityErrorResponse } from "../../handlers/post-phase2-user-identity-handler/post-phase2-user-identity-types.js";
 import { auditIdentityRecordRead, auditIdentityRecordReturned } from "../../commons/audit.js";
 import {
   StoredIdentityRecord,
   isStoredIdentityRecord,
   StoredIdentityValidationResult,
+  SignedStoredIdentity,
 } from "./stored-identity-types.js";
 import { correlateCredentials } from "./credential-correlator.js";
 import { ErrorCodeEnum, ResponseBody } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_RETURNED.js";
@@ -36,17 +37,42 @@ export const validateStoredIdentity = async (
   identityResponse: EVCSIdentityResponse
 ): Promise<StoredIdentityValidationResult> => {
   const kid = getJwtHeader(identityResponse.si.vc).kid || "";
-
   const { kidValid, signatureValid } = await validateCryptography(kid, identityResponse);
 
-  const content = getJwtBody<StoredIdentityRecord>(identityResponse.si.vc);
-
-  const isValidStoredIdentityObject = isStoredIdentityRecord(content);
-  if (!isValidStoredIdentityObject) logger.error("Stored identity JWT does not match expected format");
+  const storedIdentityRecord = getStoredIdentityRecordBody(identityResponse.si.vc);
   const currentVcsEncoded = identityResponse.vcs.map((vc) => vc.vc);
-  const isValid = isValidStoredIdentityObject && correlateCredentials(content, currentVcsEncoded);
+  const isValid = correlateCredentials(storedIdentityRecord, currentVcsEncoded);
 
-  return { kidValid, signatureValid, isValid, storedIdentityRecord: content };
+  return { kidValid, signatureValid, isValid, storedIdentityRecord: storedIdentityRecord };
+};
+
+export const getSignedStoredIdentity = async (
+  authorizationToken: string
+): Promise<SignedStoredIdentity | undefined> => {
+  const evcsIdentityResponseBody = await getIdentityFromCredentialStore(authorizationToken);
+  return evcsIdentityResponseBody
+    ? {
+        signedStoredIdentityRecord: evcsIdentityResponseBody.si.vc,
+        signedCredentials: evcsIdentityResponseBody.vcs.map((item) => item.vc),
+      }
+    : undefined;
+};
+
+export const getStoredIdentityRecordBody = (signedStoredIdentityRecord: string): StoredIdentityRecord => {
+  let jwtBody;
+  try {
+    jwtBody = getJwtBody<StoredIdentityRecord>(signedStoredIdentityRecord);
+  } catch (error) {
+    logger.error("Cannot decode stored identity JWT", { cause: error });
+    throw new StoredIdentityValidationError("Cannot decode stored identity JWT", { cause: error });
+  }
+
+  if (isStoredIdentityRecord(jwtBody)) {
+    return jwtBody;
+  } else {
+    logger.error("JWT is not a valid stored identity record");
+    throw new StoredIdentityValidationError("JWT is not a valid stored identity record");
+  }
 };
 
 export const validateCryptography = async (
