@@ -12,6 +12,11 @@ import {
   SocialSecurityRecordDetailsClass,
 } from "@govuk-one-login/data-vocab/credentials.js";
 
+export interface SignedStoredIdentity {
+  signedStoredIdentityRecord: string;
+  signedCredentials: string[];
+}
+
 export type StoredIdentityValidationResult = {
   kidValid: boolean;
   signatureValid: boolean;

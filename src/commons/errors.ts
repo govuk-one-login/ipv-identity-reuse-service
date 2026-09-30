@@ -22,8 +22,29 @@ export class EVCSError extends Error {
 }
 
 export class StoredIdentityValidationError extends Error {
-  constructor(message?: string) {
-    super(message || "Stored identity JWT does not match expected format");
+  constructor(message?: string, options?: ErrorOptions) {
+    super(message, options);
     this.name = "StoredIdentityValidationError";
+  }
+}
+
+export class StoredIdentityHashMismatchError extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = "StoredIdentityHashMismatchError";
+  }
+}
+
+export class UserIdentityError extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = "StoredIdentityNotFoundError";
+  }
+}
+
+export class GetSessionError extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = "GetSessionError";
   }
 }
