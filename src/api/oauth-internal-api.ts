@@ -178,7 +178,7 @@ export async function getSessionDetails(sessionId: string): Promise<GetSessionRe
 
 export async function updateSessionData(sessionId: string, data: Record<string, string | null>): Promise<void> {
   const oauthInternalApiUrl = getOauthInternalApiUrl();
-  const url = new URL(`${oauthInternalApiUrl}/api/session`);
+  const url = new URL(`${oauthInternalApiUrl}/api/session/data`);
 
   const responseFromSessionEndpoint = await fetch(url, {
     method: "PATCH",
@@ -191,7 +191,7 @@ export async function updateSessionData(sessionId: string, data: Record<string, 
 
   if (responseFromSessionEndpoint.status !== 200) {
     logger.error(`PATCH session handler returned non-200 status: ${responseFromSessionEndpoint.status}`);
-    throw new Error("PATCH session endpoint returned an error response");
+    throw new Error("PATCH session/data endpoint returned an error response");
   }
 }
 
