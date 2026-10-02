@@ -1,20 +1,35 @@
 import { APIGatewayEventRequestContextWithAuthorizer, APIGatewayProxyEvent, Context } from "aws-lambda";
-import { beforeEach, describe, expect, it, MockInstance, vi, vitest } from "vitest";
-import { AuthorizationQueryStringParameters, handler } from "../get-authorize-handler.js";
-import * as oauthInternalService from "../../../api/oauth-internal-api.js";
+import { beforeEach, describe, expect, it, vi, vitest } from "vitest";
+import { handler } from "../get-authorize-handler.js";
+import { callSessionApi } from "../../../api/oauth-internal-api.js";
+import { AuthorizationQueryStringParameters } from "../../../domain/authorization/authorization-types.js";
 
-process.env.DOMAIN_NAME = "test-domain";
-process.env.OAUTH_INTERNAL_API_URL = "https://example.com/v1";
-
-vi.mock("../../../api/oauth-internal-api", () => ({
-  callSessionApi: vi.fn(),
-}));
+vitest.mock("../../../api/oauth-internal-api.js");
 
 describe("authorize-handler", () => {
-  let fetchSessionIdSpy: MockInstance<typeof oauthInternalService.callSessionApi>;
   beforeEach(() => {
     vi.clearAllMocks();
-    fetchSessionIdSpy = vitest.spyOn(oauthInternalService, "callSessionApi");
+    vitest.stubEnv("DOMAIN_NAME", "test-domain");
+    vitest.stubEnv("OAUTH_INTERNAL_API_URL", "https://example.com/v1");
+    vitest.stubEnv("SESSION_TIMEOUT_MS", "5000");
+  });
+
+  describe("when client_id param is absent", () => {
+    it("should return error if the client_id is absent", async () => {
+      const event = createMockEvent({
+        queryStringParameters: {} as AuthorizationQueryStringParameters,
+      });
+
+      const response = await handler(event, {} as Context);
+
+      expect(response).toEqual({
+        statusCode: 302,
+        headers: {
+          Location: "https://test-domain/error/unrecoverable",
+        },
+        body: "",
+      });
+    });
   });
 
   describe("when request param is absent", () => {
@@ -22,77 +37,39 @@ describe("authorize-handler", () => {
       const event = createMockEvent({
         queryStringParameters: {
           client_id: "sample",
-          response_type: "code",
-          redirect_uri: "https://some.redirect.com",
-          state: "test-state",
-        } satisfies AuthorizationQueryStringParameters,
-      });
-      fetchSessionIdSpy = vitest.spyOn(oauthInternalService, "callSessionApi");
-
-      const response = await handler(event, {} as Context);
-
-      const expectedLocation = [
-        "https://test-domain/confirm-details",
-        "?state=test-state",
-        "&redirect_uri=https%3A%2F%2Fsome.redirect.com&client_id=sample",
-      ].join("");
-
-      expect(response.statusCode).toBe(302);
-      expect(response.headers?.Location).toBe(expectedLocation);
-      expect(fetchSessionIdSpy).not.toHaveBeenCalled();
-    });
-
-    it("should handle URL encoded redirect_uri", async () => {
-      const event = createMockEvent({
-        queryStringParameters: {
-          client_id: "sample",
-          response_type: "code",
-          redirect_uri: "https%3A%2F%2Fsome.redirect.com%2Fcallback",
-          state: "test-state",
-        } satisfies AuthorizationQueryStringParameters,
+        } as AuthorizationQueryStringParameters,
       });
 
       const response = await handler(event, {} as Context);
 
-      const expectedLocation = [
-        "https://test-domain/confirm-details",
-        "?state=test-state",
-        "&redirect_uri=https%253A%252F%252Fsome.redirect.com%252Fcallback&client_id=sample",
-      ].join("");
+      const expectedLocation = "https://test-domain/confirm-details";
 
       expect(response.statusCode).toBe(302);
       expect(response.headers?.Location).toBe(expectedLocation);
+      expect(callSessionApi).not.toHaveBeenCalled();
     });
   });
 
   describe("when request param is present", () => {
     it("should redirect to confirm-details with session cookie on 201", async () => {
-      const mockResponse = {
+      vitest.mocked(callSessionApi).mockResolvedValueOnce({
         session_id: "session-abc-123",
         state: "test-state",
         redirect_uri: "https://some.redirect.com",
-      };
-      fetchSessionIdSpy.mockResolvedValueOnce(mockResponse);
+      });
 
       const event = createMockEvent({
         queryStringParameters: {
           client_id: "orchestrator",
-          response_type: "code",
-          redirect_uri: "https://some.redirect.com",
-          state: "test-state",
           request: "foo.bar.123",
         } satisfies AuthorizationQueryStringParameters,
       });
 
       const response = await handler(event, {} as Context);
 
-      expect(fetchSessionIdSpy).toHaveBeenCalledWith("orchestrator", "foo.bar.123");
-
+      expect(callSessionApi).toHaveBeenCalledWith("orchestrator", "foo.bar.123");
       expect(response.statusCode).toBe(302);
-
-      expect(response.headers?.Location).toBe(
-        "https://test-domain/confirm-details?state=test-state&redirect_uri=https%3A%2F%2Fsome.redirect.com&client_id=orchestrator"
-      );
+      expect(response.headers?.Location).toBe("https://test-domain/confirm-details");
 
       const expectedCookie = [
         "identity_reuse_service_session=session-abc-123",
@@ -106,16 +83,13 @@ describe("authorize-handler", () => {
     });
 
     it("should redirect to error page when session handler returns an error", async () => {
-      fetchSessionIdSpy.mockImplementationOnce(() => {
+      vitest.mocked(callSessionApi).mockImplementationOnce(() => {
         throw new Error("Session endpoint returned an error response");
       });
 
       const event = createMockEvent({
         queryStringParameters: {
           client_id: "orchestrator",
-          response_type: "code",
-          redirect_uri: "https://some.redirect.com",
-          state: "test-state",
           request: "invalid.jar.content",
         } satisfies AuthorizationQueryStringParameters,
       });
@@ -130,14 +104,11 @@ describe("authorize-handler", () => {
     });
 
     it("should redirect to error page when fetch throws", async () => {
-      fetchSessionIdSpy.mockRejectedValueOnce(new Error("ECONNREFUSED"));
+      vitest.mocked(callSessionApi).mockRejectedValueOnce(new Error("ECONNREFUSED"));
 
       const event = createMockEvent({
         queryStringParameters: {
           client_id: "orchestrator",
-          response_type: "code",
-          redirect_uri: "https://some.redirect.com",
-          state: "test-state",
           request: "some.jar.value",
         } satisfies AuthorizationQueryStringParameters,
       });

@@ -985,6 +985,7 @@ Resources:
           OAUTH_INTERNAL_API_URL:
             Fn::ImportValue: !Sub "${OauthInternalStackName}-PrivateApi"
           PUBLIC_API: !GetAtt ReuseIdentityDomain.Value
+          SESSION_TIMEOUT_MS: !Ref ApiTimeoutMilliseconds
           POWERTOOLS_SERVICE_NAME: "PostConfirmDetailsHandler"
     Metadata:
       BuildMethod: esbuild

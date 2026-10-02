@@ -33,7 +33,7 @@ Parameters:
     Description: >
       Whether to accept CRI or IPV authorisation requests
     Type: String
-    Default: CRI
+    Default: IPV
     AllowedValues:
       - CRI
       - IPV

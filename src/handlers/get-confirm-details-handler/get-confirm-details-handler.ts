@@ -23,7 +23,6 @@ import {
   validateStoredIdentity,
 } from "../../domain/stored-identity/stored-identity-validator.js";
 import { hasIdentityExpired } from "../../domain/verifiable-credential/identity-expiry-service.js";
-import { ConfirmDetailsQueryStringParameters } from "./get-confirm-details-handler-types.js";
 import mainPageTemplate from "./index.njk";
 import { extractUserDetails } from "./user-details-content.js";
 
@@ -45,11 +44,6 @@ nunjucksEnvironment.addFilter("GDSDate", (dateString: string) => {
 const metrics = new Metrics();
 
 export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  const { redirect_uri, client_id, state } = event.queryStringParameters as ConfirmDetailsQueryStringParameters;
-  if (!redirect_uri || !state || !client_id) {
-    throw new Error("One or more required query string parameters are undefined or empty");
-  }
-
   const domainName = process.env.DOMAIN_NAME || "";
   const sessionId = getCookieValues(event)?.get("identity_reuse_service_session");
   try {
@@ -101,9 +95,6 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
       body: nunjucksEnvironment.render(mainPageTemplate, {
         assetPath: "./assets",
         rootPath: ".",
-        redirect_uri,
-        state,
-        client_id,
         userDetails,
         translations,
         govukRebrand: true,

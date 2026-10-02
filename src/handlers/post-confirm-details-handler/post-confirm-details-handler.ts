@@ -1,55 +1,31 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
 import logger from "../../commons/logger.js";
 import { getCookieValues } from "../../commons/cookie-utilities.js";
 import { redirectToErrorPage } from "../../api/sis-api.js";
+import { createAuthCode } from "../../api/oauth-internal-api.js";
 
-export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  const eventValues = new URLSearchParams(event.body || "");
-  const domainName = process.env.DOMAIN_NAME || "";
+export const lambdaHandler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
+  logger.addContext(context);
 
-  const redirectUri = eventValues.get("redirectUri");
-  const clientId = eventValues.get("client_id");
-  const state = eventValues.get("state");
+  const domainName = process.env.DOMAIN_NAME;
   const sessionId = getCookieValues(event)?.get("identity_reuse_service_session");
-
-  if (!redirectUri || !state || !clientId) {
-    throw new Error("One or more required query string parameters are undefined");
-  }
   if (!sessionId) {
+    logger.error("Session ID parameter is missing");
     return redirectToErrorPage(domainName);
   }
 
   try {
     await createAuthCode(sessionId);
 
-    const url = new URL(`https://${process.env.PUBLIC_API}/oauth2/callback`);
-    url.searchParams.append("redirect_uri", redirectUri);
-    url.searchParams.append("state", state);
-    url.searchParams.append("client_id", clientId);
-
     return {
       statusCode: 302,
       body: "",
       headers: {
-        Location: url.href,
+        Location: `https://${process.env.PUBLIC_API}/oauth2/callback`,
       },
     };
   } catch (error) {
     logger.error(`Error in lambdaHandler event`, { error });
     return redirectToErrorPage(domainName);
   }
-};
-
-const createAuthCode = async (sessionId: string) => {
-  const oauthInternalApiUrl = process.env.OAUTH_INTERNAL_API_URL;
-  const url = new URL(`${oauthInternalApiUrl}/api/create-auth-code`);
-
-  const responseFromCreateAuthCode = await fetch(url, {
-    method: "POST",
-    headers: {
-      "session-id": sessionId,
-    },
-  });
-
-  logger.info("Response from create-auth-code", { sessionId, statusCode: responseFromCreateAuthCode.status });
 };

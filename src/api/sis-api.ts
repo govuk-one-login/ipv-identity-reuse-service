@@ -6,31 +6,12 @@ type RedirectOptions = {
   cookie?: string;
 };
 
-type ConfirmDetailsRedirectOptions = {
-  domainName: string;
-  state: string;
-  redirectUri: string;
-  clientId: string;
-  cookie?: string;
-};
-
 export function redirectToErrorPage(domainName: string) {
   return redirect({ location: `https://${domainName}/error/unrecoverable`, body: "" });
 }
 
-export function redirectToConfirmDetails({
-  domainName,
-  state,
-  redirectUri,
-  clientId,
-  cookie,
-}: ConfirmDetailsRedirectOptions) {
-  const url = new URL("/confirm-details", `https://${domainName}`);
-  url.searchParams.append("state", state);
-  url.searchParams.append("redirect_uri", redirectUri);
-  url.searchParams.append("client_id", clientId);
-
-  return redirect({ location: url.href, body: "", cookie: cookie });
+export function redirectToConfirmDetails(domainName: string, cookie?: string) {
+  return redirect({ location: `https://${domainName}/confirm-details`, body: "", cookie: cookie });
 }
 
 export function redirectToClient({

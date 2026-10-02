@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, expect, it, vitest, describe } from "vitest";
-import { callSessionApi, getAuthorizationCode, getSessionDetails, updateSessionData } from "../oauth-internal-api.js";
+import {
+  callSessionApi,
+  createAuthCode,
+  getAuthorizationCode,
+  getSessionDetails,
+  updateSessionData,
+  CreateSessionError,
+} from "../oauth-internal-api.js";
 import { URL } from "node:url";
 
 const { mockError } = vitest.hoisted(() => {
@@ -30,6 +37,36 @@ afterEach(() => {
   vitest.restoreAllMocks();
   vitest.unstubAllEnvs();
   vitest.unstubAllGlobals();
+});
+
+describe("createAuthCode", () => {
+  it("should create a successful request to create an auth code", async () => {
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(Response.json({}, { status: 201 })));
+
+    await createAuthCode("session-id");
+
+    expect(globalThis.fetch).toHaveBeenCalledExactlyOnceWith("https://test.com/api/create-auth-code", {
+      method: "POST",
+      headers: {
+        "session-id": "session-id",
+      },
+    });
+  });
+
+  it("should throw an exception if the error code is invalid", async () => {
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(Response.json({}, { status: 400 })));
+
+    await expect(createAuthCode("session-id")).rejects.toThrow(
+      new CreateSessionError("Create auth code endpoint returned an error response")
+    );
+
+    expect(globalThis.fetch).toHaveBeenCalledExactlyOnceWith("https://test.com/api/create-auth-code", {
+      method: "POST",
+      headers: {
+        "session-id": "session-id",
+      },
+    });
+  });
 });
 
 describe("callSessionApi", () => {

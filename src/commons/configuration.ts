@@ -40,6 +40,4 @@ export const getOauthInternalApiUrl = (): string => {
   return getRequiredEnvironment("OAUTH_INTERNAL_API_URL");
 };
 
-export const getSessionTimeout = (): string => {
-  return getRequiredEnvironment("SESSION_TIMEOUT_MS");
-};
+export const getSessionTimeout = (): number => Number(getRequiredEnvironment("SESSION_TIMEOUT_MS"));

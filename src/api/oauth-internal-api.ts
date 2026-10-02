@@ -12,6 +12,9 @@ export type SessionResult = {
 export type GetSessionResult = {
   storageAccessToken?: string;
   subject: string;
+  redirectUri: string;
+  state: string;
+  clientId: string;
   vtr?: IdentityVectorOfTrust[];
 };
 
@@ -48,6 +51,9 @@ type GetSessionSuccessResponse = {
   clientSessionId: string;
   persistentSessionId?: string;
   subject: string;
+  redirectUri: string;
+  state: string;
+  clientId: string;
   context?: string;
   sessionData?: object;
 };
@@ -60,7 +66,21 @@ export class CreateSessionError extends Error {
   }
 }
 
-const SESSION_TIMEOUT_MS = Number(getSessionTimeout());
+export async function createAuthCode(sessionId: string) {
+  const oauthInternalApiUrl = process.env.OAUTH_INTERNAL_API_URL;
+
+  const responseFromCreateAuthCode = await fetch(`${oauthInternalApiUrl}/api/create-auth-code`, {
+    method: "POST",
+    headers: {
+      "session-id": sessionId,
+    },
+  });
+
+  if (responseFromCreateAuthCode.status !== 201) {
+    logger.error(`Session handler returned non-201 status: ${responseFromCreateAuthCode.status}`);
+    throw new CreateSessionError("Create auth code endpoint returned an error response");
+  }
+}
 
 export async function callSessionApi(clientId: string, request: string): Promise<SessionResult> {
   const oauthInternalApiUrl = getOauthInternalApiUrl();
@@ -77,7 +97,7 @@ export async function callSessionApi(clientId: string, request: string): Promise
       "Content-Type": "application/json",
     },
     body,
-    signal: AbortSignal.timeout(SESSION_TIMEOUT_MS),
+    signal: AbortSignal.timeout(getSessionTimeout()),
   });
 
   if (responseFromSessionEndpoint.status === 201) {
@@ -115,7 +135,7 @@ export async function getAuthorizationCode(
     headers: {
       "session-id": sessionId,
     },
-    signal: AbortSignal.timeout(SESSION_TIMEOUT_MS),
+    signal: AbortSignal.timeout(getSessionTimeout()),
   });
 
   if (responseFromAuthorizeEndpoint.status === 200) {
@@ -157,7 +177,7 @@ export async function getSessionDetails(sessionId: string): Promise<GetSessionRe
     headers: {
       "session-id": sessionId,
     },
-    signal: AbortSignal.timeout(SESSION_TIMEOUT_MS),
+    signal: AbortSignal.timeout(getSessionTimeout()),
   });
 
   if (responseFromSessionEndpoint.status === 200) {
@@ -169,6 +189,9 @@ export async function getSessionDetails(sessionId: string): Promise<GetSessionRe
       storageAccessToken: sessionData.storageAccessToken,
       subject: sessionData.subject,
       vtr: sessionData.vtr,
+      redirectUri: sessionData.redirectUri,
+      state: sessionData.state,
+      clientId: sessionData.clientId,
     };
   } else {
     logger.error(`GET session handler returned non-200 status: ${responseFromSessionEndpoint.status}`);
@@ -186,7 +209,7 @@ export async function updateSessionData(sessionId: string, data: Record<string, 
       "session-id": sessionId,
     },
     body: JSON.stringify(data),
-    signal: AbortSignal.timeout(SESSION_TIMEOUT_MS),
+    signal: AbortSignal.timeout(getSessionTimeout()),
   });
 
   if (responseFromSessionEndpoint.status !== 200) {
