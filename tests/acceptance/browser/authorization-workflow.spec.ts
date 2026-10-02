@@ -10,6 +10,11 @@ import {
   createAndPostFraudCheckCredential,
 } from "../shared/helpers/credential-helpers.js";
 import { sisBaseUrl, sisPrivateApiUrl } from "./support/environment.js";
+import { GetUserIdentityResponse } from "../../../src/handlers/get-user-identity-handler/get-user-identity-types.js";
+import { StoredIdentityClaims } from "../../../src/domain/stored-identity/stored-identity-types.js";
+import { KENNETH_DECERQUEIRA } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/names";
+import { KENNETH_DECERQUEIRA_BIRTH_DATE } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/birthdates";
+import { KENNETH_DECERQUERIA_ADDRESS } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/addresses";
 
 const AN_HOUR = 60 * 60;
 const TEN_MINUTES = 10 * 60;
@@ -73,6 +78,13 @@ test.describe("Authorization workflow", () => {
       await createAndPostDcmawPassportCredential(userId, new Date()),
       await createAndPostFraudCheckCredential(userId, new Date()),
     ];
+    const claims: StoredIdentityClaims = {
+      "https://vocab.account.gov.uk/v1/coreIdentity": {
+        name: [KENNETH_DECERQUEIRA],
+        birthDate: [KENNETH_DECERQUEIRA_BIRTH_DATE],
+      },
+      "https://vocab.account.gov.uk/v1/address": [KENNETH_DECERQUERIA_ADDRESS],
+    };
     await createStoredIdentityWithVot(
       userId,
       credentialJwts,
@@ -80,7 +92,8 @@ test.describe("Authorization workflow", () => {
       await getDidControllerName(),
       await getSigningKeyId(),
       undefined,
-      "P3"
+      "P3",
+      claims
     );
 
     await orchestrationStub.goto();
@@ -104,9 +117,16 @@ test.describe("Authorization workflow", () => {
     await expect(identityResponse.heading).toBeVisible();
     await expect(identityResponse.identityJson).toBeVisible();
     const userIdentity = await identityResponse.readIdentity();
-    // Once the /user-identity endpoint starts returning non-static data we should
-    // assert that identity information is as expected.
-    expect(userIdentity).toHaveProperty("sub");
+
+    const expectedUserIdentity: GetUserIdentityResponse = {
+      sub: userId,
+      vot: "P3",
+      vtm: "https://oidc.account.gov.uk/trustmark",
+      "https://vocab.account.gov.uk/v1/credentialJWT": credentialJwts,
+      "https://vocab.account.gov.uk/v1/returnCode": [],
+      ...claims,
+    };
+    expect(userIdentity).toStrictEqual(expectedUserIdentity);
   });
 
   test.describe("rejects an untrustworthy authorization request", () => {
