@@ -8,10 +8,7 @@ import { EVCSIdentityResponse } from "../../api/evcs-api.js";
 import { calculateVot } from "../../domain/stored-identity/calculate-vot.js";
 import { hasIdentityExpired } from "../../domain/verifiable-credential/identity-expiry-service.js";
 import { UserIdentityRequest, UserIdentityResponse } from "./post-phase2-user-identity-types.js";
-import {
-  StoredIdentityRecord,
-  StoredIdentityVectorOfTrust,
-} from "../../domain/stored-identity/stored-identity-types.js";
+import { StoredIdentityRecord, CalculatedVectorOfTrust } from "../../domain/stored-identity/stored-identity-types.js";
 import { getProperty } from "../../commons/case-insensitive-header-utilities.js";
 import {
   getUserIdFromJwt,
@@ -84,7 +81,7 @@ const createSuccessResponse = async (
 ): Promise<UserIdentityResponse> => {
   const content = getJwtBody<StoredIdentityRecord>(identityResponse.si.vc);
   const { kidValid, signatureValid, isValid } = await validateStoredIdentity(identityResponse);
-  const vot: StoredIdentityVectorOfTrust = calculateVot(content, identityResponse.si.unsignedVot, vtr);
+  const vot: CalculatedVectorOfTrust = calculateVot(content, identityResponse.si.unsignedVot, vtr);
   const vtm = `https://oidc.account.gov.uk/trustmark`;
   const maxVot = (content.max_vot || identityResponse.si.unsignedVot) as VotEnum;
   const { expired, fraudVc } = await hasIdentityExpired(identityResponse.vcs.map((vcObject) => vcObject.vc));

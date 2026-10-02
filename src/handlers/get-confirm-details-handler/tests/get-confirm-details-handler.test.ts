@@ -16,6 +16,9 @@ import * as configuration from "../../../commons/configuration.js";
 import * as jwtUtilities from "../../../commons/jwt-utilities.js";
 import { EVCSIdentityResponse } from "../../../api/evcs-api.js";
 import logger from "../../../commons/logger.js";
+import { KENNETH_DECERQUEIRA } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/names";
+import { KENNETH_DECERQUEIRA_BIRTH_DATE } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/birthdates";
+import { KENNETH_DECERQUERIA_ADDRESS } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/addresses";
 
 const mockRender = vi.hoisted(() => vi.fn().mockReturnValue("Rendered Confirm Details Screen"));
 
@@ -97,10 +100,12 @@ beforeEach(() => {
       sub: "user-sub",
       credentials: [],
       vot: "P2",
-      vtm: "https://oidc.account.gov.uk/trustmark",
       claims: {
-        "https://vocab.account.gov.uk/v1/coreIdentity": {},
-        "https://vocab.account.gov.uk/v1/address": [],
+        "https://vocab.account.gov.uk/v1/coreIdentity": {
+          name: [KENNETH_DECERQUEIRA],
+          birthDate: [KENNETH_DECERQUEIRA_BIRTH_DATE],
+        },
+        "https://vocab.account.gov.uk/v1/address": [KENNETH_DECERQUERIA_ADDRESS],
       },
     },
   });

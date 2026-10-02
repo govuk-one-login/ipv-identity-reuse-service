@@ -58,7 +58,6 @@ Given<WorldDefinition>(
       sub: this.userId,
       iss: "http://api.example.com",
       vot,
-      vtm: "https://oidc.account.gov.uk/trustmark",
       credentials: [],
       claims: {
         "https://vocab.account.gov.uk/v1/coreIdentity": {
@@ -88,7 +87,6 @@ Given<WorldDefinition>("I have a user with a Stored Identity, and an invalid sig
     sub: this.userId,
     iss: "http://api.example.com",
     vot: "P2",
-    vtm: "https://oidc.account.gov.uk/trustmark",
     credentials: [],
     claims: {
       "https://vocab.account.gov.uk/v1/coreIdentity": {
@@ -129,7 +127,6 @@ Given<WorldDefinition>(
       sub: this.userId,
       iss: "http://api.example.com",
       vot: "P2",
-      vtm: "https://oidc.account.gov.uk/trustmark",
       credentials: [],
       claims: {
         "https://vocab.account.gov.uk/v1/coreIdentity": {

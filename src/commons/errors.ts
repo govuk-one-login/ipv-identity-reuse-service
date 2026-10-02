@@ -22,8 +22,8 @@ export class EVCSError extends Error {
 }
 
 export class StoredIdentityValidationError extends Error {
-  constructor() {
-    super("Stored identity JWT does not match expected format");
+  constructor(message?: string) {
+    super(message || "Stored identity JWT does not match expected format");
     this.name = "StoredIdentityValidationError";
   }
 }
