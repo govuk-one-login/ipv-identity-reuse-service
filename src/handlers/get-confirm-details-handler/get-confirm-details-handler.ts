@@ -13,10 +13,7 @@ import logger from "../../commons/logger.js";
 import { MetricDimension, MetricName } from "../../commons/metric-enum.js";
 import { calculateVot } from "../../domain/stored-identity/calculate-vot.js";
 import { createStoredIdentityHash } from "../../domain/stored-identity/stored-identity-hashing.js";
-import {
-  StoredIdentityRecord,
-  StoredIdentityVectorOfTrust,
-} from "../../domain/stored-identity/stored-identity-types.js";
+import { StoredIdentityRecord, CalculatedVectorOfTrust } from "../../domain/stored-identity/stored-identity-types.js";
 import {
   getIdentityFromCredentialStore,
   validateStoredIdentity,
@@ -132,7 +129,7 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
 };
 
 const validateUserIdentity = async (
-  vot: StoredIdentityVectorOfTrust,
+  vot: CalculatedVectorOfTrust,
   storedIdentityVcJwts: string[],
   vtr: IdentityVectorOfTrust[]
 ): Promise<boolean> => {
@@ -160,7 +157,7 @@ const validateUserIdentity = async (
 const sessionStoreHashedStoredIdentity = async (
   sessionId: string,
   storedIdentityJwt: string,
-  vot: StoredIdentityVectorOfTrust,
+  vot: CalculatedVectorOfTrust,
   vcJwts: string[]
 ) => {
   const hash = createStoredIdentityHash(storedIdentityJwt, vot, vcJwts);

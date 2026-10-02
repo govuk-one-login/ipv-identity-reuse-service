@@ -1,10 +1,10 @@
 import { createHash } from "node:crypto";
 import { compareStringAscending } from "../../commons/string-utilities.js";
-import { StoredIdentityVectorOfTrust } from "./stored-identity-types.js";
+import { CalculatedVectorOfTrust } from "./stored-identity-types.js";
 
 export const createStoredIdentityHash = (
   storedIdentityJwt: string,
-  vot: StoredIdentityVectorOfTrust,
+  vot: CalculatedVectorOfTrust,
   vcJwts: string[]
 ): string => {
   const hash = createHash("sha256");

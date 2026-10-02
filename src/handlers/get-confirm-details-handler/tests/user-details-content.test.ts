@@ -1,13 +1,14 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vitest } from "vitest";
 import { extractUserDetails, formatAddress } from "../user-details-content.js";
 import { StoredIdentityRecord, StoredIdentityClaims } from "../../../domain/stored-identity/stored-identity-types.js";
 import { StoredIdentityValidationError } from "../../../commons/errors.js";
+
+vitest.mock("../../../commons/logger");
 
 const buildStoredIdentityRecord = (claims: StoredIdentityClaims): StoredIdentityRecord => ({
   sub: "user-sub",
   credentials: [],
   vot: "P2",
-  vtm: "https://oidc.account.gov.uk/trustmark",
   claims,
 });
 
@@ -67,9 +68,10 @@ describe("extractUserDetails", () => {
     expect(result.name).toBe("Mary Jane Watson");
   });
 
-  it("should throw when no name is present", () => {
+  it("should throw when name is empty", () => {
     const storedIdentityRecord = buildStoredIdentityRecord({
       "https://vocab.account.gov.uk/v1/coreIdentity": {
+        name: [],
         birthDate: [{ value: "2000-06-01" }],
       },
       "https://vocab.account.gov.uk/v1/address": [{ streetName: "Test Street", postalCode: "TE1 1ST" }],
@@ -78,18 +80,31 @@ describe("extractUserDetails", () => {
     expect(() => extractUserDetails(storedIdentityRecord)).toThrow(StoredIdentityValidationError);
   });
 
-  it("should throw when no birthDate is present", () => {
+  it("should throw when nameParts is empty", () => {
     const storedIdentityRecord = buildStoredIdentityRecord({
       "https://vocab.account.gov.uk/v1/coreIdentity": {
-        name: [{ nameParts: [{ type: "GivenName", value: "Test" }] }],
+        name: [{ nameParts: [] }],
+        birthDate: [{ value: "2000-06-01" }],
       },
-      "https://vocab.account.gov.uk/v1/address": [],
+      "https://vocab.account.gov.uk/v1/address": [{ streetName: "Test Street", postalCode: "TE1 1ST" }],
     });
 
     expect(() => extractUserDetails(storedIdentityRecord)).toThrow(StoredIdentityValidationError);
   });
 
-  it("should throw when no addresses are present", () => {
+  it("should throw when birthDate is empty", () => {
+    const storedIdentityRecord = buildStoredIdentityRecord({
+      "https://vocab.account.gov.uk/v1/coreIdentity": {
+        name: [{ nameParts: [{ type: "GivenName", value: "Test" }] }],
+        birthDate: [],
+      },
+      "https://vocab.account.gov.uk/v1/address": [{ streetName: "Test Street", postalCode: "TE1 1ST" }],
+    });
+
+    expect(() => extractUserDetails(storedIdentityRecord)).toThrow(StoredIdentityValidationError);
+  });
+
+  it("should throw when address is empty", () => {
     const storedIdentityRecord = buildStoredIdentityRecord({
       "https://vocab.account.gov.uk/v1/coreIdentity": {
         name: [
