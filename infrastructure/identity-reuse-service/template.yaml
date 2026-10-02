@@ -530,6 +530,9 @@ Resources:
           SQS_AUDIT_EVENT_QUEUE_URL:
             Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueUrl"
           COMPONENT_ID: !Ref ComponentId
+          SESSION_TIMEOUT_MS: !Ref ApiTimeoutMilliseconds
+          OAUTH_INTERNAL_API_URL:
+            Fn::ImportValue: !Sub "${OauthInternalStackName}-PrivateApi"
       CodeSigningConfigArn: !If
         - UseCodeSigning
         - !Ref CodeSigningConfigArn

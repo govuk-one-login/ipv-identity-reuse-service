@@ -1,6 +1,6 @@
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
 import { calculateVot } from "../calculate-vot.js";
-import { StoredIdentityRecord, StoredIdentityVectorOfTrust } from "../stored-identity-types.js";
+import { StoredIdentityRecord, CalculatedVectorOfTrust } from "../stored-identity-types.js";
 import logger from "../../../commons/logger.js";
 import { vi, describe, it, afterEach, expect, Mocked } from "vitest";
 
@@ -13,7 +13,7 @@ describe("calculate-vot", () => {
     vi.clearAllMocks();
   });
 
-  it.each<[StoredIdentityVectorOfTrust, IdentityVectorOfTrust[], IdentityVectorOfTrust]>([
+  it.each<[CalculatedVectorOfTrust, IdentityVectorOfTrust[], IdentityVectorOfTrust]>([
     ["P1", ["P1"], "P2"],
     ["P2", ["P1", "P2"], "P2"],
     ["P2", ["P2", "P1"], "P2"],
@@ -36,7 +36,7 @@ describe("calculate-vot", () => {
     expect(returnedVot).toEqual(expected);
   });
 
-  it.each<[StoredIdentityVectorOfTrust, IdentityVectorOfTrust[], IdentityVectorOfTrust, IdentityVectorOfTrust]>([
+  it.each<[CalculatedVectorOfTrust, IdentityVectorOfTrust[], IdentityVectorOfTrust, IdentityVectorOfTrust]>([
     ["P1", ["P1"], "P2", "P3"],
     ["P2", ["P1", "P2"], "P2", "P3"],
     ["P2", ["P2", "P1"], "P2", "P3"],
