@@ -60,7 +60,7 @@ export class CreateSessionError extends Error {
   }
 }
 
-const SESSION_TIMEOUT_MS = Number(getSessionTimeout());
+const getSessionTimeoutMs = (): number => Number(getSessionTimeout());
 
 export async function callSessionApi(clientId: string, request: string): Promise<SessionResult> {
   const oauthInternalApiUrl = getOauthInternalApiUrl();
@@ -77,7 +77,7 @@ export async function callSessionApi(clientId: string, request: string): Promise
       "Content-Type": "application/json",
     },
     body,
-    signal: AbortSignal.timeout(SESSION_TIMEOUT_MS),
+    signal: AbortSignal.timeout(getSessionTimeoutMs()),
   });
 
   if (responseFromSessionEndpoint.status === 201) {
@@ -115,7 +115,7 @@ export async function getAuthorizationCode(
     headers: {
       "session-id": sessionId,
     },
-    signal: AbortSignal.timeout(SESSION_TIMEOUT_MS),
+    signal: AbortSignal.timeout(getSessionTimeoutMs()),
   });
 
   if (responseFromAuthorizeEndpoint.status === 200) {
@@ -157,7 +157,7 @@ export async function getSessionDetails(sessionId: string): Promise<GetSessionRe
     headers: {
       "session-id": sessionId,
     },
-    signal: AbortSignal.timeout(SESSION_TIMEOUT_MS),
+    signal: AbortSignal.timeout(getSessionTimeoutMs()),
   });
 
   if (responseFromSessionEndpoint.status === 200) {
@@ -186,7 +186,7 @@ export async function updateSessionData(sessionId: string, data: Record<string, 
       "session-id": sessionId,
     },
     body: JSON.stringify(data),
-    signal: AbortSignal.timeout(SESSION_TIMEOUT_MS),
+    signal: AbortSignal.timeout(getSessionTimeoutMs()),
   });
 
   if (responseFromSessionEndpoint.status !== 200) {

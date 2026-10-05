@@ -6,18 +6,17 @@ import { updateSessionData } from "../../../api/oauth-internal-api.js";
 
 const TEST_SESSION_ID = randomUUID();
 
+vi.mock("../../../api/oauth-internal-api");
+
 beforeEach(() => {
   vi.stubEnv("PUBLIC_API", "api.example.com");
   vi.stubEnv("DOMAIN_NAME", "api2.example.com");
+  vi.mocked(updateSessionData).mockResolvedValue();
 });
 
 afterEach(() => {
   vi.unstubAllEnvs();
 });
-
-vi.mock("../../../api/oauth-internal-api", () => ({
-  updateSessionData: vi.fn(),
-}));
 
 it("should redirect to the error page if the session is not provided", async () => {
   const event = createMockAPIGatewayProxyEvent(
@@ -57,7 +56,7 @@ it("should return a 302 status code on a successful request", async () => {
     },
   });
 
-  expect(vi.mocked(updateSessionData)).not.toHaveBeenCalled();
+  expect(updateSessionData).not.toHaveBeenCalled();
 
   expect(mockFetch).toHaveBeenCalledWith(new URL("https://internal.example.com/api/create-auth-code"), {
     method: "POST",
