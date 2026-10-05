@@ -2,12 +2,16 @@ import { APIGatewayEventRequestContextWithAuthorizer, APIGatewayProxyEvent } fro
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { lambdaHandler } from "../post-confirm-details-handler.js";
 import { randomUUID } from "node:crypto";
+import { updateSessionData } from "../../../api/oauth-internal-api.js";
 
 const TEST_SESSION_ID = randomUUID();
+
+vi.mock("../../../api/oauth-internal-api");
 
 beforeEach(() => {
   vi.stubEnv("PUBLIC_API", "api.example.com");
   vi.stubEnv("DOMAIN_NAME", "api2.example.com");
+  vi.mocked(updateSessionData).mockResolvedValue();
 });
 
 afterEach(() => {
@@ -42,6 +46,7 @@ it("should return a 302 status code on a successful request", async () => {
   );
 
   const response = await lambdaHandler(event);
+
   expect(response).toStrictEqual({
     statusCode: 302,
     body: "",
@@ -50,6 +55,8 @@ it("should return a 302 status code on a successful request", async () => {
         "https://api.example.com/oauth2/callback?redirect_uri=https%3A%2F%2Fapi.example.com&state=test-state-id&client_id=client",
     },
   });
+
+  expect(updateSessionData).not.toHaveBeenCalled();
 
   expect(mockFetch).toHaveBeenCalledWith(new URL("https://internal.example.com/api/create-auth-code"), {
     method: "POST",
@@ -93,6 +100,34 @@ it("should redirect to the error page when createAuthCode throws an error", asyn
     },
   });
 
+  mockFetch.mockRestore();
+});
+
+it("should set record_update_requested if update-details action received", async () => {
+  vi.stubEnv("OAUTH_INTERNAL_API_URL", "https://internal.example.com");
+
+  const mockFetch = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response("", { status: 201 }));
+
+  const event = createMockAPIGatewayProxyEvent(
+    {},
+    "redirectUri=https%3A%2F%2Fapi.example.com&state=test-state-id&client_id=client&action=update-details",
+    TEST_SESSION_ID
+  );
+
+  const response = await lambdaHandler(event);
+
+  expect(response).toStrictEqual({
+    statusCode: 302,
+    body: "",
+    headers: {
+      Location:
+        "https://api.example.com/oauth2/callback?redirect_uri=https%3A%2F%2Fapi.example.com&state=test-state-id&client_id=client",
+    },
+  });
+
+  expect(vi.mocked(updateSessionData)).toHaveBeenCalledWith(TEST_SESSION_ID, {
+    errorDescription: "record_update_requested",
+  });
   mockFetch.mockRestore();
 });
 

@@ -446,7 +446,7 @@ describe("updateSessionData", () => {
 
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      new URL("https://test.com/api/session"),
+      new URL("https://test.com/api/session/data"),
       expect.objectContaining({
         method: "PATCH",
         headers: {
@@ -465,12 +465,12 @@ describe("updateSessionData", () => {
     vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
 
     await expect(updateSessionData("session-1234", { foo: "bar" })).rejects.toThrow(
-      "PATCH session endpoint returned an error response"
+      "PATCH session/data endpoint returned an error response"
     );
 
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      new URL("https://test.com/api/session"),
+      new URL("https://test.com/api/session/data"),
       expect.objectContaining({
         method: "PATCH",
         headers: {

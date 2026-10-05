@@ -131,4 +131,58 @@ test.describe("Authorization workflow", () => {
       });
     }
   });
+
+  test("user with a valid identity goes to confirm details page, updates details and is successfully redirected", async ({
+    page,
+    orchestrationStub,
+    confirmDetails,
+    identityResponse,
+  }) => {
+    const userId = generateRandomTestUserId();
+    const credentialJwts = [
+      await createAndPostDcmawPassportCredential(userId, new Date()),
+      await createAndPostFraudCheckCredential(userId, new Date()),
+    ];
+    await createStoredIdentityWithVot(
+      userId,
+      credentialJwts,
+      "P2",
+      await getDidControllerName(),
+      await getSigningKeyId(),
+      undefined,
+      "P3"
+    );
+
+    await orchestrationStub.goto();
+    await expect(orchestrationStub.heading).toBeVisible();
+
+    await orchestrationStub.setPublicUrl(sisPublicUrl);
+    await orchestrationStub.setPrivateUrl(sisPrivateUrl);
+    await orchestrationStub.setUserId(userId);
+    await orchestrationStub.uncheckCreateIdentity();
+    await orchestrationStub.continue();
+
+    await expect(confirmDetails.heading).toBeVisible();
+    await expect(page).toHaveURL((url) => {
+      return url.pathname === ConfirmDetailsPage.path;
+    });
+    await expect(confirmDetails.fullNameValue).toHaveText("KENNETH DECERQUEIRA");
+
+    const updateSubmit = page.waitForRequest(
+      (request) =>
+        request.method() === "POST" &&
+        new URL(request.url()).pathname === ConfirmDetailsPage.path &&
+        (request.postData() ?? "").includes("action=update-details")
+    );
+
+    await confirmDetails.updateDetails();
+    await updateSubmit;
+
+    await expect(identityResponse.heading).toBeVisible();
+    await expect(identityResponse.identityJson).toBeVisible();
+    const userIdentity = await identityResponse.readIdentity();
+    // Once the /user-identity endpoint starts returning non-static data we should
+    // assert that identity information is as expected.
+    expect(userIdentity).toHaveProperty("sub");
+  });
 });

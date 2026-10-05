@@ -60,7 +60,7 @@ export class CreateSessionError extends Error {
   }
 }
 
-const SESSION_TIMEOUT_MS = Number(getSessionTimeout());
+const getSessionTimeoutMs = (): number => Number(getSessionTimeout());
 
 export async function callSessionApi(clientId: string, request: string): Promise<SessionResult> {
   const oauthInternalApiUrl = getOauthInternalApiUrl();
@@ -77,7 +77,7 @@ export async function callSessionApi(clientId: string, request: string): Promise
       "Content-Type": "application/json",
     },
     body,
-    signal: AbortSignal.timeout(SESSION_TIMEOUT_MS),
+    signal: AbortSignal.timeout(getSessionTimeoutMs()),
   });
 
   if (responseFromSessionEndpoint.status === 201) {
@@ -115,7 +115,7 @@ export async function getAuthorizationCode(
     headers: {
       "session-id": sessionId,
     },
-    signal: AbortSignal.timeout(SESSION_TIMEOUT_MS),
+    signal: AbortSignal.timeout(getSessionTimeoutMs()),
   });
 
   if (responseFromAuthorizeEndpoint.status === 200) {
@@ -157,7 +157,7 @@ export async function getSessionDetails(sessionId: string): Promise<GetSessionRe
     headers: {
       "session-id": sessionId,
     },
-    signal: AbortSignal.timeout(SESSION_TIMEOUT_MS),
+    signal: AbortSignal.timeout(getSessionTimeoutMs()),
   });
 
   if (responseFromSessionEndpoint.status === 200) {
@@ -178,7 +178,7 @@ export async function getSessionDetails(sessionId: string): Promise<GetSessionRe
 
 export async function updateSessionData(sessionId: string, data: Record<string, string | null>): Promise<void> {
   const oauthInternalApiUrl = getOauthInternalApiUrl();
-  const url = new URL(`${oauthInternalApiUrl}/api/session`);
+  const url = new URL(`${oauthInternalApiUrl}/api/session/data`);
 
   const responseFromSessionEndpoint = await fetch(url, {
     method: "PATCH",
@@ -186,12 +186,12 @@ export async function updateSessionData(sessionId: string, data: Record<string, 
       "session-id": sessionId,
     },
     body: JSON.stringify(data),
-    signal: AbortSignal.timeout(SESSION_TIMEOUT_MS),
+    signal: AbortSignal.timeout(getSessionTimeoutMs()),
   });
 
   if (responseFromSessionEndpoint.status !== 200) {
-    logger.error(`PATCH session handler returned non-200 status: ${responseFromSessionEndpoint.status}`);
-    throw new Error("PATCH session endpoint returned an error response");
+    logger.error(`PATCH session/data endpoint returned non-200 status: ${responseFromSessionEndpoint.status}`);
+    throw new Error("PATCH session/data endpoint returned an error response");
   }
 }
 

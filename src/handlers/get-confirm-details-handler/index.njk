@@ -8,6 +8,25 @@
 {% block head %}
     <link rel="stylesheet" href="{{ rootPath | default("", true) }}/govuk-frontend.min.css">
     <base href="./confirm-details" />
+    <style>
+        .govuk-button-as-link {
+            background: none;
+            border: none;
+            padding: 0;
+            margin: 0;
+            font: inherit;
+            cursor: pointer;
+            vertical-align: baseline;
+        }
+
+        .govuk-button-as-link:focus {
+                    outline: 3px solid transparent;
+                    color: #0b0c0c;
+                    background-color: #fd0;
+                    box-shadow: 0 -2px #fd0, 0 4px #0b0c0c;
+                    text-decoration: none;
+        }
+    </style>
 {% endblock %}
 
 {% block pageTitle %}{{ translations.pages.confirmDetails.title }}{% endblock %}
@@ -68,7 +87,7 @@
                 <p class="govuk-body">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.detailsChangedParagraph1 }}</p>
                 <p class="govuk-body">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.detailsChangedParagraph2 }}</p>
                 <p class="govuk-body">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.detailsChangedParagraph3 }}</p>
-                <p class="govuk-body">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.detailsChangedText }} <a class="govuk-link" href="{{ errorPageUrl }}">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.detailsChangedLinkText }}</a>.</p>
+                <p class="govuk-body">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.detailsChangedText }} <button type="submit" form="submitForm" name="action" value="update-details" class="govuk-link govuk-button-as-link">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.detailsChangedLinkText }}</button>.</p>
                 <p class="govuk-body govuk-!-margin-top-6"><strong>{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.nameMistakeHeading }}</strong></p>
                 <p class="govuk-body"><a class="govuk-link" href="{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.oneLoginSupportLinkUrl }}" target="_blank">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.nameMistakeParagraph1LinkText }}</a> {{ translations.pages.confirmDetails.content.updateUserDetailsInformation.nameMistakeParagraph1 }}</p>
                 <p class="govuk-body">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.nameMistakeParagraph2 }}</p>
@@ -100,6 +119,8 @@
                 }) }}
                 {{ frontendUiProgressButton({
                     id: "submitButton",
+                    name: "action",
+                    value: "continue",
                     translations: translations.progressButton,
                     text: translations.pages.confirmDetails.content.continueButton,
                     element: "button",
