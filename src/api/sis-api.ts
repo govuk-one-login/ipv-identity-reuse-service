@@ -18,6 +18,10 @@ export function redirectToErrorPage(domainName: string) {
   return redirect({ location: `https://${domainName}/error/unrecoverable`, body: "" });
 }
 
+export function redirectToSessionExpiredPage(domainName: string) {
+  return redirect({ location: `https://${domainName}/error/session-expired`, body: "" });
+}
+
 export function redirectToConfirmDetails({
   domainName,
   state,

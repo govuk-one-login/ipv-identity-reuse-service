@@ -43,8 +43,15 @@ export class UserIdentityError extends Error {
 }
 
 export class GetSessionError extends Error {
-  constructor(message?: string) {
+  constructor(message: string | undefined) {
     super(message);
     this.name = "GetSessionError";
+  }
+}
+
+export class SessionInvalidError extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = "SessionInvalidError";
   }
 }

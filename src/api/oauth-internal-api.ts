@@ -2,7 +2,7 @@ import { URL } from "node:url";
 import logger from "../commons/logger.js";
 import { getOauthInternalApiUrl, getSessionTimeout } from "../commons/configuration.js";
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
-import { GetSessionError } from "../commons/errors.js";
+import { GetSessionError, SessionInvalidError } from "../commons/errors.js";
 
 export type SessionResult = {
   session_id: string;
@@ -118,33 +118,40 @@ export async function getAuthorizationCode(
     signal: AbortSignal.timeout(getSessionTimeoutMs()),
   });
 
-  if (responseFromAuthorizeEndpoint.status === 200) {
-    const authorizationData = await responseFromAuthorizeEndpoint.json();
-    if (!isValidAuthorizationSuccessResponse(authorizationData)) {
-      throw new Error("Invalid response properties received from authorization endpoint");
-    }
+  switch (responseFromAuthorizeEndpoint.status) {
+    case 200: {
+      const authorizationData = await responseFromAuthorizeEndpoint.json();
+      if (!isValidAuthorizationSuccessResponse(authorizationData)) {
+        throw new Error("Invalid response properties received from authorization endpoint");
+      }
 
-    const orchestrationRedirectUrl = new URL(decodeURIComponent(authorizationData.redirectionURI));
-    return {
-      authorizationCode: authorizationData.authorizationCode.value,
-      redirect_uri: orchestrationRedirectUrl.href,
-      state: authorizationData.state.value,
-    };
-  } else if (responseFromAuthorizeEndpoint.status === 403) {
-    const errorData = await responseFromAuthorizeEndpoint.json();
-    if (!isValidAuthorizationErrorResponse(errorData)) {
-      throw new Error("Invalid response properties received from authorization error response");
+      const orchestrationRedirectUrl = new URL(decodeURIComponent(authorizationData.redirectionURI));
+      return {
+        authorizationCode: authorizationData.authorizationCode.value,
+        redirect_uri: orchestrationRedirectUrl.href,
+        state: authorizationData.state.value,
+      };
     }
-    const orchestrationRedirectUrl = new URL(errorData.redirectionUri);
-    return {
-      redirect_uri: orchestrationRedirectUrl.href,
-      state: errorData.state,
-      message: errorData.message,
-      code: errorData.code,
-    };
-  } else {
-    logger.error(`${responseFromAuthorizeEndpoint.status} response code returned from the authorization endpoint`);
-    throw new Error("Authorize endpoint returned an error response");
+    case 403: {
+      const errorData = await responseFromAuthorizeEndpoint.json();
+      if (!isValidAuthorizationErrorResponse(errorData)) {
+        throw new Error("Invalid response properties received from authorization error response");
+      }
+      const orchestrationRedirectUrl = new URL(errorData.redirectionUri);
+      return {
+        redirect_uri: orchestrationRedirectUrl.href,
+        state: errorData.state,
+        message: errorData.message,
+        code: errorData.code,
+      };
+    }
+    case 400: {
+      throw new SessionInvalidError("Session not found for given session id");
+    }
+    default: {
+      logger.error(`${responseFromAuthorizeEndpoint.status} response code returned from the authorization endpoint`);
+      throw new Error("Authorize endpoint returned an error response");
+    }
   }
 }
 
@@ -166,6 +173,8 @@ export async function getSessionDetails(sessionId: string): Promise<GetSessionSu
       throw new GetSessionError("Invalid response properties received from GET session endpoint");
     }
     return sessionData;
+  } else if (responseFromSessionEndpoint.status === 400) {
+    throw new SessionInvalidError("No session found for the given sessionId");
   } else {
     logger.error(`GET session handler returned non-200 status: ${responseFromSessionEndpoint.status}`);
     throw new GetSessionError("GET session endpoint returned an error response");
@@ -187,7 +196,9 @@ export async function updateSessionData(sessionId: string, data: Record<string, 
 
   if (responseFromSessionEndpoint.status !== 200) {
     logger.error(`PATCH session/data endpoint returned non-200 status: ${responseFromSessionEndpoint.status}`);
-    throw new Error("PATCH session/data endpoint returned an error response");
+    throw responseFromSessionEndpoint.status === 404
+      ? new SessionInvalidError("No session found for the given sessionId")
+      : new Error("PATCH session/data endpoint returned an error response");
   }
 }
 
