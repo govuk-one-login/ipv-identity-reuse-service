@@ -2,7 +2,7 @@ import { URL } from "node:url";
 import logger from "../commons/logger.js";
 import { getOauthInternalApiUrl, getSessionTimeout } from "../commons/configuration.js";
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
-import { GetSessionError } from "../commons/errors.js";
+import { GetSessionError, SessionInvalidError } from "../commons/errors.js";
 
 export type SessionResult = {
   session_id: string;
@@ -166,6 +166,8 @@ export async function getSessionDetails(sessionId: string): Promise<GetSessionSu
       throw new GetSessionError("Invalid response properties received from GET session endpoint");
     }
     return sessionData;
+  } else if (responseFromSessionEndpoint.status === 400) {
+    throw new SessionInvalidError("No session found for the given sessionId");
   } else {
     logger.error(`GET session handler returned non-200 status: ${responseFromSessionEndpoint.status}`);
     throw new GetSessionError("GET session endpoint returned an error response");

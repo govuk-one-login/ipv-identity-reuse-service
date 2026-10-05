@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, it, vitest, describe } from "vitest";
 import { callSessionApi, getAuthorizationCode, getSessionDetails, updateSessionData } from "../oauth-internal-api.js";
+import { GetSessionError, SessionInvalidError } from "../../commons/errors.js";
 import { URL } from "node:url";
 
 const { mockError } = vitest.hoisted(() => {
@@ -364,14 +365,20 @@ describe("getSessionDetails", () => {
     expect(response.subject).toEqual("test-subject");
   });
 
-  it("should throw an error if GET /api/session returns a non-200 status code", async () => {
+  it("should throw a SessionInvalidError if GET /api/session returns a 400 status code", async () => {
     const mockResponse = Response.json({}, { status: 400 });
     vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
 
-    await expect(getSessionDetails("test-session-id")).rejects.toThrow(
-      "GET session endpoint returned an error response"
-    );
-    expect(mockError).toHaveBeenCalledWith(expect.stringContaining("GET session handler returned non-200 status: 400"));
+    const error_ = await getSessionDetails("test-session-id").catch((error: unknown) => error);
+    expect(error_).toBeInstanceOf(SessionInvalidError);
+    expect((error_ as SessionInvalidError).message).toEqual("No session found for the given sessionId");
+  });
+
+  it("should throw a GetSessionError if GET /api/session returns a 404", async () => {
+    const mockResponse = Response.json({}, { status: 404 });
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+    await expect(getSessionDetails("test-session-id")).rejects.toBeInstanceOf(GetSessionError);
   });
 
   it("should throw an error if GET /api/session response is missing subject", async () => {

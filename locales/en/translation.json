@@ -31,6 +31,18 @@
       },
       "header": "Confirm your details",
       "title": "Confirm your details"
+    },
+    "sessionExpired": {
+      "content": {
+        "govUkHomepageButtonLink": "https://www.gov.uk/",
+        "govUkHomepageButtonText": "Go to the GOV.UK homepage",
+        "oneLoginContactLink": "https://home.account.gov.uk/contact-gov-uk-one-login?fromURL=https%3A%2F%2Fsignin.account.gov.uk%2Fsupport",
+        "oneLoginContactLinkText": "Contact the GOV.UK One Login team (opens in a new tab)",
+        "paragraph1": "Go back to the service you were trying to use and start again. You can look for the service using your search engine or find it from the GOV.UK homepage.",
+        "subHeading": "What you can do"
+      },
+      "header": "Session expired",
+      "title": "Session expired"
     }
   },
   "progressButton": {

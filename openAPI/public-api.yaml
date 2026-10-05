@@ -79,6 +79,20 @@ paths:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostConfirmDetailsHandler.Arn}:live/invocations
         type: aws_proxy
+  /error/session-expired:
+    get:
+      responses:
+        "200":
+          description: Session Expired
+          content:
+            text/html:
+              schema:
+                type: string
+      x-amazon-apigateway-integration:
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetSessionExpiredHandler.Arn}:live/invocations
+        type: aws_proxy
   /error/unrecoverable:
     get:
       responses:

@@ -1085,6 +1085,95 @@ Resources:
       SourceAccount: !Ref AWS::AccountId
       SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PublicApi}/${ApiStageName}/POST/confirm-details"
 
+  GetSessionExpiredHandler:
+    Type: AWS::Serverless::Function
+    Condition: IsNotProduction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-GetSessionExpiredHandler"
+      Handler: get-session-expired-handler.lambdaHandler
+      Role: !GetAtt GetSessionExpiredHandlerRole.Arn
+      Environment:
+        Variables:
+          NODE_OPTIONS: "--enable-source-maps"
+          POWERTOOLS_SERVICE_NAME: "GetSessionExpiredHandler"
+      Layers:
+        - !Ref GovUKFrontEndLayer
+        - !If
+          - DynaTraceEnabled
+          - !FindInMap [ EnvironmentMap, !Ref Environment, DynatraceNodeLayerArn ]
+          - !Ref AWS::NoValue
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        UseNpmCi: True
+        EntryPoints:
+          - handlers/get-session-expired-handler/get-session-expired-handler.ts
+        Sourcemap: true
+        SourcesContent: false
+        Target: "es2024"
+        Format: esm
+        Platform: node
+        OutExtension:
+          - .js=.mjs
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
+        Loader:
+          - .njk=file
+        External:
+          - govuk-frontend
+
+  GetSessionExpiredHandlerRole:
+    # checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
+    Type: AWS::IAM::Role
+    Condition: IsNotProduction
+    Properties:
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+
+  GetSessionExpiredHandlerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: IsNotProduction
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-GetSessionExpiredHandler"
+      RetentionInDays: !FindInMap [ EnvironmentMap, !Ref Environment, LogGroupRetentionInDays ]
+      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "/aws/lambda/${AWS::StackName}-GetSessionExpiredHandler"
+
+  PublicApiGetSessionExpiredHandlerResourcePolicy:
+    Condition: IsNotProduction
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref GetSessionExpiredHandler.Alias
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PublicApi}/${ApiStageName}/GET/error/session-expired"
+
   GetUnrecoverableErrorHandler:
     Type: AWS::Serverless::Function
     Condition: IsNotProduction
