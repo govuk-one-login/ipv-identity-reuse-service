@@ -14,6 +14,14 @@ Parameters:
       - production
     Default: local
 
+  AccessTokenIndexWithEventDataIpvIndexName:
+    Type: String
+    Description: >
+      Sets the name of the Access Token Index With Event Data Ipv Global
+      Secondary Index (GSI) when the AuthorizationRequestType parameter is set
+      to "IPV".
+    Default: access-token-index-with-event-data-ipv
+
   ApiStageName:
     Description: The stage name of the API
     Type: String
@@ -28,15 +36,6 @@ Parameters:
     Description: The prefix used for the event name of an audit event
     Type: String
     Default: SIS
-
-  AuthorizationRequestType:
-    Description: >
-      Whether to accept CRI or IPV authorisation requests
-    Type: String
-    Default: CRI
-    AllowedValues:
-      - CRI
-      - IPV
 
   CodeSigningConfigArn:
     Description: The ARN of the Code Signing Config to use, provided by the deployment pipeline
@@ -229,10 +228,11 @@ Resources:
     Properties:
       Location:
         ApplicationId: arn:aws:serverlessrepo:eu-west-2:667736788427:applications/di-ipv-cri-oauth-common
-        SemanticVersion: 1.4.0
+        SemanticVersion: 1.5.1
       Parameters:
+        AccessTokenIndexWithEventDataIpvIndexName: !Ref AccessTokenIndexWithEventDataIpvIndexName
         AuditEventNamePrefix: !Ref AuditEventNamePrefix
-        AuthorizationRequestType: !Ref AuthorizationRequestType
+        AuthorizationRequestType: "IPV"
         AuditTxmaStackName: !Ref SharedStackName # TXMA infrastructure lives in the reuse-identity-shared stack
         CSLSDestinationArn: !Ref CSLSSubscriptionEndpointArn
         CriIdentifier: !Ref MainCloudWatchMetricNamespace # Used for the metrics namespace and metrics service names only
@@ -384,6 +384,14 @@ Resources:
         - Key: Name
           Value: !Sub "${AWS::StackName}-CloudWatchEncryptionKey"
 
+  AccessTokenIndexWithEventDataIpvIndexNameParameter:
+    Type: AWS::SSM::Parameter
+    Condition: IsNotProduction
+    Properties:
+      Name: !Sub "/${OAuthCommon.Outputs.StackName}/AccessTokenIndexWithEventDataIpvIndexName"
+      Type: String
+      Value: !Ref AccessTokenIndexWithEventDataIpvIndexName
+
   IPVCoreAuthenticationAlgParameter:
     Type: AWS::SSM::Parameter
     Condition: IsDevOrBuild
@@ -511,6 +519,7 @@ Resources:
             - !Ref "AWS::NoValue"
           DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: !If [DynaTraceEnabled, "true", !Ref "AWS::NoValue"]
           SESSION_TABLE_NAME: !GetAtt OAuthCommon.Outputs.DbSessionTableName
+          SESSION_TABLE_ACCESSTOKEN_INDEX: !GetAtt AccessTokenIndexWithEventDataIpvIndexNameParameter.Value
           POWERTOOLS_METRICS_NAMESPACE: !Ref AWS::StackName
           POWERTOOLS_SERVICE_NAME: "AuthorizerFunction"
       CodeSigningConfigArn: !If
