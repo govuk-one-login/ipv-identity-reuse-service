@@ -260,6 +260,11 @@ Conditions:
       - Fn::Equals: [!Ref Environment, "integration"]
       - Fn::Equals: [!Ref Environment, "production"]
 
+  IsCloudFrontCloakingRequired:
+    Fn::And:
+      - !Condition IsNotProduction
+      - !Condition IsCloudFrontRequired
+
   IsDev:
     Fn::Or:
       - Fn::Equals: [!Ref Environment, "local"]
@@ -1594,6 +1599,17 @@ Resources:
       Stage: !Ref ApiStageName
     DependsOn:
       - PublicApiStage
+
+  OriginCloakingWafAssociation:
+    Type: AWS::WAFv2::WebACLAssociation
+    Condition: IsCloudFrontCloakingRequired
+    Properties:
+      ResourceArn: !Sub
+        - "arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${ApiGateway}/stages/${StageName}"
+        - ApiGateway: !Ref PublicApi
+          StageName: !Ref ApiStageName
+      WebACLArn:
+        Fn::ImportValue: !Sub "${CloudFrontDistributionStack}-CloakingOriginWebACLArn"
 
   #######################################
   # POST PHASE 2 USER IDENTITY HANDLER  #
