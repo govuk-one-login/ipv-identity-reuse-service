@@ -111,6 +111,7 @@ jobs:
     secrets:
       aws-role-arn: ${{ secrets.GHA_AWS_ROLE_ARN }}
       aws-s3-bucket: ${{ secrets.GHA_SAM_DEPLOYMENT_BUCKET }}
+      cloudfront-distribution-stack: "preview-cfront-origin-distrib"
 
   acceptance-test:
     uses: ./.github/workflows/acceptance-tests.yml

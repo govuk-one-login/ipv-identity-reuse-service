@@ -35,6 +35,11 @@ on:
         default: eu-west-2
         required: false
         type: string
+      cloudfront-distribution-stack:
+        description: The CloudFront distribution to pass to the deployment
+        default: none
+        required: false
+        type: string
     outputs:
       stack-name:
         description: The name of the deployed stack
@@ -145,7 +150,7 @@ jobs:
             --no-fail-on-empty-changeset \
             --capabilities ${{ inputs.capabilities }} \
             --tags DeploymentSource="GitHub Actions" StackType=Preview \
-            --parameter-overrides Environment=dev SharedStackName=reuse-identity-shared "OauthInternalStackName=${OAUTH_STACK_NAME}"
+            --parameter-overrides Environment=dev SharedStackName=reuse-identity-shared "OauthInternalStackName=${OAUTH_STACK_NAME}" "CloudFrontDistributionStack=${{ inputs.cloudfront-distribution-stack }}"
 
       - name: Report deployment
         run: echo "Deployed stack \`$STACK_NAME\`" >> "$GITHUB_STEP_SUMMARY"
