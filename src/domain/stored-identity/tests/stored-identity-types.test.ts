@@ -1,13 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { isStoredIdentityRecord } from "../stored-identity-types.js";
 
-const validJwt = () => ({
+const validJwt = (coreIdentity?: object) => ({
   sub: "user-sub",
   credentials: ["sig1", "sig2"],
   vot: "P2",
   vtm: "https://oidc.account.gov.uk/trustmark",
   claims: {
-    "https://vocab.account.gov.uk/v1/coreIdentity": {
+    "https://vocab.account.gov.uk/v1/coreIdentity": coreIdentity || {
       name: [{ nameParts: [{ type: "GivenName", value: "Jane" }] }],
       birthDate: [{ value: "1990-01-15" }],
     },
@@ -63,12 +63,57 @@ describe("isStoredIdentityRecord", () => {
     expect(isStoredIdentityRecord(jwt)).toBe(false);
   });
 
-  it("should return false when name is empty", () => {
-    const jwt = validJwt();
-    jwt.claims["https://vocab.account.gov.uk/v1/coreIdentity"] = {
-      name: [],
+  it("should return false when name is not array", () => {
+    const coreIdentity = {
+      name: "Bob",
       birthDate: [{ value: "1990-01-15" }],
     };
+    const jwt = validJwt(coreIdentity);
+    expect(isStoredIdentityRecord(jwt)).toBe(false);
+  });
+
+  it("should return false when nameParts missing from name", () => {
+    const coreIdentity = {
+      name: [{ description: "A name" }],
+      birthDate: [{ value: "1990-01-15" }],
+    };
+    const jwt = validJwt(coreIdentity);
+    expect(isStoredIdentityRecord(jwt)).toBe(false);
+  });
+
+  it("should return false when value missing from name", () => {
+    const coreIdentity = {
+      name: [{ nameParts: [{ type: "GivenName" }] }],
+      birthDate: [{ value: "1990-01-15" }],
+    };
+    const jwt = validJwt(coreIdentity);
+    expect(isStoredIdentityRecord(jwt)).toBe(false);
+  });
+
+  it("should return false when type missing from name", () => {
+    const coreIdentity = {
+      name: [{ nameParts: [{ value: "Jane" }] }],
+      birthDate: [{ value: "1990-01-15" }],
+    };
+    const jwt = validJwt(coreIdentity);
+    expect(isStoredIdentityRecord(jwt)).toBe(false);
+  });
+
+  it("should return false when name type not valid", () => {
+    const coreIdentity = {
+      name: [{ nameParts: [{ type: "MiddleName", value: "Jane" }] }],
+      birthDate: [{ value: "1990-01-15" }],
+    };
+    const jwt = validJwt(coreIdentity);
+    expect(isStoredIdentityRecord(jwt)).toBe(false);
+  });
+
+  it("should return false when name value not string", () => {
+    const coreIdentity = {
+      name: [{ nameParts: [{ type: "MiddleName", value: 100 }] }],
+      birthDate: [{ value: "1990-01-15" }],
+    };
+    const jwt = validJwt(coreIdentity);
     expect(isStoredIdentityRecord(jwt)).toBe(false);
   });
 
@@ -80,12 +125,21 @@ describe("isStoredIdentityRecord", () => {
     expect(isStoredIdentityRecord(jwt)).toBe(false);
   });
 
-  it("should return false when birthDate is empty", () => {
-    const jwt = validJwt();
-    jwt.claims["https://vocab.account.gov.uk/v1/coreIdentity"] = {
-      name: [{ nameParts: [{ type: "GivenName", value: "Jane" }] }],
-      birthDate: [],
+  it("should return false when value missing from birthDate", () => {
+    const coreIdentity = {
+      name: [{ nameParts: [{ type: "MiddleName", value: 100 }] }],
+      birthDate: [{ description: "A birthdate" }],
     };
+    const jwt = validJwt(coreIdentity);
+    expect(isStoredIdentityRecord(jwt)).toBe(false);
+  });
+
+  it("should return false when birthdate value not a string", () => {
+    const coreIdentity = {
+      name: [{ nameParts: [{ type: "MiddleName", value: 100 }] }],
+      birthDate: [{ value: 100 }],
+    };
+    const jwt = validJwt(coreIdentity);
     expect(isStoredIdentityRecord(jwt)).toBe(false);
   });
 

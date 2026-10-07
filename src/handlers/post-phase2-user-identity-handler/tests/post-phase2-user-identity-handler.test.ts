@@ -5,7 +5,6 @@ import * as configuration from "../../../commons/configuration.js";
 import { Configuration } from "../../../commons/configuration.js";
 import { UserIdentityRequest, UserIdentityResponse } from "../post-phase2-user-identity-types.js";
 import * as identityExpiryService from "../../../domain/verifiable-credential/identity-expiry-service.js";
-
 import * as AuditModule from "../../../commons/audit.js";
 import * as ValidateStoredIdentity from "../../../domain/stored-identity/stored-identity-validator.js";
 import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utilities.js";
@@ -24,7 +23,7 @@ vi.mock("../../../commons/audit");
 vi.mock("../../../domain/stored-identity/stored-identity-validator", async (importOriginal) => ({
   ...(await importOriginal<object>()),
   getUserIdFromJwt: vi.fn(),
-  handleGetIdentityFromCredentialStore: vi.fn(),
+  getIdentityFromCredentialStore: vi.fn(),
   validateStoredIdentity: vi.fn(),
 }));
 
@@ -94,7 +93,7 @@ describe("user-identity-handler authorization", () => {
       await createSignedIdentityCheckCredentialJWT(FRAUD_ISSUER),
     ]);
     mockEVCSResponse(mockEVCSData);
-    (ValidateStoredIdentity.handleGetIdentityFromCredentialStore as Mock).mockResolvedValue(mockEVCSData);
+    (ValidateStoredIdentity.getIdentityFromCredentialStore as Mock).mockResolvedValue(mockEVCSData);
 
     const auditIdentityRecordReadSpy = vi.spyOn(AuditModule, "auditIdentityRecordRead");
     const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
@@ -130,10 +129,8 @@ describe("user-identity-handler authorization", () => {
       kidValid: true,
       signatureValid: true,
     });
-    expect(ValidateStoredIdentity.handleGetIdentityFromCredentialStore).toHaveBeenCalledWith(
-      "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6ImVjS2lkMTIzIn0.eyJzdWIiOiJ1cm46ZmRjOmdvdi51azoyMDIyOlRFU1RfVVNFUi1TN2pjckhMR0JqLTJrZ0ItOC1jWWhWck1kbzNDVjBMbEQ3QW4iLCJleHAiOjE3NTczMjQyMTcsImlhdCI6MTc1NzMyMzkxNywiaXNzIjoiaHR0cHM6Ly9tb2NrLmNyZWRlbnRpYWwtc3RvcmUuYnVpbGQuYWNjb3VudC5nb3YudWsvb3JjaGVzdHJhdGlvbiIsImF1ZCI6Imh0dHBzOi8vY3JlZGVudGlhbC1zdG9yZS5idWlsZC5hY2NvdW50Lmdvdi51ayIsInNjb3BlIjoicHJvdmluZyJ9.Sj-2jA6mLdfkU1ryoBCNHxpBCT49o9qfqpKPMLkKwY1D6V6SvVIERGbC0X-fh8SYk2z-strc9vahvacvkrNDUQ",
-      TEST_USER,
-      "govuk_signin_journey_id"
+    expect(ValidateStoredIdentity.getIdentityFromCredentialStore).toHaveBeenCalledWith(
+      "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6ImVjS2lkMTIzIn0.eyJzdWIiOiJ1cm46ZmRjOmdvdi51azoyMDIyOlRFU1RfVVNFUi1TN2pjckhMR0JqLTJrZ0ItOC1jWWhWck1kbzNDVjBMbEQ3QW4iLCJleHAiOjE3NTczMjQyMTcsImlhdCI6MTc1NzMyMzkxNywiaXNzIjoiaHR0cHM6Ly9tb2NrLmNyZWRlbnRpYWwtc3RvcmUuYnVpbGQuYWNjb3VudC5nb3YudWsvb3JjaGVzdHJhdGlvbiIsImF1ZCI6Imh0dHBzOi8vY3JlZGVudGlhbC1zdG9yZS5idWlsZC5hY2NvdW50Lmdvdi51ayIsInNjb3BlIjoicHJvdmluZyJ9.Sj-2jA6mLdfkU1ryoBCNHxpBCT49o9qfqpKPMLkKwY1D6V6SvVIERGbC0X-fh8SYk2z-strc9vahvacvkrNDUQ"
     );
     expect(ValidateStoredIdentity.validateStoredIdentity).toHaveBeenCalledWith(mockEVCSData);
     expect(auditIdentityRecordReadSpy).toHaveBeenCalledWith(
@@ -169,7 +166,7 @@ describe("user-identity-handler authorization", () => {
       await createSignedIdentityCheckCredentialJWT(FRAUD_ISSUER),
     ]);
     mockEVCSResponse(mockEVCSData);
-    (ValidateStoredIdentity.handleGetIdentityFromCredentialStore as Mock).mockResolvedValue(mockEVCSData);
+    (ValidateStoredIdentity.getIdentityFromCredentialStore as Mock).mockResolvedValue(mockEVCSData);
 
     await handler(newEvent, {} as Context);
 
@@ -180,7 +177,7 @@ describe("user-identity-handler authorization", () => {
 
   it("kidValid and signatureValid are passed through from validateIdentityRecords", async () => {
     const { mockEVCSData } = await createCredentialStoreIdentityResponse([], getDefaultJwtHeader());
-    (ValidateStoredIdentity.handleGetIdentityFromCredentialStore as Mock).mockResolvedValue(mockEVCSData);
+    (ValidateStoredIdentity.getIdentityFromCredentialStore as Mock).mockResolvedValue(mockEVCSData);
     (ValidateStoredIdentity.validateStoredIdentity as Mock).mockResolvedValue({
       kidValid: true,
       signatureValid: false,
@@ -257,8 +254,8 @@ describe("user-identity-handler authorization", () => {
     const auditIdentityRecordReadSpy = vi.spyOn(AuditModule, "auditIdentityRecordRead");
     const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
 
-    (ValidateStoredIdentity.handleGetIdentityFromCredentialStore as Mock).mockRejectedValue(
-      new EVCSError(HttpCodesEnum.FORBIDDEN, TEST_USER, "govuk_signin_journey_id")
+    (ValidateStoredIdentity.getIdentityFromCredentialStore as Mock).mockRejectedValue(
+      new EVCSError(HttpCodesEnum.FORBIDDEN)
     );
 
     const result = handler(newEvent, {} as Context);
@@ -292,8 +289,8 @@ describe("user-identity-handler authorization", () => {
   it("should return 401 given EVCS API responded with Unauthorized", async () => {
     const auditIdentityRecordReadSpy = vi.spyOn(AuditModule, "auditIdentityRecordRead");
     const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
-    (ValidateStoredIdentity.handleGetIdentityFromCredentialStore as Mock).mockRejectedValue(
-      new EVCSError(HttpCodesEnum.UNAUTHORIZED, TEST_USER, "govuk_signin_journey_id")
+    (ValidateStoredIdentity.getIdentityFromCredentialStore as Mock).mockRejectedValue(
+      new EVCSError(HttpCodesEnum.UNAUTHORIZED)
     );
     const result = handler(newEvent, {} as Context);
     await expect(result).resolves.toEqual({
@@ -326,8 +323,8 @@ describe("user-identity-handler authorization", () => {
   it("should return 500 given EVCS API responded with Internal Server Error", async () => {
     const auditIdentityRecordReadSpy = vi.spyOn(AuditModule, "auditIdentityRecordRead");
     const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
-    (ValidateStoredIdentity.handleGetIdentityFromCredentialStore as Mock).mockRejectedValue(
-      new EVCSError(HttpCodesEnum.INTERNAL_SERVER_ERROR, TEST_USER, "govuk_signin_journey_id")
+    (ValidateStoredIdentity.getIdentityFromCredentialStore as Mock).mockRejectedValue(
+      new EVCSError(HttpCodesEnum.INTERNAL_SERVER_ERROR)
     );
     const result = handler(newEvent, {} as Context);
     await expect(result).resolves.toEqual({
@@ -357,12 +354,11 @@ describe("user-identity-handler authorization", () => {
     );
   });
 
-  it("should return 404 given EVCS API responded with Not Found", async () => {
+  it("should return 404 given identity not found", async () => {
     const auditIdentityRecordReadSpy = vi.spyOn(AuditModule, "auditIdentityRecordRead");
     const auditIdentityRecordReturnedSpy = vi.spyOn(AuditModule, "auditIdentityRecordReturned");
-    (ValidateStoredIdentity.handleGetIdentityFromCredentialStore as Mock).mockRejectedValue(
-      new EVCSError(HttpCodesEnum.NOT_FOUND, TEST_USER, "govuk_signin_journey_id")
-    );
+    // eslint-disable-next-line unicorn/no-useless-undefined
+    (ValidateStoredIdentity.getIdentityFromCredentialStore as Mock).mockResolvedValue(undefined);
     const result = handler(newEvent, {} as Context);
     await expect(result).resolves.toEqual({
       statusCode: HttpCodesEnum.NOT_FOUND,
@@ -409,7 +405,7 @@ describe("user-identity-handler expired field", () => {
       await createSignedIdentityCheckCredentialJWT(PASSPORT_ISSUER),
       await createSignedIdentityCheckCredentialJWT(FRAUD_ISSUER),
     ]);
-    (ValidateStoredIdentity.handleGetIdentityFromCredentialStore as Mock).mockResolvedValue(mockEVCSData);
+    (ValidateStoredIdentity.getIdentityFromCredentialStore as Mock).mockResolvedValue(mockEVCSData);
 
     const result = await handler(newEvent, {} as Context);
 
@@ -430,7 +426,7 @@ describe("user-identity-handler expired field", () => {
       await createSignedIdentityCheckCredentialJWT(PASSPORT_ISSUER),
       await createSignedIdentityCheckCredentialJWT(FRAUD_ISSUER),
     ]);
-    (ValidateStoredIdentity.handleGetIdentityFromCredentialStore as Mock).mockResolvedValue(mockEVCSData);
+    (ValidateStoredIdentity.getIdentityFromCredentialStore as Mock).mockResolvedValue(mockEVCSData);
 
     const result = await handler(newEvent, {} as Context);
 
@@ -458,7 +454,7 @@ describe("user-identity-handler max_vot", () => {
       vcs: [],
     };
 
-    (ValidateStoredIdentity.handleGetIdentityFromCredentialStore as Mock).mockResolvedValue(mockEVCSData);
+    (ValidateStoredIdentity.getIdentityFromCredentialStore as Mock).mockResolvedValue(mockEVCSData);
 
     const result = await handler(newEvent, {} as Context);
     expect(result.statusCode).toBe(HttpCodesEnum.OK);
@@ -484,7 +480,7 @@ describe("user-identity-handler max_vot", () => {
       vcs: [],
     };
 
-    (ValidateStoredIdentity.handleGetIdentityFromCredentialStore as Mock).mockResolvedValue(mockEVCSData);
+    (ValidateStoredIdentity.getIdentityFromCredentialStore as Mock).mockResolvedValue(mockEVCSData);
 
     const result = await handler(newEvent, {} as Context);
     expect(result.statusCode).toBe(HttpCodesEnum.OK);

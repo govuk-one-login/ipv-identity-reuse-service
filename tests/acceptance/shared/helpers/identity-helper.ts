@@ -3,9 +3,18 @@ import { getDefaultJwtHeader, renderDid, sign } from "../../../../shared-test/jw
 import { JWTHeaderParameters, JWTPayload } from "jose";
 import { evcsPostIdentity } from "../utils/evcs-api.js";
 import assert from "node:assert";
+import { StoredIdentityClaims } from "../../../../src/domain/stored-identity/stored-identity-types.js";
 import { KENNETH_DECERQUEIRA } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/names";
-import { KENNETH_DECERQUEIRA_BIRTH_DATE } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/birthdates";
 import { KENNETH_DECERQUERIA_ADDRESS } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/addresses";
+import { KENNETH_DECERQUEIRA_BIRTH_DATE } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/birthdates";
+
+const DEFAULT_CLAIMS: StoredIdentityClaims = {
+  "https://vocab.account.gov.uk/v1/coreIdentity": {
+    name: [KENNETH_DECERQUEIRA],
+    birthDate: [KENNETH_DECERQUEIRA_BIRTH_DATE],
+  },
+  "https://vocab.account.gov.uk/v1/address": [KENNETH_DECERQUERIA_ADDRESS],
+};
 
 export async function createStoredIdentityWithVot(
   userId: string,
@@ -14,7 +23,8 @@ export async function createStoredIdentityWithVot(
   controllerUrn: string,
   keyId: string,
   unsignedVot?: IdentityVectorOfTrust,
-  maxVot?: IdentityVectorOfTrust
+  maxVot?: IdentityVectorOfTrust,
+  claims: StoredIdentityClaims = DEFAULT_CLAIMS
 ) {
   const header: JWTHeaderParameters = getDefaultJwtHeader("ES256", renderDid(controllerUrn, keyId));
 
@@ -25,13 +35,7 @@ export async function createStoredIdentityWithVot(
     iss: "https://api.example.com",
     credentials: allCredentialSignatures,
     vot: signedVot,
-    claims: {
-      "https://vocab.account.gov.uk/v1/coreIdentity": {
-        name: [KENNETH_DECERQUEIRA],
-        birthDate: [KENNETH_DECERQUEIRA_BIRTH_DATE],
-      },
-      "https://vocab.account.gov.uk/v1/address": [KENNETH_DECERQUERIA_ADDRESS],
-    },
+    claims: claims,
     ...(maxVot && { max_vot: maxVot }),
   };
   const jwt = await sign(header, payload, true);

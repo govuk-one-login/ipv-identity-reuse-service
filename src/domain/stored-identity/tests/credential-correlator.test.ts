@@ -1,6 +1,9 @@
 import { StoredIdentityRecord } from "../stored-identity-types.js";
 import { correlateCredentials } from "../credential-correlator.js";
 import { vi, describe, it, expect } from "vitest";
+import { KENNETH_DECERQUEIRA } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/names";
+import { KENNETH_DECERQUEIRA_BIRTH_DATE } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/birthdates";
+import { KENNETH_DECERQUERIA_ADDRESS } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/addresses";
 
 vi.mock("../../commons/logger");
 
@@ -53,10 +56,12 @@ const createStoredIdentityRecord = (...signatures: string[]): StoredIdentityReco
     sub: "userId",
     credentials: signatures,
     vot: "P2",
-    vtm: "",
     claims: {
-      "https://vocab.account.gov.uk/v1/coreIdentity": {},
-      "https://vocab.account.gov.uk/v1/address": [],
+      "https://vocab.account.gov.uk/v1/coreIdentity": {
+        name: [KENNETH_DECERQUEIRA],
+        birthDate: [KENNETH_DECERQUEIRA_BIRTH_DATE],
+      },
+      "https://vocab.account.gov.uk/v1/address": [KENNETH_DECERQUERIA_ADDRESS],
     },
   };
 };

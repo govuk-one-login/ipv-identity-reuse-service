@@ -17,6 +17,7 @@ import { unmarshall } from "@aws-sdk/util-dynamodb";
 import { sha256Hash } from "../../commons/hashing.js";
 import { MetricDimension, MetricName } from "../../commons/metric-enum.js";
 import { getProperty } from "../../commons/case-insensitive-header-utilities.js";
+import { AuthorizerContext } from "./api-gateway-protected-resource-authorizer-types.js";
 
 export const metric: Metrics = new Metrics();
 
@@ -60,19 +61,26 @@ export const handler = async (
     const response = await documentClient.send(command);
     if (response.Items?.length == 1) {
       const retrievedRecord = unmarshall(response.Items[0]);
+      const sessionId: string = retrievedRecord.sessionId;
       const subjectId: string = retrievedRecord.subject;
       const storageToken: string = retrievedRecord.storageToken;
+
       // In the near future, we will also make it an error if storageToken
       // is not present in the session. For now, we'll treat it as optional.
-      if (subjectId) {
+      if (sessionId && subjectId) {
         addMetric(MetricName.AccessTokenValidationSuccessful);
-        return generatePolicy(sha256Hash(subjectId), "Allow", event.methodArn, subjectId, storageToken);
+        return generatePolicy(sha256Hash(subjectId), "Allow", event.methodArn, sessionId, subjectId, storageToken);
+      } else if (sessionId) {
+        logger.error("Access token found, but no subject stored in session.");
+        addMetric(MetricName.AccessTokenValidationFailure, 1, {
+          [MetricDimension.Reason]: "missing-subject",
+        });
+      } else if (subjectId) {
+        logger.error("Access token found, but no sessionId stored in session.");
+        addMetric(MetricName.AccessTokenValidationFailure, 1, {
+          [MetricDimension.Reason]: "missing-session-id",
+        });
       }
-
-      logger.error("Access token found, but no subject stored in session.");
-      addMetric(MetricName.AccessTokenValidationFailure, 1, {
-        [MetricDimension.Reason]: "missing-subject",
-      });
     } else if (response.Items && response.Items.length > 1) {
       logger.error("Multiple matching access tokens found in session table, this shouldn't happen.");
       addMetric(MetricName.AccessTokenValidationFailure, 1, {
@@ -116,6 +124,7 @@ const generatePolicy = function (
   principalId: string,
   effect: StatementEffect,
   resource: string,
+  sessionId: string,
   subjectId?: string,
   storageToken?: string
 ): APIGatewayAuthorizerResult {
@@ -123,7 +132,8 @@ const generatePolicy = function (
     const statement: Statement = { Action: "execute-api:Invoke", Effect: effect, Resource: resource };
     const policyDocument: PolicyDocument = { Version: "2012-10-17", Statement: [statement] };
     logger.debug("Generating policy " + effect);
-    const context = {
+    const context: AuthorizerContext = {
+      sessionId,
       subjectId,
       storageToken,
     };

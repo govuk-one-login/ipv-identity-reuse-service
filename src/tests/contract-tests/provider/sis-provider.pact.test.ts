@@ -145,7 +145,6 @@ const createCredentialStoreIdentityResponse = async (
     sub: "user-sub",
     vot: "P2",
     iss: "http://api.example.com",
-    vtm: "https://oidc.account.gov.uk/trustmark",
     credentials: [],
     claims: {
       "https://vocab.account.gov.uk/v1/coreIdentity": {

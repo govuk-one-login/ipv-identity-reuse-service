@@ -15,19 +15,36 @@ export class TokenValidationError extends Error {
 }
 
 export class EVCSError extends Error {
-  constructor(
-    public readonly statusCode: HttpCodesEnum,
-    public readonly userId: string,
-    public readonly journeyId?: string
-  ) {
+  constructor(public readonly statusCode: HttpCodesEnum) {
     super("EVCS request failed");
     this.name = "EVCSError";
   }
 }
 
 export class StoredIdentityValidationError extends Error {
-  constructor() {
-    super("Stored identity JWT does not match expected format");
+  constructor(message?: string, options?: ErrorOptions) {
+    super(message, options);
     this.name = "StoredIdentityValidationError";
+  }
+}
+
+export class StoredIdentityHashMismatchError extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = "StoredIdentityHashMismatchError";
+  }
+}
+
+export class UserIdentityError extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = "StoredIdentityNotFoundError";
+  }
+}
+
+export class GetSessionError extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = "GetSessionError";
   }
 }

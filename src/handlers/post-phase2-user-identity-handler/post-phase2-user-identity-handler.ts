@@ -8,14 +8,11 @@ import { EVCSIdentityResponse } from "../../api/evcs-api.js";
 import { calculateVot } from "../../domain/stored-identity/calculate-vot.js";
 import { hasIdentityExpired } from "../../domain/verifiable-credential/identity-expiry-service.js";
 import { UserIdentityRequest, UserIdentityResponse } from "./post-phase2-user-identity-types.js";
-import {
-  StoredIdentityRecord,
-  StoredIdentityVectorOfTrust,
-} from "../../domain/stored-identity/stored-identity-types.js";
+import { StoredIdentityRecord, CalculatedVectorOfTrust } from "../../domain/stored-identity/stored-identity-types.js";
 import { getProperty } from "../../commons/case-insensitive-header-utilities.js";
 import {
   getUserIdFromJwt,
-  handleGetIdentityFromCredentialStore,
+  getIdentityFromCredentialStore,
   createErrorResponse,
   createAndLogErrorResponse,
   validateStoredIdentity,
@@ -54,17 +51,22 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
   }
 
   try {
-    const identityResponse = await handleGetIdentityFromCredentialStore(
-      authorisation,
-      subject,
-      request.govukSigninJourneyId
-    );
-    const response = await createSuccessResponse(identityResponse, request.vtr, subject, request.govukSigninJourneyId);
+    const identityResponse = await getIdentityFromCredentialStore(authorisation);
 
-    return { statusCode: HttpCodesEnum.OK, body: JSON.stringify(response) };
+    if (identityResponse) {
+      const response = await createSuccessResponse(
+        identityResponse,
+        request.vtr,
+        subject,
+        request.govukSigninJourneyId
+      );
+      return { statusCode: HttpCodesEnum.OK, body: JSON.stringify(response) };
+    } else {
+      return await createAndLogErrorResponse(HttpCodesEnum.NOT_FOUND, subject, request.govukSigninJourneyId);
+    }
   } catch (error) {
     if (error instanceof EVCSError) {
-      return await createAndLogErrorResponse(error.statusCode, error.userId, error.journeyId);
+      return await createAndLogErrorResponse(error.statusCode, subject, request.govukSigninJourneyId);
     }
     logger.error("Error retrieving user identity", { error });
     return await createAndLogErrorResponse(HttpCodesEnum.INTERNAL_SERVER_ERROR, subject, request.govukSigninJourneyId);
@@ -79,7 +81,7 @@ const createSuccessResponse = async (
 ): Promise<UserIdentityResponse> => {
   const content = getJwtBody<StoredIdentityRecord>(identityResponse.si.vc);
   const { kidValid, signatureValid, isValid } = await validateStoredIdentity(identityResponse);
-  const vot: StoredIdentityVectorOfTrust = calculateVot(content, identityResponse.si.unsignedVot, vtr);
+  const vot: CalculatedVectorOfTrust = calculateVot(content, identityResponse.si.unsignedVot, vtr);
   const vtm = `https://oidc.account.gov.uk/trustmark`;
   const maxVot = (content.max_vot || identityResponse.si.unsignedVot) as VotEnum;
   const { expired, fraudVc } = await hasIdentityExpired(identityResponse.vcs.map((vcObject) => vcObject.vc));

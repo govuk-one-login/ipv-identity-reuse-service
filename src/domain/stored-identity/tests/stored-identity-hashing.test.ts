@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createStoredIdentityHash } from "../stored-identity-hashing.js";
+import { createStoredIdentityHash, validateStoredIdentityAndVotByHash } from "../stored-identity-hashing.js";
+import { SignedStoredIdentity } from "../stored-identity-types.js";
 
 const STORED_IDENTITY_JWT = "si-header.si-body.si-signature";
 const STORED_IDENTITY_VOT = "P3";
@@ -43,5 +44,39 @@ describe("createStoredIdentityHash", () => {
     expect(
       createStoredIdentityHash(STORED_IDENTITY_JWT, STORED_IDENTITY_VOT, [STORED_IDENTITY_VC_2, STORED_IDENTITY_VC_1])
     ).toEqual("cb6794ed4b7a5b90360a81102d5af05f400fc77bdabe2da72fb4010ad02173a3");
+  });
+});
+
+describe("validateStoredIdentityAndVotByHash", () => {
+  it("should return if hashes match", () => {
+    const signedStoredIdentity: SignedStoredIdentity = {
+      signedStoredIdentityRecord: STORED_IDENTITY_JWT,
+      signedCredentials: [STORED_IDENTITY_VC_1, STORED_IDENTITY_VC_2],
+    };
+
+    const sessionHash = createStoredIdentityHash(
+      signedStoredIdentity.signedStoredIdentityRecord,
+      STORED_IDENTITY_VOT,
+      signedStoredIdentity.signedCredentials
+    );
+
+    expect(() =>
+      validateStoredIdentityAndVotByHash(signedStoredIdentity, STORED_IDENTITY_VOT, sessionHash)
+    ).not.toThrow();
+  });
+
+  it("should throw if hashes do not match", () => {
+    const signedStoredIdentity: SignedStoredIdentity = {
+      signedStoredIdentityRecord: STORED_IDENTITY_JWT,
+      signedCredentials: [STORED_IDENTITY_VC_1, STORED_IDENTITY_VC_2],
+    };
+
+    const sessionHash = createStoredIdentityHash(
+      signedStoredIdentity.signedStoredIdentityRecord,
+      "P2",
+      signedStoredIdentity.signedCredentials
+    );
+
+    expect(() => validateStoredIdentityAndVotByHash(signedStoredIdentity, "P3", sessionHash)).toThrow();
   });
 });
