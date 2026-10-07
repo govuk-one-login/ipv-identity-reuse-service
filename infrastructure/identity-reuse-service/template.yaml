@@ -24,6 +24,11 @@ Parameters:
     Type: Number
     Default: 5000
 
+  CloudFrontDistributionStack:
+    Type: String
+    Description: The name of the associated cloudfront distribution stack
+    Default: "cfront-origin-distrib"
+
   CSLSSubscriptionEndpointArn:
     Type: String
     Description: CSLS Subscription endpoint
@@ -243,6 +248,18 @@ Conditions:
       - Fn::Equals: [!Ref Environment, "integration"]
       - Fn::Equals: [!Ref Environment, "production"]
 
+  IsCloudFrontRequired:
+    Fn::Or:
+      - Fn::And:
+          - !Condition IsDev
+          - Fn::Or:
+              - Fn::Equals: [!Ref AWS::StackName, "sis-main"]
+              - Fn::Equals: [!Ref AWS::StackName, "preview-main"]
+      - Fn::Equals: [!Ref Environment, "build"]
+      - Fn::Equals: [!Ref Environment, "staging"]
+      - Fn::Equals: [!Ref Environment, "integration"]
+      - Fn::Equals: [!Ref Environment, "production"]
+
   IsDev:
     Fn::Or:
       - Fn::Equals: [!Ref Environment, "local"]
@@ -255,6 +272,14 @@ Conditions:
         - Fn::Equals: [!Ref Environment, "dev"]
       - Fn::Not:
         - Fn::Equals: [!Ref AWS::StackName, "sis-main"]
+
+  IsDevAndNotPreviewMain:
+    Fn::And:
+      - Fn::Or:
+          - Fn::Equals: [!Ref Environment, "local"]
+          - Fn::Equals: [!Ref Environment, "dev"]
+      - Fn::Not:
+          - Fn::Equals: [!Ref AWS::StackName, "preview-main"]
 
   IsNotDev: !Not [!Condition IsDev]
 
@@ -281,11 +306,6 @@ Conditions:
       - Fn::Equals: [!Ref Environment, "dev"]
       - Fn::Equals: [!Ref Environment, "build"]
       - Fn::Equals: [!Ref Environment, "staging"]
-
-  IsMainStack:
-    Fn::Equals:
-      - !Ref AWS::StackName
-      - "preview-main"
 
   UseVpc:
     Fn::Not:
@@ -1466,13 +1486,14 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/DomainName"
       Type: "String"
-      Value: !If
-        - IsDev
-        - !If
-          - IsMainStack
-          - !Sub "reuse-identity.dev.account.gov.uk"
-          - !Sub "${AWS::StackName}.reuse-identity.dev.account.gov.uk"
-        - !Sub "reuse-identity.${Environment}.account.gov.uk"
+      Value: !Sub
+        - "${Prefix}${ReuseIdentityBaseDomain}"
+        - Prefix: !If
+            - IsDevAndNotPreviewMain
+            - !Sub "${AWS::StackName}."
+            - ""
+          ReuseIdentityBaseDomain:
+            Fn::ImportValue: !Sub "${DnsStackName}-ReuseIdentityBaseDomain"
 
   OriginReuseIdentityDomain:
     Type: AWS::SSM::Parameter
@@ -1480,15 +1501,9 @@ Resources:
     Properties:
       Name: !Sub "/${AWS::StackName}/OriginDomainName"
       Type: "String"
-      Value: !If
-        - IsDev
-        - !If
-          - IsMainStack
-          - !Sub "origin.reuse-identity.dev.account.gov.uk"
-          - !Sub
-            - "origin.${ReuseIdentityDomain}"
-            - ReuseIdentityDomain: !GetAtt ReuseIdentityDomain.Value
-        - !Sub "origin.reuse-identity.${Environment}.account.gov.uk"
+      Value: !Sub
+        - "origin.${ReuseIdentityDomain}"
+        - ReuseIdentityDomain: !GetAtt ReuseIdentityDomain.Value
 
   ReuseIdentityCredentialStoreSSLCert:
     Type: AWS::CertificateManager::Certificate
@@ -1537,8 +1552,14 @@ Resources:
       HostedZoneId:
         Fn::ImportValue: !Sub "${DnsStackName}-ReuseIdentityServiceHostedZoneId"
       AliasTarget:
-        DNSName: !GetAtt ReuseIdentityCustomDomain.RegionalDomainName
-        HostedZoneId: !GetAtt ReuseIdentityCustomDomain.RegionalHostedZoneId
+        DNSName: !If
+          - IsCloudFrontRequired
+          - Fn::ImportValue: !Sub "${CloudFrontDistributionStack}-DistributionDomain"
+          - !GetAtt ReuseIdentityCustomDomain.RegionalDomainName
+        HostedZoneId: !If
+          - IsCloudFrontRequired
+          - "Z2FDTNDATAQYW2" # Note: this is the global CloudFront zone ID and is constant, see https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-route53-recordset-aliastarget.html
+          - !GetAtt ReuseIdentityCustomDomain.RegionalHostedZoneId
         EvaluateTargetHealth: false
 
   OriginApiRecord:
