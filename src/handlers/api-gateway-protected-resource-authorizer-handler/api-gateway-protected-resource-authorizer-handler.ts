@@ -49,7 +49,7 @@ export const handler = async (
   try {
     const command = new QueryCommand({
       TableName: process.env.SESSION_TABLE_NAME,
-      IndexName: "access-token-index-with-event-data",
+      IndexName: process.env.SESSION_TABLE_ACCESSTOKEN_INDEX,
       KeyConditionExpression: "accessToken = :tokenValue",
       ExpressionAttributeValues: {
         ":tokenValue": {
