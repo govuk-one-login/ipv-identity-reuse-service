@@ -80,8 +80,13 @@ Resources:
                   - apigateway:PATCH
                   - apigateway:DELETE
                   - apigateway:UpdateRestApiPolicy
+                  - apigateway:SetWebACL
                   - ssm:*
                   - dynamodb:*
+                  - wafv2:GetWebACLForResource
+                  - wafv2:AssociateWebACL
+                  - wafv2:DisassociateWebACL
+                  - wafv2:GetWebACL
 
               - Effect: Allow
                 Resource: arn:aws:s3:::github-actions-sam* # github-actions-sam-deploy-deploymentartifactsbucke-nqrrh0t3oddl
@@ -357,6 +362,7 @@ Resources:
                   - codedeploy:ListDeploymentGroup
                   - codedeploy:ListTagsForResource
                   - codedeploy:RegisterApplicationRevision
+                  - codedeploy:StopDeployment
                   - codedeploy:TagResource
                   - codedeploy:UntagResource
                   - codedeploy:UpdateApplication
