@@ -91,6 +91,10 @@ Resources:
                   - s3:PutEncryptionConfiguration
                   - s3:ListBucket
                   - s3:DeleteObject
+              - Sid: AllowDeleteDeveloperStacks
+                Effect: Allow
+                Resource: arn:aws:s3:::aws-sam-cli-managed-default-samclisourcebucket*
+                Action: s3:DeleteObject
               - Sid: "ConsumeServerlessApplicationRepository"
                 Effect: "Allow"
                 Action:
@@ -144,6 +148,7 @@ Resources:
                   - cloudformation:GetTemplateSummary
                   - cloudformation:DescribeStackEvents
                   - cloudformation:ListStackResources
+                  - cloudformation:ListStacks
 
               - Effect: Allow
                 Resource: [!Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/local*"]
