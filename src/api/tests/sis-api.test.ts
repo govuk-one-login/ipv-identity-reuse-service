@@ -18,18 +18,14 @@ it("should redirect to error page", async () => {
 });
 
 it("should redirect to confirm details page with cookie", async () => {
-  const result = redirectToConfirmDetails({
-    domainName: "test.com",
-    state: "test-state",
-    redirectUri: "https://api.example.com",
-    clientId: "test-client-id",
-    cookie: "identity_reuse_service_session=test-session-id; Path=/; Secure; HttpOnly; SameSite=Lax",
-  });
+  const result = redirectToConfirmDetails(
+    "test.com",
+    "identity_reuse_service_session=test-session-id; Path=/; Secure; HttpOnly; SameSite=Lax"
+  );
   expect(result).toEqual({
     statusCode: 302,
     headers: {
-      Location:
-        "https://test.com/confirm-details?state=test-state&redirect_uri=https%3A%2F%2Fapi.example.com&client_id=test-client-id",
+      Location: "https://test.com/confirm-details",
       "Set-Cookie": "identity_reuse_service_session=test-session-id; Path=/; Secure; HttpOnly; SameSite=Lax",
     },
     body: "",
@@ -37,28 +33,18 @@ it("should redirect to confirm details page with cookie", async () => {
 });
 
 it("should redirect to confirm details page", async () => {
-  const result = redirectToConfirmDetails({
-    domainName: "test.com",
-    state: "test-state",
-    redirectUri: "https://api.example.com",
-    clientId: "test-client-id",
-  });
+  const result = redirectToConfirmDetails("test.com");
   expect(result).toEqual({
     statusCode: 302,
     headers: {
-      Location:
-        "https://test.com/confirm-details?state=test-state&redirect_uri=https%3A%2F%2Fapi.example.com&client_id=test-client-id",
+      Location: "https://test.com/confirm-details",
     },
     body: "",
   });
 });
 
 it("should redirect to the client page", async () => {
-  const result = redirectToClient({
-    redirectUri: "https://api.example.com",
-    state: "test-state",
-    authorizationCode: "test-auth-code",
-  });
+  const result = redirectToClient("https://api.example.com", "test-state", "test-auth-code");
   expect(result).toEqual({
     statusCode: 302,
     headers: {
@@ -69,12 +55,13 @@ it("should redirect to the client page", async () => {
 });
 
 it("should redirect to the client page with an error", async () => {
-  const result = redirectToClient({
-    redirectUri: "https://api.example.com",
-    state: "test-state",
-    errorDescription: "record_unavailable",
-    error: "access_denied",
-  });
+  const result = redirectToClient(
+    "https://api.example.com",
+    "test-state",
+    undefined,
+    "record_unavailable",
+    "access_denied"
+  );
   expect(result).toEqual({
     statusCode: 302,
     headers: {
@@ -86,11 +73,7 @@ it("should redirect to the client page with an error", async () => {
 
 it("should redirect to oauth callback with query params", async () => {
   process.env.PUBLIC_API = "api.example.com";
-  const result = redirectToOauthCallBack({
-    redirectUri: "https://api.example.com",
-    state: "test-state",
-    clientId: "test-client-id",
-  });
+  const result = redirectToOauthCallBack("https://api.example.com", "test-state", "test-client-id");
   expect(result).toEqual({
     statusCode: 302,
     headers: {

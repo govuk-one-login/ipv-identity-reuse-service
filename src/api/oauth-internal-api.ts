@@ -43,6 +43,9 @@ export type GetSessionSuccessResponse = {
   clientSessionId: string;
   persistentSessionId?: string;
   subject: string;
+  redirectUri: string;
+  state: string;
+  clientId: string;
   context?: string;
   sessionData?: SessionData;
 };
@@ -52,15 +55,24 @@ export type SessionData = {
   storedIdentitySha256: string;
 };
 
-export class CreateSessionError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "CreateSessionError";
-    Object.setPrototypeOf(this, new.target.prototype);
+export const CreateSessionError = createErrorClass("CreateSessionError");
+export const CreateAuthorizationCodeError = createErrorClass("CreateAuthorizationCodeError");
+
+export async function createAuthCode(sessionId: string) {
+  const oauthInternalApiUrl = process.env.OAUTH_INTERNAL_API_URL;
+
+  const responseFromCreateAuthCode = await fetch(`${oauthInternalApiUrl}/api/create-auth-code`, {
+    method: "POST",
+    headers: {
+      "session-id": sessionId,
+    },
+  });
+
+  if (responseFromCreateAuthCode.status !== 201) {
+    logger.error(`Session handler returned non-201 status: ${responseFromCreateAuthCode.status}`);
+    throw new CreateAuthorizationCodeError("Create auth code endpoint returned an error response");
   }
 }
-
-const getSessionTimeoutMs = (): number => Number(getSessionTimeout());
 
 export async function callSessionApi(clientId: string, request: string): Promise<SessionResult> {
   const oauthInternalApiUrl = getOauthInternalApiUrl();
@@ -77,7 +89,7 @@ export async function callSessionApi(clientId: string, request: string): Promise
       "Content-Type": "application/json",
     },
     body,
-    signal: AbortSignal.timeout(getSessionTimeoutMs()),
+    signal: AbortSignal.timeout(getSessionTimeout()),
   });
 
   if (responseFromSessionEndpoint.status === 201) {
@@ -96,26 +108,15 @@ export async function callSessionApi(clientId: string, request: string): Promise
   }
 }
 
-export async function getAuthorizationCode(
-  clientId: string,
-  redirectUri: string,
-  state: string,
-  sessionId: string
-): Promise<AuthorizationResult> {
+export async function getAuthorizationCode(sessionId: string): Promise<AuthorizationResult> {
   const oauthInternalApiUrl = getOauthInternalApiUrl();
-  const url = new URL(`${oauthInternalApiUrl}/api/authorization`);
 
-  url.searchParams.append("client_id", clientId);
-  url.searchParams.append("redirect_uri", redirectUri);
-  url.searchParams.append("state", state);
-  url.searchParams.append("response_type", "code");
-
-  const responseFromAuthorizeEndpoint = await fetch(url, {
+  const responseFromAuthorizeEndpoint = await fetch(`${oauthInternalApiUrl}/api/authorization`, {
     method: "GET",
     headers: {
       "session-id": sessionId,
     },
-    signal: AbortSignal.timeout(getSessionTimeoutMs()),
+    signal: AbortSignal.timeout(getSessionTimeout()),
   });
 
   if (responseFromAuthorizeEndpoint.status === 200) {
@@ -157,7 +158,7 @@ export async function getSessionDetails(sessionId: string): Promise<GetSessionSu
     headers: {
       "session-id": sessionId,
     },
-    signal: AbortSignal.timeout(getSessionTimeoutMs()),
+    signal: AbortSignal.timeout(getSessionTimeout()),
   });
 
   if (responseFromSessionEndpoint.status === 200) {
@@ -182,13 +183,23 @@ export async function updateSessionData(sessionId: string, data: Record<string, 
       "session-id": sessionId,
     },
     body: JSON.stringify(data),
-    signal: AbortSignal.timeout(getSessionTimeoutMs()),
+    signal: AbortSignal.timeout(getSessionTimeout()),
   });
 
   if (responseFromSessionEndpoint.status !== 200) {
     logger.error(`PATCH session/data endpoint returned non-200 status: ${responseFromSessionEndpoint.status}`);
     throw new Error("PATCH session/data endpoint returned an error response");
   }
+}
+
+function createErrorClass(className: string) {
+  return class extends Error {
+    constructor(message: string) {
+      super(message);
+      this.name = className;
+      Object.setPrototypeOf(this, new.target.prototype);
+    }
+  };
 }
 
 function isValidAuthorizationSuccessResponse(object: unknown): object is AuthorizationSuccessResponse {
