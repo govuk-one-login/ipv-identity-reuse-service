@@ -320,7 +320,7 @@ Globals:
   Function:
     MemorySize: 1024
     Timeout: 30
-    CodeUri: ../../
+    CodeUri: ../../src
     Runtime: nodejs22.x
     Architectures:
       - arm64
@@ -448,7 +448,7 @@ Resources:
         Sourcemap: true
         SourcesContent: false
         EntryPoints:
-          - src/handlers/get-authorize-handler/get-authorize-handler.ts
+          - handlers/get-authorize-handler/get-authorize-handler.ts
         Format: esm
         Platform: node
         OutExtension:
@@ -577,7 +577,7 @@ Resources:
         Sourcemap: true
         SourcesContent: false
         EntryPoints:
-          - src/handlers/get-user-identity-handler/get-user-identity-handler.ts
+          - handlers/get-user-identity-handler/get-user-identity-handler.ts
         Format: esm
         Platform: node
         OutExtension:
@@ -825,7 +825,7 @@ Resources:
       BuildProperties:
         UseNpmCi: True
         EntryPoints:
-          - src/handlers/govuk-resources-uploader/govuk-resources-uploader.ts
+          - handlers/govuk-resources-uploader/govuk-resources-uploader.ts
         Format: esm
         Minify: true
         Platform: node
@@ -931,7 +931,7 @@ Resources:
       BuildProperties:
         UseNpmCi: True
         EntryPoints:
-          - src/handlers/get-confirm-details-handler/get-confirm-details-handler.ts
+          - handlers/get-confirm-details-handler/get-confirm-details-handler.ts
         Sourcemap: true
         SourcesContent: false
         Target: "es2024"
@@ -1021,7 +1021,7 @@ Resources:
       BuildProperties:
         UseNpmCi: True
         EntryPoints:
-          - src/handlers/post-confirm-details-handler/post-confirm-details-handler.ts
+          - handlers/post-confirm-details-handler/post-confirm-details-handler.ts
         Target: es2022
         Minify: true
         Sourcemap: true
@@ -1107,7 +1107,7 @@ Resources:
       BuildProperties:
         UseNpmCi: True
         EntryPoints:
-          - src/handlers/get-unrecoverable-error-handler/get-unrecoverable-error-handler.ts
+          - handlers/get-unrecoverable-error-handler/get-unrecoverable-error-handler.ts
         Sourcemap: true
         SourcesContent: false
         Target: "es2024"
@@ -1204,7 +1204,7 @@ Resources:
         Sourcemap: true
         SourcesContent: false
         EntryPoints:
-          - src/handlers/get-callback-handler/get-callback-handler.ts
+          - handlers/get-callback-handler/get-callback-handler.ts
         Format: esm
         Platform: node
         OutExtension:
@@ -1661,7 +1661,7 @@ Resources:
         Sourcemap: true
         SourcesContent: false
         EntryPoints:
-          - src/handlers/post-phase2-user-identity-handler/post-phase2-user-identity-handler.ts
+          - handlers/post-phase2-user-identity-handler/post-phase2-user-identity-handler.ts
         Format: esm
         Platform: node
         OutExtension:
@@ -1917,7 +1917,7 @@ Resources:
       BuildProperties:
         UseNpmCi: True
         EntryPoints:
-          - src/handlers/inbound-txma-queue-message-handler/inbound-txma-queue-message-handler.ts
+          - handlers/inbound-txma-queue-message-handler/inbound-txma-queue-message-handler.ts
         Sourcemap: true
         SourcesContent: false
         Target: "es2024"

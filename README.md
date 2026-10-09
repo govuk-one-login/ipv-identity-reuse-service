@@ -12,10 +12,11 @@ The service is written using Typescript.
 
 You should ensure that your machine has the following installed:
 
-- Node.js 22.x
-- Git
 - AWS CLI
 - AWS SAM CLI
+- ESBuild
+- Git
+- Node.js 22.x
 
 ## Installing
 
