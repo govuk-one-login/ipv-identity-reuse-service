@@ -480,7 +480,7 @@ Resources:
       Handler: api-gateway-protected-resource-authorizer-handler.handler
       Role: !GetAtt ProtectedResourceAuthorizerFunctionRole.Arn
       MemorySize: 2048
-      CodeUri: ../../
+      CodeUri: ../../src
       Runtime: nodejs24.x
       Architectures:
         - arm64
@@ -561,7 +561,7 @@ Resources:
         Sourcemap: true
         SourcesContent: false
         EntryPoints:
-          - src/handlers/api-gateway-protected-resource-authorizer-handler/api-gateway-protected-resource-authorizer-handler.ts
+          - handlers/api-gateway-protected-resource-authorizer-handler/api-gateway-protected-resource-authorizer-handler.ts
         Format: esm
         Platform: node
         OutExtension:
