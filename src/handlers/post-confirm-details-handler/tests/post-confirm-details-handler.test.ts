@@ -2,7 +2,13 @@ import { APIGatewayEventRequestContextWithAuthorizer, APIGatewayProxyEvent } fro
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { lambdaHandler } from "../post-confirm-details-handler.js";
 import { randomUUID } from "node:crypto";
-import { updateSessionData } from "../../../api/oauth-internal-api.js";
+import { getSessionDetails, updateSessionData } from "../../../api/oauth-internal-api.js";
+import { GetSessionError } from "../../../commons/errors.js";
+import { HttpCodesEnum } from "../../../commons/constants.js";
+
+vi.hoisted(() => {
+  process.env.SESSION_TIMEOUT_MS = "5000";
+});
 
 const TEST_SESSION_ID = randomUUID();
 
@@ -11,17 +17,40 @@ vi.mock("../../../api/oauth-internal-api");
 beforeEach(() => {
   vi.stubEnv("PUBLIC_API", "api.example.com");
   vi.stubEnv("DOMAIN_NAME", "api2.example.com");
+  vi.stubEnv("SESSION_TIMEOUT_MS", "5000");
   vi.mocked(updateSessionData).mockResolvedValue();
+  vi.mocked(getSessionDetails).mockResolvedValue({ subject: "test-subject", clientSessionId: "client-session-id" });
 });
 
 afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-it("should redirect to the error page if the session is not provided", async () => {
+it("should redirect to the session-expired page if the session is not provided", async () => {
   const event = createMockAPIGatewayProxyEvent(
     {},
     "redirectUri=https%3A%2F%2Fapi.example.com&state=test-state-id&client_id=client"
+  );
+
+  const response = await lambdaHandler(event);
+  expect(response).toStrictEqual({
+    statusCode: 302,
+    body: "",
+    headers: {
+      Location: "https://api2.example.com/error/session-expired",
+    },
+  });
+});
+
+it("should redirect to the error page if getSessionDetails fails with a 500", async () => {
+  vi.mocked(getSessionDetails).mockRejectedValueOnce(
+    new GetSessionError("GET session endpoint returned an error response", HttpCodesEnum.INTERNAL_SERVER_ERROR)
+  );
+
+  const event = createMockAPIGatewayProxyEvent(
+    {},
+    "redirectUri=https%3A%2F%2Fapi.example.com&state=test-state-id&client_id=client",
+    TEST_SESSION_ID
   );
 
   const response = await lambdaHandler(event);

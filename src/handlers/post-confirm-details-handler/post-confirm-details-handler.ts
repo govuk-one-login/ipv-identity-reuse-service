@@ -1,8 +1,8 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import logger from "../../commons/logger.js";
-import { getCookieValues } from "../../commons/cookie-utilities.js";
-import { redirectToErrorPage } from "../../api/sis-api.js";
+import { redirectToErrorPage, redirectToSessionExpiredPage } from "../../api/sis-api.js";
 import { updateSessionData } from "../../api/oauth-internal-api.js";
+import { getCookieValues } from "../../commons/cookie-utilities.js";
 
 export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const eventValues = new URLSearchParams(event.body || "");
@@ -17,8 +17,9 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
   if (!redirectUri || !state || !clientId) {
     throw new Error("One or more required query string parameters are undefined");
   }
+
   if (!sessionId) {
-    return redirectToErrorPage(domainName);
+    return redirectToSessionExpiredPage(domainName);
   }
 
   try {

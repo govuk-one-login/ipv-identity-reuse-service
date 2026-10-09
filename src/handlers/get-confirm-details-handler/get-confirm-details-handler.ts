@@ -4,10 +4,9 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import path from "node:path";
 import nunjucks from "nunjucks";
 import translations from "../../../locales/en/translation.json" with { type: "json" };
+import { redirectToErrorPage, redirectToOauthCallBack, redirectToSessionExpiredPage } from "../../api/sis-api.js";
+import { SessionInvalidError, StoredIdentityValidationError } from "../../commons/errors.js";
 import { getSessionDetails, updateSessionData } from "../../api/oauth-internal-api.js";
-import { redirectToErrorPage, redirectToOauthCallBack } from "../../api/sis-api.js";
-import { getCookieValues } from "../../commons/cookie-utilities.js";
-import { StoredIdentityValidationError } from "../../commons/errors.js";
 import { getJwtBody } from "../../commons/jwt-utilities.js";
 import logger from "../../commons/logger.js";
 import { MetricDimension, MetricName } from "../../commons/metric-enum.js";
@@ -22,6 +21,7 @@ import { hasIdentityExpired } from "../../domain/verifiable-credential/identity-
 import { ConfirmDetailsQueryStringParameters } from "./get-confirm-details-handler-types.js";
 import mainPageTemplate from "./index.njk";
 import { extractUserDetails } from "./user-details-content.js";
+import { getCookieValues } from "../../commons/cookie-utilities.js";
 
 const govukFrontendDistribution = path.join(path.dirname(require.resolve("govuk-frontend/package.json")), "dist");
 const nunjucksEnvironment = nunjucks.configure([
@@ -115,7 +115,6 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
           userDetails,
           translations,
           govukRebrand: true,
-          errorPageUrl: `https://${domainName}/error/unrecoverable`,
         }),
         headers: {
           "content-type": "text/html",
@@ -127,7 +126,9 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
       return redirectToOauthCallBack({ redirectUri: redirect_uri, state, clientId: client_id });
     }
   } catch (error) {
-    if (error instanceof StoredIdentityValidationError) {
+    if (error instanceof SessionInvalidError) {
+      return redirectToSessionExpiredPage(domainName);
+    } else if (error instanceof StoredIdentityValidationError) {
       logger.error("Stored identity record is missing required user details");
       await tryUpdateSessionData(sessionId!, { errorDescription: "record_update_requested" });
       return redirectToOauthCallBack({ redirectUri: redirect_uri, state, clientId: client_id });

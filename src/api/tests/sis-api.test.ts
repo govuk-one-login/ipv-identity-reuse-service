@@ -4,6 +4,7 @@ import {
   redirectToConfirmDetails,
   redirectToErrorPage,
   redirectToOauthCallBack,
+  redirectToSessionExpiredPage,
 } from "../sis-api.js";
 
 it("should redirect to error page", async () => {
@@ -12,6 +13,17 @@ it("should redirect to error page", async () => {
     statusCode: 302,
     headers: {
       Location: "https://test.com/error/unrecoverable",
+    },
+    body: "",
+  });
+});
+
+it("should redirect to session expired page", async () => {
+  const result = redirectToSessionExpiredPage("test.com");
+  expect(result).toEqual({
+    statusCode: 302,
+    headers: {
+      Location: "https://test.com/error/session-expired",
     },
     body: "",
   });

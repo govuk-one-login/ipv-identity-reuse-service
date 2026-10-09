@@ -5,7 +5,12 @@ import {
   getIdentityFromCredentialStore,
   validateStoredIdentity,
 } from "../../../domain/stored-identity/stored-identity-validator.js";
-import { EVCSError, StoredIdentityValidationError } from "../../../commons/errors.js";
+import {
+  EVCSError,
+  GetSessionError,
+  SessionInvalidError,
+  StoredIdentityValidationError,
+} from "../../../commons/errors.js";
 import { HttpCodesEnum } from "../../../commons/constants.js";
 import { getSessionDetails, updateSessionData } from "../../../api/oauth-internal-api.js";
 import translations from "../../../../locales/en/translation.json" with { type: "json" };
@@ -160,7 +165,6 @@ it("should store the calculated vot and identity hash in the session and render 
         addressDetailHtml: "10 Downing Street<br>London<br>SW1A 2AA",
       },
       translations,
-      errorPageUrl: "https://test-domain/error/unrecoverable",
     }
   );
 
@@ -303,16 +307,30 @@ describe("handler record validation", () => {
     });
   });
 
-  it("returns a failure response when getSessionDetails throws", async () => {
-    (getSessionDetails as Mock).mockRejectedValueOnce(new Error("GET session endpoint returned an error response"));
+  it("redirects to the session-expired page when getSessionDetails throws a SessionInvalidError", async () => {
+    (getSessionDetails as Mock).mockRejectedValueOnce(
+      new SessionInvalidError("No session found for the given sessionId")
+    );
     const result = await lambdaHandler(validEvent());
     expect(getIdentityFromCredentialStore).not.toHaveBeenCalled();
     expect(mockRender).not.toHaveBeenCalled();
     expect(result).toEqual({
-      headers: {
-        Location: "https://test-domain/error/unrecoverable",
-      },
       statusCode: 302,
+      headers: { Location: "https://test-domain/error/session-expired" },
+      body: "",
+    });
+  });
+
+  it("redirects to the error page when getSessionDetails throws a 500 GetSessionError", async () => {
+    (getSessionDetails as Mock).mockRejectedValueOnce(
+      new GetSessionError("GET session endpoint returned an error response", HttpCodesEnum.INTERNAL_SERVER_ERROR)
+    );
+    const result = await lambdaHandler(validEvent());
+    expect(getIdentityFromCredentialStore).not.toHaveBeenCalled();
+    expect(mockRender).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      statusCode: 302,
+      headers: { Location: "https://test-domain/error/unrecoverable" },
       body: "",
     });
   });
