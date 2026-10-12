@@ -106,7 +106,7 @@ Parameters:
   VpcStackName:
     Description: The name of the stack containing VPC infrastructure
     Type: String
-    Default: vpc
+    Default: spoke-vpc
 
   OrchestrationJwksEndpointOverride:
     Type: String
