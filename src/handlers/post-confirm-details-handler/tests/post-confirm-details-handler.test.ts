@@ -16,9 +16,6 @@ beforeEach(() => {
   vi.mocked(getSessionDetails).mockResolvedValue({
     subject: "test-subject",
     clientSessionId: "session-id",
-    redirectUri: "redirect-uri",
-    state: "state",
-    clientId: "client-id",
   });
 });
 

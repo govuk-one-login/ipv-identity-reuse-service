@@ -5,7 +5,7 @@
 {% extends "govuk/template.njk" %}
 {% block head %}
     <link rel="stylesheet" href="{{ rootPath | default("", true) }}/govuk-frontend.min.css">
-    <base href="./error/unrecoverable" />
+    <base href="{{baseUrl}}" />
 {% endblock %}
 {% block content %}
     {% if errors and errors.length > 0 %}

@@ -34,11 +34,8 @@ it("should return a 302 status code and redirect with an auth code and state on 
     state: "test-state",
   });
   vitest.mocked(getSessionDetails).mockResolvedValue({
-    clientId: "test-client-id",
     clientSessionId: "client-session-id",
     subject: "test-subject",
-    redirectUri: "https://www.example.com",
-    state: "test-state",
   });
 
   const response = await handler(event, {} as Context);
@@ -61,11 +58,8 @@ it("should return a 302 status code and redirect with an access_denied error, re
     code: "access_denied",
   });
   vitest.mocked(getSessionDetails).mockResolvedValue({
-    clientId: "test-client-id",
     clientSessionId: "client-session-id",
     subject: "test-subject",
-    redirectUri: "https://www.example.com",
-    state: "test-state",
   });
 
   const response = await handler(event, {} as Context);
@@ -88,11 +82,8 @@ it("should return a 302 status code and redirect with an access_denied error, re
     code: "access_denied",
   });
   vitest.mocked(getSessionDetails).mockResolvedValue({
-    clientId: "test-client-id",
     clientSessionId: "client-session-id",
     subject: "test-subject",
-    redirectUri: "https://www.example.com",
-    state: "test-state",
   });
 
   const response = await handler(event, {} as Context);

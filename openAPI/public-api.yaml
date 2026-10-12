@@ -107,6 +107,20 @@ paths:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetUnrecoverableErrorHandler.Arn}:live/invocations
         type: aws_proxy
+  /error/bad-request:
+    get:
+      responses:
+        "400":
+          description: Internal Server Error
+          content:
+            text/html:
+              schema:
+                type: string
+      x-amazon-apigateway-integration:
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetUnrecoverableErrorHandler.Arn}:live/invocations
+        type: aws_proxy
   /{item+}:
     get:
       parameters:

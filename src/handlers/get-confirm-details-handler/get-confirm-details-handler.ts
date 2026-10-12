@@ -64,9 +64,6 @@ const isStoredIdentityValidated = ({
 export const lambdaHandler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
   const domainName = process.env.DOMAIN_NAME || "";
   const sessionId = getCookieValues(event)?.get("identity_reuse_service_session");
-  let redirectUri: string | undefined;
-  let clientId: string | undefined;
-  let state: string | undefined;
 
   logger.addContext(context);
 
@@ -76,10 +73,7 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent, context: Contex
       return redirectToSessionExpiredPage(domainName);
     }
 
-    const { storageAccessToken, vtr, ...sessionData } = await getSessionDetails(sessionId);
-    redirectUri = sessionData.redirectUri;
-    clientId = sessionData.clientId;
-    state = sessionData.state;
+    const { storageAccessToken, vtr } = await getSessionDetails(sessionId);
 
     if (!storageAccessToken) {
       logger.error("No storageAccessToken returned from session endpoint");
@@ -102,7 +96,7 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent, context: Contex
         });
         await tryUpdateSessionData(sessionId, { errorDescription: "record_update_requested" });
 
-        return redirectToOauthCallBack(redirectUri, state, clientId);
+        return redirectToOauthCallBack();
       }
 
       const storedIdentityJwt = identityResponse.si.vc;
@@ -114,7 +108,7 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent, context: Contex
       const identityReuseValid = await validateUserIdentity(vot, storedIdentityVcJwts, vtr);
       if (!identityReuseValid) {
         await tryUpdateSessionData(sessionId, { errorDescription: "record_update_requested" });
-        return redirectToOauthCallBack(redirectUri, state, clientId);
+        return redirectToOauthCallBack();
       }
 
       await sessionStoreHashedStoredIdentity(sessionId, storedIdentityJwt, vot, storedIdentityVcJwts);
@@ -126,9 +120,6 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent, context: Contex
         body: nunjucksEnvironment.render(mainPageTemplate, {
           assetPath: "./assets",
           rootPath: ".",
-          redirect_uri: redirectUri,
-          state,
-          client_id: clientId,
           userDetails,
           translations,
           govukRebrand: true,
@@ -140,7 +131,7 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent, context: Contex
     } else {
       logger.error("No identity record found in EVCS");
       await tryUpdateSessionData(sessionId!, { errorDescription: "record_update_requested" });
-      return redirectToOauthCallBack(redirectUri, state, clientId);
+      return redirectToOauthCallBack();
     }
   } catch (error) {
     if (error instanceof SessionInvalidError) {
@@ -149,9 +140,7 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent, context: Contex
       logger.error("Stored identity record is missing required user details");
       await tryUpdateSessionData(sessionId!, { errorDescription: "record_update_requested" });
 
-      if (redirectUri && state && clientId) {
-        return redirectToOauthCallBack(redirectUri, state, clientId);
-      }
+      return redirectToOauthCallBack();
     } else {
       logger.error(`Error in lambdaHandler event: ${error}`);
     }

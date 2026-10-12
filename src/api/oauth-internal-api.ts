@@ -43,9 +43,6 @@ export type GetSessionSuccessResponse = {
   clientSessionId: string;
   persistentSessionId?: string;
   subject: string;
-  redirectUri: string;
-  state: string;
-  clientId: string;
   context?: string;
   sessionData?: SessionData;
 };

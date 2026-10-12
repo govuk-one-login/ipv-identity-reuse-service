@@ -24,7 +24,7 @@ describe("authorize-handler", () => {
       expect(response).toEqual({
         statusCode: 302,
         headers: {
-          Location: "https://test-domain/error/unrecoverable",
+          Location: "https://test-domain/error/bad-request",
         },
         body: "",
       });

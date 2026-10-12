@@ -110,9 +110,6 @@ beforeEach(() => {
     storageAccessToken: "mock-storage-access-token",
     clientSessionId: "client-session-id",
     subject: "user-sub",
-    redirectUri: "https://example.com",
-    state: "state-id",
-    clientId: "client",
   });
   vi.mocked(getConfiguration).mockResolvedValue({
     evcsApiUrl: "https://evcs.gov.uk",
@@ -153,11 +150,8 @@ it("should store the calculated vot and identity hash in the session and render 
     expect.toSatisfy((filename: string) => filename.endsWith("index.njk")),
     {
       assetPath: "./assets",
-      client_id: "client",
       rootPath: ".",
-      state: "state-id",
       govukRebrand: true,
-      redirect_uri: "https://example.com",
       userDetails: {
         name: "Jane Doe",
         dateOfBirth: "1990-01-15",
@@ -212,8 +206,7 @@ describe("handler record validation", () => {
     expect(result).toEqual({
       statusCode: 302,
       headers: {
-        Location:
-          "https://example-api.com/oauth2/callback?redirect_uri=https%3A%2F%2Fexample.com&state=state-id&client_id=client",
+        Location: "https://example-api.com/oauth2/callback",
       },
       body: "",
     });
@@ -275,8 +268,7 @@ describe("handler record validation", () => {
     expect(result).toEqual({
       statusCode: 302,
       headers: {
-        Location:
-          "https://example-api.com/oauth2/callback?redirect_uri=https%3A%2F%2Fexample.com&state=state-id&client_id=client",
+        Location: "https://example-api.com/oauth2/callback",
       },
       body: "",
     });
@@ -332,8 +324,7 @@ describe("handler record validation", () => {
     expect(result).toEqual({
       statusCode: 302,
       headers: {
-        Location:
-          "https://example-api.com/oauth2/callback?redirect_uri=https%3A%2F%2Fexample.com&state=state-id&client_id=client",
+        Location: "https://example-api.com/oauth2/callback",
       },
       body: "",
     });
@@ -356,8 +347,7 @@ describe("combined expiry and VoT checks", () => {
       statusCode: 302,
       body: "",
       headers: {
-        Location:
-          "https://example-api.com/oauth2/callback?redirect_uri=https%3A%2F%2Fexample.com&state=state-id&client_id=client",
+        Location: "https://example-api.com/oauth2/callback",
       },
     });
   });
@@ -403,8 +393,7 @@ describe("combined expiry and VoT checks", () => {
       statusCode: 302,
       body: "",
       headers: {
-        Location:
-          "https://example-api.com/oauth2/callback?redirect_uri=https%3A%2F%2Fexample.com&state=state-id&client_id=client",
+        Location: "https://example-api.com/oauth2/callback",
       },
     });
   });
@@ -424,8 +413,7 @@ describe("combined expiry and VoT checks", () => {
       statusCode: 302,
       body: "",
       headers: {
-        Location:
-          "https://example-api.com/oauth2/callback?redirect_uri=https%3A%2F%2Fexample.com&state=state-id&client_id=client",
+        Location: "https://example-api.com/oauth2/callback",
       },
     });
   });
@@ -445,8 +433,7 @@ describe("combined expiry and VoT checks", () => {
       statusCode: 302,
       body: "",
       headers: {
-        Location:
-          "https://example-api.com/oauth2/callback?redirect_uri=https%3A%2F%2Fexample.com&state=state-id&client_id=client",
+        Location: "https://example-api.com/oauth2/callback",
       },
     });
   });

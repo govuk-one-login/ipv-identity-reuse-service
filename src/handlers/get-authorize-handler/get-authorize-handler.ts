@@ -1,7 +1,7 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
 import logger from "../../utilities/logger.js";
 import { callSessionApi } from "../../api/oauth-internal-api.js";
-import { redirectToConfirmDetails, redirectToErrorPage } from "../../api/sis-api.js";
+import { redirectToConfirmDetails, redirectToErrorPage, redirectToBadRequest } from "../../api/sis-api.js";
 import { getRequiredEnvironment } from "../../configuration/get-required-environment.js";
 import { isStringWithLength } from "../../utilities/string-utilities.js";
 
@@ -17,7 +17,7 @@ export async function handler(event: APIGatewayProxyEvent, context: Context): Pr
 
   if (!isValidQueryParameters(event.queryStringParameters)) {
     logger.error("Parameters are invalid");
-    return redirectToErrorPage(domainName);
+    return redirectToBadRequest(domainName);
   }
 
   try {

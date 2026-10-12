@@ -85,12 +85,11 @@ it("should redirect to the client page with an error", async () => {
 
 it("should redirect to oauth callback with query params", async () => {
   process.env.PUBLIC_API = "api.example.com";
-  const result = redirectToOauthCallBack("https://api.example.com", "test-state", "test-client-id");
+  const result = redirectToOauthCallBack();
   expect(result).toEqual({
     statusCode: 302,
     headers: {
-      Location:
-        "https://api.example.com/oauth2/callback?redirect_uri=https%3A%2F%2Fapi.example.com&state=test-state&client_id=test-client-id",
+      Location: "https://api.example.com/oauth2/callback",
     },
     body: "",
   });
