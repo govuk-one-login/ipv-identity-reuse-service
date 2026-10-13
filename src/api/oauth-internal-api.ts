@@ -64,14 +64,14 @@ const getSessionTimeoutMs = (): number => Number(getSessionTimeout());
 
 export async function callSessionApi(clientId: string, request: string): Promise<SessionResult> {
   const oauthInternalApiUrl = getOauthInternalApiUrl();
-  const url = new URL(`${oauthInternalApiUrl}/api/session`);
+  const url = `${oauthInternalApiUrl}/api/session`;
 
   const body = JSON.stringify({
     client_id: clientId,
     request,
   });
 
-  const responseFromSessionEndpoint = await fetch(url.href, {
+  const responseFromSessionEndpoint = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -157,7 +157,7 @@ export async function getAuthorizationCode(
 
 export async function getSessionDetails(sessionId: string): Promise<GetSessionSuccessResponse> {
   const oauthInternalApiUrl = getOauthInternalApiUrl();
-  const url = new URL(`${oauthInternalApiUrl}/api/session`);
+  const url = `${oauthInternalApiUrl}/api/session`;
 
   const responseFromSessionEndpoint = await fetch(url, {
     method: "GET",
@@ -183,7 +183,7 @@ export async function getSessionDetails(sessionId: string): Promise<GetSessionSu
 
 export async function updateSessionData(sessionId: string, data: Record<string, string | null>): Promise<void> {
   const oauthInternalApiUrl = getOauthInternalApiUrl();
-  const url = new URL(`${oauthInternalApiUrl}/api/session/data`);
+  const url = `${oauthInternalApiUrl}/api/session/data`;
 
   const responseFromSessionEndpoint = await fetch(url, {
     method: "PATCH",
@@ -199,6 +199,24 @@ export async function updateSessionData(sessionId: string, data: Record<string, 
     throw responseFromSessionEndpoint.status === 404
       ? new SessionInvalidError("No session found for the given sessionId")
       : new Error("PATCH session/data endpoint returned an error response");
+  }
+}
+
+export async function deleteSession(sessionId: string): Promise<void> {
+  const oauthInternalApiUrl = getOauthInternalApiUrl();
+  const url = `${oauthInternalApiUrl}/api/session`;
+
+  const responseFromSessionEndpoint = await fetch(url, {
+    method: "DELETE",
+    headers: {
+      "session-id": sessionId,
+    },
+    signal: AbortSignal.timeout(getSessionTimeoutMs()),
+  });
+
+  if (responseFromSessionEndpoint.status !== 200) {
+    logger.error(`DELETE session/data endpoint returned non-200 status: ${responseFromSessionEndpoint.status}`);
+    throw new Error("DELETE session/data endpoint returned an error response");
   }
 }
 
