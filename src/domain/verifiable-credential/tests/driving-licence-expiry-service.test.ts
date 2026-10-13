@@ -7,10 +7,10 @@ import {
 } from "../driving-licence-expiry-service.js";
 import { IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials.js";
 import { VerifiableCredentialJWT } from "../verifiable-credential-types.js";
-import logger from "../../../commons/logger.js";
+import logger from "../../../utilities/logger.js";
 import { vi, describe, it, beforeEach, afterEach, expect } from "vitest";
 
-vi.mock("../../../commons/logger");
+vi.mock("../../../utilities/logger");
 
 const DCMAW_ISSUER = ["https://www.review-b.dev.account.gov.uk"];
 const FRAUD_ISSUER = "https://review-f.dev.account.gov.uk";

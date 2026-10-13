@@ -1,5 +1,5 @@
-import { getJwtSignature } from "../../commons/jwt-utilities.js";
-import logger from "../../commons/logger.js";
+import { getJwtSignature } from "../../utilities/jwt-utilities.js";
+import logger from "../../utilities/logger.js";
 import { StoredIdentityRecord } from "./stored-identity-types.js";
 
 export const correlateCredentials = (

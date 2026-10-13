@@ -1,10 +1,10 @@
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
 import { calculateVot } from "../calculate-vot.js";
 import { StoredIdentityRecord, CalculatedVectorOfTrust } from "../stored-identity-types.js";
-import logger from "../../../commons/logger.js";
+import logger from "../../../utilities/logger.js";
 import { vi, describe, it, afterEach, expect, Mocked } from "vitest";
 
-vi.mock("../../../commons/logger");
+vi.mock("../../../utilities/logger");
 
 const mockedLogger = logger as Mocked<typeof logger>;
 

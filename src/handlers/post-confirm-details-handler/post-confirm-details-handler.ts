@@ -1,9 +1,9 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import logger from "../../commons/logger.js";
+import logger from "../../utilities/logger.js";
 import { redirectToErrorPage, redirectToSessionExpiredPage } from "../../api/sis-api.js";
 import { updateSessionData } from "../../api/oauth-internal-api.js";
-import { getCookieValues } from "../../commons/cookie-utilities.js";
-import { SessionInvalidError } from "../../commons/errors.js";
+import { getCookieValues } from "../../utilities/cookie-utilities.js";
+import { SessionInvalidError } from "../../utilities/errors.js";
 
 export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const eventValues = new URLSearchParams(event.body || "");

@@ -3,7 +3,7 @@ import { Verifier, type VerifierOptions } from "@pact-foundation/pact";
 import type { Server } from "node:http";
 import path from "node:path";
 import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utilities.js";
-import * as AuditModule from "../../../commons/audit.js";
+import * as AuditModule from "../../../utilities/audit.js";
 import type { Configuration } from "../../../configuration/configuration.js";
 import * as ConfigurationModule from "../../../configuration/configuration.js";
 import { StoredIdentityRecord } from "../../../domain/stored-identity/stored-identity-types.js";
@@ -13,7 +13,7 @@ import { createServer as createProviderServer } from "./sis-provider-app.js";
 import { vi, describe, it, beforeAll, beforeEach, afterAll, expect } from "vitest";
 import { EVCSErrorResponse, EVCSIdentityResponse } from "../../../api/evcs-api.js";
 
-vi.mock("../../../commons/audit");
+vi.mock("../../../utilities/audit");
 
 const PORT = 8080;
 

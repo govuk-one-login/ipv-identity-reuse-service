@@ -1,5 +1,5 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
-import logger from "../../commons/logger.js";
+import logger from "../../utilities/logger.js";
 import { callSessionApi, SessionResult } from "../../api/oauth-internal-api.js";
 import { redirectToConfirmDetails, redirectToErrorPage } from "../../api/sis-api.js";
 import { getRequiredEnvironment } from "../../configuration/get-required-environment.js";

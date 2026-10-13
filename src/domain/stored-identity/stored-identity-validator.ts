@@ -1,14 +1,14 @@
 import { getConfiguration } from "../../configuration/configuration.js";
 import * as didResolutionService from "../../api/did-resolution-api.js";
 import { jwtVerify } from "jose";
-import logger from "../../commons/logger.js";
+import logger from "../../utilities/logger.js";
 import { EVCSIdentityResponse, getIdentityFromEVCS } from "../../api/evcs-api.js";
-import { getJwtBody, getJwtHeader } from "../../commons/jwt-utilities.js";
-import { HttpCodesEnum } from "../../commons/constants.js";
+import { getJwtBody, getJwtHeader } from "../../utilities/jwt-utilities.js";
+import { HttpCodesEnum } from "../../utilities/constants.js";
 import { APIGatewayProxyResult } from "aws-lambda";
-import { EVCSError, StoredIdentityValidationError, TokenValidationError } from "../../commons/errors.js";
+import { EVCSError, StoredIdentityValidationError, TokenValidationError } from "../../utilities/errors.js";
 import { UserIdentityErrorResponse } from "../../handlers/post-phase2-user-identity-handler/post-phase2-user-identity-types.js";
-import { auditIdentityRecordRead, auditIdentityRecordReturned } from "../../commons/audit.js";
+import { auditIdentityRecordRead, auditIdentityRecordReturned } from "../../utilities/audit.js";
 import {
   StoredIdentityRecord,
   isStoredIdentityRecord,

@@ -1,7 +1,7 @@
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
 import { StoredIdentityRecord, CalculatedVectorOfTrust } from "./stored-identity-types.js";
-import logger from "../../commons/logger.js";
-import { compareStringDescending } from "../../commons/string-utilities.js";
+import logger from "../../utilities/logger.js";
+import { compareStringDescending } from "../../utilities/string-utilities.js";
 
 export const calculateVot = (
   content: StoredIdentityRecord,

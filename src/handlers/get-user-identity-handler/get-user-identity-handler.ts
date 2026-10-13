@@ -1,5 +1,5 @@
 import { APIGatewayProxyEventBase, APIGatewayProxyResult, Context } from "aws-lambda";
-import logger from "../../commons/logger.js";
+import logger from "../../utilities/logger.js";
 import { GetUserIdentityResponse } from "./get-user-identity-types.js";
 import {
   getSignedStoredIdentity,
@@ -9,7 +9,7 @@ import { getSessionDetails, GetSessionSuccessResponse } from "../../api/oauth-in
 import { StoredIdentityRecord } from "../../domain/stored-identity/stored-identity-types.js";
 import { validateStoredIdentityAndVotByHash } from "../../domain/stored-identity/stored-identity-hashing.js";
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
-import { UserIdentityError } from "../../commons/errors.js";
+import { UserIdentityError } from "../../utilities/errors.js";
 import { APIGatewayAuthorizerResultContext } from "aws-lambda/common/api-gateway.js";
 
 const VTM = "https://oidc.account.gov.uk/trustmark";

@@ -18,7 +18,7 @@ RUN useradd $USER -b /app \
 
 COPY --chown=$USER /tests/acceptance/browser/ /app/tests/acceptance/browser/
 COPY --chown=$USER /tests/acceptance/shared/ /app/tests/acceptance/shared/
-COPY --chown=$USER /src/commons/ /app/src/commons/
+COPY --chown=$USER /src/utilities/ /app/src/utilities/
 COPY --chown=$USER /shared-test/ /app/shared-test/
 COPY --chown=$USER /package.json /app/
 COPY --chown=$USER /package-lock.json /app/

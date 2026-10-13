@@ -21,7 +21,7 @@ const mockSuccessfulEvidence: IdentityCheckClass = {
 const VALIDITY_PERIOD = 180;
 const FRAUD_ISSUERS = ["fraudCRI"];
 
-vi.mock("../../../commons/logger");
+vi.mock("../../../utilities/logger");
 
 describe("hasFraudCheckExpired", () => {
   beforeEach(() => {

@@ -1,7 +1,7 @@
 import { APIGatewayProxyResult } from "aws-lambda";
 import nunjucks from "nunjucks";
 import path from "node:path";
-import logger from "../../commons/logger.js";
+import logger from "../../utilities/logger.js";
 import mainPageTemplate from "./index.njk";
 import translations from "../../../locales/en/translation.json" with { type: "json" };
 import { getRequiredEnvironment } from "../../configuration/get-required-environment.js";

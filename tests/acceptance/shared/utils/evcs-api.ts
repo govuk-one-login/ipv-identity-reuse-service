@@ -3,7 +3,7 @@ import request from "supertest";
 import type { Response } from "superagent";
 import type { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
 import { getAppConfig } from "@aws-lambda-powertools/parameters/appconfig";
-import { getString } from "../../../../src/commons/string-utilities.js";
+import { getString } from "../../../../src/utilities/string-utilities.js";
 import { Configuration } from "../../../../src/configuration/configuration.js";
 import { CloudFormationOutputs, getCloudFormationOutput } from "./cloudformation.js";
 import { getEvcsApiKey } from "./ssm-utilities.js";

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
 import * as configuration from "../../../configuration/configuration.js";
 import * as DidResolutionService from "../../../api/did-resolution-api.js";
-import * as JwtUtilities from "../../../commons/jwt-utilities.js";
+import * as JwtUtilities from "../../../utilities/jwt-utilities.js";
 import * as StoredIdentityTypes from "../stored-identity-types.js";
 import { publicKeyJwk, getDefaultJwtHeader } from "../../../../shared-test/jwt-utilities.js";
 import {
@@ -16,16 +16,16 @@ import {
   validateCryptography,
   validateStoredIdentity,
 } from "../stored-identity-validator.js";
-import { getJwtSignature } from "../../../commons/jwt-utilities.js";
+import { getJwtSignature } from "../../../utilities/jwt-utilities.js";
 import { EVCSIdentityResponse } from "../../../api/evcs-api.js";
 import { Configuration } from "../../../configuration/configuration.js";
-import { EVCSError, StoredIdentityValidationError } from "../../../commons/errors.js";
+import { EVCSError, StoredIdentityValidationError } from "../../../utilities/errors.js";
 import { SignedStoredIdentity, StoredIdentityRecord } from "../stored-identity-types.js";
 import { KENNETH_DECERQUEIRA } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/names";
 import { KENNETH_DECERQUEIRA_BIRTH_DATE } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/birthdates";
 import { KENNETH_DECERQUERIA_ADDRESS } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/addresses";
 import { JWTInvalid } from "jose/errors";
-import logger from "../../../commons/logger.js";
+import logger from "../../../utilities/logger.js";
 
 const mockEVCSResponse = (response: EVCSIdentityResponse) => {
   (globalThis.fetch as Mock) = vi.fn().mockResolvedValue(
@@ -36,7 +36,7 @@ const mockEVCSResponse = (response: EVCSIdentityResponse) => {
   );
 };
 
-vi.mock("../../../commons/logger.js");
+vi.mock("../../../utilities/logger.js");
 
 const ALLOWED_CONTROLLER = "api.identity.dev.account.gov.uk";
 const FRAUD_ISSUER = "fraudCRI";

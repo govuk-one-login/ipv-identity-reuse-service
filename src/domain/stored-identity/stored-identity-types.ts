@@ -11,7 +11,7 @@ import {
   PostalAddressClass,
   SocialSecurityRecordDetailsClass,
 } from "@govuk-one-login/data-vocab/credentials.js";
-import { isArrayOfType, isNonNullObject, isString, isTypeWhenDefined } from "../../commons/type-utilities.js";
+import { isArrayOfType, isNonNullObject, isString, isTypeWhenDefined } from "../../utilities/type-utilities.js";
 
 export interface SignedStoredIdentity {
   signedStoredIdentityRecord: string;

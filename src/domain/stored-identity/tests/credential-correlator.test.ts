@@ -5,7 +5,7 @@ import { KENNETH_DECERQUEIRA } from "@govuk-one-login/ipv-trust-and-reuse-test-c
 import { KENNETH_DECERQUEIRA_BIRTH_DATE } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/birthdates";
 import { KENNETH_DECERQUERIA_ADDRESS } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/addresses";
 
-vi.mock("../../commons/logger");
+vi.mock("../../utilities/logger");
 
 describe("correlateCredentials", () => {
   it("should return true when signatures in stored identity match credentials", () => {
