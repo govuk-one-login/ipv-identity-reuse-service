@@ -92,7 +92,7 @@ Parameters:
   VpcStackName:
     Description: VPC Stack name
     Type: String
-    Default: spoke-vpc
+    Default: vpc
 
   OauthInternalStackName:
     Description: OAuth Internal Stack name

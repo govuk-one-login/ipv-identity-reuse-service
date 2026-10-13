@@ -9,5 +9,5 @@ region = "eu-west-2"
 confirm_changeset = false
 capabilities = "CAPABILITY_NAMED_IAM"
 disable_rollback = false
-parameter_overrides = "VpcStackName=\"spoke-vpc\" LogGroupRetentionInDays=\"30\" Environment=\"dev\" OauthInternalStackName=\"preview-main-oauth\""
+parameter_overrides = "VpcStackName=\"vpc\" LogGroupRetentionInDays=\"30\" Environment=\"dev\" OauthInternalStackName=\"preview-main-oauth\""
 image_repositories = []
