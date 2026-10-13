@@ -7,7 +7,10 @@ import mainPageTemplate from "./index.njk";
 const govukFrontendDistribution = path.join(path.dirname(require.resolve("govuk-frontend/package.json")), "dist");
 const nunjucksEnvironment = nunjucks.configure([process.env.LAMBDA_TASK_ROOT || "", govukFrontendDistribution]);
 
-export const lambdaHandler = (request: APIGatewayProxyEvent, context: Context): APIGatewayProxyResult => {
+export const lambdaHandler = async (
+  request: APIGatewayProxyEvent,
+  context: Context
+): Promise<APIGatewayProxyResult> => {
   logger.addContext(context);
   try {
     return {
@@ -23,7 +26,12 @@ export const lambdaHandler = (request: APIGatewayProxyEvent, context: Context): 
       },
     };
   } catch (error) {
-    logger.error(`Error in lambdaHandler event: ${error}`);
+    if (error instanceof Error) {
+      logger.error("Error in lambdaHandler event", { message: error.message, name: error.name });
+    } else {
+      logger.error("Error in lambdaHandler event", { error });
+    }
+
     return {
       statusCode: 500,
       body: "",
