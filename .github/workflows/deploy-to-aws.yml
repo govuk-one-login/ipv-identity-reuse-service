@@ -150,7 +150,7 @@ jobs:
             --no-fail-on-empty-changeset \
             --capabilities ${{ inputs.capabilities }} \
             --tags DeploymentSource="GitHub Actions" StackType=Preview \
-            --parameter-overrides Environment=dev SharedStackName=reuse-identity-shared "OauthInternalStackName=${OAUTH_STACK_NAME}" "CloudFrontDistributionStack=${{ inputs.cloudfront-distribution-stack }}" "VpcStackName=spoke-vpc"
+            --parameter-overrides Environment=dev SharedStackName=reuse-identity-shared "OauthInternalStackName=${OAUTH_STACK_NAME}" "CloudFrontDistributionStack=${{ inputs.cloudfront-distribution-stack }}"
 
       - name: Report deployment
         run: echo "Deployed stack \`$STACK_NAME\`" >> "$GITHUB_STEP_SUMMARY"

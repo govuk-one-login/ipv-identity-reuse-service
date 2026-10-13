@@ -304,7 +304,7 @@ if [[ "${OPERATION}" == "destroy" ]]; then
   fi
 else
   if "${DEPLOY_OAUTH}"; then
-    OAUTH_PARAMS=("SharedStackName=${SHARED_STACK_NAME}" "VpcStackName=spoke-vpc")
+    OAUTH_PARAMS=("SharedStackName=${SHARED_STACK_NAME}")
     if "${DEPLOY_ORCH}"; then
       ORCH_BASE_URL="https://orch-${ORCH_STACK_NAME}.reuse.dev.stubs.account.gov.uk"
       OAUTH_PARAMS+=("OrchestrationJwksEndpointOverride=${ORCH_BASE_URL}/.well-known/jwks.json")
@@ -314,7 +314,7 @@ else
   fi
 
   if "${DEPLOY_SIS}"; then
-    deploy "identity-reuse-service" "${SIS_STACK_NAME}" "OauthInternalStackName=${OAUTH_STACK_NAME}" "SharedStackName=${SHARED_STACK_NAME}" "VpcStackName=spoke-vpc"
+    deploy "identity-reuse-service" "${SIS_STACK_NAME}" "OauthInternalStackName=${OAUTH_STACK_NAME}" "SharedStackName=${SHARED_STACK_NAME}"
   fi
 
   if "${DEPLOY_ORCH}"; then
