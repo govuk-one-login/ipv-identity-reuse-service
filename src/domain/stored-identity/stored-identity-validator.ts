@@ -1,4 +1,4 @@
-import { getConfiguration } from "../../commons/configuration.js";
+import { getConfiguration } from "../../configuration/configuration.js";
 import * as didResolutionService from "../../api/did-resolution-api.js";
 import { jwtVerify } from "jose";
 import logger from "../../commons/logger.js";

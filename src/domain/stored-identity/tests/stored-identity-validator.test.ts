@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
-import * as configuration from "../../../commons/configuration.js";
+import * as configuration from "../../../configuration/configuration.js";
 import * as DidResolutionService from "../../../api/did-resolution-api.js";
 import * as JwtUtilities from "../../../commons/jwt-utilities.js";
 import * as StoredIdentityTypes from "../stored-identity-types.js";
@@ -18,7 +18,7 @@ import {
 } from "../stored-identity-validator.js";
 import { getJwtSignature } from "../../../commons/jwt-utilities.js";
 import { EVCSIdentityResponse } from "../../../api/evcs-api.js";
-import { Configuration } from "../../../commons/configuration.js";
+import { Configuration } from "../../../configuration/configuration.js";
 import { EVCSError, StoredIdentityValidationError } from "../../../commons/errors.js";
 import { SignedStoredIdentity, StoredIdentityRecord } from "../stored-identity-types.js";
 import { KENNETH_DECERQUEIRA } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/names";

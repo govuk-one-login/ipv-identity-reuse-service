@@ -10,7 +10,7 @@ import {
   GetLatestConfigurationCommandOutput,
 } from "@aws-sdk/client-appconfigdata";
 import { Uint8ArrayBlobAdapter } from "@smithy/util-stream";
-import { Configuration } from "../../../commons/configuration.js";
+import { Configuration } from "../../../configuration/configuration.js";
 import { MetricDimension, MetricName } from "../../../commons/metric-enum.js";
 import { AisMessage } from "../ais-message.js";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";

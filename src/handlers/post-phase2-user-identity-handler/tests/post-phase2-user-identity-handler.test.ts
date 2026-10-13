@@ -1,8 +1,8 @@
 import { APIGatewayProxyEvent, Context } from "aws-lambda";
 import { handler } from "../post-phase2-user-identity-handler.js";
 import { HttpCodesEnum } from "../../../commons/constants.js";
-import * as configuration from "../../../commons/configuration.js";
-import { Configuration } from "../../../commons/configuration.js";
+import * as configuration from "../../../configuration/configuration.js";
+import { Configuration } from "../../../configuration/configuration.js";
 import { UserIdentityRequest, UserIdentityResponse } from "../post-phase2-user-identity-types.js";
 import * as identityExpiryService from "../../../domain/verifiable-credential/identity-expiry-service.js";
 import * as AuditModule from "../../../commons/audit.js";

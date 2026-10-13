@@ -17,7 +17,7 @@ import translations from "../../../../locales/en/translation.json" with { type: 
 import * as identityExpiryService from "../../../domain/verifiable-credential/identity-expiry-service.js";
 import * as calculateVotModule from "../../../domain/stored-identity/calculate-vot.js";
 import * as storedIdentityValidator from "../../../domain/stored-identity/stored-identity-validator.js";
-import * as configuration from "../../../commons/configuration.js";
+import * as configuration from "../../../configuration/configuration.js";
 import * as jwtUtilities from "../../../commons/jwt-utilities.js";
 import { EVCSIdentityResponse } from "../../../api/evcs-api.js";
 import logger from "../../../commons/logger.js";

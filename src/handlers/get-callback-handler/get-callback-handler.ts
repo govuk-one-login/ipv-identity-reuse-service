@@ -4,7 +4,7 @@ import { getCookieValues } from "../../commons/cookie-utilities.js";
 import { isValidQueryParameters } from "./get-callback-types.js";
 import { getAuthorizationCode } from "../../api/oauth-internal-api.js";
 import { redirectToClient, redirectToErrorPage, redirectToSessionExpiredPage } from "../../api/sis-api.js";
-import { getRequiredEnvironment } from "../../commons/get-required-environment.js";
+import { getRequiredEnvironment } from "../../configuration/get-required-environment.js";
 import { SessionInvalidError } from "../../commons/errors.js";
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {

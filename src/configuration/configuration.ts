@@ -1,10 +1,10 @@
 import { getAppConfig } from "@aws-lambda-powertools/parameters/appconfig";
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
-import { getString } from "./string-utilities.js";
-import logger from "./logger.js";
+import { getString } from "../commons/string-utilities.js";
+import logger from "../commons/logger.js";
 import { getRequiredEnvironment } from "./get-required-environment.js";
-import { parseJsonWithTypeValidation } from "./type-utilities.js";
-import { ConfigurationError } from "./errors.js";
+import { parseJsonWithTypeValidation } from "../commons/type-utilities.js";
+import { ConfigurationError } from "../commons/errors.js";
 import { isValidConfiguration } from "./configuration-validator.js";
 
 export interface Configuration {

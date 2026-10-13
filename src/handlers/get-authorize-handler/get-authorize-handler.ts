@@ -2,7 +2,7 @@ import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-l
 import logger from "../../commons/logger.js";
 import { callSessionApi, SessionResult } from "../../api/oauth-internal-api.js";
 import { redirectToConfirmDetails, redirectToErrorPage } from "../../api/sis-api.js";
-import { getRequiredEnvironment } from "../../commons/get-required-environment.js";
+import { getRequiredEnvironment } from "../../configuration/get-required-environment.js";
 
 export type AuthorizationQueryStringParameters = {
   client_id: string;

@@ -4,7 +4,7 @@ import path from "node:path";
 import logger from "../../commons/logger.js";
 import mainPageTemplate from "./index.njk";
 import translations from "../../../locales/en/translation.json" with { type: "json" };
-import { getRequiredEnvironment } from "../../commons/get-required-environment.js";
+import { getRequiredEnvironment } from "../../configuration/get-required-environment.js";
 
 const govukFrontendDistribution = path.join(path.dirname(require.resolve("govuk-frontend/package.json")), "dist");
 const nunjucksEnvironment = nunjucks.configure([getRequiredEnvironment("LAMBDA_TASK_ROOT"), govukFrontendDistribution]);

@@ -4,9 +4,9 @@ import { AppConfigProvider } from "@aws-lambda-powertools/parameters/appconfig";
 import { SecretsProvider } from "@aws-lambda-powertools/parameters/secrets";
 import { Uint8ArrayBlobAdapter } from "@smithy/util-stream";
 import { ParameterNotFoundError } from "@aws-lambda-powertools/parameters";
-import { ConfigurationError, JsonParseError } from "../errors.js";
-import * as typeUtilities from "../type-utilities.js";
-import * as stringUtilities from "../string-utilities.js";
+import { ConfigurationError, JsonParseError } from "../../commons/errors.js";
+import * as typeUtilities from "../../commons/type-utilities.js";
+import * as stringUtilities from "../../commons/string-utilities.js";
 import * as getRequiredEnvironment from "../get-required-environment.js";
 
 vi.mock("../logger.js");

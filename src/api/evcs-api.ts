@@ -1,4 +1,4 @@
-import { getConfiguration, getServiceApiKey } from "../commons/configuration.js";
+import { getConfiguration, getServiceApiKey } from "../configuration/configuration.js";
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
 
 export type EVCSIdentityResponse = {

@@ -1,4 +1,4 @@
-import { isArrayOfType, isNonNullObject, isNumber, isString, isTypeWhenDefined } from "./type-utilities.js";
+import { isArrayOfType, isNonNullObject, isNumber, isString, isTypeWhenDefined } from "../commons/type-utilities.js";
 import { Configuration, ReturnCodeMapping } from "./configuration.js";
 
 export const isValidConfiguration = (value: unknown): value is Configuration => {
