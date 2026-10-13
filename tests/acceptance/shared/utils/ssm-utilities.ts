@@ -14,7 +14,7 @@ const getTestParameter = async (parameterName: string): Promise<string> => {
 };
 
 export const getEvcsApiKey = async (): Promise<string> => {
-  const apiKey = getString(await getSecret(await getTestParameter("APIKeySecretARN")));
+  const apiKey = getString(await getSecret(await getTestParameter("APIKeySecretARN"), { throwOnMissing: true }));
   if (!apiKey) {
     throw new Error("Could not fetch EVCS api key secret.");
   }

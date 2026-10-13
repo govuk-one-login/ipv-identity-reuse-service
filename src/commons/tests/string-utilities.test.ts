@@ -18,11 +18,6 @@ describe("getString", () => {
   it("should return an empty string when given an empty Uint8Array", () => {
     expect(getString(new Uint8Array())).toEqual("");
   });
-
-  it("should return undefined when given undefined", () => {
-    // eslint-disable-next-line unicorn/no-useless-undefined -- Parameter required
-    expect(getString(undefined)).toBeUndefined();
-  });
 });
 
 describe("isStringWithLength", () => {

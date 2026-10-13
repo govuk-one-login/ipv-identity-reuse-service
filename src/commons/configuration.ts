@@ -3,8 +3,11 @@ import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { getString } from "./string-utilities.js";
 import logger from "./logger.js";
 import { getRequiredEnvironment } from "./get-required-environment.js";
+import { parseJsonWithTypeValidation } from "./type-utilities.js";
+import { ConfigurationError } from "./errors.js";
+import { isValidConfiguration } from "./configuration-validator.js";
 
-export type Configuration = {
+export interface Configuration {
   evcsApiUrl: string;
   interventionCodesToInvalidate: string[];
   fraudIssuer: string[];
@@ -12,28 +15,40 @@ export type Configuration = {
   controllerAllowList: string[];
   drivingLicenceValidityPeriod?: number;
   dcmawIssuer?: string[];
-};
+  securityCheckIssuer: string;
+  ciReturnCodes: ReturnCodeMapping[];
+}
+
+export interface ReturnCodeMapping {
+  ci: string;
+  returnCode: string;
+}
 
 export const getConfiguration = async (): Promise<Configuration> => {
   logger.info("Retrieving configuration");
+  try {
+    const result: Uint8Array<ArrayBufferLike> = await getAppConfig(process.env.APP_CONFIG_NAME, {
+      environment: process.env.ENVIRONMENT,
+      application: process.env.APP_CONFIG_APPLICATION,
+      throwOnMissing: true,
+    });
 
-  const result = await getAppConfig(process.env.APP_CONFIG_NAME, {
-    environment: process.env.ENVIRONMENT,
-    application: process.env.APP_CONFIG_APPLICATION,
-  });
-
-  const stringResult = getString(result);
-  if (!stringResult) {
-    throw new Error("No configuration");
+    const stringResult = getString(result);
+    return parseJsonWithTypeValidation(stringResult, isValidConfiguration);
+  } catch (error) {
+    logger.error("Error reading config from AppConfig", { error });
+    throw new ConfigurationError("Error reading config from AppConfig", { cause: error });
   }
-
-  return JSON.parse(stringResult);
 };
 
-export const getServiceApiKey = async (): Promise<string | undefined> => {
+export const getServiceApiKey = async (): Promise<string> => {
   logger.info("Retrieving Service API Key");
-
-  return getString(await getSecret(process.env.EVCS_API_KEY_SECRET_ARN));
+  try {
+    return getString(await getSecret(getRequiredEnvironment("EVCS_API_KEY_SECRET_ARN"), { throwOnMissing: true }));
+  } catch (error) {
+    logger.error("Error reading EVCS API key from Secrets Manager");
+    throw new ConfigurationError("Error reading EVCS API key from Secrets Manager", { cause: error });
+  }
 };
 
 export const getOauthInternalApiUrl = (): string => {

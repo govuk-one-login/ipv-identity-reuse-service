@@ -19,6 +19,8 @@ const BASE_CONFIGURATION: Configuration = {
   controllerAllowList: [],
   dcmawIssuer: DCMAW_ISSUER,
   drivingLicenceValidityPeriod: 180,
+  securityCheckIssuer: "https://cimit.example.com",
+  ciReturnCodes: [{ ci: "G97", returnCode: "L" }],
 };
 
 const getConfiguration = vi.spyOn(configuration, "getConfiguration").mockResolvedValue(BASE_CONFIGURATION);
