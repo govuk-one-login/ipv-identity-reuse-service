@@ -1,8 +1,9 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import logger from "../../commons/logger.js";
-import { getCookieValues } from "../../commons/cookie-utilities.js";
-import { redirectToErrorPage } from "../../api/sis-api.js";
+import { redirectToErrorPage, redirectToSessionExpiredPage } from "../../api/sis-api.js";
 import { updateSessionData } from "../../api/oauth-internal-api.js";
+import { getCookieValues } from "../../commons/cookie-utilities.js";
+import { SessionInvalidError } from "../../commons/errors.js";
 
 export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const eventValues = new URLSearchParams(event.body || "");
@@ -17,8 +18,9 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
   if (!redirectUri || !state || !clientId) {
     throw new Error("One or more required query string parameters are undefined");
   }
+
   if (!sessionId) {
-    return redirectToErrorPage(domainName);
+    return redirectToSessionExpiredPage(domainName);
   }
 
   try {
@@ -41,6 +43,9 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
     };
   } catch (error) {
     logger.error(`Error in lambdaHandler event`, { error });
+    if (error instanceof SessionInvalidError) {
+      return redirectToSessionExpiredPage(domainName);
+    }
     return redirectToErrorPage(domainName);
   }
 };
@@ -55,6 +60,10 @@ const createAuthCode = async (sessionId: string) => {
       "session-id": sessionId,
     },
   });
+
+  if (responseFromCreateAuthCode.status == 404) {
+    throw new SessionInvalidError("No session found for the given sessionId");
+  }
 
   logger.info("Response from create-auth-code", { sessionId, statusCode: responseFromCreateAuthCode.status });
 };

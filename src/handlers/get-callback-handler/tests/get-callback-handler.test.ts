@@ -108,7 +108,7 @@ it("should return a 302 status code and redirect with an access_denied error, re
   });
 });
 
-it("should return a 302 status code and redirect to error page when the cookie is not set in the header", async () => {
+it("should return a 302 status code and redirect to session-expired page when the cookie is not set in the header", async () => {
   const event = createMockAPIGatewayProxyEvent({}, "");
   delete event.headers["Cookie"];
 
@@ -119,7 +119,7 @@ it("should return a 302 status code and redirect to error page when the cookie i
     statusCode: 302,
     body: "",
     headers: {
-      Location: "https://test-domain/error/unrecoverable",
+      Location: "https://test-domain/error/session-expired",
     },
   });
 });
