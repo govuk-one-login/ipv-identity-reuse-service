@@ -42,6 +42,11 @@ Parameters:
     Type: String
     Default: none
 
+  CommitSha:
+    Description: "Commit SHA supplied by the deployment pipeline"
+    Type: String
+    Default: ""
+
   CSLSSubscriptionEndpointArn:
     Description: CSLS Subscription endpoint
     Type: String
@@ -252,6 +257,7 @@ Resources:
         IsCredentialIssuer: "false"
         LambdaCodeSigningConfigArn: !Ref CodeSigningConfigArn
         LambdaDeploymentPreference: !Ref LambdaDeploymentPreference
+        LambdaVersionHash: !Ref CommitSha
         LambdaVpcConfiguration: "di-devplatform-deploy"
         PermissionsBoundaryArn: !Ref PermissionsBoundary
         VpcStackNameOverride: !Ref VpcStackName
@@ -540,6 +546,8 @@ Resources:
         - !Ref "AWS::NoValue"
       Tracing: Active
       AutoPublishAlias: live
+      AutoPublishAliasAllProperties: true
+      AutoPublishCodeSha256: !Ref CommitSha
       Layers: !If
         - DynaTraceEnabled
         - - !FindInMap [EnvironmentMap, !Ref Environment, DynatraceLayerArn]
