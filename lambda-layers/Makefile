@@ -19,3 +19,4 @@ build-GovUKFrontEndLayer:
 	mkdir -p $(ARTIFACTS_DIR)/nodejs/node_modules/@govuk-one-login
 	cp -R $(PROJECT_ROOT)/node_modules/govuk-frontend $(ARTIFACTS_DIR)/nodejs/node_modules/govuk-frontend
 	cp -R $(PROJECT_ROOT)/node_modules/@govuk-one-login/frontend-ui $(ARTIFACTS_DIR)/nodejs/node_modules/@govuk-one-login/frontend-ui
+	cp -R $(PROJECT_ROOT)/node_modules/@govuk-one-login/frontend-device-intelligence $(ARTIFACTS_DIR)/nodejs/node_modules/@govuk-one-login/frontend-device-intelligence

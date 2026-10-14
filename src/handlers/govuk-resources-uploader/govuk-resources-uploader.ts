@@ -14,7 +14,6 @@ import {
 import { globSync } from "fast-glob";
 import fs from "node:fs";
 import { Logger } from "@aws-lambda-powertools/logger";
-// import *  "@govuk-one-login/frontend-ui";
 
 const logger = new Logger();
 
@@ -54,6 +53,14 @@ const uploadResources = async (bucket: string) => {
     copyFileToBucket(client, frontendUiBundlePath, "frontend-ui.js", bucket),
     copyFileToBucket(client, frontendUiCjsPath.replace(/build\/.*/, "build/all.css"), "all.css", bucket),
   ]);
+
+  // Upload device intelligence
+  await copyFileToBucket(
+    client,
+    require.resolve("@govuk-one-login/frontend-device-intelligence").replace(/build\/.*/, "build/iife/index.js"),
+    "frontend-device-intelligence.js",
+    bucket
+  );
 };
 
 const copyFileToBucket = async (client: S3Client, path: string, key: string, bucket: string) => {
@@ -71,7 +78,11 @@ const copyFileToBucket = async (client: S3Client, path: string, key: string, buc
     await client.send(putCommand);
     logger.info("Uploaded file", { Bucket: bucket, Key: key, ContentType: contentType });
   } catch (error) {
-    logger.error("Failed to upload file", { Bucket: bucket, Key: key });
+    if (error instanceof Error) {
+      logger.error("Failed to upload file", { Bucket: bucket, Key: key, error: error.message, name: error.name });
+    } else {
+      logger.error("Failed to upload file", { Bucket: bucket, Key: key, error });
+    }
     throw error;
   }
 };

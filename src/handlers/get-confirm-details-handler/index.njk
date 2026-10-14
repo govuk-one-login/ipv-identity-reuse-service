@@ -150,4 +150,10 @@
     import { useSpinner } from '{{ rootPath | default("", true) }}/frontend-ui.js'
     useSpinner()
 </script>
+<script src="frontend-device-intelligence.js"></script>
+<script>
+    window.addEventListener('load', async () => {
+        await window.ThumbmarkJS.setFingerprintCookie();
+    });
+</script>
 {% endblock %}
