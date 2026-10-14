@@ -42,7 +42,6 @@ const metrics = new Metrics();
 
 const tryUpdateSessionData = async (sessionId: string, data: Record<string, string>): Promise<void> => {
   try {
-    logger.info(`Dummy log to bump version`);
     await updateSessionData(sessionId, data);
   } catch (error) {
     logger.error(`Failed to update session data: ${error}`);

@@ -24,7 +24,6 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
   }
 
   try {
-    logger.info(`Dummy log to bump version`);
     await createAuthCode(sessionId);
     if (action === "update-details") {
       await updateSessionData(sessionId, { errorDescription: "record_update_requested" });

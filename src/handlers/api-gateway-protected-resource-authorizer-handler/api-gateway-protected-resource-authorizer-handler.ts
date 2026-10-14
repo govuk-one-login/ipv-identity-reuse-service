@@ -32,7 +32,6 @@ export const handler = async (
   const authorizationHeader = getProperty(event.headers || {}, "authorization");
 
   if (!authorizationHeader) {
-    logger.info(`Dummy log to bump version`);
     logger.error("Authorization failed as no header present");
     addMetric(MetricName.AccessTokenValidationFailure, 1, {
       [MetricDimension.Reason]: "header-not-present",
