@@ -29,6 +29,11 @@ Parameters:
     Description: The name of the associated cloudfront distribution stack
     Default: "cfront-origin-distrib"
 
+  CommitSha:
+    Description: "Commit SHA supplied by the deployment pipeline"
+    Type: String
+    Default: ""
+
   CSLSSubscriptionEndpointArn:
     Type: String
     Description: CSLS Subscription endpoint
@@ -92,7 +97,7 @@ Parameters:
   VpcStackName:
     Description: VPC Stack name
     Type: String
-    Default: vpc
+    Default: spoke-vpc
 
   OauthInternalStackName:
     Description: OAuth Internal Stack name
@@ -377,6 +382,7 @@ Globals:
       - !Ref "AWS::NoValue"
     Tracing: Active
     AutoPublishAlias: live
+    AutoPublishAliasAllProperties: true
     Layers: !If
       - DynaTraceEnabled
       - - !FindInMap [EnvironmentMap, !Ref Environment, DynatraceNodeLayerArn]
@@ -407,6 +413,7 @@ Resources:
       Handler: get-authorize-handler.handler
       Role: !GetAtt GetAuthorizeHandlerRole.Arn
       KmsKeyArn: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
+      AutoPublishCodeSha256: !Ref CommitSha
       VpcConfig: !If
         - UseVpc
         - SecurityGroupIds:
@@ -535,6 +542,7 @@ Resources:
       Handler: get-user-identity-handler.handler
       Role: !GetAtt GetUserIdentityHandlerRole.Arn
       KmsKeyArn: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
+      AutoPublishCodeSha256: !Ref CommitSha
       VpcConfig: !If
         - UseVpc
         - SecurityGroupIds:
@@ -898,6 +906,7 @@ Resources:
       FunctionName: !Sub "${AWS::StackName}-GetConfirmDetailsHandler"
       Handler: get-confirm-details-handler.lambdaHandler
       Role: !GetAtt GetConfirmDetailsHandlerRole.Arn
+      AutoPublishCodeSha256: !Ref CommitSha
       VpcConfig: !If
         - UseVpc
         - SecurityGroupIds:
@@ -1007,6 +1016,7 @@ Resources:
       FunctionName: !Sub "${AWS::StackName}-PostConfirmDetailsHandler"
       Handler: post-confirm-details-handler.lambdaHandler
       Role: !GetAtt PostConfirmDetailsHandlerRole.Arn
+      AutoPublishCodeSha256: !Ref CommitSha
       Environment:
         Variables:
           DOMAIN_NAME: !Ref ReuseIdentityCustomDomain
@@ -1092,6 +1102,7 @@ Resources:
       FunctionName: !Sub "${AWS::StackName}-GetSessionExpiredHandler"
       Handler: get-session-expired-handler.lambdaHandler
       Role: !GetAtt GetSessionExpiredHandlerRole.Arn
+      AutoPublishCodeSha256: !Ref CommitSha
       Environment:
         Variables:
           NODE_OPTIONS: "--enable-source-maps"
@@ -1181,6 +1192,7 @@ Resources:
       FunctionName: !Sub "${AWS::StackName}-GetUnrecoverableErrorHandler"
       Handler: get-unrecoverable-error-handler.lambdaHandler
       Role: !GetAtt GetUnrecoverableErrorHandlerRole.Arn
+      AutoPublishCodeSha256: !Ref CommitSha
       Environment:
         Variables:
           NODE_OPTIONS: "--enable-source-maps"
@@ -1270,6 +1282,7 @@ Resources:
       FunctionName: !Sub "${AWS::StackName}-GetCallbackHandler"
       Handler: get-callback-handler.handler
       Role: !GetAtt GetCallbackHandlerRole.Arn
+      AutoPublishCodeSha256: !Ref CommitSha
       Environment:
         Variables:
           NODE_OPTIONS: "--enable-source-maps"
@@ -1711,6 +1724,7 @@ Resources:
       Handler: post-phase2-user-identity-handler.handler
       Role: !GetAtt PostPhase2UserIdentityHandlerRole.Arn
       KmsKeyArn: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
+      AutoPublishCodeSha256: !Ref CommitSha
       VpcConfig: !If
         - UseVpc
         - SecurityGroupIds:
@@ -1983,6 +1997,7 @@ Resources:
       Description: "A lambda function that handles a message received on the inbound TXMA queue"
       Handler: inbound-txma-queue-message-handler.handler
       Role: !GetAtt InboundTxmaQueueMessageHandlerRole.Arn
+      AutoPublishCodeSha256: !Ref CommitSha
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "MessagesReceived"

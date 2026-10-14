@@ -289,6 +289,7 @@ $DEPLOY_SIS && echo -e "\033[32mDeploy identity-reuse-service to stack ${SIS_STA
 $DEPLOY_OAUTH && echo -e "\033[32mDeploy oauth-internal to stack ${OAUTH_STACK_NAME}, pointing at shared stack ${SHARED_STACK_NAME}\033[0m"
 $DEPLOY_ORCH && echo -e "\033[32mDeploy orchestration-stub to stack ${ORCH_STACK_NAME} (profile: ${STUBS_PROFILE})\033[0m"
 echo
+COMMIT_SHA_VALUE="$(openssl rand --hex 32)"
 
 if [[ "${OPERATION}" == "destroy" ]]; then
   if "${DEPLOY_ORCH}"; then
@@ -304,7 +305,7 @@ if [[ "${OPERATION}" == "destroy" ]]; then
   fi
 else
   if "${DEPLOY_OAUTH}"; then
-    OAUTH_PARAMS=("SharedStackName=${SHARED_STACK_NAME}")
+    OAUTH_PARAMS=("SharedStackName=${SHARED_STACK_NAME}" "CommitSha=${COMMIT_SHA_VALUE}" "VpcStackName=spoke-vpc")
     if "${DEPLOY_ORCH}"; then
       ORCH_BASE_URL="https://orch-${ORCH_STACK_NAME}.reuse.dev.stubs.account.gov.uk"
       OAUTH_PARAMS+=("OrchestrationJwksEndpointOverride=${ORCH_BASE_URL}/.well-known/jwks.json")
@@ -314,7 +315,7 @@ else
   fi
 
   if "${DEPLOY_SIS}"; then
-    deploy "identity-reuse-service" "${SIS_STACK_NAME}" "OauthInternalStackName=${OAUTH_STACK_NAME}" "SharedStackName=${SHARED_STACK_NAME}"
+    deploy "identity-reuse-service" "${SIS_STACK_NAME}" "OauthInternalStackName=${OAUTH_STACK_NAME}" "SharedStackName=${SHARED_STACK_NAME}" "CommitSha=${COMMIT_SHA_VALUE}" "VpcStackName=spoke-vpc"
   fi
 
   if "${DEPLOY_ORCH}"; then
