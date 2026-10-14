@@ -801,6 +801,7 @@ Resources:
       FunctionName: !Sub "${AWS::StackName}-UploadGovUKFrontEndResourcesLambda"
       Handler: govuk-resources-uploader.handler
       Timeout: 30
+      AutoPublishCodeSha256: !Ref CommitSha
       Environment:
         Variables:
           NODE_OPTIONS: "--enable-source-maps"
