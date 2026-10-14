@@ -17,7 +17,6 @@ export const handler = async (event: SQSEvent): Promise<void> => {
   const records = parseSQSRecords(event.Records);
 
   logger.info(`Event received containing ${records.length} messages`);
-  logger.info(`Dummy log to bump version`);
   metrics.addMetric(MetricName.MessagesReceived, MetricUnit.Count, records.length);
 
   const config = await getConfiguration();
