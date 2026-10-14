@@ -44,6 +44,7 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
 
   let subject: string;
   try {
+    logger.info(`Dummy log to bump version`);
     subject = getUserIdFromJwt(authorisation);
   } catch {
     logger.error("Error whilst decoding Bearer token body");
