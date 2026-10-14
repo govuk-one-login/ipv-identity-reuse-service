@@ -113,6 +113,7 @@ export const handler = async (
   });
 
   try {
+    logger.info(`Dummy log to bump version`);
     switch (event.RequestType) {
       case "Create":
       case "Update": {

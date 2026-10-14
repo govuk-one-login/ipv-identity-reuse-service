@@ -15,6 +15,7 @@ export type AuthorizationQueryStringParameters = {
 
 export async function handler(event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> {
   logger.addContext(context);
+  logger.info(`Dummy log to bump version`);
 
   const {
     client_id: clientId,
