@@ -22,6 +22,7 @@ import { ConfirmDetailsQueryStringParameters } from "./get-confirm-details-handl
 import mainPageTemplate from "./index.njk";
 import { extractUserDetails } from "./user-details-content.js";
 import { getCookieValues } from "../../commons/cookie-utilities.js";
+import { contactUsUrl, addLanguageParam } from "@govuk-one-login/frontend-ui";
 
 const govukFrontendDistribution = path.join(path.dirname(require.resolve("govuk-frontend/package.json")), "dist");
 const nunjucksEnvironment = nunjucks.configure([
@@ -30,6 +31,9 @@ const nunjucksEnvironment = nunjucks.configure([
   path.join(govukFrontendDistribution, "../.."),
 ]);
 
+nunjucksEnvironment.addGlobal("addLanguageParam", addLanguageParam);
+nunjucksEnvironment.addGlobal("contactUsUrl", contactUsUrl);
+nunjucksEnvironment.addGlobal("MAY_2025_REBRAND_ENABLED", true);
 nunjucksEnvironment.addFilter("GDSDate", (dateString: string) => {
   return new Date(dateString).toLocaleDateString("en-GB", {
     day: "numeric",

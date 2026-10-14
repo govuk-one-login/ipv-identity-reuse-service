@@ -14,6 +14,7 @@ import {
 import { globSync } from "fast-glob";
 import fs from "node:fs";
 import { Logger } from "@aws-lambda-powertools/logger";
+// import *  "@govuk-one-login/frontend-ui";
 
 const logger = new Logger();
 
@@ -43,34 +44,36 @@ const uploadResources = async (bucket: string) => {
 
   const client = new S3Client({});
 
-  for (const key of fileList) {
-    const stream = fs.createReadStream(`${baseDirectory}/${key}`);
-    const putCommand = new PutObjectCommand({
-      Bucket: bucket,
-      Key: key,
-      Body: stream,
-      ContentType: getContentType(key),
-    });
-
-    await client.send(putCommand);
-
-    logger.info("Updating file", { Bucket: bucket, Key: key, ContentType: getContentType(key) });
-  }
+  await Promise.all(fileList.map(async (key) => copyFileToBucket(client, baseDirectory + "/" + key, key, bucket)));
 
   // Upload frontend-ui ESM bundle
   const frontendUiCjsPath = require.resolve("@govuk-one-login/frontend-ui/frontend");
   const frontendUiBundlePath = frontendUiCjsPath.replace("/cjs/", "/esm/").replace(".cjs", ".js");
-  const frontendUiKey = "frontend-ui.js";
-  const frontendUiStream = fs.createReadStream(frontendUiBundlePath);
-  const frontendUiPutCommand = new PutObjectCommand({
-    Bucket: bucket,
-    Key: frontendUiKey,
-    Body: frontendUiStream,
-    ContentType: "text/javascript",
-  });
 
-  await client.send(frontendUiPutCommand);
-  logger.info("Updating file", { Bucket: bucket, Key: frontendUiKey, ContentType: "text/javascript" });
+  await Promise.all([
+    copyFileToBucket(client, frontendUiBundlePath, "frontend-ui.js", bucket),
+    copyFileToBucket(client, frontendUiCjsPath.replace(/build\/.*/, "build/all.css"), "all.css", bucket),
+  ]);
+};
+
+const copyFileToBucket = async (client: S3Client, path: string, key: string, bucket: string) => {
+  try {
+    const stream = fs.createReadStream(path);
+    const contentType = getContentType(key);
+    const putCommand = new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: stream,
+      ContentType: contentType,
+    });
+
+    logger.info("Updating file", { Bucket: bucket, Key: key, ContentType: contentType });
+    await client.send(putCommand);
+    logger.info("Uploaded file", { Bucket: bucket, Key: key, ContentType: contentType });
+  } catch (error) {
+    logger.error("Failed to upload file", { Bucket: bucket, Key: key });
+    throw error;
+  }
 };
 
 const deleteResources = async (bucket: string) => {

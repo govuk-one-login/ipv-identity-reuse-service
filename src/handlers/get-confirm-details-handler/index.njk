@@ -3,10 +3,12 @@
 {% from "govuk/components/details/macro.njk" import govukDetails %}
 {% from "govuk/components/phase-banner/macro.njk" import govukPhaseBanner %}
 {% from "@govuk-one-login/frontend-ui/build/components/progress-button/macro.njk" import frontendUiProgressButton %}
+{% from "@govuk-one-login/frontend-ui/build/components/language-select/macro.njk" import frontendUiLanguageSelect %}
 
 {% extends "govuk/template.njk" %}
 {% block head %}
     <link rel="stylesheet" href="{{ rootPath | default("", true) }}/govuk-frontend.min.css">
+    <link rel="stylesheet" href="{{ rootPath | default("", true) }}/all.css">
     <base href="./confirm-details" />
     <style>
         .govuk-button-as-link {
@@ -36,6 +38,11 @@
             text: translations.betaBanner.tag
         },
         html: translations.betaBanner.content
+    }) }}
+    {{ frontendUiLanguageSelect({
+      translations: translations.languageSelect,
+      url: currentUrl,
+      activeLanguage: htmlLang
     }) }}
 {% endblock %}
 {% block content %}
