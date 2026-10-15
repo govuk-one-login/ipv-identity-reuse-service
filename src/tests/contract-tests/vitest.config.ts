@@ -1,8 +1,11 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
+
+const configurationDirectory = fileURLToPath(new URL(".", import.meta.url));
 
 export default defineConfig({
   test: {
-    projects: ["src/tests/contract-tests/consumer", "src/tests/contract-tests/provider"],
+    projects: [`${configurationDirectory}consumer`, `${configurationDirectory}provider`],
     bail: 1,
   },
 });

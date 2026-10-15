@@ -1,25 +1,20 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import logger from "../../utilities/logger.js";
+import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
+import { createAuthCode, updateSessionData } from "../../api/oauth-internal-api.js";
 import { redirectToErrorPage, redirectToSessionExpiredPage } from "../../api/sis-api.js";
-import { updateSessionData } from "../../api/oauth-internal-api.js";
 import { getCookieValues } from "../../utilities/cookie-utilities.js";
 import { SessionInvalidError } from "../../utilities/errors.js";
+import logger from "../../utilities/logger.js";
 
-export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const lambdaHandler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
   const eventValues = new URLSearchParams(event.body || "");
   const action = eventValues.get("action");
   const domainName = process.env.DOMAIN_NAME || "";
 
-  const redirectUri = eventValues.get("redirectUri");
-  const clientId = eventValues.get("client_id");
-  const state = eventValues.get("state");
+  logger.addContext(context);
+
   const sessionId = getCookieValues(event)?.get("identity_reuse_service_session");
-
-  if (!redirectUri || !state || !clientId) {
-    throw new Error("One or more required query string parameters are undefined");
-  }
-
   if (!sessionId) {
+    logger.error("Session ID parameter is missing");
     return redirectToSessionExpiredPage(domainName);
   }
 
@@ -29,16 +24,11 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
       await updateSessionData(sessionId, { errorDescription: "record_update_requested" });
     }
 
-    const url = new URL(`https://${process.env.PUBLIC_API}/oauth2/callback`);
-    url.searchParams.append("redirect_uri", redirectUri);
-    url.searchParams.append("state", state);
-    url.searchParams.append("client_id", clientId);
-
     return {
       statusCode: 302,
       body: "",
       headers: {
-        Location: url.href,
+        Location: `https://${process.env.PUBLIC_API}/oauth2/callback`,
       },
     };
   } catch (error) {
@@ -48,22 +38,4 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
     }
     return redirectToErrorPage(domainName);
   }
-};
-
-const createAuthCode = async (sessionId: string) => {
-  const oauthInternalApiUrl = process.env.OAUTH_INTERNAL_API_URL;
-  const url = new URL(`${oauthInternalApiUrl}/api/create-auth-code`);
-
-  const responseFromCreateAuthCode = await fetch(url, {
-    method: "POST",
-    headers: {
-      "session-id": sessionId,
-    },
-  });
-
-  if (responseFromCreateAuthCode.status == 404) {
-    throw new SessionInvalidError("No session found for the given sessionId");
-  }
-
-  logger.info("Response from create-auth-code", { sessionId, statusCode: responseFromCreateAuthCode.status });
 };

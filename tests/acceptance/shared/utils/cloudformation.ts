@@ -29,7 +29,7 @@ export const getCloudFormationStack = async (stackName: string): Promise<Describ
     const client = new CloudFormationClient();
     cloudFormationStack = await client.send(
       new DescribeStacksCommand({
-        StackName: process.env.SAM_STACK_NAME,
+        StackName: stackName,
       })
     );
 
@@ -39,7 +39,8 @@ export const getCloudFormationStack = async (stackName: string): Promise<Describ
 };
 
 export const getCloudFormationParameter = async (parameter: string): Promise<string> => {
-  const stackDescription = await getCloudFormationStack(process.env.SAM_STACK_NAME || SHARED_SIS_STACK);
+  const stackName = process.env.SAM_STACK_NAME || SHARED_SIS_STACK;
+  const stackDescription = await getCloudFormationStack(stackName);
   const output = stackDescription.Stacks?.flatMap((stack) =>
     stack.Parameters?.filter(({ ParameterKey }) => ParameterKey === parameter)
   ).shift();
@@ -52,7 +53,8 @@ export const getCloudFormationParameter = async (parameter: string): Promise<str
 };
 
 export const getCloudFormationOutput = async (logicalResourceId: CloudFormationOutputsType): Promise<string> => {
-  const stackDescription = await getCloudFormationStack(process.env.SAM_STACK_NAME || SHARED_SIS_STACK);
+  const stackName = process.env.SAM_STACK_NAME || SHARED_SIS_STACK;
+  const stackDescription = await getCloudFormationStack(stackName);
   const output = stackDescription.Stacks?.flatMap((stack) =>
     stack.Outputs?.filter((output) => output.OutputKey === logicalResourceId)
   ).shift();

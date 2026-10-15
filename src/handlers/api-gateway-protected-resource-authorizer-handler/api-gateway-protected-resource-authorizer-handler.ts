@@ -1,7 +1,6 @@
 import {
   APIGatewayAuthorizerResult,
   APIGatewayRequestAuthorizerEvent,
-  APIGatewayRequestAuthorizerEventHeaders,
   Context,
   PolicyDocument,
   Statement,
@@ -100,16 +99,6 @@ export const handler = async (
     throw new Error("Unexpected error", { cause: error });
   }
   throw new Error("Unauthorized");
-};
-
-export const lowerCaseHeaderKeys = function (
-  eventHeaders: APIGatewayRequestAuthorizerEventHeaders
-): APIGatewayRequestAuthorizerEventHeaders {
-  const headers: APIGatewayRequestAuthorizerEventHeaders = {};
-  for (const key of Object.keys(eventHeaders)) {
-    headers[key.toLowerCase()] = eventHeaders[key];
-  }
-  return headers;
 };
 
 function addMetric(metricName: MetricName, value: number = 1, dimensions?: Dimensions) {
