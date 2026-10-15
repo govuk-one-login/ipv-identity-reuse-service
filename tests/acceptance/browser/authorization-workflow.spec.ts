@@ -14,6 +14,7 @@ import { StoredIdentityClaims } from "../../../src/domain/stored-identity/stored
 import { KENNETH_DECERQUEIRA } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/names";
 import { KENNETH_DECERQUEIRA_BIRTH_DATE } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/birthdates";
 import { KENNETH_DECERQUERIA_ADDRESS } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/addresses";
+import { BadRequestErrorPage } from "./pages/bad-request-error.page.js";
 
 const AN_HOUR = 60 * 60;
 const TEN_MINUTES = 10 * 60;
@@ -146,6 +147,22 @@ test.describe("Authorization workflow", () => {
         await expect(page).toHaveURL((url) => {
           return url.pathname === UnrecoverableErrorPage.path;
         });
+      });
+    }
+  });
+
+  test.describe("rejects an authorization request without required parameters", () => {
+    const badRequests: ReadonlyArray<{ scenario: string; queryParams: string }> = [
+      { scenario: "the request parameter is missing", queryParams: "client_id=orchestrator" },
+      { scenario: "the client_id parameter is missing", queryParams: "request=jar" },
+    ];
+
+    for (const { scenario, queryParams } of badRequests) {
+      test(`sends the user to the bad request error page when ${scenario}`, async ({ page, badRequestError }) => {
+        await page.goto(sisPublicUrl + "/oauth2/authorize?" + queryParams);
+        await expect(page).toHaveURL((url) => url.origin === sisPublicUrl && url.pathname === BadRequestErrorPage.path);
+        await expect(badRequestError.heading).toBeVisible();
+        await expect(badRequestError.message).toBeVisible();
       });
     }
   });
