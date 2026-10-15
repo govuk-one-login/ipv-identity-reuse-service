@@ -2,7 +2,7 @@ import { getResolver } from "web-did-resolver";
 import { Resolver, VerificationMethod, parse } from "did-resolver";
 
 import { JWK } from "jose";
-import logger from "../commons/logger.js";
+import logger from "../utilities/logger.js";
 
 const cache = new Map<string, JWK>();
 const webResolver = getResolver();

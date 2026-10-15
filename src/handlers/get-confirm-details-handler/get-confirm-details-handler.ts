@@ -5,11 +5,11 @@ import path from "node:path";
 import nunjucks from "nunjucks";
 import translations from "../../../locales/en/translation.json" with { type: "json" };
 import { redirectToErrorPage, redirectToOauthCallBack, redirectToSessionExpiredPage } from "../../api/sis-api.js";
-import { SessionInvalidError, StoredIdentityValidationError } from "../../commons/errors.js";
+import { SessionInvalidError, StoredIdentityValidationError } from "../../utilities/errors.js";
 import { getSessionDetails, updateSessionData } from "../../api/oauth-internal-api.js";
-import { getJwtBody } from "../../commons/jwt-utilities.js";
-import logger from "../../commons/logger.js";
-import { MetricDimension, MetricName } from "../../commons/metric-enum.js";
+import { getJwtBody } from "../../utilities/jwt-utilities.js";
+import logger from "../../utilities/logger.js";
+import { MetricDimension, MetricName } from "../../utilities/metric-enum.js";
 import { calculateVot } from "../../domain/stored-identity/calculate-vot.js";
 import { createStoredIdentityHash } from "../../domain/stored-identity/stored-identity-hashing.js";
 import { StoredIdentityRecord, CalculatedVectorOfTrust } from "../../domain/stored-identity/stored-identity-types.js";
@@ -21,7 +21,7 @@ import { hasIdentityExpired } from "../../domain/verifiable-credential/identity-
 import { ConfirmDetailsQueryStringParameters } from "./get-confirm-details-handler-types.js";
 import mainPageTemplate from "./index.njk";
 import { extractUserDetails } from "./user-details-content.js";
-import { getCookieValues } from "../../commons/cookie-utilities.js";
+import { getCookieValues } from "../../utilities/cookie-utilities.js";
 
 const govukFrontendDistribution = path.join(path.dirname(require.resolve("govuk-frontend/package.json")), "dist");
 const nunjucksEnvironment = nunjucks.configure([

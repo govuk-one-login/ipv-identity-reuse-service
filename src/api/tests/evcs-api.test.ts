@@ -1,7 +1,7 @@
 import { IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials.js";
 import { describe, expect, it, vitest } from "vitest";
 import { getDefaultJwtHeader, sign } from "../../../shared-test/jwt-utilities.js";
-import { getConfiguration, getServiceApiKey, type Configuration } from "../../commons/configuration.js";
+import { getConfiguration, getServiceApiKey, type Configuration } from "../../configuration/configuration.js";
 import { getIdentityFromEVCS, invalidateIdentityInEVCS, VerifiableCredentialObject } from "../evcs-api.js";
 
 describe("temporarily empty", () => {
@@ -11,7 +11,7 @@ describe("temporarily empty", () => {
   });
 });
 
-vitest.mock("../../commons/configuration.js");
+vitest.mock("../../configuration/configuration.js");
 
 describe("getIdentityFromEVCS", () => {
   it("should call fetch with the correct values", async () => {

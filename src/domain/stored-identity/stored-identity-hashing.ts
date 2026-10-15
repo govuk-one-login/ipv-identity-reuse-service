@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
-import { compareStringAscending } from "../../commons/string-utilities.js";
+import { compareStringAscending } from "../../utilities/string-utilities.js";
 import { CalculatedVectorOfTrust, SignedStoredIdentity } from "./stored-identity-types.js";
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
-import { StoredIdentityHashMismatchError } from "../../commons/errors.js";
+import { StoredIdentityHashMismatchError } from "../../utilities/errors.js";
 
 export const createStoredIdentityHash = (
   storedIdentityJwt: string,

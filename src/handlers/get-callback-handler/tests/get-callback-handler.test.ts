@@ -1,7 +1,7 @@
 import { APIGatewayEventRequestContextWithAuthorizer, APIGatewayProxyEvent } from "aws-lambda";
 import { afterEach, beforeEach, expect, it, vitest } from "vitest";
 import { handler } from "../get-callback-handler.js";
-import { getCookieValues } from "../../../commons/cookie-utilities.js";
+import { getCookieValues } from "../../../utilities/cookie-utilities.js";
 import * as oauthInternalService from "../../../api/oauth-internal-api.js";
 
 process.env.DOMAIN_NAME = "test-domain";

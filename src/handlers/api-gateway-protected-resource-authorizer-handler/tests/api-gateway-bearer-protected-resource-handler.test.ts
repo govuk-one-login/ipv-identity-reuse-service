@@ -4,7 +4,7 @@ import { APIGatewayEventRequestContextWithAuthorizer, APIGatewayRequestAuthorize
 import { mockClient } from "aws-sdk-client-mock";
 import { DynamoDBDocumentClient, QueryCommandOutput } from "@aws-sdk/lib-dynamodb";
 import { AttributeValue, QueryCommand } from "@aws-sdk/client-dynamodb";
-import { sha256Hash } from "../../../commons/hashing.js";
+import { sha256Hash } from "../../../utilities/hashing.js";
 
 describe("api-gateway-bearer-token-authorizer-handler", () => {
   const metricSpy = vi.spyOn(metric, "addMetric");

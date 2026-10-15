@@ -10,15 +10,15 @@ import {
   GetLatestConfigurationCommandOutput,
 } from "@aws-sdk/client-appconfigdata";
 import { Uint8ArrayBlobAdapter } from "@smithy/util-stream";
-import { Configuration } from "../../../commons/configuration.js";
-import { MetricDimension, MetricName } from "../../../commons/metric-enum.js";
+import { Configuration } from "../../../configuration/configuration.js";
+import { MetricDimension, MetricName } from "../../../utilities/metric-enum.js";
 import { AisMessage } from "../ais-message.js";
 import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
 import { describe, beforeAll, afterEach, it, expect, vi } from "vitest";
 import "aws-sdk-client-mock-vitest/extend";
 
-vi.mock("../../../commons/logger");
+vi.mock("../../../utilities/logger");
 
 const createTestSQSEvent = <T extends object>(...events: T[]): SQSEvent => ({
   Records: events.map((event) => ({ body: JSON.stringify(event) }) as never as SQSRecord),
@@ -30,6 +30,8 @@ const DEFAULT_CONFIGURATION: Configuration = Object.freeze({
   fraudIssuer: ["fraudCRI"],
   fraudValidityPeriod: 4518,
   controllerAllowList: ["did:web:api.identity.dev.account.gov.uk"],
+  securityCheckIssuer: "https://cimit.example.com",
+  ciReturnCodes: [{ ci: "G97", returnCode: "L" }],
 });
 
 const VALID_TXMA_MESSAGE: AisMessage = Object.freeze({

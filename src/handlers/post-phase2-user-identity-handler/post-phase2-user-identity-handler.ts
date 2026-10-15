@@ -1,15 +1,15 @@
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
-import { auditIdentityRecordRead, auditIdentityRecordReturned } from "../../commons/audit.js";
-import { HttpCodesEnum } from "../../commons/constants.js";
-import { getJwtBody } from "../../commons/jwt-utilities.js";
-import logger from "../../commons/logger.js";
+import { auditIdentityRecordRead, auditIdentityRecordReturned } from "../../utilities/audit.js";
+import { HttpCodesEnum } from "../../utilities/constants.js";
+import { getJwtBody } from "../../utilities/jwt-utilities.js";
+import logger from "../../utilities/logger.js";
 import { EVCSIdentityResponse } from "../../api/evcs-api.js";
 import { calculateVot } from "../../domain/stored-identity/calculate-vot.js";
 import { hasIdentityExpired } from "../../domain/verifiable-credential/identity-expiry-service.js";
 import { UserIdentityRequest, UserIdentityResponse } from "./post-phase2-user-identity-types.js";
 import { StoredIdentityRecord, CalculatedVectorOfTrust } from "../../domain/stored-identity/stored-identity-types.js";
-import { getProperty } from "../../commons/case-insensitive-header-utilities.js";
+import { getProperty } from "../../utilities/case-insensitive-header-utilities.js";
 import {
   getUserIdFromJwt,
   getIdentityFromCredentialStore,
@@ -17,7 +17,7 @@ import {
   createAndLogErrorResponse,
   validateStoredIdentity,
 } from "../../domain/stored-identity/stored-identity-validator.js";
-import { EVCSError } from "../../commons/errors.js";
+import { EVCSError } from "../../utilities/errors.js";
 import { VotEnum } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_READ.js";
 import { ResponseBody } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_RETURNED.js";
 

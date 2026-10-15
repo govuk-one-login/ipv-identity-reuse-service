@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, it, vitest, describe } from "vitest";
 import { callSessionApi, getAuthorizationCode, getSessionDetails, updateSessionData } from "../oauth-internal-api.js";
-import { GetSessionError, SessionInvalidError } from "../../commons/errors.js";
+import { GetSessionError, SessionInvalidError } from "../../utilities/errors.js";
 import { URL } from "node:url";
 
 const { mockError } = vitest.hoisted(() => {

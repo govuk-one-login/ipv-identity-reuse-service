@@ -1,25 +1,25 @@
 import { APIGatewayProxyEvent, Context } from "aws-lambda";
 import { handler } from "../post-phase2-user-identity-handler.js";
-import { HttpCodesEnum } from "../../../commons/constants.js";
-import * as configuration from "../../../commons/configuration.js";
-import { Configuration } from "../../../commons/configuration.js";
+import { HttpCodesEnum } from "../../../utilities/constants.js";
+import * as configuration from "../../../configuration/configuration.js";
+import { Configuration } from "../../../configuration/configuration.js";
 import { UserIdentityRequest, UserIdentityResponse } from "../post-phase2-user-identity-types.js";
 import * as identityExpiryService from "../../../domain/verifiable-credential/identity-expiry-service.js";
-import * as AuditModule from "../../../commons/audit.js";
+import * as AuditModule from "../../../utilities/audit.js";
 import * as ValidateStoredIdentity from "../../../domain/stored-identity/stored-identity-validator.js";
 import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utilities.js";
-import logger from "../../../commons/logger.js";
+import logger from "../../../utilities/logger.js";
 import { beforeEach, describe, expect, it, Mock, vi } from "vitest";
 import {
   createCredentialStoreIdentityResponse,
   createSignedIdentityCheckCredentialJWT,
 } from "../../../../shared-test/evcs-api-utilities.js";
-import { EVCSError, TokenValidationError } from "../../../commons/errors.js";
+import { EVCSError, TokenValidationError } from "../../../utilities/errors.js";
 import { EVCSIdentityResponse } from "../../../api/evcs-api.js";
 import { VerifiableCredentialJWT } from "../../../domain/verifiable-credential/verifiable-credential-types.js";
 
-vi.mock("../../../commons/logger");
-vi.mock("../../../commons/audit");
+vi.mock("../../../utilities/logger");
+vi.mock("../../../utilities/audit");
 vi.mock("../../../domain/stored-identity/stored-identity-validator", async (importOriginal) => ({
   ...(await importOriginal<object>()),
   getUserIdFromJwt: vi.fn(),

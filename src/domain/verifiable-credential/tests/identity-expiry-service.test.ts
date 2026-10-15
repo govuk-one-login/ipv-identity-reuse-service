@@ -1,11 +1,11 @@
 import { hasIdentityExpired } from "../identity-expiry-service.js";
-import { Configuration } from "../../../commons/configuration.js";
+import { Configuration } from "../../../configuration/configuration.js";
 import { VerifiableCredentialJWT } from "../verifiable-credential-types.js";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 
 import * as fraudCheckService from "../fraud-check-service.js";
 import * as drivingLicenceExpiryService from "../driving-licence-expiry-service.js";
-import * as configuration from "../../../commons/configuration.js";
+import * as configuration from "../../../configuration/configuration.js";
 import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utilities.js";
 
 const FRAUD_ISSUER = ["fraudCRI"];
@@ -19,6 +19,8 @@ const BASE_CONFIGURATION: Configuration = {
   controllerAllowList: [],
   dcmawIssuer: DCMAW_ISSUER,
   drivingLicenceValidityPeriod: 180,
+  securityCheckIssuer: "https://cimit.example.com",
+  ciReturnCodes: [{ ci: "G97", returnCode: "L" }],
 };
 
 const getConfiguration = vi.spyOn(configuration, "getConfiguration").mockResolvedValue(BASE_CONFIGURATION);

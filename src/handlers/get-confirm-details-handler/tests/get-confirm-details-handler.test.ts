@@ -10,17 +10,17 @@ import {
   GetSessionError,
   SessionInvalidError,
   StoredIdentityValidationError,
-} from "../../../commons/errors.js";
-import { HttpCodesEnum } from "../../../commons/constants.js";
+} from "../../../utilities/errors.js";
+import { HttpCodesEnum } from "../../../utilities/constants.js";
 import { getSessionDetails, updateSessionData } from "../../../api/oauth-internal-api.js";
 import translations from "../../../../locales/en/translation.json" with { type: "json" };
 import * as identityExpiryService from "../../../domain/verifiable-credential/identity-expiry-service.js";
 import * as calculateVotModule from "../../../domain/stored-identity/calculate-vot.js";
 import * as storedIdentityValidator from "../../../domain/stored-identity/stored-identity-validator.js";
-import * as configuration from "../../../commons/configuration.js";
-import * as jwtUtilities from "../../../commons/jwt-utilities.js";
+import * as configuration from "../../../configuration/configuration.js";
+import * as jwtUtilities from "../../../utilities/jwt-utilities.js";
 import { EVCSIdentityResponse } from "../../../api/evcs-api.js";
-import logger from "../../../commons/logger.js";
+import logger from "../../../utilities/logger.js";
 import { KENNETH_DECERQUEIRA } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/names";
 import { KENNETH_DECERQUEIRA_BIRTH_DATE } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/birthdates";
 import { KENNETH_DECERQUERIA_ADDRESS } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/addresses";
@@ -36,7 +36,7 @@ vi.mock("nunjucks", () => ({
   },
 }));
 
-vitest.mock("../../../commons/logger");
+vitest.mock("../../../utilities/logger");
 vitest.mock("@aws-lambda-powertools/metrics", () => ({
   Metrics: class {
     addDimensions = vi.fn();
@@ -67,7 +67,7 @@ vi.mock("../../../api/oauth-internal-api", () => ({
   updateSessionData: vi.fn().mockImplementation(() => Promise.resolve()),
 }));
 
-vi.mock("../../../commons/cookie-utilities", () => ({
+vi.mock("../../../utilities/cookie-utilities", () => ({
   getCookieValues: vi.fn().mockReturnValue(new Map([["identity_reuse_service_session", "test-session-id"]])),
 }));
 
@@ -248,7 +248,7 @@ describe("handler record validation", () => {
   });
 
   it("returns an error when session cookie is missing", async () => {
-    const { getCookieValues } = await import("../../../commons/cookie-utilities.js");
+    const { getCookieValues } = await import("../../../utilities/cookie-utilities.js");
     (getCookieValues as Mock).mockReturnValueOnce(new Map());
     const result = await lambdaHandler({
       queryStringParameters: { redirect_uri: "test.com", state: "state", client_id: "client_id" },

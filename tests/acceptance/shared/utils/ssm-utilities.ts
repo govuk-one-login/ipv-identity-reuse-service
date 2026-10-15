@@ -1,6 +1,6 @@
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { getParameter } from "@aws-lambda-powertools/parameters/ssm";
-import { getString } from "../../../../src/commons/string-utilities.js";
+import { getString } from "../../../../src/utilities/string-utilities.js";
 
 const getTestParameter = async (parameterName: string): Promise<string> => {
   const stackName = process.env.SHARED_STACK_NAME || "reuse-identity-shared";
@@ -14,7 +14,7 @@ const getTestParameter = async (parameterName: string): Promise<string> => {
 };
 
 export const getEvcsApiKey = async (): Promise<string> => {
-  const apiKey = getString(await getSecret(await getTestParameter("APIKeySecretARN")));
+  const apiKey = getString(await getSecret(await getTestParameter("APIKeySecretARN"), { throwOnMissing: true }));
   if (!apiKey) {
     throw new Error("Could not fetch EVCS api key secret.");
   }

@@ -1,9 +1,9 @@
 import { describe, it, expect, vitest } from "vitest";
 import { extractUserDetails, formatAddress } from "../user-details-content.js";
 import { StoredIdentityRecord, StoredIdentityClaims } from "../../../domain/stored-identity/stored-identity-types.js";
-import { StoredIdentityValidationError } from "../../../commons/errors.js";
+import { StoredIdentityValidationError } from "../../../utilities/errors.js";
 
-vitest.mock("../../../commons/logger");
+vitest.mock("../../../utilities/logger");
 
 const buildStoredIdentityRecord = (claims: StoredIdentityClaims): StoredIdentityRecord => ({
   sub: "user-sub",

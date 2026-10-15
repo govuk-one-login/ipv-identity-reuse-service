@@ -55,3 +55,17 @@ export class SessionInvalidError extends Error {
     this.name = "SessionInvalidError";
   }
 }
+
+export class JsonParseError extends Error {
+  constructor(message?: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = "JsonParseError";
+  }
+}
+
+export class ConfigurationError extends Error {
+  constructor(message?: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = "ConfigurationError";
+  }
+}

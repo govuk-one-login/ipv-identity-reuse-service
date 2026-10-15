@@ -1,8 +1,8 @@
-import { getConfiguration } from "../../commons/configuration.js";
+import { getConfiguration } from "../../configuration/configuration.js";
 import { hasDrivingLicenceExpired } from "./driving-licence-expiry-service.js";
 import { hasFraudCheckExpired, getFraudVc } from "./fraud-check-service.js";
 import { VerifiableCredentialJWT } from "./verifiable-credential-types.js";
-import { getJwtBody } from "../../commons/jwt-utilities.js";
+import { getJwtBody } from "../../utilities/jwt-utilities.js";
 
 export type IdentityExpiryResult = {
   fraudExpired: boolean;

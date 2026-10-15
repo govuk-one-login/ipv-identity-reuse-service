@@ -3,7 +3,7 @@ import {
   DescribeStacksCommand,
   DescribeStacksCommandOutput,
 } from "@aws-sdk/client-cloudformation";
-import { getString } from "../../../../src/commons/string-utilities.js";
+import { getString } from "../../../../src/utilities/string-utilities.js";
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 
 export const CloudFormationOutputs = {
@@ -69,7 +69,7 @@ export const getCloudFormationResourceSecretValue = async (
 ): Promise<string> => {
   const secretPath = await getCloudFormationOutput(logicalResourceId);
 
-  const secretValue = getString(await getSecret(secretPath));
+  const secretValue = getString(await getSecret(secretPath, { throwOnMissing: true }));
 
   if (!secretValue) {
     throw new Error(`${logicalResourceId} returned invalid result`);

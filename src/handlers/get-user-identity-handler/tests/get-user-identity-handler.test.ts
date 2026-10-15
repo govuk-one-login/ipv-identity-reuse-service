@@ -24,9 +24,9 @@ import {
   StoredIdentityHashMismatchError,
   StoredIdentityValidationError,
   UserIdentityError,
-} from "../../../commons/errors.js";
+} from "../../../utilities/errors.js";
 import { APIGatewayAuthorizerResultContext } from "aws-lambda/common/api-gateway.js";
-import logger from "../../../commons/logger.js";
+import logger from "../../../utilities/logger.js";
 
 vi.mock("../../../api/oauth-internal-api.js", () => ({
   getSessionDetails: vi.fn(),
@@ -41,7 +41,7 @@ vi.mock("../../../domain/stored-identity/stored-identity-hashing.js", () => ({
   validateStoredIdentityAndVotByHash: vi.fn(),
 }));
 
-vi.mock("../../../commons/logger.js");
+vi.mock("../../../utilities/logger.js");
 
 beforeEach(() => {
   vi.resetAllMocks();

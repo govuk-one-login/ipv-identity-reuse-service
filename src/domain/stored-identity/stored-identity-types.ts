@@ -11,6 +11,7 @@ import {
   PostalAddressClass,
   SocialSecurityRecordDetailsClass,
 } from "@govuk-one-login/data-vocab/credentials.js";
+import { isArrayOfType, isNonNullObject, isString, isTypeWhenDefined } from "../../utilities/type-utilities.js";
 
 export interface SignedStoredIdentity {
   signedStoredIdentityRecord: string;
@@ -43,95 +44,101 @@ export interface StoredIdentityClaims {
 export type CalculatedVectorOfTrust = IdentityVectorOfTrust | "P0";
 
 export const isStoredIdentityRecord = (value: unknown): value is StoredIdentityRecord => {
-  if (typeof value !== "object" || value === null) return false;
-
-  const storedIdentityRecordObject = value as Record<string, unknown>;
-  if (
-    typeof storedIdentityRecordObject.sub !== "string" ||
-    !isArrayOfType(storedIdentityRecordObject.credentials, isString) ||
-    !isIdentityVectorOfTrust(storedIdentityRecordObject.vot) ||
-    (!!storedIdentityRecordObject.max_vot && !isIdentityVectorOfTrust(storedIdentityRecordObject.max_vot))
-  ) {
-    return false;
-  }
-
-  return !!storedIdentityRecordObject.claims && isStoredIdentityClaims(storedIdentityRecordObject.claims);
+  if (!isNonNullObject(value)) return false;
+  const object = value as Record<string, unknown>;
+  return (
+    isString(object.sub) &&
+    isArrayOfType(object.credentials, isString) &&
+    isIdentityVectorOfTrust(object.vot) &&
+    isTypeWhenDefined(object.max_vot, isIdentityVectorOfTrust) &&
+    isStoredIdentityClaims(object.claims)
+  );
 };
 
 const isStoredIdentityClaims = (value: unknown): value is StoredIdentityClaims => {
-  const valueAs = value as StoredIdentityClaims;
+  if (!isNonNullObject(value)) return false;
+  const object = value as Record<string, unknown>;
 
-  const coreIdentity = valueAs["https://vocab.account.gov.uk/v1/coreIdentity"];
-  if (!coreIdentity || !isPersonWithIdentity(coreIdentity)) return false;
-
-  const address = valueAs["https://vocab.account.gov.uk/v1/address"];
-  return !!address && isArrayOfType(address, isPostalAddress);
+  const coreIdentityValue = object["https://vocab.account.gov.uk/v1/coreIdentity"];
+  const addressValue = object["https://vocab.account.gov.uk/v1/address"];
+  return isPersonWithIdentity(coreIdentityValue) && isArrayOfType(addressValue, isPostalAddress);
 };
 
 const isPersonWithIdentity = (value: unknown): value is PersonWithIdentityClass => {
-  const valueAs = value as PersonWithIdentityClass;
-  if (!valueAs.name || !isArrayOfType(valueAs.name, isName)) return false;
-  return !!valueAs.birthDate && isArrayOfType(valueAs.birthDate, isBirthDate);
+  if (!isNonNullObject(value)) return false;
+  const object = value as Record<string, unknown>;
+  return isArrayOfType(object.name, isName) && isArrayOfType(object.birthDate, isBirthDate);
 };
 
 const isName = (value: unknown): value is NameClass => {
-  const valueAs = value as NameClass;
-  return !!valueAs.nameParts && isArrayOfType(valueAs.nameParts, isNamePart);
+  if (!isNonNullObject(value)) return false;
+  const object = value as Record<string, unknown>;
+  return isArrayOfType(object.nameParts, isNamePart);
 };
 
 const isNamePart = (value: unknown): value is NamePartClass => {
-  const valueAs = value as NamePartClass;
-  if (!valueAs.type || !isNamePartType(valueAs.type)) return false;
-  return !!valueAs.value && typeof valueAs.value === "string";
+  if (!isNonNullObject(value)) return false;
+  const object = value as Record<string, unknown>;
+  return (
+    isNamePartType(object.type) &&
+    isString(object.value) &&
+    isTypeWhenDefined(object.validFrom, isString) &&
+    isTypeWhenDefined(object.validUntil, isString)
+  );
 };
 
 const isNamePartType = (value: unknown): value is NamePartType => {
-  if (typeof value !== "string") return false;
-  return value === "GivenName" || value === "FamilyName";
+  return isString(value) && ["GivenName", "FamilyName"].includes(value);
 };
 
 const isBirthDate = (value: unknown): value is BirthDateClass => {
-  const valueAs = value as BirthDateClass;
-  return !!valueAs.value && typeof valueAs.value === "string";
+  if (!isNonNullObject(value)) return false;
+  const object = value as Record<string, unknown>;
+  return (
+    isString(object.value) &&
+    isTypeWhenDefined(object.description, isString) &&
+    isTypeWhenDefined(object.validFrom, isString) &&
+    isTypeWhenDefined(object.validUntil, isString)
+  );
 };
 
 const isPostalAddress = (value: unknown): value is PostalAddressClass => {
-  const valueAs = value as PostalAddressClass;
-  if (!buildingNameIsStringIfExists(valueAs)) return false;
-  if (!streetNameIsStringIfExists(valueAs)) return false;
-  if (!localityIsStringIfExists(valueAs)) return false;
-  if (!!valueAs.addressRegion && !isString(valueAs.addressRegion)) return false;
-  return !(!!valueAs.postalCode && !isString(valueAs.postalCode));
+  if (!isNonNullObject(value)) return false;
+  const object = value as Record<string, unknown>;
+  return (
+    buildingNameIsStringWhenDefined(object) &&
+    streetNameIsStringWhenDefined(object) &&
+    localityIsStringWhenDefined(object) &&
+    isTypeWhenDefined(object.addressRegion, isString) &&
+    isTypeWhenDefined(object.postalCode, isString)
+  );
 };
 
-const buildingNameIsStringIfExists = (value: PostalAddressClass): boolean => {
-  if (!!value.departmentName && !isString(value.departmentName)) return false;
-  if (!!value.organisationName && !isString(value.organisationName)) return false;
-  if (!!value.subBuildingName && !isString(value.subBuildingName)) return false;
-  return !(!!value.buildingName && !isString(value.buildingName));
+const buildingNameIsStringWhenDefined = (value: Record<string, unknown>): boolean => {
+  return (
+    isTypeWhenDefined(value.departmentName, isString) &&
+    isTypeWhenDefined(value.organisationName, isString) &&
+    isTypeWhenDefined(value.subBuildingName, isString) &&
+    isTypeWhenDefined(value.buildingName, isString)
+  );
 };
 
-const streetNameIsStringIfExists = (value: PostalAddressClass): boolean => {
-  if (!!value.buildingNumber && !isString(value.buildingNumber)) return false;
-  if (!!value.dependentStreetName && !isString(value.dependentStreetName)) return false;
-  return !(!!value.streetName && !isString(value.streetName));
+const streetNameIsStringWhenDefined = (value: Record<string, unknown>): boolean => {
+  return (
+    isTypeWhenDefined(value.buildingNumber, isString) &&
+    isTypeWhenDefined(value.dependentStreetName, isString) &&
+    isTypeWhenDefined(value.streetName, isString)
+  );
 };
 
-const localityIsStringIfExists = (value: PostalAddressClass): boolean => {
-  if (!!value.doubleDependentAddressLocality && !isString(value.doubleDependentAddressLocality)) return false;
-  if (!!value.dependentAddressLocality && !isString(value.dependentAddressLocality)) return false;
-  return !(!!value.addressLocality && !isString(value.addressLocality));
+const localityIsStringWhenDefined = (value: Record<string, unknown>): boolean => {
+  return (
+    isTypeWhenDefined(value.doubleDependentAddressLocality, isString) &&
+    isTypeWhenDefined(value.dependentAddressLocality, isString) &&
+    isTypeWhenDefined(value.addressLocality, isString)
+  );
 };
 
 const isIdentityVectorOfTrust = (value: unknown): value is IdentityVectorOfTrust => {
-  if (!value || typeof value !== "string") return false;
-  return ["P1", "P2", "P3", "P4"].includes(value);
+  return isString(value) && ["P1", "P2", "P3", "P4"].includes(value);
 };
-
-const isString = (value: unknown): value is string => {
-  return !!value && typeof value === "string";
-};
-
-function isArrayOfType<T>(value: unknown, typePredicate: (item: unknown) => item is T): value is T[] {
-  return Array.isArray(value) && value.every((item) => typePredicate(item));
-}

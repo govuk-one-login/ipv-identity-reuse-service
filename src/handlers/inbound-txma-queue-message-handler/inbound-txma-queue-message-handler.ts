@@ -2,13 +2,13 @@ import { Metrics, MetricUnit } from "@aws-lambda-powertools/metrics";
 import { SQSEvent, SQSRecord } from "aws-lambda";
 import { InterventionCodeEnum } from "@govuk-one-login/event-catalogue/SIS_IDENTITY_RECORD_INVALIDATED.js";
 
-import { MetricDimension, MetricName } from "../../commons/metric-enum.js";
+import { MetricDimension, MetricName } from "../../utilities/metric-enum.js";
 import { isAisMessage, AisMessage } from "./ais-message.js";
 
-import { getConfiguration, type Configuration } from "../../commons/configuration.js";
-import { isStringWithLength } from "../../commons/string-utilities.js";
-import logger from "../../commons/logger.js";
-import { auditIdentityRecordInvalidated } from "../../commons/audit.js";
+import { getConfiguration, type Configuration } from "../../configuration/configuration.js";
+import { isStringWithLength } from "../../utilities/string-utilities.js";
+import logger from "../../utilities/logger.js";
+import { auditIdentityRecordInvalidated } from "../../utilities/audit.js";
 import { invalidateIdentityInEVCS, isEVCSErrorResponse } from "../../api/evcs-api.js";
 
 const metrics = new Metrics();

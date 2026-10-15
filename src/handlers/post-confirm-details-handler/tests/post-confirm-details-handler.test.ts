@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { lambdaHandler } from "../post-confirm-details-handler.js";
 import { randomUUID } from "node:crypto";
 import { getSessionDetails, updateSessionData } from "../../../api/oauth-internal-api.js";
-import { GetSessionError } from "../../../commons/errors.js";
+import { GetSessionError } from "../../../utilities/errors.js";
 
 vi.hoisted(() => {
   process.env.SESSION_TIMEOUT_MS = "5000";

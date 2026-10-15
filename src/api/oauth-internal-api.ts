@@ -1,8 +1,8 @@
 import { URL } from "node:url";
-import logger from "../commons/logger.js";
-import { getOauthInternalApiUrl, getSessionTimeout } from "../commons/configuration.js";
+import logger from "../utilities/logger.js";
+import { getOauthInternalApiUrl, getSessionTimeout } from "../configuration/configuration.js";
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
-import { GetSessionError, SessionInvalidError } from "../commons/errors.js";
+import { GetSessionError, SessionInvalidError } from "../utilities/errors.js";
 
 export type SessionResult = {
   session_id: string;
