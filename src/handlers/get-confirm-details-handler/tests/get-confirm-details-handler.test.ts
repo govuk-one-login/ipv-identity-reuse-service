@@ -53,24 +53,6 @@ vi.mock("../../../configuration/configuration.js");
 vi.mock("../../../domain/verifiable-credential/identity-expiry-service.js");
 vi.mock("../../../domain/stored-identity/calculate-vot.js");
 vi.mock("../../../utilities/jwt-utilities.js");
-// vi.mock("../../../domain/stored-identity/stored-identity-validator");
-
-// vi.mock("../user-details-content", () => ({
-//   extractUserDetails: vi.fn().mockReturnValue({
-//     name: "Jane Doe",
-//     dateOfBirth: "1990-01-15",
-//     addressDetailHtml: "10 Downing Street<br>London<br>SW1A 2AA",
-//   }),
-// }));
-
-// vi.mock("../../../api/oauth-internal-api", () => ({
-//   getSessionDetails: vi.fn().mockResolvedValue({
-//     storageAccessToken: "mock-storage-access-token",
-//     subject: "user-sub",
-//     vtr: ["P2"],
-//   }),
-//   updateSessionData: vi.fn().mockImplementation(() => Promise.resolve()),
-// }));
 
 vi.mock("../../../utilities/cookie-utilities", () => ({
   getCookieValues: vi.fn().mockReturnValue(new Map([["identity_reuse_service_session", "test-session-id"]])),
@@ -244,10 +226,13 @@ describe("handler record validation", () => {
   it("returns an error when session cookie is missing", async () => {
     const { getCookieValues } = await import("../../../utilities/cookie-utilities.js");
     vitest.mocked(getCookieValues).mockReturnValueOnce(new Map());
-    const result = await lambdaHandler({
-      queryStringParameters: { redirect_uri: "test.com", state: "state", client_id: "client_id" },
-      headers: {},
-    } as never as APIGatewayProxyEvent, {} as Context);
+    const result = await lambdaHandler(
+      {
+        queryStringParameters: { redirect_uri: "test.com", state: "state", client_id: "client_id" },
+        headers: {},
+      } as never as APIGatewayProxyEvent,
+      {} as Context
+    );
     expect(getSessionDetails).not.toHaveBeenCalled();
     expect(getIdentityFromCredentialStore).not.toHaveBeenCalled();
     expect(mockRender).not.toHaveBeenCalled();
@@ -319,7 +304,9 @@ describe("handler record validation", () => {
   });
 
   it("returns a failure response when getSessionDetails throws", async () => {
-    vitest.mocked(getSessionDetails).mockRejectedValueOnce(new Error("GET session endpoint returned an error response"));
+    vitest
+      .mocked(getSessionDetails)
+      .mockRejectedValueOnce(new Error("GET session endpoint returned an error response"));
     const result = await lambdaHandler(validEvent(), {} as Context);
     expect(getIdentityFromCredentialStore).not.toHaveBeenCalled();
     expect(mockRender).not.toHaveBeenCalled();

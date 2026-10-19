@@ -6,6 +6,7 @@ import { IdentityResponsePage } from "./pages/identity-response.page.js";
 import { OrchestrationStubPage } from "./pages/orchestration-stub.page.js";
 import { UnrecoverableErrorPage } from "./pages/unrecoverable-error.page.js";
 import { BadRequestErrorPage } from "./pages/bad-request-error.page.js";
+import { SessionExpiredErrorPage } from "./pages/session-expired-error.page.js";
 
 const HAR_FILENAME = "network.har";
 
@@ -15,6 +16,7 @@ type ReuseJourneyPages = {
   unrecoverableError: UnrecoverableErrorPage;
   identityResponse: IdentityResponsePage;
   badRequestError: BadRequestErrorPage;
+  sessionExpiredError: SessionExpiredErrorPage;
 };
 
 export const test = base.extend<ReuseJourneyPages>({
@@ -43,6 +45,10 @@ export const test = base.extend<ReuseJourneyPages>({
 
   unrecoverableError: async ({ page }, use) => {
     await use(new UnrecoverableErrorPage(page));
+  },
+
+  sessionExpiredError: async ({ page }, use) => {
+    await use(new SessionExpiredErrorPage(page));
   },
 
   identityResponse: async ({ page }, use) => {
