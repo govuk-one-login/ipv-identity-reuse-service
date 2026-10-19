@@ -5,7 +5,7 @@ import {
   getSignedStoredIdentity,
   getStoredIdentityRecordBody,
 } from "../../domain/stored-identity/stored-identity-validator.js";
-import { getSessionDetails, GetSessionSuccessResponse } from "../../api/oauth-internal-api.js";
+import { getSessionDetails, GetSessionSuccessResponse, deleteSession } from "../../api/oauth-internal-api.js";
 import { StoredIdentityRecord } from "../../domain/stored-identity/stored-identity-types.js";
 import { validateStoredIdentityAndVotByHash } from "../../domain/stored-identity/stored-identity-hashing.js";
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
@@ -40,6 +40,8 @@ export const handler = async (
       "https://vocab.account.gov.uk/v1/returnCode": [],
       ...storedIdentityRecord.claims,
     };
+
+    await deleteSession(sessionId);
 
     return {
       statusCode: 200,
