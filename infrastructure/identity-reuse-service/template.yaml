@@ -1281,6 +1281,16 @@ Resources:
       SourceAccount: !Ref AWS::AccountId
       SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PublicApi}/${ApiStageName}/GET/error/unrecoverable"
 
+  PublicApiGetBadRequestErrorHandlerResourcePolicy:
+    Condition: IsNotProduction
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref GetUnrecoverableErrorHandler.Alias
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PublicApi}/${ApiStageName}/GET/error/bad-request"
+
   GetCallbackHandler:
     Type: AWS::Serverless::Function
     Condition: IsNotProduction

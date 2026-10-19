@@ -99,24 +99,6 @@
             }) }}
 
             <form id="submitForm" action="/confirm-details" method="post">
-                {{ govukInput({
-                    type: "hidden",
-                    id: "redirectUri",
-                    name: "redirectUri",
-                    value: redirect_uri
-                }) }}
-                {{ govukInput({
-                    type: "hidden",
-                    id: "state",
-                    name: "state",
-                    value: state
-                }) }}
-                {{ govukInput({
-                    type: "hidden",
-                    id: "client_id",
-                    name: "client_id",
-                    value: client_id
-                }) }}
                 {{ frontendUiProgressButton({
                     id: "submitButton",
                     name: "action",

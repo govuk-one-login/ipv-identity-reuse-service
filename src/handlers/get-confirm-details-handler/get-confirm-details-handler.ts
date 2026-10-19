@@ -1,6 +1,6 @@
 import { Metrics } from "@aws-lambda-powertools/metrics";
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
 import path from "node:path";
 import nunjucks from "nunjucks";
 import translations from "../../../locales/en/translation.json" with { type: "json" };
@@ -12,13 +12,16 @@ import logger from "../../utilities/logger.js";
 import { MetricDimension, MetricName } from "../../utilities/metric-enum.js";
 import { calculateVot } from "../../domain/stored-identity/calculate-vot.js";
 import { createStoredIdentityHash } from "../../domain/stored-identity/stored-identity-hashing.js";
-import { StoredIdentityRecord, CalculatedVectorOfTrust } from "../../domain/stored-identity/stored-identity-types.js";
+import type {
+  StoredIdentityRecord,
+  CalculatedVectorOfTrust,
+  StoredIdentityValidationResult,
+} from "../../domain/stored-identity/stored-identity-types.js";
 import {
   getIdentityFromCredentialStore,
   validateStoredIdentity,
 } from "../../domain/stored-identity/stored-identity-validator.js";
 import { hasIdentityExpired } from "../../domain/verifiable-credential/identity-expiry-service.js";
-import { ConfirmDetailsQueryStringParameters } from "./get-confirm-details-handler-types.js";
 import mainPageTemplate from "./index.njk";
 import { extractUserDetails } from "./user-details-content.js";
 import { getCookieValues } from "../../utilities/cookie-utilities.js";
@@ -49,14 +52,21 @@ const tryUpdateSessionData = async (sessionId: string, data: Record<string, stri
   }
 };
 
-export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  const { redirect_uri, client_id, state } = event.queryStringParameters as ConfirmDetailsQueryStringParameters;
-  if (!redirect_uri || !state || !client_id) {
-    throw new Error("One or more required query string parameters are undefined or empty");
-  }
+const isStoredIdentityValidated = ({
+  kidValid,
+  signatureValid,
+  isValid,
+  storedIdentityRecord,
+}: StoredIdentityValidationResult) => {
+  return !kidValid || !signatureValid || !isValid || !storedIdentityRecord;
+};
 
+export const lambdaHandler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
   const domainName = process.env.DOMAIN_NAME || "";
   const sessionId = getCookieValues(event)?.get("identity_reuse_service_session");
+
+  logger.addContext(context);
+
   try {
     if (!sessionId) {
       logger.error("Session cookie not found");
@@ -76,16 +86,17 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
     }
 
     const identityResponse = await getIdentityFromCredentialStore(`Bearer ${storageAccessToken}`);
-
     if (identityResponse) {
-      const { kidValid, signatureValid, isValid, storedIdentityRecord } =
-        await validateStoredIdentity(identityResponse);
-
-      if (!kidValid || !signatureValid || !isValid || !storedIdentityRecord) {
-        logger.error("Record validation failed for existing user", { kidValid, signatureValid, isValid });
+      const validationResult = await validateStoredIdentity(identityResponse);
+      if (isStoredIdentityValidated(validationResult)) {
+        logger.error("Record validation failed for existing user", {
+          kidValid: validationResult.kidValid,
+          signatureValid: validationResult.signatureValid,
+          isValid: validationResult.isValid,
+        });
         await tryUpdateSessionData(sessionId, { errorDescription: "record_update_requested" });
 
-        return redirectToOauthCallBack({ redirectUri: redirect_uri, state, clientId: client_id });
+        return redirectToOauthCallBack();
       }
 
       const storedIdentityJwt = identityResponse.si.vc;
@@ -97,21 +108,18 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
       const identityReuseValid = await validateUserIdentity(vot, storedIdentityVcJwts, vtr);
       if (!identityReuseValid) {
         await tryUpdateSessionData(sessionId, { errorDescription: "record_update_requested" });
-        return redirectToOauthCallBack({ redirectUri: redirect_uri, state, clientId: client_id });
+        return redirectToOauthCallBack();
       }
 
       await sessionStoreHashedStoredIdentity(sessionId, storedIdentityJwt, vot, storedIdentityVcJwts);
 
-      const userDetails = extractUserDetails(storedIdentityRecord);
+      const userDetails = extractUserDetails(validationResult.storedIdentityRecord);
 
       return {
         statusCode: 200,
         body: nunjucksEnvironment.render(mainPageTemplate, {
           assetPath: "./assets",
           rootPath: ".",
-          redirect_uri,
-          state,
-          client_id,
           userDetails,
           translations,
           govukRebrand: true,
@@ -123,7 +131,7 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
     } else {
       logger.error("No identity record found in EVCS");
       await tryUpdateSessionData(sessionId!, { errorDescription: "record_update_requested" });
-      return redirectToOauthCallBack({ redirectUri: redirect_uri, state, clientId: client_id });
+      return redirectToOauthCallBack();
     }
   } catch (error) {
     if (error instanceof SessionInvalidError) {
@@ -131,9 +139,11 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGat
     } else if (error instanceof StoredIdentityValidationError) {
       logger.error("Stored identity record is missing required user details");
       await tryUpdateSessionData(sessionId!, { errorDescription: "record_update_requested" });
-      return redirectToOauthCallBack({ redirectUri: redirect_uri, state, clientId: client_id });
+
+      return redirectToOauthCallBack();
+    } else {
+      logger.error(`Error in lambdaHandler event: ${error}`);
     }
-    logger.error(`Error in lambdaHandler event: ${error}`);
     return redirectToErrorPage(domainName);
   }
 };

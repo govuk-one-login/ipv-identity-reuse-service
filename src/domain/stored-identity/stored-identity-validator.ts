@@ -43,7 +43,7 @@ export const validateStoredIdentity = async (
   const currentVcsEncoded = identityResponse.vcs.map((vc) => vc.vc);
   const isValid = correlateCredentials(storedIdentityRecord, currentVcsEncoded);
 
-  return { kidValid, signatureValid, isValid, storedIdentityRecord: storedIdentityRecord };
+  return { kidValid, signatureValid, isValid, storedIdentityRecord };
 };
 
 export const getSignedStoredIdentity = async (
@@ -166,8 +166,7 @@ export const createAndLogErrorResponse = async (
     govukSigninJourneyId
   );
 
-  const identityRecordErrorDescription = await generateErrorCodeDescription(errorCode);
-
+  const identityRecordErrorDescription = generateErrorCodeDescription(errorCode);
   const errorResponse = createErrorResponse(errorCode);
 
   await auditIdentityRecordReturned(
@@ -185,7 +184,7 @@ export const createAndLogErrorResponse = async (
   return errorResponse;
 };
 
-const generateErrorCodeDescription = async (errorCode: HttpCodesEnum): Promise<ErrorCodeEnum> => {
+const generateErrorCodeDescription = (errorCode: HttpCodesEnum): ErrorCodeEnum => {
   let error_code_description: ErrorCodeEnum;
   switch (errorCode) {
     case HttpCodesEnum.NOT_FOUND: {

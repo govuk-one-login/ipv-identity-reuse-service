@@ -45,10 +45,6 @@ paths:
                 }
   /confirm-details:
     get:
-      parameters:
-        - $ref: "#/components/parameters/RedirectUriParam"
-        - $ref: "#/components/parameters/StateParam"
-        - $ref: "#/components/parameters/AuthCodeParam"
       responses:
         "200":
           description: OK
@@ -62,11 +58,6 @@ paths:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetConfirmDetailsHandler.Arn}:live/invocations
         type: aws_proxy
     post:
-      parameters:
-        - in: query
-          name: redirect_uri
-          schema:
-            type: string
       responses:
         "302":
           description: OK
@@ -97,6 +88,20 @@ paths:
     get:
       responses:
         "500":
+          description: Internal Server Error
+          content:
+            text/html:
+              schema:
+                type: string
+      x-amazon-apigateway-integration:
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetUnrecoverableErrorHandler.Arn}:live/invocations
+        type: aws_proxy
+  /error/bad-request:
+    get:
+      responses:
+        "400":
           description: Internal Server Error
           content:
             text/html:
@@ -153,16 +158,15 @@ paths:
       tags:
         - Authorization
       parameters:
-        - $ref: "#/components/parameters/ResponseTypeParam"
         - $ref: "#/components/parameters/ClientIdParam"
-        - $ref: "#/components/parameters/RedirectUriParam"
-        - $ref: "#/components/parameters/ScopeParam"
-        - $ref: "#/components/parameters/StateParam"
         - $ref: "#/components/parameters/RequestParam"
       responses:
         "302":
-          $ref: "#/components/responses/AuthorizationRedirect"
-      x-amazon-apigateway-request-validator: ALL
+          description: OK
+          content:
+            text/html:
+              schema:
+                type: string
       x-amazon-apigateway-integration:
         httpMethod: POST
         uri:
@@ -183,15 +187,6 @@ paths:
 
 components:
   parameters:
-    ResponseTypeParam:
-      in: query
-      name: response_type
-      required: true
-      description: The response type. This value currently needs to be set to the value `code`.
-      schema:
-        type: string
-        enum:
-          - code
     ClientIdParam:
       in: query
       name: client_id
@@ -199,34 +194,6 @@ components:
       description: |
         This value is the client id the Relying Party service was provided with for identification upon
         registration. Internal system requests will use an internal client id.
-      schema:
-        type: string
-    RedirectUriParam:
-      in: query
-      name: redirect_uri
-      required: true
-      description: |
-        This value must exactly match one of the redirect uris registered by the Relying Party service and must be
-        URL-encoded.
-      schema:
-        type: string
-        format: uri
-    ScopeParam:
-      in: query
-      name: scope
-      required: false
-      description: |
-        A space-separated list of scopes which must include the `openid` value. Other options are `email`, `phone`
-        and `offline_access` (returns a refresh token).  Other custom scopes are available for internal requests.
-      schema:
-        type: string
-    StateParam:
-      in: query
-      name: state
-      required: true
-      description: |
-        This value is used to validate the response sent to the redirect URI.  This value will be
-        returned to the client in the authentication response.
       schema:
         type: string
     AuthCodeParam:
@@ -256,9 +223,3 @@ components:
             type: string
             format: uri
             example: https://orch.stubs.account.gov.uk/callback?code=SplxlOBeZQQYbYS6WxSbIA&state=xyz
-
-x-amazon-apigateway-request-validators:
-  ALL:
-    validateRequestBody: true
-    validateRequestParameters: true
-    validateRequestHeaders: true

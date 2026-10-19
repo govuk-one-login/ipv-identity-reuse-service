@@ -5,6 +5,7 @@ import { ConfirmDetailsPage } from "./pages/confirm-details.page.js";
 import { IdentityResponsePage } from "./pages/identity-response.page.js";
 import { OrchestrationStubPage } from "./pages/orchestration-stub.page.js";
 import { UnrecoverableErrorPage } from "./pages/unrecoverable-error.page.js";
+import { BadRequestErrorPage } from "./pages/bad-request-error.page.js";
 
 const HAR_FILENAME = "network.har";
 
@@ -13,6 +14,7 @@ type ReuseJourneyPages = {
   confirmDetails: ConfirmDetailsPage;
   unrecoverableError: UnrecoverableErrorPage;
   identityResponse: IdentityResponsePage;
+  badRequestError: BadRequestErrorPage;
 };
 
 export const test = base.extend<ReuseJourneyPages>({
@@ -45,6 +47,10 @@ export const test = base.extend<ReuseJourneyPages>({
 
   identityResponse: async ({ page }, use) => {
     await use(new IdentityResponsePage(page));
+  },
+
+  badRequestError: async ({ page }, use) => {
+    await use(new BadRequestErrorPage(page));
   },
 });
 

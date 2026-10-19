@@ -48,7 +48,7 @@ Tests are in `tests/acceptance/browser`:
 npm run test:browser:install
 # append `-- --headed` to see the browser
 npm run test:browser
-STACK_NAME=my-stack npm run test:browser             # against your own SIS stack
+SAM_STACK_NAME=my-stack npm run test:browser             # against your own SIS stack
 ```
 
 ## Linting
