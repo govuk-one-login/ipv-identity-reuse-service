@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, expect, it, vitest, describe } from "vitest";
-import { callSessionApi, getAuthorizationCode, getSessionDetails, updateSessionData } from "../oauth-internal-api.js";
+import {
+  callSessionApi,
+  deleteSession,
+  getAuthorizationCode,
+  getSessionDetails,
+  updateSessionData,
+} from "../oauth-internal-api.js";
 import { GetSessionError, SessionInvalidError } from "../../utilities/errors.js";
 import { URL } from "node:url";
 
@@ -338,7 +344,7 @@ describe("getSessionDetails", () => {
 
     expect(jsonSpy).toHaveBeenCalledTimes(1);
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-    expect(globalThis.fetch).toHaveBeenCalledWith(new URL("https://test.com/api/session"), {
+    expect(globalThis.fetch).toHaveBeenCalledWith("https://test.com/api/session", {
       method: "GET",
       headers: { "session-id": "test-session-id" },
       signal: expect.any(AbortSignal),
@@ -453,7 +459,7 @@ describe("updateSessionData", () => {
 
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      new URL("https://test.com/api/session/data"),
+      "https://test.com/api/session/data",
       expect.objectContaining({
         method: "PATCH",
         headers: {
@@ -477,7 +483,7 @@ describe("updateSessionData", () => {
 
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      new URL("https://test.com/api/session/data"),
+      "https://test.com/api/session/data",
       expect.objectContaining({
         method: "PATCH",
         headers: {
@@ -486,6 +492,55 @@ describe("updateSessionData", () => {
         body: '{"foo":"bar"}',
         signal: expect.any(AbortSignal),
       })
+    );
+  });
+});
+
+describe("deleteSession", () => {
+  it("should create a request with the correct values", async () => {
+    // eslint-disable-next-line unicorn/no-null
+    const mockResponse = Response.json(null, { status: 200 });
+
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+    await deleteSession("session-1234");
+
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "https://test.com/api/session",
+      expect.objectContaining({
+        method: "DELETE",
+        headers: {
+          "session-id": "session-1234",
+        },
+        signal: expect.any(AbortSignal),
+      })
+    );
+  });
+
+  it("should throw an Error if the endpoint fails", async () => {
+    // eslint-disable-next-line unicorn/no-null
+    const mockResponse = Response.json(null, { status: 403 });
+
+    vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
+
+    await expect(deleteSession("session-1234")).rejects.toThrow(
+      "DELETE session/data endpoint returned an error response"
+    );
+
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "https://test.com/api/session",
+      expect.objectContaining({
+        method: "DELETE",
+        headers: {
+          "session-id": "session-1234",
+        },
+        signal: expect.any(AbortSignal),
+      })
+    );
+    expect(mockError).toHaveBeenCalledWith(
+      expect.stringContaining("DELETE session/data endpoint returned non-200 status: 403")
     );
   });
 });

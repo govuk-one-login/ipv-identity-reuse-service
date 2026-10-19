@@ -2,7 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import logger from "../../utilities/logger.js";
 import { getCookieValues } from "../../utilities/cookie-utilities.js";
 import { isValidQueryParameters } from "./get-callback-types.js";
-import { getAuthorizationCode } from "../../api/oauth-internal-api.js";
+import { deleteSession, getAuthorizationCode } from "../../api/oauth-internal-api.js";
 import { redirectToClient, redirectToErrorPage, redirectToSessionExpiredPage } from "../../api/sis-api.js";
 import { getRequiredEnvironment } from "../../configuration/get-required-environment.js";
 import { SessionInvalidError } from "../../utilities/errors.js";
@@ -29,6 +29,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       queryParameters.state,
       sessionId
     );
+
+    if (responseFromAuthorizeEndpoint.code === "access_denied") {
+      await deleteSession(sessionId);
+    }
 
     return redirectToClient({
       redirectUri: responseFromAuthorizeEndpoint.redirect_uri,
