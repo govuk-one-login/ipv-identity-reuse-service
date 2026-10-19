@@ -24,6 +24,8 @@ const EXTENSION_MAPPINGS = new Map<string, string>([
   ["json", "application/json"],
   ["ico", "image/x-icon"],
   ["png", "image/png"],
+  ["woff", "font/woff"],
+  ["woff2", "font/woff2"],
 ]);
 
 interface ResourceProperties extends CloudFormationCustomResourceResourcePropertiesCommon {

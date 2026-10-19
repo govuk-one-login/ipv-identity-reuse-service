@@ -682,6 +682,11 @@ Resources:
       AlwaysDeploy: true
       OpenApiVersion: 3.0.3
       PropagateTags: true
+      BinaryMediaTypes:
+        - "font/woff2"
+        - "font/woff"
+        - "image/*"
+        - "application/octet-stream"
       DefinitionBody:
         openapi: "3.0.3" # workaround to get `sam validate` to work
         paths: # workaround to get `sam validate` to work
