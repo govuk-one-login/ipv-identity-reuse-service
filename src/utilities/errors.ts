@@ -1,11 +1,6 @@
 import { HttpCodesEnum } from "./constants.js";
 
-export class PolicyGenerationError extends Error {
-  constructor(message?: string) {
-    super(message);
-    this.name = "PolicyGenerationError";
-  }
-}
+export const PolicyGenerationError = createError("PolicyGenerationError");
 
 export class TokenValidationError extends Error {
   constructor(public readonly statusCode: HttpCodesEnum) {
@@ -21,19 +16,9 @@ export class EVCSError extends Error {
   }
 }
 
-export class StoredIdentityValidationError extends Error {
-  constructor(message?: string, options?: ErrorOptions) {
-    super(message, options);
-    this.name = "StoredIdentityValidationError";
-  }
-}
+export const StoredIdentityValidationError = createError("StoredIdentityValidationError");
 
-export class StoredIdentityHashMismatchError extends Error {
-  constructor(message?: string) {
-    super(message);
-    this.name = "StoredIdentityHashMismatchError";
-  }
-}
+export const StoredIdentityHashMismatchError = createError("StoredIdentityHashMismatchError");
 
 export class UserIdentityError extends Error {
   constructor(message?: string) {
@@ -42,30 +27,25 @@ export class UserIdentityError extends Error {
   }
 }
 
-export class GetSessionError extends Error {
-  constructor(message: string | undefined) {
-    super(message);
-    this.name = "GetSessionError";
-  }
-}
+export const GetSessionError = createError("GetSessionError");
 
-export class SessionInvalidError extends Error {
-  constructor(message?: string) {
-    super(message);
-    this.name = "SessionInvalidError";
-  }
-}
+export const DeleteSessionError = createError("DeleteSessionError");
 
-export class JsonParseError extends Error {
-  constructor(message?: string, options?: ErrorOptions) {
-    super(message, options);
-    this.name = "JsonParseError";
-  }
-}
+export const SessionInvalidError = createError("SessionInvalidError");
 
-export class ConfigurationError extends Error {
-  constructor(message?: string, options?: ErrorOptions) {
-    super(message, options);
-    this.name = "ConfigurationError";
-  }
+export const JsonParseError = createError("JsonParseError");
+
+export const ConfigurationError = createError("ConfigurationError");
+
+function createError(className: string) {
+  const CustomError = class extends Error {
+    constructor(message?: string, options?: ErrorOptions) {
+      super(message, options);
+      this.name = className;
+    }
+  };
+
+  Object.defineProperty(CustomError, "name", { value: className });
+
+  return CustomError;
 }

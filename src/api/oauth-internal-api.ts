@@ -2,7 +2,7 @@ import { URL } from "node:url";
 import logger from "../utilities/logger.js";
 import { getOauthInternalApiUrl, getSessionTimeout } from "../configuration/configuration.js";
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
-import { GetSessionError, SessionInvalidError } from "../utilities/errors.js";
+import { DeleteSessionError, GetSessionError, SessionInvalidError } from "../utilities/errors.js";
 
 export type SessionResult = {
   session_id: string;
@@ -176,6 +176,23 @@ export async function getSessionDetails(sessionId: string): Promise<GetSessionSu
   } else {
     logger.error(`GET session handler returned non-200 status: ${responseFromSessionEndpoint.status}`);
     throw new GetSessionError("GET session endpoint returned an error response");
+  }
+}
+
+export async function deleteSession(sessionId: string): Promise<void> {
+  const oauthInternalApiUrl = getOauthInternalApiUrl();
+  const url = new URL(`${oauthInternalApiUrl}/api/session`);
+
+  const responseFromSessionEndpoint = await fetch(url, {
+    method: "DELETE",
+    headers: {
+      "session-id": sessionId,
+    },
+    signal: AbortSignal.timeout(getSessionTimeout()),
+  });
+
+  if (responseFromSessionEndpoint.status !== 200) {
+    throw new DeleteSessionError(`Unable to delete session with error code ${responseFromSessionEndpoint.status}`);
   }
 }
 

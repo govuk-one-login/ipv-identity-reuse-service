@@ -1,29 +1,29 @@
-import { afterEach, beforeEach, describe, expect, it, Mock, vi, vitest } from "vitest";
-import { lambdaHandler } from "../get-confirm-details-handler.js";
+import { KENNETH_DECERQUERIA_ADDRESS } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/addresses";
+import { KENNETH_DECERQUEIRA_BIRTH_DATE } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/birthdates";
+import { KENNETH_DECERQUEIRA } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/names";
 import { APIGatewayProxyEvent, Context } from "aws-lambda";
+import { afterEach, beforeEach, describe, expect, it, vi, vitest } from "vitest";
+import translations from "../../../../locales/en/translation.json" with { type: "json" };
+import { EVCSIdentityResponse } from "../../../api/evcs-api.js";
+import { getSessionDetails, updateSessionData } from "../../../api/oauth-internal-api.js";
+import { getConfiguration } from "../../../configuration/configuration.js";
+import { calculateVot } from "../../../domain/stored-identity/calculate-vot.js";
+import type { StoredIdentityValidationResult } from "../../../domain/stored-identity/stored-identity-types.js";
 import {
   getIdentityFromCredentialStore,
   validateStoredIdentity,
 } from "../../../domain/stored-identity/stored-identity-validator.js";
+import { hasIdentityExpired } from "../../../domain/verifiable-credential/identity-expiry-service.js";
+import { HttpCodesEnum } from "../../../utilities/constants.js";
 import {
   EVCSError,
   GetSessionError,
   SessionInvalidError,
   StoredIdentityValidationError,
 } from "../../../utilities/errors.js";
-import type { StoredIdentityClaims } from "../../../domain/stored-identity/stored-identity-types.js";
-import { HttpCodesEnum } from "../../../utilities/constants.js";
-import { getSessionDetails, updateSessionData } from "../../../api/oauth-internal-api.js";
-import translations from "../../../../locales/en/translation.json" with { type: "json" };
-import { hasIdentityExpired } from "../../../domain/verifiable-credential/identity-expiry-service.js";
-import { calculateVot } from "../../../domain/stored-identity/calculate-vot.js";
-import { getConfiguration } from "../../../configuration/configuration.js";
 import { getJwtBody } from "../../../utilities/jwt-utilities.js";
-import { EVCSIdentityResponse } from "../../../api/evcs-api.js";
 import logger from "../../../utilities/logger.js";
-import { KENNETH_DECERQUEIRA } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/names";
-import { KENNETH_DECERQUEIRA_BIRTH_DATE } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/birthdates";
-import { KENNETH_DECERQUERIA_ADDRESS } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/addresses";
+import { lambdaHandler } from "../get-confirm-details-handler.js";
 import { extractUserDetails } from "../user-details-content.js";
 
 const mockRender = vi.hoisted(() => vi.fn().mockReturnValue("Rendered Confirm Details Screen"));
@@ -139,7 +139,13 @@ it("should store the calculated vot and identity hash in the session and render 
       sub: "user-sub",
       credentials: [],
       vot: "P2",
-      claims: {} as StoredIdentityClaims,
+      claims: {
+        "https://vocab.account.gov.uk/v1/coreIdentity": {
+          name: [KENNETH_DECERQUEIRA],
+          birthDate: [KENNETH_DECERQUEIRA_BIRTH_DATE],
+        },
+        "https://vocab.account.gov.uk/v1/address": [KENNETH_DECERQUERIA_ADDRESS],
+      },
     },
   });
   const result = await lambdaHandler(validEvent(), {} as Context);
@@ -186,8 +192,13 @@ describe("handler record validation", () => {
         sub: "user-sub",
         credentials: [],
         vot: "P2",
-        // vtm: "https://oidc.account.gov.uk/trustmark",
-        claims: {} as StoredIdentityClaims,
+        claims: {
+          "https://vocab.account.gov.uk/v1/coreIdentity": {
+            name: [KENNETH_DECERQUEIRA],
+            birthDate: [KENNETH_DECERQUEIRA_BIRTH_DATE],
+          },
+          "https://vocab.account.gov.uk/v1/address": [KENNETH_DECERQUERIA_ADDRESS],
+        },
       },
     });
     const result = await lambdaHandler(validEvent(), {} as Context);
@@ -200,7 +211,7 @@ describe("handler record validation", () => {
     { kidValid: false, signatureValid: false, isValid: true },
     { kidValid: false, signatureValid: true, isValid: false },
   ])("redirects to client when validation fails (%o)", async (verdict) => {
-    (validateStoredIdentity as Mock).mockResolvedValue(verdict);
+    vitest.mocked(validateStoredIdentity).mockResolvedValue(verdict as StoredIdentityValidationResult);
     const result = await lambdaHandler(validEvent(), {} as Context);
     expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_update_requested" });
     expect(result).toEqual({
@@ -214,7 +225,7 @@ describe("handler record validation", () => {
 
   it("returns an error when session cookie is missing", async () => {
     const { getCookieValues } = await import("../../../utilities/cookie-utilities.js");
-    (getCookieValues as Mock).mockReturnValueOnce(new Map());
+    vitest.mocked(getCookieValues).mockReturnValueOnce(new Map());
     const result = await lambdaHandler(
       {
         queryStringParameters: { redirect_uri: "test.com", state: "state", client_id: "client_id" },
@@ -233,7 +244,11 @@ describe("handler record validation", () => {
   });
 
   it("returns a failure response with a 500 status code when storageAccessToken is not returned from the session", async () => {
-    (getSessionDetails as Mock).mockResolvedValueOnce({ subject: "user-sub", storageAccessToken: undefined });
+    vitest.mocked(getSessionDetails).mockResolvedValueOnce({
+      subject: "user-sub",
+      storageAccessToken: undefined,
+      clientSessionId: "client-session-id",
+    });
     const result = await lambdaHandler(validEvent(), {} as Context);
     expect(getIdentityFromCredentialStore).not.toHaveBeenCalled();
     expect(mockRender).not.toHaveBeenCalled();
@@ -260,7 +275,7 @@ describe("handler record validation", () => {
 
   it("redirects to client when EVCS returns a 404", async () => {
     // eslint-disable-next-line unicorn/no-useless-undefined
-    (getIdentityFromCredentialStore as Mock).mockResolvedValue(undefined);
+    vitest.mocked(getIdentityFromCredentialStore).mockResolvedValue(undefined);
     const result = await lambdaHandler(validEvent(), {} as Context);
     expect(validateStoredIdentity).not.toHaveBeenCalled();
     expect(mockRender).not.toHaveBeenCalled();
@@ -275,9 +290,9 @@ describe("handler record validation", () => {
   });
 
   it("redirects to the session-expired page when getSessionDetails throws a SessionInvalidError", async () => {
-    (getSessionDetails as Mock).mockRejectedValueOnce(
-      new SessionInvalidError("No session found for the given sessionId")
-    );
+    vitest
+      .mocked(getSessionDetails)
+      .mockRejectedValueOnce(new SessionInvalidError("No session found for the given sessionId"));
     const result = await lambdaHandler(validEvent(), {} as Context);
     expect(getIdentityFromCredentialStore).not.toHaveBeenCalled();
     expect(mockRender).not.toHaveBeenCalled();
@@ -289,7 +304,9 @@ describe("handler record validation", () => {
   });
 
   it("returns a failure response when getSessionDetails throws", async () => {
-    (getSessionDetails as Mock).mockRejectedValueOnce(new Error("GET session endpoint returned an error response"));
+    vitest
+      .mocked(getSessionDetails)
+      .mockRejectedValueOnce(new Error("GET session endpoint returned an error response"));
     const result = await lambdaHandler(validEvent(), {} as Context);
     expect(getIdentityFromCredentialStore).not.toHaveBeenCalled();
     expect(mockRender).not.toHaveBeenCalled();
@@ -303,9 +320,9 @@ describe("handler record validation", () => {
   });
 
   it("redirects to the error page when getSessionDetails throws a 500 GetSessionError", async () => {
-    (getSessionDetails as Mock).mockRejectedValueOnce(
-      new GetSessionError("GET session endpoint returned an error response")
-    );
+    vitest
+      .mocked(getSessionDetails)
+      .mockRejectedValueOnce(new GetSessionError("GET session endpoint returned an error response"));
     const result = await lambdaHandler(validEvent(), {} as Context);
     expect(getIdentityFromCredentialStore).not.toHaveBeenCalled();
     expect(mockRender).not.toHaveBeenCalled();
@@ -317,7 +334,7 @@ describe("handler record validation", () => {
   });
 
   it("redirects to client when stored identity record is missing required user details", async () => {
-    (validateStoredIdentity as Mock).mockRejectedValue(new StoredIdentityValidationError());
+    vitest.mocked(validateStoredIdentity).mockRejectedValue(new StoredIdentityValidationError());
     const result = await lambdaHandler(validEvent(), {} as Context);
     expect(mockRender).not.toHaveBeenCalled();
     expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_update_requested" });

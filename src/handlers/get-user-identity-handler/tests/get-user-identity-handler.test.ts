@@ -2,7 +2,7 @@ import { APIGatewayEventRequestContextWithAuthorizer, APIGatewayProxyEventBase, 
 import { handler } from "../get-user-identity-handler.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthorizerContext } from "../../api-gateway-protected-resource-authorizer-handler/api-gateway-protected-resource-authorizer-types.js";
-import { getSessionDetails, GetSessionSuccessResponse } from "../../../api/oauth-internal-api.js";
+import { getSessionDetails, deleteSession, type GetSessionSuccessResponse } from "../../../api/oauth-internal-api.js";
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
 import {
   getSignedStoredIdentity,
@@ -28,19 +28,9 @@ import {
 import { APIGatewayAuthorizerResultContext } from "aws-lambda/common/api-gateway.js";
 import logger from "../../../utilities/logger.js";
 
-vi.mock("../../../api/oauth-internal-api.js", () => ({
-  getSessionDetails: vi.fn(),
-}));
-
-vi.mock("../../../domain/stored-identity/stored-identity-validator.js", () => ({
-  getSignedStoredIdentity: vi.fn(),
-  getStoredIdentityRecordBody: vi.fn(),
-}));
-
-vi.mock("../../../domain/stored-identity/stored-identity-hashing.js", () => ({
-  validateStoredIdentityAndVotByHash: vi.fn(),
-}));
-
+vi.mock("../../../api/oauth-internal-api.js");
+vi.mock("../../../domain/stored-identity/stored-identity-validator.js");
+vi.mock("../../../domain/stored-identity/stored-identity-hashing.js");
 vi.mock("../../../utilities/logger.js");
 
 beforeEach(() => {
@@ -68,6 +58,7 @@ describe("Successful user-identity response", () => {
     expect(getSessionDetails).toHaveBeenCalledWith("session123");
     expect(validateStoredIdentityAndVotByHash).toHaveBeenCalledWith(signedIdentityData, sessionVot, "hash123");
     expect(getStoredIdentityRecordBody).toHaveBeenCalledWith("header1.payload1.signature1");
+    expect(deleteSession).toHaveBeenCalledWith("session123");
     expect(response).toStrictEqual({
       statusCode: 200,
       body: JSON.stringify({
@@ -110,6 +101,7 @@ describe("Successful user-identity response", () => {
       const response = await handler(request, {} as Context);
 
       expect(getSessionDetails).toHaveBeenCalledWith("session123");
+      expect(deleteSession).toHaveBeenCalledWith("session123");
       expect(validateStoredIdentityAndVotByHash).toHaveBeenCalledWith(signedIdentityData, "P2", "hash123");
       expect(getStoredIdentityRecordBody).toHaveBeenCalledWith("header1.payload1.signature1");
       expect(response).toStrictEqual({
@@ -140,6 +132,7 @@ describe("User-identity errors", () => {
       body: JSON.stringify({ message: "No sessionId found in authorizer context" }),
     });
     expect(logger.error).toHaveBeenCalledWith("No sessionId found in authorizer context");
+    expect(deleteSession).not.toHaveBeenCalled();
   });
 
   it("should return a 500 if sessionId is not a string", async () => {
@@ -153,6 +146,7 @@ describe("User-identity errors", () => {
       body: JSON.stringify({ message: "No sessionId found in authorizer context" }),
     });
     expect(logger.error).toHaveBeenCalledWith("No sessionId found in authorizer context");
+    expect(deleteSession).not.toHaveBeenCalled();
   });
 
   it("should return a 500 when getting session data throws a GetSessionError", async () => {
@@ -166,6 +160,7 @@ describe("User-identity errors", () => {
     const response = await handler(request, {} as Context);
     expect(response).toStrictEqual({ statusCode: 500, body: JSON.stringify({ message: "I am an error" }) });
     expect(logger.error).toHaveBeenCalledWith("Error met when creating user identity", { cause: error });
+    expect(deleteSession).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -194,6 +189,7 @@ describe("User-identity errors", () => {
       expect(logger.error).toHaveBeenCalledWith("Error met when creating user identity", {
         cause: new UserIdentityError(errorMessage),
       });
+      expect(deleteSession).not.toHaveBeenCalled();
     }
   );
 
@@ -214,6 +210,7 @@ describe("User-identity errors", () => {
     expect(logger.error).toHaveBeenCalledWith("Error met when creating user identity", {
       cause: new UserIdentityError("Stored identity not found in EVCS"),
     });
+    expect(deleteSession).not.toHaveBeenCalled();
   });
 
   it("should return a 500 when hash validation fails", async () => {
@@ -240,6 +237,7 @@ describe("User-identity errors", () => {
     expect(logger.error).toHaveBeenCalledWith("Error met when creating user identity", {
       cause: error,
     });
+    expect(deleteSession).not.toHaveBeenCalled();
   });
 
   it("should throw a 500 when JWT body is not a stored identity record", async () => {
@@ -266,6 +264,7 @@ describe("User-identity errors", () => {
     expect(logger.error).toHaveBeenCalledWith("Error met when creating user identity", {
       cause: error,
     });
+    expect(deleteSession).not.toHaveBeenCalled();
   });
 });
 

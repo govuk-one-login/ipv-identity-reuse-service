@@ -2,6 +2,7 @@ import { expect, test } from "./fixtures.js";
 import { ConfirmDetailsPage } from "./pages/confirm-details.page.js";
 import type { AuthorizationRequestField } from "./pages/orchestration-stub.page.js";
 import { UnrecoverableErrorPage } from "./pages/unrecoverable-error.page.js";
+import { SessionExpiredErrorPage } from "./pages/session-expired-error.page.js";
 import { generateRandomTestUserId } from "../shared/utils/user-subject-id.js";
 import { createStoredIdentityWithVot } from "../shared/helpers/identity-helper.js";
 import { getDidControllerName, getSigningKeyId } from "../shared/utils/ssm-utilities.js";
@@ -125,6 +126,76 @@ test.describe("Authorization workflow", () => {
       "https://vocab.account.gov.uk/v1/credentialJWT": expect.arrayContaining(credentialJwts),
       "https://vocab.account.gov.uk/v1/returnCode": [],
       ...claims,
+    });
+  });
+
+  test("rejects if the user tries to go back after the session has been deleted", async ({
+    page,
+    orchestrationStub,
+    confirmDetails,
+    identityResponse,
+    sessionExpiredError,
+  }) => {
+    const userId = generateRandomTestUserId();
+    const credentialJwts = [
+      await createAndPostDcmawPassportCredential(userId, new Date()),
+      await createAndPostFraudCheckCredential(userId, new Date()),
+    ];
+    const claims: StoredIdentityClaims = {
+      "https://vocab.account.gov.uk/v1/coreIdentity": {
+        name: [KENNETH_DECERQUEIRA],
+        birthDate: [KENNETH_DECERQUEIRA_BIRTH_DATE],
+      },
+      "https://vocab.account.gov.uk/v1/address": [KENNETH_DECERQUERIA_ADDRESS],
+    };
+    await createStoredIdentityWithVot(
+      userId,
+      credentialJwts,
+      "P2",
+      await getDidControllerName(),
+      await getSigningKeyId(),
+      undefined,
+      "P3",
+      claims
+    );
+
+    await orchestrationStub.goto();
+    await expect(orchestrationStub.heading).toBeVisible();
+
+    await orchestrationStub.setPublicUrl(sisPublicUrl);
+    await orchestrationStub.setPrivateUrl(sisPrivateUrl);
+    await orchestrationStub.setUserId(userId);
+    await orchestrationStub.uncheckCreateIdentity();
+    await orchestrationStub.continue();
+
+    await expect(confirmDetails.heading).toBeVisible();
+    await expect(page).toHaveURL((url) => {
+      return url.pathname === ConfirmDetailsPage.path;
+    });
+    await expect(confirmDetails.fullNameValue).toHaveText("KENNETH DECERQUEIRA");
+    await expect(confirmDetails.dateOfBirthValue).toHaveText("8 July 1965");
+    await expect(confirmDetails.addressValue).toContainText("8, HADLEY ROAD");
+
+    await confirmDetails.continue();
+    await expect(identityResponse.heading).toBeVisible();
+    await expect(identityResponse.identityJson).toBeVisible();
+    const userIdentity = await identityResponse.readIdentity();
+
+    expect(userIdentity).toStrictEqual({
+      sub: userId,
+      vot: "P3",
+      vtm: "https://oidc.account.gov.uk/trustmark",
+      "https://vocab.account.gov.uk/v1/credentialJWT": expect.arrayContaining(credentialJwts),
+      "https://vocab.account.gov.uk/v1/returnCode": [],
+      ...claims,
+    });
+
+    await page.goBack();
+
+    await expect(sessionExpiredError.heading).toBeVisible();
+    await expect(sessionExpiredError.message).toBeVisible();
+    await expect(page).toHaveURL((url) => {
+      return url.pathname === SessionExpiredErrorPage.path;
     });
   });
 
