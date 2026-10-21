@@ -4,17 +4,17 @@
     "url": "https://github.com/govuk-one-login/ipv-identity-reuse-service/issues"
   },
   "dependencies": {
-    "@aws-lambda-powertools/logger": "2.35.0",
-    "@aws-lambda-powertools/metrics": "2.35.0",
-    "@aws-lambda-powertools/parameters": "2.35.0",
-    "@aws-lambda-powertools/tracer": "2.35.0",
-    "@aws-sdk/client-appconfigdata": "3.1146.0",
-    "@aws-sdk/client-dynamodb": "3.1146.0",
-    "@aws-sdk/client-kms": "3.1146.0",
-    "@aws-sdk/client-s3": "3.1146.0",
-    "@aws-sdk/client-secrets-manager": "3.1146.0",
-    "@aws-sdk/client-sqs": "3.1146.0",
-    "@aws-sdk/lib-dynamodb": "3.1146.0",
+    "@aws-lambda-powertools/logger": "2.36.0",
+    "@aws-lambda-powertools/metrics": "2.36.0",
+    "@aws-lambda-powertools/parameters": "2.36.0",
+    "@aws-lambda-powertools/tracer": "2.36.0",
+    "@aws-sdk/client-appconfigdata": "3.1152.0",
+    "@aws-sdk/client-dynamodb": "3.1152.0",
+    "@aws-sdk/client-kms": "3.1152.0",
+    "@aws-sdk/client-s3": "3.1152.0",
+    "@aws-sdk/client-secrets-manager": "3.1152.0",
+    "@aws-sdk/client-sqs": "3.1152.0",
+    "@aws-sdk/lib-dynamodb": "3.1152.0",
     "@aws-sdk/util-dynamodb": "3.996.7",
     "@govuk-one-login/data-vocab": "2.0.2",
     "@govuk-one-login/event-catalogue": "47.0.2",
@@ -29,7 +29,7 @@
     "nunjucks": "3.2.4",
     "superagent": "^10.4.1",
     "supertest": "7.3.0",
-    "web-did-resolver": "3.1.0"
+    "web-did-resolver": "3.2.0"
   },
   "description": "Identity Reuse Service",
   "devDependencies": {
