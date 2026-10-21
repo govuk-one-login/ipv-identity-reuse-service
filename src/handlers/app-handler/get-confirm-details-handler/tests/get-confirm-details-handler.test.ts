@@ -24,6 +24,7 @@ import { getJwtBody } from "../../../../utilities/jwt-utilities.js";
 import logger from "../../../../utilities/logger.js";
 import { handler } from "../get-confirm-details-handler.js";
 import { extractUserDetails } from "../user-details-content.js";
+import { getReuseDecision } from "../../../../domain/reuse/reuse-decision.js";
 import { NextFunction, Request, Response } from "express";
 import {
   redirectToSessionExpiredPageExpress,
@@ -146,13 +147,11 @@ beforeEach(() => {
     fraudIssuer: ["fraudCRI"],
     fraudValidityPeriod: 180,
   } as never);
-  vi.mocked(hasIdentityExpired).mockReturnValue({
-    fraudExpired: false,
-    drivingLicenceExpired: false,
-    expired: false,
+  vi.mocked(getReuseDecision).mockReturnValue({
+    isReusable: true,
+    reason: { expired: false, drivingLicenceExpired: false, fraudExpired: false, votSufficient: true },
+    rawData: { vot: "P2" },
   });
-  vi.mocked(getJwtBody).mockReturnValue({ sub: "user-sub", vot: "P2", max_vot: "P2" } as never);
-  vi.mocked(calculateVot).mockReturnValue("P2");
 });
 
 afterEach(() => {
@@ -343,14 +342,13 @@ describe("handler record validation", () => {
   });
 });
 
-describe("combined expiry and VoT checks", () => {
-  it("should redirect to client when both identity is expired and VoT is insufficient", async () => {
-    vi.mocked(hasIdentityExpired).mockReturnValue({
-      fraudExpired: true,
-      drivingLicenceExpired: true,
-      expired: true,
+describe("reuse decision", () => {
+  it("should redirect to callback when reuse decision is false", async () => {
+    vi.mocked(getReuseDecision).mockReturnValue({
+      isReusable: false,
+      reason: { expired: true, drivingLicenceExpired: false, fraudExpired: true, votSufficient: true },
+      rawData: { vot: "P2" },
     });
-    vi.mocked(calculateVot).mockReturnValue("P0");
 
     const { request, response, next } = createExpressRequest();
     await handler(request, response, next);
@@ -359,13 +357,12 @@ describe("combined expiry and VoT checks", () => {
     expect(redirectToOauthCallBackExpress).toHaveBeenCalledWith(response);
   });
 
-  it("should redirect to client when both identity is expired and VoT is insufficient and log an error if the session update fails", async () => {
-    vi.mocked(hasIdentityExpired).mockReturnValue({
-      fraudExpired: true,
-      drivingLicenceExpired: true,
-      expired: true,
+  it("should redirect to unrecoverable page and log error if reuse decision is false and session update fails", async () => {
+    vi.mocked(getReuseDecision).mockReturnValue({
+      isReusable: false,
+      reason: { expired: true, drivingLicenceExpired: true, fraudExpired: false, votSufficient: false },
+      rawData: { vot: "P0" },
     });
-    vi.mocked(calculateVot).mockReturnValue("P0");
     vi.mocked(updateSessionData).mockRejectedValueOnce(
       new Error("PATCH session/data endpoint returned an error response")
     );
@@ -432,6 +429,12 @@ describe("combined expiry and VoT checks", () => {
       expired: false,
     });
     vi.mocked(calculateVot).mockReturnValue("P2");
+  it("should render confirm details page when reuse decision is true", async () => {
+    vi.mocked(getReuseDecision).mockReturnValue({
+      isReusable: true,
+      reason: { expired: false, drivingLicenceExpired: false, fraudExpired: false, votSufficient: true },
+      rawData: { vot: "P2" },
+    });
 
     const { request, response, next } = createExpressRequest();
     await handler(request, response, next);
@@ -465,4 +468,5 @@ describe("combined expiry and VoT checks", () => {
     expect(calculateVot).toHaveBeenCalled();
     expect(redirectToOauthCallBackExpress).toHaveBeenCalledWith(response);
   });
+})
 });
