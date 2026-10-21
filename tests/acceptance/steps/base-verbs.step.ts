@@ -4,6 +4,7 @@ import { randomString } from "../../../shared-test/string-utilities.js";
 import { getDidControllerName, getSigningKeyId } from "../shared/utils/ssm-utilities.js";
 import { AuthorizationResponse, OAuthBadRequest, RedirectResponse, TokenResponse } from "../shared/utils/auth-api.js";
 import { generateRandomTestUserId } from "../shared/utils/user-subject-id.js";
+import { getCloudFormationOutput, CloudFormationOutputs } from "../shared/utils/cloudformation.js";
 
 export type WorldDefinition = {
   testDidController: string;
@@ -19,6 +20,7 @@ export type WorldDefinition = {
   redirectResponse?: RedirectResponse | Error;
   authorizationResponse?: AuthorizationResponse | OAuthBadRequest;
   tokenResponse?: TokenResponse | OAuthBadRequest;
+  environment?: string;
 };
 
 setDefaultTimeout(20_000);
@@ -41,4 +43,5 @@ Before<WorldDefinition>(async function () {
   this.redirectResponse = undefined;
   this.authorizationResponse = undefined;
   this.tokenResponse = undefined;
+  this.environment = await getCloudFormationOutput(CloudFormationOutputs.AppConfigEnvironment);
 });

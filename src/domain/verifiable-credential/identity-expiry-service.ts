@@ -1,4 +1,4 @@
-import { getConfiguration } from "../../configuration/configuration.js";
+import type { Configuration } from "../../configuration/configuration.js";
 import { hasDrivingLicenceExpired } from "./driving-licence-expiry-service.js";
 import { hasFraudCheckExpired, getFraudVc } from "./fraud-check-service.js";
 import { VerifiableCredentialJWT } from "./verifiable-credential-types.js";
@@ -11,9 +11,10 @@ export type IdentityExpiryResult = {
   fraudVc?: VerifiableCredentialJWT;
 };
 
-export const hasIdentityExpired = async (storedIdentityVcJwts: string[]): Promise<IdentityExpiryResult> => {
-  const configuration = await getConfiguration();
-
+export const hasIdentityExpired = (
+  storedIdentityVcJwts: string[],
+  configuration: Configuration
+): IdentityExpiryResult => {
   const vcs = parseVerifiableCredentials(storedIdentityVcJwts);
   const fraudVc = getFraudVc(vcs, configuration.fraudIssuer);
   const fraudExpired = hasFraudCheckExpired(fraudVc, configuration.fraudValidityPeriod);

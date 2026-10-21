@@ -20,6 +20,7 @@ import {
 import { EVCSError } from "../../utilities/errors.js";
 import { VotEnum } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_READ.js";
 import { ResponseBody } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_RETURNED.js";
+import { getConfiguration } from "../../configuration/configuration.js";
 
 export const handler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
   const request = event.body ? (JSON.parse(event.body) as UserIdentityRequest) : undefined;
@@ -82,9 +83,12 @@ const createSuccessResponse = async (
   const content = getJwtBody<StoredIdentityRecord>(identityResponse.si.vc);
   const { kidValid, signatureValid, isValid } = await validateStoredIdentity(identityResponse);
   const vot: CalculatedVectorOfTrust = calculateVot(content, identityResponse.si.unsignedVot, vtr);
-  const vtm = `https://oidc.account.gov.uk/trustmark`;
+  const configuration = await getConfiguration();
   const maxVot = (content.max_vot || identityResponse.si.unsignedVot) as VotEnum;
-  const { expired, fraudVc } = await hasIdentityExpired(identityResponse.vcs.map((vcObject) => vcObject.vc));
+  const { expired, fraudVc } = hasIdentityExpired(
+    identityResponse.vcs.map((vcObject) => vcObject.vc),
+    configuration
+  );
 
   await auditIdentityRecordRead(
     {
@@ -102,7 +106,7 @@ const createSuccessResponse = async (
   delete content.max_vot;
 
   const successResponse: UserIdentityResponse = {
-    content: { ...content, vot, vtm },
+    content: { ...content, vot, vtm: configuration.vtm },
     vot: maxVot,
     isValid: isValid,
     expired,

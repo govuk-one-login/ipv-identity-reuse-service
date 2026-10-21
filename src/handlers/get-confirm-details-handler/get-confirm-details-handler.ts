@@ -12,6 +12,7 @@ import logger from "../../utilities/logger.js";
 import { MetricDimension, MetricName } from "../../utilities/metric-enum.js";
 import { calculateVot } from "../../domain/stored-identity/calculate-vot.js";
 import { createStoredIdentityHash } from "../../domain/stored-identity/stored-identity-hashing.js";
+import { getConfiguration, type Configuration } from "../../configuration/configuration.js";
 import type {
   StoredIdentityRecord,
   CalculatedVectorOfTrust,
@@ -99,13 +100,14 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent, context: Contex
         return redirectToOauthCallBack();
       }
 
+      const configuration = await getConfiguration();
       const storedIdentityJwt = identityResponse.si.vc;
       const content = getJwtBody<StoredIdentityRecord>(storedIdentityJwt);
       const unsignedVot: IdentityVectorOfTrust = identityResponse.si.unsignedVot;
       const storedIdentityVcJwts: string[] = identityResponse.vcs.map((vcObject) => vcObject.vc);
       const vot = calculateVot(content, unsignedVot, vtr);
 
-      const identityReuseValid = await validateUserIdentity(vot, storedIdentityVcJwts, vtr);
+      const identityReuseValid = validateUserIdentity(vot, storedIdentityVcJwts, vtr, configuration);
       if (!identityReuseValid) {
         await tryUpdateSessionData(sessionId, { errorDescription: "record_update_requested" });
         return redirectToOauthCallBack();
@@ -148,12 +150,13 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent, context: Contex
   }
 };
 
-const validateUserIdentity = async (
+const validateUserIdentity = (
   vot: CalculatedVectorOfTrust,
   storedIdentityVcJwts: string[],
-  vtr: IdentityVectorOfTrust[]
-): Promise<boolean> => {
-  const { expired, fraudExpired, drivingLicenceExpired } = await hasIdentityExpired(storedIdentityVcJwts);
+  vtr: IdentityVectorOfTrust[],
+  configuration: Configuration
+): boolean => {
+  const { expired, fraudExpired, drivingLicenceExpired } = hasIdentityExpired(storedIdentityVcJwts, configuration);
   const votSufficient = vot !== "P0";
 
   metrics.addDimensions({

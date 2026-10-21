@@ -13,6 +13,7 @@ describe("isValidConfiguration", () => {
     dcmawIssuer: ["https://dcmaw-cri.example.com"],
     securityCheckIssuer: "https://cimit.example.com",
     ciReturnCodes: [{ ci: "G97", returnCode: "L" }],
+    vtm: "https://oidc.account.gov.uk/trustmark",
   });
 
   it("should return true for valid configuration object", () => {
@@ -161,5 +162,17 @@ describe("isValidConfiguration", () => {
     expect(isValidConfiguration({ ...baseConfig, drivingLicenceValidityPeriod: "a-string" })).toEqual(false);
     expect(isValidConfiguration({ ...baseConfig, drivingLicenceValidityPeriod: {} })).toEqual(false);
     expect(isValidConfiguration({ ...baseConfig, drivingLicenceValidityPeriod: [] })).toEqual(false);
+  });
+
+  it("should return false for missing vtm", () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { vtm, ...testObject } = baseConfig;
+    expect(isValidConfiguration(testObject)).toEqual(false);
+  });
+
+  it("should return false if vtm not a string", () => {
+    expect(isValidConfiguration({ ...baseConfig, vtm: 100 })).toEqual(false);
+    expect(isValidConfiguration({ ...baseConfig, vtm: {} })).toEqual(false);
+    expect(isValidConfiguration({ ...baseConfig, vtm: [] })).toEqual(false);
   });
 });

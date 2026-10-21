@@ -122,7 +122,7 @@ test.describe("Authorization workflow", () => {
     expect(userIdentity).toStrictEqual({
       sub: userId,
       vot: "P3",
-      vtm: "https://oidc.account.gov.uk/trustmark",
+      vtm: expect.stringMatching(/https:\/\/oidc.\w*.account.gov.uk\/trustmark/),
       "https://vocab.account.gov.uk/v1/credentialJWT": expect.arrayContaining(credentialJwts),
       "https://vocab.account.gov.uk/v1/returnCode": [],
       ...claims,
@@ -184,7 +184,7 @@ test.describe("Authorization workflow", () => {
     expect(userIdentity).toStrictEqual({
       sub: userId,
       vot: "P3",
-      vtm: "https://oidc.account.gov.uk/trustmark",
+      vtm: expect.stringMatching(/https:\/\/oidc.\w*.account.gov.uk\/trustmark/),
       "https://vocab.account.gov.uk/v1/credentialJWT": expect.arrayContaining(credentialJwts),
       "https://vocab.account.gov.uk/v1/returnCode": [],
       ...claims,

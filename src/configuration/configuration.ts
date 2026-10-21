@@ -8,15 +8,16 @@ import { ConfigurationError } from "../utilities/errors.js";
 import { isValidConfiguration } from "./configuration-validator.js";
 
 export interface Configuration {
+  ciReturnCodes: ReturnCodeMapping[];
+  controllerAllowList: string[];
+  dcmawIssuer?: string[];
+  drivingLicenceValidityPeriod?: number;
   evcsApiUrl: string;
-  interventionCodesToInvalidate: string[];
   fraudIssuer: string[];
   fraudValidityPeriod: number;
-  controllerAllowList: string[];
-  drivingLicenceValidityPeriod?: number;
-  dcmawIssuer?: string[];
+  interventionCodesToInvalidate: string[];
   securityCheckIssuer: string;
-  ciReturnCodes: ReturnCodeMapping[];
+  vtm: string;
 }
 
 export interface ReturnCodeMapping {

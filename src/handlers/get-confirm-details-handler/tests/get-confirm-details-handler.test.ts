@@ -117,7 +117,7 @@ beforeEach(() => {
     fraudIssuer: ["fraudCRI"],
     fraudValidityPeriod: 180,
   } as never);
-  vi.mocked(hasIdentityExpired).mockResolvedValue({
+  vi.mocked(hasIdentityExpired).mockReturnValue({
     fraudExpired: false,
     drivingLicenceExpired: false,
     expired: false,
@@ -350,7 +350,7 @@ describe("handler record validation", () => {
 
 describe("combined expiry and VoT checks", () => {
   it("should redirect to client when both identity is expired and VoT is insufficient", async () => {
-    vi.mocked(hasIdentityExpired).mockResolvedValue({
+    vi.mocked(hasIdentityExpired).mockReturnValue({
       fraudExpired: true,
       drivingLicenceExpired: true,
       expired: true,
@@ -370,7 +370,7 @@ describe("combined expiry and VoT checks", () => {
   });
 
   it("should redirect to client when both identity is expired and VoT is insufficient and log an error if the session update fails", async () => {
-    vi.mocked(hasIdentityExpired).mockResolvedValue({
+    vi.mocked(hasIdentityExpired).mockReturnValue({
       fraudExpired: true,
       drivingLicenceExpired: true,
       expired: true,
@@ -396,7 +396,7 @@ describe("combined expiry and VoT checks", () => {
   });
 
   it("should redirect to client when only fraud check is expired but VoT is sufficient", async () => {
-    vi.mocked(hasIdentityExpired).mockResolvedValue({
+    vi.mocked(hasIdentityExpired).mockReturnValue({
       fraudExpired: true,
       drivingLicenceExpired: false,
       expired: true,
@@ -416,7 +416,7 @@ describe("combined expiry and VoT checks", () => {
   });
 
   it("should redirect to client when only driving licence is expired but VoT is sufficient", async () => {
-    vi.mocked(hasIdentityExpired).mockResolvedValue({
+    vi.mocked(hasIdentityExpired).mockReturnValue({
       fraudExpired: false,
       drivingLicenceExpired: true,
       expired: true,
@@ -436,7 +436,7 @@ describe("combined expiry and VoT checks", () => {
   });
 
   it("should redirect to client when only VoT is insufficient but identity is not expired", async () => {
-    vi.mocked(hasIdentityExpired).mockResolvedValue({
+    vi.mocked(hasIdentityExpired).mockReturnValue({
       fraudExpired: false,
       drivingLicenceExpired: false,
       expired: false,
@@ -456,7 +456,7 @@ describe("combined expiry and VoT checks", () => {
   });
 
   it("should render confirm details page when neither check fails", async () => {
-    vi.mocked(hasIdentityExpired).mockResolvedValue({
+    vi.mocked(hasIdentityExpired).mockReturnValue({
       fraudExpired: false,
       drivingLicenceExpired: false,
       expired: false,
@@ -470,7 +470,7 @@ describe("combined expiry and VoT checks", () => {
   });
 
   it("should always execute both checks before failing", async () => {
-    vi.mocked(hasIdentityExpired).mockResolvedValue({
+    vi.mocked(hasIdentityExpired).mockReturnValue({
       fraudExpired: true,
       drivingLicenceExpired: true,
       expired: true,

@@ -13,6 +13,7 @@ export const isValidConfiguration = (value: unknown): value is Configuration => 
     isArrayOfType(object.controllerAllowList, isString) &&
     isArrayOfType(object.ciReturnCodes, isReturnCodeMapping) &&
     isString(object.securityCheckIssuer) &&
+    isString(object.vtm) &&
     isTypeWhenDefined(object.drivingLicenceValidityPeriod, isNumber) &&
     isTypeWhenDefined(object.dcmawIssuer, (value: unknown) => isArrayOfType(value, isString))
   );
