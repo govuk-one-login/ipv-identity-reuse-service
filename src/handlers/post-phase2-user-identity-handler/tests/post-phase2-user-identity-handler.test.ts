@@ -4,7 +4,7 @@ import { HttpCodesEnum } from "../../../utilities/constants.js";
 import * as configuration from "../../../configuration/configuration.js";
 import { Configuration } from "../../../configuration/configuration.js";
 import { UserIdentityRequest, UserIdentityResponse } from "../post-phase2-user-identity-types.js";
-import * as identityExpiryService from "../../../domain/verifiable-credential/identity-expiry-service.js";
+import { hasIdentityExpired } from "../../../domain/verifiable-credential/identity-expiry-service.js";
 import * as AuditModule from "../../../utilities/audit.js";
 import * as ValidateStoredIdentity from "../../../domain/stored-identity/stored-identity-validator.js";
 import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utilities.js";
@@ -20,6 +20,7 @@ import { VerifiableCredentialJWT } from "../../../domain/verifiable-credential/v
 
 vi.mock("../../../utilities/logger");
 vi.mock("../../../utilities/audit");
+vi.mock("../../../domain/verifiable-credential/identity-expiry-service.js");
 vi.mock("../../../domain/stored-identity/stored-identity-validator", async (importOriginal) => ({
   ...(await importOriginal<object>()),
   getUserIdFromJwt: vi.fn(),
@@ -70,8 +71,9 @@ beforeEach(() => {
   vi.spyOn(configuration, "getConfiguration").mockResolvedValue({
     evcsApiUrl: "https://evcs.gov.uk",
     controllerAllowList: ["api.identity.dev.account.gov.uk"],
+    vtm: "https://oidc.account.gov.uk/trustmark",
   } as Configuration);
-  vi.spyOn(identityExpiryService, "hasIdentityExpired").mockResolvedValue({
+  vi.mocked(hasIdentityExpired).mockReturnValue({
     fraudExpired: false,
     drivingLicenceExpired: false,
     expired: false,
@@ -394,7 +396,7 @@ describe("user-identity-handler authorization", () => {
 
 describe("user-identity-handler expired field", () => {
   it("should set expired to true when hasIdentityExpired returns true", async () => {
-    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockResolvedValue({
+    vi.mocked(hasIdentityExpired).mockReturnValue({
       fraudExpired: true,
       drivingLicenceExpired: false,
       expired: true,
@@ -415,7 +417,7 @@ describe("user-identity-handler expired field", () => {
   });
 
   it("should set expired to false when hasIdentityExpired returns false", async () => {
-    vi.spyOn(identityExpiryService, "hasIdentityExpired").mockResolvedValue({
+    vi.mocked(hasIdentityExpired).mockReturnValue({
       fraudExpired: false,
       drivingLicenceExpired: false,
       expired: false,

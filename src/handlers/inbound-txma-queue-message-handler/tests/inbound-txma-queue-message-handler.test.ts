@@ -32,6 +32,7 @@ const DEFAULT_CONFIGURATION: Configuration = Object.freeze({
   controllerAllowList: ["did:web:api.identity.dev.account.gov.uk"],
   securityCheckIssuer: "https://cimit.example.com",
   ciReturnCodes: [{ ci: "G97", returnCode: "L" }],
+  vtm: "https://oidc.account.gov.uk/trustmark",
 });
 
 const VALID_TXMA_MESSAGE: AisMessage = Object.freeze({

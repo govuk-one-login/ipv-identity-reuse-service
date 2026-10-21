@@ -27,14 +27,28 @@ import {
 } from "../../../utilities/errors.js";
 import { APIGatewayAuthorizerResultContext } from "aws-lambda/common/api-gateway.js";
 import logger from "../../../utilities/logger.js";
+import { getConfiguration } from "../../../configuration/configuration.js";
 
 vi.mock("../../../api/oauth-internal-api.js");
 vi.mock("../../../domain/stored-identity/stored-identity-validator.js");
 vi.mock("../../../domain/stored-identity/stored-identity-hashing.js");
 vi.mock("../../../utilities/logger.js");
+vi.mock("../../../configuration/configuration.js");
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.mocked(getConfiguration).mockResolvedValue({
+    evcsApiUrl: "https://api.example.com",
+    interventionCodesToInvalidate: ["05", "06"],
+    fraudIssuer: ["https://fraud-cri.example.com"],
+    fraudValidityPeriod: 180,
+    controllerAllowList: ["api.identity.dev.account.gov.uk"],
+    drivingLicenceValidityPeriod: 180,
+    dcmawIssuer: ["https://dcmaw-cri.example.com"],
+    securityCheckIssuer: "https://cimit.example.com",
+    ciReturnCodes: [{ ci: "G97", returnCode: "L" }],
+    vtm: "https://oidc.account.gov.uk/trustmark",
+  });
 });
 
 describe("Successful user-identity response", () => {

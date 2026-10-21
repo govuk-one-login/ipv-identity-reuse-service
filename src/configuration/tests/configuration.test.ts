@@ -24,6 +24,7 @@ describe("getConfiguration", () => {
     dcmawIssuer: ["https://dcmaw-cri.example.com"],
     securityCheckIssuer: "https://cimit.example.com",
     ciReturnCodes: [{ ci: "G97", returnCode: "L" }],
+    vtm: "https://oidc.account.gov.uk/trustmark",
   });
 
   it("should return valid configuration object when powertools returns valid data", async () => {

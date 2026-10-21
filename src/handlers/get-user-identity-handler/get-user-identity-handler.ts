@@ -11,8 +11,7 @@ import { validateStoredIdentityAndVotByHash } from "../../domain/stored-identity
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
 import { UserIdentityError } from "../../utilities/errors.js";
 import { APIGatewayAuthorizerResultContext } from "aws-lambda/common/api-gateway.js";
-
-const VTM = "https://oidc.account.gov.uk/trustmark";
+import { getConfiguration } from "../../configuration/configuration.js";
 
 export const handler = async (
   event: APIGatewayProxyEventBase<APIGatewayAuthorizerResultContext>,
@@ -31,11 +30,12 @@ export const handler = async (
     }
 
     const { storedIdentityRecord, calculatedVot, signedCredentials } = await getStoredIdentity(sessionId);
+    const { vtm } = await getConfiguration();
 
     const responseBody: GetUserIdentityResponse = {
       sub: storedIdentityRecord.sub,
       vot: calculatedVot,
-      vtm: VTM,
+      vtm,
       "https://vocab.account.gov.uk/v1/credentialJWT": signedCredentials,
       "https://vocab.account.gov.uk/v1/returnCode": [],
       ...storedIdentityRecord.claims,

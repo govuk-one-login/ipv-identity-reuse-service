@@ -66,6 +66,7 @@ describe("Sis Pact Verification", () => {
     vi.spyOn(ConfigurationModule, "getConfiguration").mockResolvedValue({
       evcsApiUrl: "https://evcs.gov.uk",
       controllerAllowList: ["did:web:api.identity.dev.account.gov.uk"],
+      vtm: "https://oidc.dev.account.gov.uk/trustmark",
     } as Configuration);
     vi.spyOn(ConfigurationModule, "getServiceApiKey").mockResolvedValue("an-api-key");
     vi.spyOn(FraudCheckService, "hasFraudCheckExpired").mockReturnValue(false);

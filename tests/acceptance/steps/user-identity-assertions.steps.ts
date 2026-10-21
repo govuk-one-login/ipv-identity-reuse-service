@@ -21,7 +21,7 @@ Then<WorldDefinition>("the error description should be {string}", function (erro
   assert.equal(this.userIdentityPostResponse.body.error_description, errorDescription);
 });
 
-Then<WorldDefinition>("the stored identity should be returned", function () {
+Then<WorldDefinition>("the stored identity should be returned", function async() {
   // Build expected credentials array from all credentials
   const expectedCredentials = this.credentialJwts.map((jwt) => jwt.split(".").at(-1));
 
@@ -49,7 +49,7 @@ Then<WorldDefinition>("the stored identity should be returned", function () {
           "https://vocab.account.gov.uk/v1/address": [KENNETH_DECERQUERIA_ADDRESS],
         },
         vot: undefined,
-        vtm: "https://oidc.account.gov.uk/trustmark",
+        vtm: `https://oidc.${this.environment}.account.gov.uk/trustmark`,
       },
       vot: undefined,
       isValid: undefined,
@@ -129,7 +129,7 @@ Then<WorldDefinition>("the untrusted stored identity should be returned", functi
         sub: this.userId,
         iss: "http://api.example.com",
         vot: undefined,
-        vtm: "https://oidc.account.gov.uk/trustmark",
+        vtm: `https://oidc.${this.environment}.account.gov.uk/trustmark`,
       },
       vot: undefined,
       isValid: undefined,
