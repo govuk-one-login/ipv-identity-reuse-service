@@ -7,6 +7,7 @@ import { Metrics } from "@aws-lambda-powertools/metrics";
 import { getJwtBody } from "../../utilities/jwt-utilities.js";
 import { calculateVot } from "../stored-identity/calculate-vot.js";
 import type { Configuration } from "../../configuration/configuration.js";
+import { VerifiableCredentialJWT } from "../verifiable-credential/verifiable-credential-types.js";
 
 const metrics = new Metrics();
 
@@ -19,6 +20,7 @@ export interface ReuseDecision {
     votSufficient: boolean;
   };
   rawData: {
+    fraudVc?: VerifiableCredentialJWT;
     vot: CalculatedVectorOfTrust;
   };
 }
@@ -33,13 +35,16 @@ export const getReuseDecision = (
   const content = getJwtBody<StoredIdentityRecord>(storedIdentityJwt);
   const vot = calculateVot(content, unsignedVot, vtr);
 
-  const { expired, fraudExpired, drivingLicenceExpired } = hasIdentityExpired(storedIdentityVcJwts, configuration);
+  const { expired, fraudExpired, drivingLicenceExpired, fraudVc } = hasIdentityExpired(
+    storedIdentityVcJwts,
+    configuration
+  );
   const votSufficient = vot !== "P0";
 
   const reuseDecision: ReuseDecision = {
     isReusable: !fraudExpired && !drivingLicenceExpired && votSufficient,
     reason: { expired, fraudExpired, drivingLicenceExpired, votSufficient },
-    rawData: { vot },
+    rawData: { vot, fraudVc },
   };
 
   publishReuseMetrics(reuseDecision, vtr);
