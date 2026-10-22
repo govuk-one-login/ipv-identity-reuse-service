@@ -213,7 +213,7 @@ describe("handler record validation", () => {
   ])("redirects to client when validation fails (%o)", async (verdict) => {
     vitest.mocked(validateStoredIdentity).mockResolvedValue(verdict as StoredIdentityValidationResult);
     const result = await lambdaHandler(validEvent(), {} as Context);
-    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_update_requested" });
+    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_unavailable" });
     expect(result).toEqual({
       statusCode: 302,
       headers: {
@@ -279,7 +279,7 @@ describe("handler record validation", () => {
     const result = await lambdaHandler(validEvent(), {} as Context);
     expect(validateStoredIdentity).not.toHaveBeenCalled();
     expect(mockRender).not.toHaveBeenCalled();
-    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_update_requested" });
+    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_unavailable" });
     expect(result).toEqual({
       statusCode: 302,
       headers: {
@@ -337,7 +337,7 @@ describe("handler record validation", () => {
     vitest.mocked(validateStoredIdentity).mockRejectedValue(new StoredIdentityValidationError());
     const result = await lambdaHandler(validEvent(), {} as Context);
     expect(mockRender).not.toHaveBeenCalled();
-    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_update_requested" });
+    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_unavailable" });
     expect(result).toEqual({
       statusCode: 302,
       headers: {
@@ -359,7 +359,7 @@ describe("combined expiry and VoT checks", () => {
 
     const result = await lambdaHandler(validEvent(), {} as Context);
 
-    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_update_requested" });
+    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_unavailable" });
     expect(result).toEqual({
       statusCode: 302,
       body: "",
@@ -382,7 +382,7 @@ describe("combined expiry and VoT checks", () => {
 
     const result = await lambdaHandler(validEvent(), {} as Context);
 
-    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_update_requested" });
+    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_unavailable" });
     expect(logger.error).toHaveBeenCalledWith(
       "Failed to update session data: Error: PATCH session/data endpoint returned an error response"
     );
@@ -405,7 +405,7 @@ describe("combined expiry and VoT checks", () => {
 
     const result = await lambdaHandler(validEvent(), {} as Context);
 
-    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_update_requested" });
+    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_unavailable" });
     expect(result).toEqual({
       statusCode: 302,
       body: "",
@@ -425,7 +425,7 @@ describe("combined expiry and VoT checks", () => {
 
     const result = await lambdaHandler(validEvent(), {} as Context);
 
-    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_update_requested" });
+    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_unavailable" });
     expect(result).toEqual({
       statusCode: 302,
       body: "",
@@ -445,7 +445,7 @@ describe("combined expiry and VoT checks", () => {
 
     const result = await lambdaHandler(validEvent(), {} as Context);
 
-    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_update_requested" });
+    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_unavailable" });
     expect(result).toEqual({
       statusCode: 302,
       body: "",

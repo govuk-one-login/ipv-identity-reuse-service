@@ -95,7 +95,7 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent, context: Contex
           signatureValid: validationResult.signatureValid,
           isValid: validationResult.isValid,
         });
-        await tryUpdateSessionData(sessionId, { errorDescription: "record_update_requested" });
+        await tryUpdateSessionData(sessionId, { errorDescription: "record_unavailable" });
 
         return redirectToOauthCallBack();
       }
@@ -109,7 +109,7 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent, context: Contex
 
       const identityReuseValid = validateUserIdentity(vot, storedIdentityVcJwts, vtr, configuration);
       if (!identityReuseValid) {
-        await tryUpdateSessionData(sessionId, { errorDescription: "record_update_requested" });
+        await tryUpdateSessionData(sessionId, { errorDescription: "record_unavailable" });
         return redirectToOauthCallBack();
       }
 
@@ -132,7 +132,7 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent, context: Contex
       };
     } else {
       logger.error("No identity record found in EVCS");
-      await tryUpdateSessionData(sessionId!, { errorDescription: "record_update_requested" });
+      await tryUpdateSessionData(sessionId!, { errorDescription: "record_unavailable" });
       return redirectToOauthCallBack();
     }
   } catch (error) {
@@ -140,7 +140,7 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent, context: Contex
       return redirectToSessionExpiredPage(domainName);
     } else if (error instanceof StoredIdentityValidationError) {
       logger.error("Stored identity record is missing required user details");
-      await tryUpdateSessionData(sessionId!, { errorDescription: "record_update_requested" });
+      await tryUpdateSessionData(sessionId!, { errorDescription: "record_unavailable" });
 
       return redirectToOauthCallBack();
     } else {

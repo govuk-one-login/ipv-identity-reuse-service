@@ -43,7 +43,7 @@ test.describe("Identity rejection scenarios", () => {
     await expect(page).toHaveURL((url) => {
       return (
         url.searchParams.get("error") === "access_denied" &&
-        url.searchParams.get("error_description") === "record_update_requested"
+        url.searchParams.get("error_description") === "record_unavailable"
       );
     });
   });
@@ -60,7 +60,7 @@ test.describe("Identity rejection scenarios", () => {
     await expect(page).toHaveURL((url) => {
       return (
         url.searchParams.get("error") === "access_denied" &&
-        url.searchParams.get("error_description") === "record_update_requested"
+        url.searchParams.get("error_description") === "record_unavailable"
       );
     });
   });
@@ -92,7 +92,7 @@ test.describe("Identity rejection scenarios", () => {
     await expect(page).toHaveURL((url) => {
       return (
         url.searchParams.get("error") === "access_denied" &&
-        url.searchParams.get("error_description") === "record_update_requested"
+        url.searchParams.get("error_description") === "record_unavailable"
       );
     });
   });
@@ -120,7 +120,7 @@ test.describe("Identity rejection scenarios", () => {
     await expect(page).toHaveURL((url) => {
       return (
         url.searchParams.get("error") === "access_denied" &&
-        url.searchParams.get("error_description") === "record_update_requested"
+        url.searchParams.get("error_description") === "record_unavailable"
       );
     });
   });
@@ -148,7 +148,7 @@ test.describe("Identity rejection scenarios", () => {
     await expect(page).toHaveURL((url) => {
       return (
         url.searchParams.get("error") === "access_denied" &&
-        url.searchParams.get("error_description") === "record_update_requested"
+        url.searchParams.get("error_description") === "record_unavailable"
       );
     });
   });
@@ -177,7 +177,7 @@ test.describe("Identity rejection scenarios", () => {
     await expect(page).toHaveURL((url) => {
       return (
         url.searchParams.get("error") === "access_denied" &&
-        url.searchParams.get("error_description") === "record_update_requested"
+        url.searchParams.get("error_description") === "record_unavailable"
       );
     });
   });
@@ -202,7 +202,7 @@ test.describe("Identity rejection scenarios", () => {
     await expect(page).toHaveURL((url) => {
       return (
         url.searchParams.get("error") === "access_denied" &&
-        url.searchParams.get("error_description") === "record_update_requested"
+        url.searchParams.get("error_description") === "record_unavailable"
       );
     });
   });
