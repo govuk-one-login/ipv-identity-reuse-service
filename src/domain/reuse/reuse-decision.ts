@@ -8,6 +8,8 @@ import { getJwtBody } from "../../utilities/jwt-utilities.js";
 import { calculateVot } from "../stored-identity/calculate-vot.js";
 import type { Configuration } from "../../configuration/configuration.js";
 import { VerifiableCredentialJWT } from "../verifiable-credential/verifiable-credential-types.js";
+import { getSecurityCheckCredential } from "../verifiable-credential/security-check.js";
+import { parseVerifiableCredentials } from "../verifiable-credential/credential-decoder.js";
 
 const metrics = new Metrics();
 
@@ -17,6 +19,7 @@ export interface ReuseDecision {
     expired: boolean;
     fraudExpired: boolean;
     drivingLicenceExpired: boolean;
+    securityCheckPresent: boolean;
     votSufficient: boolean;
   };
   rawData: {
@@ -35,15 +38,19 @@ export const getReuseDecision = (
   const content = getJwtBody<StoredIdentityRecord>(storedIdentityJwt);
   const vot = calculateVot(content, unsignedVot, vtr);
 
+  const decodedCredentials: VerifiableCredentialJWT[] = parseVerifiableCredentials(storedIdentityVcJwts);
+
   const { expired, fraudExpired, drivingLicenceExpired, fraudVc } = hasIdentityExpired(
-    storedIdentityVcJwts,
+    decodedCredentials,
     configuration
   );
+
+  const securityCheckPresent = !!getSecurityCheckCredential(decodedCredentials, configuration);
   const votSufficient = vot !== "P0";
 
   const reuseDecision: ReuseDecision = {
-    isReusable: !fraudExpired && !drivingLicenceExpired && votSufficient,
-    reason: { expired, fraudExpired, drivingLicenceExpired, votSufficient },
+    isReusable: !fraudExpired && !drivingLicenceExpired && votSufficient && securityCheckPresent,
+    reason: { expired, fraudExpired, drivingLicenceExpired, votSufficient, securityCheckPresent },
     rawData: { vot, fraudVc },
   };
 
@@ -56,14 +63,14 @@ const publishReuseMetrics = (reuseDecision: ReuseDecision, vtr: IdentityVectorOf
     [MetricDimension.FraudCheckExpired]: reuseDecision.reason.fraudExpired ? "fail" : "pass",
     [MetricDimension.DrivingLicenceExpired]: reuseDecision.reason.drivingLicenceExpired ? "fail" : "pass",
     [MetricDimension.VotSufficient]: reuseDecision.reason.votSufficient ? "pass" : "fail",
+    [MetricDimension.SecurityCheckPresent]: reuseDecision.reason.securityCheckPresent ? "pass" : "fail",
   });
   metrics.addMetric(MetricName.IdentityReuseValidation, "Count", 1);
   metrics.publishStoredMetrics();
 
-  if (reuseDecision.reason.expired) {
-    logger.error("User identity expired");
-  }
-  if (!reuseDecision.reason.votSufficient) {
-    logger.error("Identity does not meet required level of confidence", { vtr });
+  if (reuseDecision.isReusable) {
+    logger.info("Identity is reusable", { result: reuseDecision.reason, request: { vtr } });
+  } else {
+    logger.info("Identity is not reusable", { result: reuseDecision.reason, request: { vtr } });
   }
 };

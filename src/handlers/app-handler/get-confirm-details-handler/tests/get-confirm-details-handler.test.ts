@@ -149,7 +149,13 @@ beforeEach(() => {
   } as never);
   vi.mocked(getReuseDecision).mockReturnValue({
     isReusable: true,
-    reason: { expired: false, drivingLicenceExpired: false, fraudExpired: false, votSufficient: true },
+    reason: {
+      expired: false,
+      drivingLicenceExpired: false,
+      fraudExpired: false,
+      securityCheckPresent: true,
+      votSufficient: true,
+    },
     rawData: { vot: "P2" },
   });
 });
@@ -346,7 +352,13 @@ describe("reuse decision", () => {
   it("should redirect to callback when reuse decision is false", async () => {
     vi.mocked(getReuseDecision).mockReturnValue({
       isReusable: false,
-      reason: { expired: true, drivingLicenceExpired: false, fraudExpired: true, votSufficient: true },
+      reason: {
+        expired: true,
+        drivingLicenceExpired: false,
+        fraudExpired: true,
+        securityCheckPresent: true,
+        votSufficient: true,
+      },
       rawData: { vot: "P2" },
     });
 
@@ -360,7 +372,13 @@ describe("reuse decision", () => {
   it("should redirect to unrecoverable page and log error if reuse decision is false and session update fails", async () => {
     vi.mocked(getReuseDecision).mockReturnValue({
       isReusable: false,
-      reason: { expired: true, drivingLicenceExpired: true, fraudExpired: false, votSufficient: false },
+      reason: {
+        expired: true,
+        drivingLicenceExpired: true,
+        fraudExpired: false,
+        securityCheckPresent: true,
+        votSufficient: false,
+      },
       rawData: { vot: "P0" },
     });
     vi.mocked(updateSessionData).mockRejectedValueOnce(
@@ -432,7 +450,13 @@ describe("reuse decision", () => {
   it("should render confirm details page when reuse decision is true", async () => {
     vi.mocked(getReuseDecision).mockReturnValue({
       isReusable: true,
-      reason: { expired: false, drivingLicenceExpired: false, fraudExpired: false, votSufficient: true },
+      reason: {
+        expired: false,
+        drivingLicenceExpired: false,
+        fraudExpired: false,
+        securityCheckPresent: true,
+        votSufficient: true,
+      },
       rawData: { vot: "P2" },
     });
 
