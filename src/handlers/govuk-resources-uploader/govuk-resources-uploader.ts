@@ -11,7 +11,7 @@ import {
   ListObjectVersionsCommandOutput,
   DeleteObjectsCommand,
 } from "@aws-sdk/client-s3";
-import { globSync } from "fast-glob";
+import { globSync } from "tinyglobby";
 import fs from "node:fs";
 import { Logger } from "@aws-lambda-powertools/logger";
 
