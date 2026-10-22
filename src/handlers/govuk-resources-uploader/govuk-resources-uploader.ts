@@ -11,9 +11,9 @@ import {
   ListObjectVersionsCommandOutput,
   DeleteObjectsCommand,
 } from "@aws-sdk/client-s3";
-import { globSync } from "fast-glob";
 import fs from "node:fs";
 import { Logger } from "@aws-lambda-powertools/logger";
+import path from "node:path";
 
 const logger = new Logger();
 
@@ -39,9 +39,9 @@ const getContentType = (key: string): string | undefined => {
 
 const uploadResources = async (bucket: string) => {
   const baseDirectory = require.resolve("govuk-frontend").replace(/\/dist\/govuk.*/, "/dist/govuk");
-  const fileList = ["govuk-frontend*.{js,css}?(.map)", "assets/**"].flatMap((pattern) =>
-    globSync(pattern, { cwd: baseDirectory })
-  );
+  const fileList = ["govuk-frontend*.{js,css}?(.map)", "assets/**"]
+    .flatMap((pattern) => fs.globSync(pattern, { cwd: baseDirectory }))
+    .filter((key) => fs.statSync(path.join(baseDirectory, key)).isFile());
 
   const client = new S3Client({});
 

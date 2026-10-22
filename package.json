@@ -23,7 +23,6 @@
     "cfn-response-promise": "1.1.0",
     "did-resolver": "6.0.0",
     "esbuild": "0.28.1",
-    "fast-glob": "3.3.3",
     "govuk-frontend": "5.14.0",
     "jose": "6.2.1",
     "nunjucks": "3.2.4",
