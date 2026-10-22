@@ -19,9 +19,11 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent, context: Contex
   }
 
   try {
-    await createAuthCode(sessionId);
+    // eslint-disable-next-line unicorn/prefer-ternary
     if (action === "update-details") {
       await updateSessionData(sessionId, { errorDescription: "record_update_requested" });
+    } else {
+      await createAuthCode(sessionId);
     }
 
     return {

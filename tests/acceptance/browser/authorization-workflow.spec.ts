@@ -238,11 +238,10 @@ test.describe("Authorization workflow", () => {
     }
   });
 
-  test("user with a valid identity goes to confirm details page, updates details and is successfully redirected", async ({
+  test("user with a valid identity goes to confirm details page, clicks update details and is successfully redirected", async ({
     page,
     orchestrationStub,
     confirmDetails,
-    identityResponse,
   }) => {
     const userId = generateRandomTestUserId();
     const credentialJwts = [
@@ -284,11 +283,14 @@ test.describe("Authorization workflow", () => {
     await confirmDetails.updateDetails();
     await updateSubmit;
 
-    await expect(identityResponse.heading).toBeVisible();
-    await expect(identityResponse.identityJson).toBeVisible();
-    const userIdentity = await identityResponse.readIdentity();
-    // Once the /user-identity endpoint starts returning non-static data we should
-    // assert that identity information is as expected.
-    expect(userIdentity).toHaveProperty("sub");
+    await expect(page).toHaveURL((url) => {
+      const parameters = url.searchParams;
+      return (
+        parameters.get("error") === "access_denied" &&
+        parameters.get("error_description") === "record_update_requested" &&
+        parameters.get("state") === "sample-state" &&
+        !parameters.has("code")
+      );
+    });
   });
 });
