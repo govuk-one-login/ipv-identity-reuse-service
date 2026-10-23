@@ -444,6 +444,52 @@ Resources:
         - !Ref OrchestrationJwksEndpointOverride
         - !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationJwksEndpoint ]
 
+  StubAuthenticationAlgParameter:
+    Type: AWS::SSM::Parameter
+    Condition: IsDevOrBuild
+    Properties:
+      Name: !Sub "/${OAuthCommon.Outputs.StackName}/clients/cc-testing-stub/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
+  StubAudienceParameter:
+    Type: AWS::SSM::Parameter
+    Condition: IsDevOrBuild
+    Properties:
+      Name: !Sub "/${OAuthCommon.Outputs.StackName}/clients/cc-testing-stub/jwtAuthentication/audience"
+      Type: String
+      Value: !FindInMap [ EnvironmentMap, !Ref Environment, SISAudience ]
+
+  StubIssuerParameter:
+    Type: AWS::SSM::Parameter
+    Condition: IsNotProduction
+    Properties:
+      Name: !Sub "/${OAuthCommon.Outputs.StackName}/clients/cc-testing-stub/jwtAuthentication/issuer"
+      Type: String
+      Value: "cc-testing-stub"
+
+  StubRedirectURIParameter:
+    Type: AWS::SSM::Parameter
+    Condition: IsDevOrBuild
+    Properties:
+      Name: !Sub "/${OAuthCommon.Outputs.StackName}/clients/cc-testing-stub/jwtAuthentication/redirectUri"
+      Type: String
+      Value: !If
+        - IsOrchestrationRedirectURIOverridden
+        - !Ref OrchestrationRedirectURIOverride
+        - !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationRedirectURI ]
+
+  StubJwksEndpointParameter:
+    Type: AWS::SSM::Parameter
+    Condition: IsNotProduction
+    Properties:
+      Name: !Sub "/${OAuthCommon.Outputs.StackName}/clients/cc-testing-stub/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value: !If
+        - IsOrchestrationJwksEndpointOverridden
+        - !Ref OrchestrationJwksEndpointOverride
+        - !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationJwksEndpoint ]
+
   ##################################
   # API GATEWAY AUTHORIZER HANDLER #
   ##################################

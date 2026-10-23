@@ -323,7 +323,7 @@ Conditions:
 
 Globals:
   Function:
-    MemorySize: 1024
+    MemorySize: 2048
     Timeout: 30
     CodeUri: ../../src
     Runtime: nodejs22.x
