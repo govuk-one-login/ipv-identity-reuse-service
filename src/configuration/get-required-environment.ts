@@ -1,4 +1,4 @@
-export const getRequiredEnvironment = (name: string): string => {
+export const getRequiredEnvironment = (name: keyof NodeJS.ProcessEnv | (string & {})): string => {
   const value = process.env[name];
   if (!value) {
     throw new Error(`Environment variable ${name} must be defined`);

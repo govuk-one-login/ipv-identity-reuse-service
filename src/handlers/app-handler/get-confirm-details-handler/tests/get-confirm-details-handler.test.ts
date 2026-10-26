@@ -1,30 +1,35 @@
 import { KENNETH_DECERQUERIA_ADDRESS } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/addresses";
 import { KENNETH_DECERQUEIRA_BIRTH_DATE } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/birthdates";
 import { KENNETH_DECERQUEIRA } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/names";
-import { APIGatewayProxyEvent, Context } from "aws-lambda";
 import { afterEach, beforeEach, describe, expect, it, vi, vitest } from "vitest";
-import translations from "../../../../locales/en/translation.json" with { type: "json" };
-import { EVCSIdentityResponse } from "../../../api/evcs-api.js";
-import { getSessionDetails, updateSessionData } from "../../../api/oauth-internal-api.js";
-import { getConfiguration } from "../../../configuration/configuration.js";
-import { calculateVot } from "../../../domain/stored-identity/calculate-vot.js";
-import type { StoredIdentityValidationResult } from "../../../domain/stored-identity/stored-identity-types.js";
+import translations from "../../../../../locales/en/translation.json" with { type: "json" };
+import { EVCSIdentityResponse } from "../../../../api/evcs-api.js";
+import { getSessionDetails, updateSessionData } from "../../../../api/oauth-internal-api.js";
+import { getConfiguration } from "../../../../configuration/configuration.js";
+import { calculateVot } from "../../../../domain/stored-identity/calculate-vot.js";
+import type { StoredIdentityValidationResult } from "../../../../domain/stored-identity/stored-identity-types.js";
 import {
   getIdentityFromCredentialStore,
   validateStoredIdentity,
-} from "../../../domain/stored-identity/stored-identity-validator.js";
-import { hasIdentityExpired } from "../../../domain/verifiable-credential/identity-expiry-service.js";
-import { HttpCodesEnum } from "../../../utilities/constants.js";
+} from "../../../../domain/stored-identity/stored-identity-validator.js";
+import { hasIdentityExpired } from "../../../../domain/verifiable-credential/identity-expiry-service.js";
+import { HttpCodesEnum } from "../../../../utilities/constants.js";
 import {
   EVCSError,
   GetSessionError,
   SessionInvalidError,
   StoredIdentityValidationError,
-} from "../../../utilities/errors.js";
-import { getJwtBody } from "../../../utilities/jwt-utilities.js";
-import logger from "../../../utilities/logger.js";
-import { lambdaHandler } from "../get-confirm-details-handler.js";
+} from "../../../../utilities/errors.js";
+import { getJwtBody } from "../../../../utilities/jwt-utilities.js";
+import logger from "../../../../utilities/logger.js";
+import { handler } from "../get-confirm-details-handler.js";
 import { extractUserDetails } from "../user-details-content.js";
+import { NextFunction, Request, Response } from "express";
+import {
+  redirectToSessionExpiredPageExpress,
+  redirectToOauthCallBackExpress,
+  redirectToErrorPageExpress,
+} from "../../../../api/sis-api.js";
 
 const mockRender = vi.hoisted(() => vi.fn().mockReturnValue("Rendered Confirm Details Screen"));
 
@@ -37,6 +42,7 @@ vi.mock("nunjucks", () => ({
   },
 }));
 
+vitest.mock("../../../../api/sis-api.js");
 vitest.mock("@aws-lambda-powertools/metrics", () => ({
   Metrics: class {
     addDimensions = vi.fn();
@@ -45,18 +51,16 @@ vitest.mock("@aws-lambda-powertools/metrics", () => ({
   },
 }));
 
-vi.mock("../../../utilities/logger");
-vi.mock("../../../domain/stored-identity/stored-identity-validator.js");
-vi.mock("../../../api/oauth-internal-api.js");
+vi.mock("../../../../utilities/logger");
+vi.mock("../../../../domain/stored-identity/stored-identity-validator.js");
+vi.mock("../../../../api/oauth-internal-api.js");
 vi.mock("../user-details-content.js");
-vi.mock("../../../configuration/configuration.js");
-vi.mock("../../../domain/verifiable-credential/identity-expiry-service.js");
-vi.mock("../../../domain/stored-identity/calculate-vot.js");
-vi.mock("../../../utilities/jwt-utilities.js");
+vi.mock("../../../../configuration/configuration.js");
+vi.mock("../../../../domain/verifiable-credential/identity-expiry-service.js");
+vi.mock("../../../../domain/stored-identity/calculate-vot.js");
+vi.mock("../../../../utilities/jwt-utilities.js");
 
-vi.mock("../../../utilities/cookie-utilities", () => ({
-  getCookieValues: vi.fn().mockReturnValue(new Map([["identity_reuse_service_session", "test-session-id"]])),
-}));
+const INDEX_PATH_REGEX = /index.njk$/;
 
 const mockIdentityResponse: EVCSIdentityResponse = {
   si: {
@@ -67,17 +71,42 @@ const mockIdentityResponse: EVCSIdentityResponse = {
   vcs: [{ state: "CURRENT", vc: "vc-jwt", metadata: undefined }],
 };
 
-const validEvent = () =>
-  ({
-    queryStringParameters: {
-      redirect_uri: "https://example.com",
-      state: "state-id",
-      client_id: "client",
+const createExpressRequest = (
+  requestOverrides?: Partial<Request>
+): { request: Request; response: Response; next: NextFunction } => {
+  const request: Request = {
+    cookies: {
+      identity_reuse_service_session: "test-session-id",
     },
-    headers: {
-      authorization: "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJ1c2VyLWlkIn0.signature",
-    },
-  }) as never as APIGatewayProxyEvent;
+    ...requestOverrides,
+  } as unknown as Request;
+  const response = {} as Record<string, ReturnType<typeof vi.fn>>;
+  const chainable = [
+    "append",
+    "attachment",
+    "clearCookie",
+    "contentType",
+    "cookie",
+    "format",
+    "header",
+    "links",
+    "location",
+    "render",
+    "sendStatus",
+    "set",
+    "status",
+    "type",
+    "vary",
+  ];
+
+  for (const method of chainable) {
+    response[method] = vi.fn(() => response);
+  }
+
+  const next = vi.fn();
+
+  return { request, response: response as unknown as Response, next };
+};
 
 beforeEach(() => {
   vi.stubEnv("DOMAIN_NAME", "test-domain");
@@ -131,6 +160,8 @@ afterEach(() => {
 });
 
 it("should store the calculated vot and identity hash in the session and render the confirm details screen", async () => {
+  const { request, response, next } = createExpressRequest();
+
   vi.mocked(validateStoredIdentity).mockResolvedValue({
     kidValid: true,
     signatureValid: true,
@@ -148,37 +179,28 @@ it("should store the calculated vot and identity hash in the session and render 
       },
     },
   });
-  const result = await lambdaHandler(validEvent(), {} as Context);
+
+  await handler(request, response, next);
 
   expect(getSessionDetails).toHaveBeenCalledWith("test-session-id");
   expect(getIdentityFromCredentialStore).toHaveBeenCalledWith("Bearer mock-storage-access-token");
-  expect(mockRender).toHaveBeenCalledExactlyOnceWith(
-    expect.toSatisfy((filename: string) => filename.endsWith("index.njk")),
-    {
-      assetPath: "./assets",
-      rootPath: ".",
-      govukRebrand: true,
-      userDetails: {
-        name: "Jane Doe",
-        dateOfBirth: "1990-01-15",
-        addressDetailHtml: "10 Downing Street<br>London<br>SW1A 2AA",
-      },
-      translations,
-    }
-  );
-
   expect(updateSessionData).toHaveBeenCalledTimes(1);
   expect(updateSessionData).toHaveBeenCalledWith("test-session-id", {
     storedIdentitySha256: "02d6bdfbfb3bf45077a34e2252816c1ddc906a8947b29d0ba7185381f2c1a794",
     vot: "P2",
   });
 
-  expect(result).toEqual({
-    body: "Rendered Confirm Details Screen",
-    headers: {
-      "content-type": "text/html",
+  expect(response.header).toHaveBeenCalledWith("content-type", "text/html");
+  expect(response.render).toHaveBeenCalledWith(expect.stringMatching(INDEX_PATH_REGEX), {
+    assetPath: "./assets",
+    rootPath: ".",
+    govukRebrand: true,
+    userDetails: {
+      name: "Jane Doe",
+      dateOfBirth: "1990-01-15",
+      addressDetailHtml: "10 Downing Street<br>London<br>SW1A 2AA",
     },
-    statusCode: 200,
+    translations,
   });
 });
 
@@ -201,9 +223,20 @@ describe("handler record validation", () => {
         },
       },
     });
-    const result = await lambdaHandler(validEvent(), {} as Context);
-    expect(mockRender).toHaveBeenCalledWith(expect.stringContaining("index.njk"), expect.any(Object));
-    expect(result.statusCode).toBe(200);
+    const { request, response, next } = createExpressRequest();
+    await handler(request, response, next);
+    expect(response.header).toHaveBeenCalledWith("content-type", "text/html");
+    expect(response.render).toHaveBeenCalledWith(expect.stringMatching(INDEX_PATH_REGEX), {
+      assetPath: "./assets",
+      rootPath: ".",
+      govukRebrand: true,
+      userDetails: {
+        name: "Jane Doe",
+        dateOfBirth: "1990-01-15",
+        addressDetailHtml: "10 Downing Street<br>London<br>SW1A 2AA",
+      },
+      translations,
+    });
   });
 
   it.each([
@@ -212,35 +245,19 @@ describe("handler record validation", () => {
     { kidValid: false, signatureValid: true, isValid: false },
   ])("redirects to client when validation fails (%o)", async (verdict) => {
     vitest.mocked(validateStoredIdentity).mockResolvedValue(verdict as StoredIdentityValidationResult);
-    const result = await lambdaHandler(validEvent(), {} as Context);
+    const { request, response, next } = createExpressRequest();
+    await handler(request, response, next);
     expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_unavailable" });
-    expect(result).toEqual({
-      statusCode: 302,
-      headers: {
-        Location: "https://example-api.com/oauth2/callback",
-      },
-      body: "",
-    });
+    expect(redirectToOauthCallBackExpress).toHaveBeenCalledWith(response);
   });
 
   it("returns an error when session cookie is missing", async () => {
-    const { getCookieValues } = await import("../../../utilities/cookie-utilities.js");
-    vitest.mocked(getCookieValues).mockReturnValueOnce(new Map());
-    const result = await lambdaHandler(
-      {
-        queryStringParameters: { redirect_uri: "test.com", state: "state", client_id: "client_id" },
-        headers: {},
-      } as never as APIGatewayProxyEvent,
-      {} as Context
-    );
+    const { request, response, next } = createExpressRequest({ cookies: {} });
+    await handler(request, response, next);
     expect(getSessionDetails).not.toHaveBeenCalled();
     expect(getIdentityFromCredentialStore).not.toHaveBeenCalled();
     expect(mockRender).not.toHaveBeenCalled();
-    expect(result).toEqual({
-      statusCode: 302,
-      headers: { Location: "https://test-domain/error/session-expired" },
-      body: "",
-    });
+    expect(redirectToSessionExpiredPageExpress).toHaveBeenCalledWith(response);
   });
 
   it("returns a failure response with a 500 status code when storageAccessToken is not returned from the session", async () => {
@@ -249,102 +266,80 @@ describe("handler record validation", () => {
       storageAccessToken: undefined,
       clientSessionId: "client-session-id",
     });
-    const result = await lambdaHandler(validEvent(), {} as Context);
+    const { request, response, next } = createExpressRequest();
+    await handler(request, response, next);
     expect(getIdentityFromCredentialStore).not.toHaveBeenCalled();
-    expect(mockRender).not.toHaveBeenCalled();
-    expect(result).toEqual({
-      statusCode: 302,
-      headers: { Location: "https://test-domain/error/unrecoverable" },
-      body: "",
-    });
+    expect(redirectToErrorPageExpress).toHaveBeenCalledWith(response);
   });
 
   it("returns a failure response when the EVCS call fails", async () => {
     vi.mocked(getIdentityFromCredentialStore).mockRejectedValue(new EVCSError(HttpCodesEnum.INTERNAL_SERVER_ERROR));
-    const result = await lambdaHandler(validEvent(), {} as Context);
+
+    const { request, response, next } = createExpressRequest();
+    await handler(request, response, next);
+
     expect(validateStoredIdentity).not.toHaveBeenCalled();
-    expect(mockRender).not.toHaveBeenCalled();
-    expect(result).toEqual({
-      headers: {
-        Location: "https://test-domain/error/unrecoverable",
-      },
-      statusCode: 302,
-      body: "",
-    });
+    expect(redirectToErrorPageExpress).toHaveBeenCalledWith(response);
   });
 
   it("redirects to client when EVCS returns a 404", async () => {
     // eslint-disable-next-line unicorn/no-useless-undefined
     vitest.mocked(getIdentityFromCredentialStore).mockResolvedValue(undefined);
-    const result = await lambdaHandler(validEvent(), {} as Context);
+
+    const { request, response, next } = createExpressRequest();
+    await handler(request, response, next);
+
     expect(validateStoredIdentity).not.toHaveBeenCalled();
     expect(mockRender).not.toHaveBeenCalled();
     expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_unavailable" });
-    expect(result).toEqual({
-      statusCode: 302,
-      headers: {
-        Location: "https://example-api.com/oauth2/callback",
-      },
-      body: "",
-    });
+    expect(redirectToOauthCallBackExpress).toHaveBeenCalledWith(response);
   });
 
   it("redirects to the session-expired page when getSessionDetails throws a SessionInvalidError", async () => {
     vitest
       .mocked(getSessionDetails)
       .mockRejectedValueOnce(new SessionInvalidError("No session found for the given sessionId"));
-    const result = await lambdaHandler(validEvent(), {} as Context);
+
+    const { request, response, next } = createExpressRequest();
+    await handler(request, response, next);
+
     expect(getIdentityFromCredentialStore).not.toHaveBeenCalled();
-    expect(mockRender).not.toHaveBeenCalled();
-    expect(result).toEqual({
-      statusCode: 302,
-      headers: { Location: "https://test-domain/error/session-expired" },
-      body: "",
-    });
+    expect(redirectToSessionExpiredPageExpress).toHaveBeenCalledWith(response);
   });
 
   it("returns a failure response when getSessionDetails throws", async () => {
     vitest
       .mocked(getSessionDetails)
       .mockRejectedValueOnce(new Error("GET session endpoint returned an error response"));
-    const result = await lambdaHandler(validEvent(), {} as Context);
+
+    const { request, response, next } = createExpressRequest();
+    await handler(request, response, next);
+
     expect(getIdentityFromCredentialStore).not.toHaveBeenCalled();
-    expect(mockRender).not.toHaveBeenCalled();
-    expect(result).toEqual({
-      headers: {
-        Location: "https://test-domain/error/unrecoverable",
-      },
-      statusCode: 302,
-      body: "",
-    });
+    expect(redirectToErrorPageExpress).toHaveBeenCalledWith(response);
   });
 
   it("redirects to the error page when getSessionDetails throws a 500 GetSessionError", async () => {
     vitest
       .mocked(getSessionDetails)
       .mockRejectedValueOnce(new GetSessionError("GET session endpoint returned an error response"));
-    const result = await lambdaHandler(validEvent(), {} as Context);
+
+    const { request, response, next } = createExpressRequest();
+    await handler(request, response, next);
+
     expect(getIdentityFromCredentialStore).not.toHaveBeenCalled();
-    expect(mockRender).not.toHaveBeenCalled();
-    expect(result).toEqual({
-      statusCode: 302,
-      headers: { Location: "https://test-domain/error/unrecoverable" },
-      body: "",
-    });
+    expect(redirectToErrorPageExpress).toHaveBeenCalledWith(response);
   });
 
   it("redirects to client when stored identity record is missing required user details", async () => {
     vitest.mocked(validateStoredIdentity).mockRejectedValue(new StoredIdentityValidationError());
-    const result = await lambdaHandler(validEvent(), {} as Context);
+
+    const { request, response, next } = createExpressRequest();
+    await handler(request, response, next);
+
     expect(mockRender).not.toHaveBeenCalled();
     expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_unavailable" });
-    expect(result).toEqual({
-      statusCode: 302,
-      headers: {
-        Location: "https://example-api.com/oauth2/callback",
-      },
-      body: "",
-    });
+    expect(redirectToOauthCallBackExpress).toHaveBeenCalledWith(response);
   });
 });
 
@@ -357,16 +352,11 @@ describe("combined expiry and VoT checks", () => {
     });
     vi.mocked(calculateVot).mockReturnValue("P0");
 
-    const result = await lambdaHandler(validEvent(), {} as Context);
+    const { request, response, next } = createExpressRequest();
+    await handler(request, response, next);
 
     expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_unavailable" });
-    expect(result).toEqual({
-      statusCode: 302,
-      body: "",
-      headers: {
-        Location: "https://example-api.com/oauth2/callback",
-      },
-    });
+    expect(redirectToOauthCallBackExpress).toHaveBeenCalledWith(response);
   });
 
   it("should redirect to client when both identity is expired and VoT is insufficient and log an error if the session update fails", async () => {
@@ -380,19 +370,14 @@ describe("combined expiry and VoT checks", () => {
       new Error("PATCH session/data endpoint returned an error response")
     );
 
-    const result = await lambdaHandler(validEvent(), {} as Context);
+    const { request, response, next } = createExpressRequest();
+    await handler(request, response, next);
 
     expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_unavailable" });
     expect(logger.error).toHaveBeenCalledWith(
-      "Failed to update session data: Error: PATCH session/data endpoint returned an error response"
+      "Error in lambdaHandler event: Error: PATCH session/data endpoint returned an error response"
     );
-    expect(result).toEqual({
-      statusCode: 302,
-      body: "",
-      headers: {
-        Location: "https://test-domain/error/unrecoverable",
-      },
-    });
+    expect(redirectToErrorPageExpress).toHaveBeenCalledWith(response);
   });
 
   it("should redirect to client when only fraud check is expired but VoT is sufficient", async () => {
@@ -403,16 +388,11 @@ describe("combined expiry and VoT checks", () => {
     });
     vi.mocked(calculateVot).mockReturnValue("P2");
 
-    const result = await lambdaHandler(validEvent(), {} as Context);
+    const { request, response, next } = createExpressRequest();
+    await handler(request, response, next);
 
     expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_unavailable" });
-    expect(result).toEqual({
-      statusCode: 302,
-      body: "",
-      headers: {
-        Location: "https://example-api.com/oauth2/callback",
-      },
-    });
+    expect(redirectToOauthCallBackExpress).toHaveBeenCalledWith(response);
   });
 
   it("should redirect to client when only driving licence is expired but VoT is sufficient", async () => {
@@ -423,16 +403,11 @@ describe("combined expiry and VoT checks", () => {
     });
     vi.mocked(calculateVot).mockReturnValue("P2");
 
-    const result = await lambdaHandler(validEvent(), {} as Context);
+    const { request, response, next } = createExpressRequest();
+    await handler(request, response, next);
 
     expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_unavailable" });
-    expect(result).toEqual({
-      statusCode: 302,
-      body: "",
-      headers: {
-        Location: "https://example-api.com/oauth2/callback",
-      },
-    });
+    expect(redirectToOauthCallBackExpress).toHaveBeenCalledWith(response);
   });
 
   it("should redirect to client when only VoT is insufficient but identity is not expired", async () => {
@@ -443,16 +418,11 @@ describe("combined expiry and VoT checks", () => {
     });
     vi.mocked(calculateVot).mockReturnValue("P0");
 
-    const result = await lambdaHandler(validEvent(), {} as Context);
+    const { request, response, next } = createExpressRequest();
+    await handler(request, response, next);
 
     expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_unavailable" });
-    expect(result).toEqual({
-      statusCode: 302,
-      body: "",
-      headers: {
-        Location: "https://example-api.com/oauth2/callback",
-      },
-    });
+    expect(redirectToOauthCallBackExpress).toHaveBeenCalledWith(response);
   });
 
   it("should render confirm details page when neither check fails", async () => {
@@ -463,10 +433,21 @@ describe("combined expiry and VoT checks", () => {
     });
     vi.mocked(calculateVot).mockReturnValue("P2");
 
-    const result = await lambdaHandler(validEvent(), {} as Context);
+    const { request, response, next } = createExpressRequest();
+    await handler(request, response, next);
 
-    expect(result.statusCode).toBe(200);
-    expect(mockRender).toHaveBeenCalled();
+    expect(response.header).toHaveBeenCalledWith("content-type", "text/html");
+    expect(response.render).toHaveBeenCalledWith(expect.stringMatching(INDEX_PATH_REGEX), {
+      assetPath: "./assets",
+      rootPath: ".",
+      govukRebrand: true,
+      userDetails: {
+        name: "Jane Doe",
+        dateOfBirth: "1990-01-15",
+        addressDetailHtml: "10 Downing Street<br>London<br>SW1A 2AA",
+      },
+      translations,
+    });
   });
 
   it("should always execute both checks before failing", async () => {
@@ -477,9 +458,11 @@ describe("combined expiry and VoT checks", () => {
     });
     vi.mocked(calculateVot).mockReturnValue("P0");
 
-    await lambdaHandler(validEvent(), {} as Context);
+    const { request, response, next } = createExpressRequest();
+    await handler(request, response, next);
 
     expect(hasIdentityExpired).toHaveBeenCalled();
     expect(calculateVot).toHaveBeenCalled();
+    expect(redirectToOauthCallBackExpress).toHaveBeenCalledWith(response);
   });
 });

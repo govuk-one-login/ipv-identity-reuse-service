@@ -3,17 +3,14 @@ import logger from "../../utilities/logger.js";
 import { getCookieValues } from "../../utilities/cookie-utilities.js";
 import { getAuthorizationCode } from "../../api/oauth-internal-api.js";
 import { redirectToClient, redirectToErrorPage, redirectToSessionExpiredPage } from "../../api/sis-api.js";
-import { getRequiredEnvironment } from "../../configuration/get-required-environment.js";
 import { SessionInvalidError } from "../../utilities/errors.js";
 
 export const handler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
   logger.addContext(context);
 
-  const domainName = getRequiredEnvironment("DOMAIN_NAME");
-
   const sessionId = getCookieValues(event)?.get("identity_reuse_service_session");
   if (!sessionId) {
-    return redirectToSessionExpiredPage(domainName);
+    return redirectToSessionExpiredPage();
   }
 
   try {
@@ -29,8 +26,8 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
   } catch (error) {
     logger.error(`Error in OAuth Callback handler event: ${error}`);
     if (error instanceof SessionInvalidError) {
-      return redirectToSessionExpiredPage(domainName);
+      return redirectToSessionExpiredPage();
     }
-    return redirectToErrorPage(domainName);
+    return redirectToErrorPage();
   }
 };

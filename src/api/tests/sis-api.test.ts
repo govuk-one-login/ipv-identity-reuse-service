@@ -1,14 +1,27 @@
-import { it, expect } from "vitest";
+import { it, expect, vi, beforeEach } from "vitest";
 import {
   redirectToClient,
   redirectToConfirmDetails,
   redirectToErrorPage,
   redirectToOauthCallBack,
   redirectToSessionExpiredPage,
+  redirectToErrorPageExpress,
+  redirectToBadRequestExpress,
+  redirectToOauthCallBackExpress,
+  redirectToSessionExpiredPageExpress,
+  redirectToConfirmDetailsExpress,
 } from "../sis-api.js";
+import { getRequiredEnvironment } from "../../configuration/get-required-environment.js";
+import { Response } from "express";
+
+vi.mock("../../configuration/get-required-environment.js");
+
+beforeEach(() => {
+  vi.mocked(getRequiredEnvironment).mockReturnValue("test.com");
+});
 
 it("should redirect to error page", async () => {
-  const result = redirectToErrorPage("test.com");
+  const result = redirectToErrorPage();
   expect(result).toEqual({
     statusCode: 302,
     headers: {
@@ -19,7 +32,7 @@ it("should redirect to error page", async () => {
 });
 
 it("should redirect to session expired page", async () => {
-  const result = redirectToSessionExpiredPage("test.com");
+  const result = redirectToSessionExpiredPage();
   expect(result).toEqual({
     statusCode: 302,
     headers: {
@@ -31,7 +44,6 @@ it("should redirect to session expired page", async () => {
 
 it("should redirect to confirm details page with cookie", async () => {
   const result = redirectToConfirmDetails(
-    "test.com",
     "identity_reuse_service_session=test-session-id; Path=/; Secure; HttpOnly; SameSite=Lax"
   );
   expect(result).toEqual({
@@ -45,7 +57,7 @@ it("should redirect to confirm details page with cookie", async () => {
 });
 
 it("should redirect to confirm details page", async () => {
-  const result = redirectToConfirmDetails("test.com");
+  const result = redirectToConfirmDetails();
   expect(result).toEqual({
     statusCode: 302,
     headers: {
@@ -93,4 +105,59 @@ it("should redirect to oauth callback with query params", async () => {
     },
     body: "",
   });
+});
+
+it("should redirect to error page (express)", () => {
+  const response = { redirect: vi.fn() } as unknown as Response;
+
+  redirectToErrorPageExpress(response);
+
+  expect(getRequiredEnvironment).toHaveBeenCalledWith("DOMAIN_NAME");
+  expect(response.redirect).toHaveBeenCalledWith("https://test.com/error/unrecoverable");
+  expect(response.redirect).toHaveBeenCalledTimes(1);
+});
+
+it("should redirect to session expired page (express)", () => {
+  const response = { redirect: vi.fn() } as unknown as Response;
+
+  redirectToSessionExpiredPageExpress(response);
+
+  expect(getRequiredEnvironment).toHaveBeenCalledWith("DOMAIN_NAME");
+  expect(response.redirect).toHaveBeenCalledWith("https://test.com/error/session-expired");
+  expect(response.redirect).toHaveBeenCalledTimes(1);
+});
+
+it("should redirect to bad request page (express)", () => {
+  const response = { redirect: vi.fn() } as unknown as Response;
+
+  redirectToBadRequestExpress(response);
+
+  expect(getRequiredEnvironment).toHaveBeenCalledWith("DOMAIN_NAME");
+  expect(response.redirect).toHaveBeenCalledWith("https://test.com/error/bad-request");
+  expect(response.redirect).toHaveBeenCalledTimes(1);
+});
+
+it("should redirect to oauth callback (express)", () => {
+  process.env.PUBLIC_API = "api.example.com";
+  const response = { redirect: vi.fn() } as unknown as Response;
+
+  redirectToOauthCallBackExpress(response);
+
+  expect(response.redirect).toHaveBeenCalledWith("https://api.example.com/oauth2/callback");
+  expect(response.redirect).toHaveBeenCalledTimes(1);
+});
+
+it("should set session cookie and redirect to confirm details (express)", () => {
+  const redirect = vi.fn();
+  const response = { cookie: vi.fn().mockReturnThis(), redirect } as unknown as Response;
+
+  redirectToConfirmDetailsExpress(response, "test-session-id");
+
+  expect(response.cookie).toHaveBeenCalledWith("identity_reuse_service_session", "test-session-id", {
+    secure: true,
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+  });
+  expect(response.redirect).toHaveBeenCalledTimes(1);
 });
