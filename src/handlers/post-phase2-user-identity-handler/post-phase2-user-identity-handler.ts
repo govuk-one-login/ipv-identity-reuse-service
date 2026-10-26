@@ -84,7 +84,7 @@ const createSuccessResponse = async (
   const configuration = await getConfiguration();
   const maxVot = (content.max_vot || identityResponse.si.unsignedVot) as VotEnum;
 
-  const reuseDecision: ReuseDecision = await getReuseDecision(
+  const reuseDecision: ReuseDecision = getReuseDecision(
     identityResponse.si.vc,
     identityResponse.vcs.map((vcObject) => vcObject.vc),
     identityResponse.si.unsignedVot,
