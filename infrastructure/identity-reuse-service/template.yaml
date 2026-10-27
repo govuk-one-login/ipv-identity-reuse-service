@@ -905,116 +905,6 @@ Resources:
               - sts:AssumeRole
       Path: "/"
 
-  GetConfirmDetailsHandler:
-    Type: AWS::Serverless::Function
-    Condition: IsNotProduction
-    Properties:
-      FunctionName: !Sub "${AWS::StackName}-GetConfirmDetailsHandler"
-      Handler: get-confirm-details-handler.lambdaHandler
-      Role: !GetAtt GetConfirmDetailsHandlerRole.Arn
-      AutoPublishCodeSha256: !Ref CommitSha
-      VpcConfig: !If
-        - UseVpc
-        - SecurityGroupIds:
-            - Fn::ImportValue: !Sub "${VpcStackName}-AWSServicesEndpointSecurityGroupId"
-          SubnetIds:
-            - Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdA"
-            - Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdB"
-        - !Ref "AWS::NoValue"
-      Environment:
-        Variables:
-          DOMAIN_NAME: !Ref ReuseIdentityCustomDomain
-          PUBLIC_API: !GetAtt ReuseIdentityDomain.Value
-          NODE_OPTIONS: "--enable-source-maps"
-          OAUTH_INTERNAL_API_URL:
-            Fn::ImportValue: !Sub "${OauthInternalStackName}-PrivateApi"
-          SESSION_TIMEOUT_MS: !Ref ApiTimeoutMilliseconds
-          POWERTOOLS_SERVICE_NAME: "GetConfirmDetailsHandler"
-          ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
-          APP_CONFIG_NAME: !Ref ApplicationConfigName
-          APP_CONFIG_APPLICATION: !Ref ApplicationName
-          EVCS_API_KEY_SECRET_ARN:
-            Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
-      Layers:
-        - !Ref GovUKFrontEndLayer
-        - !If
-          - DynaTraceEnabled
-          - !FindInMap [EnvironmentMap, !Ref Environment, DynatraceNodeLayerArn]
-          - !Ref AWS::NoValue
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        UseNpmCi: True
-        EntryPoints:
-          - handlers/get-confirm-details-handler/get-confirm-details-handler.ts
-        Sourcemap: true
-        SourcesContent: false
-        Target: "es2024"
-        Format: esm
-        Platform: node
-        OutExtension:
-          - .js=.mjs
-        Banner:
-          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
-        Loader:
-          - .njk=file
-        External:
-          - govuk-frontend
-
-  GetConfirmDetailsHandlerRole:
-    # checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
-    Type: AWS::IAM::Role
-    Condition: IsNotProduction
-    Properties:
-      PermissionsBoundary: !If
-        - UsePermissionsBoundary
-        - !Ref PermissionsBoundary
-        - !Ref AWS::NoValue
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action:
-              - "sts:AssumeRole"
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
-        - Fn::ImportValue: !Sub "${AppConfigStackName}-AppConfigClientPolicyArn"
-        - Fn::ImportValue: !Sub "${SharedStackName}-EvcsApiKeySecretsManagerPolicy"
-
-  GetConfirmDetailsHandlerLogGroup:
-    Type: AWS::Logs::LogGroup
-    Condition: IsNotProduction
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-GetConfirmDetailsHandler"
-      RetentionInDays: !FindInMap [EnvironmentMap, !Ref Environment, LogGroupRetentionInDays]
-      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
-      Tags:
-        - Key: Product
-          Value: !Ref ProductTagValue
-        - Key: System
-          Value: !Ref SystemTagValue
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Owner
-          Value: !Ref OwnerTagValue
-        - Key: Source
-          Value: !Ref SourceTagValue
-        - Key: Name
-          Value: !Sub "/aws/lambda/${AWS::StackName}-GetConfirmDetailsHandler"
-
-  PublicApiGetConfirmDetailsHandlerResourcePolicy:
-    Condition: IsNotProduction
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref GetConfirmDetailsHandler.Alias
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceAccount: !Ref AWS::AccountId
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PublicApi}/${ApiStageName}/GET/confirm-details"
-
   PostConfirmDetailsHandler:
     Type: AWS::Serverless::Function
     Condition: IsNotProduction
@@ -1290,6 +1180,116 @@ Resources:
       Principal: apigateway.amazonaws.com
       SourceAccount: !Ref AWS::AccountId
       SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PublicApi}/${ApiStageName}/GET/error/bad-request"
+
+  AppHandler:
+    Type: AWS::Serverless::Function
+    Condition: IsNotProduction
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-AppHandler"
+      Handler: app-handler.handler
+      Role: !GetAtt AppHandlerRole.Arn
+      AutoPublishCodeSha256: !Ref CommitSha
+      Environment:
+        Variables:
+          APP_CONFIG_NAME: !Ref ApplicationConfigName
+          APP_CONFIG_APPLICATION: !Ref ApplicationName
+          DOMAIN_NAME: !Ref ReuseIdentityCustomDomain
+          ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
+          POWERTOOLS_SERVICE_NAME: AppHandler
+          EVCS_API_KEY_SECRET_ARN:
+            Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
+          NODE_OPTIONS: "--enable-source-maps"
+          POWERTOOLS_LOG_LEVEL: info
+          PUBLIC_API: !GetAtt ReuseIdentityDomain.Value
+          OAUTH_INTERNAL_API_URL:
+            Fn::ImportValue: !Sub "${OauthInternalStackName}-PrivateApi"
+          SESSION_TIMEOUT_MS: !Ref ApiTimeoutMilliseconds
+      VpcConfig: !If
+        - UseVpc
+        - SecurityGroupIds:
+            - Fn::ImportValue: !Sub "${VpcStackName}-AWSServicesEndpointSecurityGroupId"
+          SubnetIds:
+            - Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdA"
+            - Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdB"
+        - !Ref "AWS::NoValue"
+      Layers:
+        - !Ref GovUKFrontEndLayer
+        - !If
+          - DynaTraceEnabled
+          - !FindInMap [EnvironmentMap, !Ref Environment, DynatraceNodeLayerArn]
+          - !Ref AWS::NoValue
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        UseNpmCi: True
+        Minify: true
+        Target: es2022
+        Sourcemap: true
+        SourcesContent: false
+        EntryPoints:
+          - handlers/app-handler/app-handler.ts
+        Format: esm
+        Platform: node
+        Loader:
+          - .njk=file
+        OutExtension:
+          - .js=.mjs
+        Banner:
+          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
+
+  AppHandlerRole:
+    # checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
+    Type: AWS::IAM::Role
+    Condition: IsNotProduction
+    Properties:
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+        - Fn::ImportValue: !Sub "${AppConfigStackName}-AppConfigClientPolicyArn"
+        - Fn::ImportValue: !Sub "${SharedStackName}-EvcsApiKeySecretsManagerPolicy"
+  
+  AppHandlerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: IsNotProduction
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-AppHandler"
+      RetentionInDays: !FindInMap [EnvironmentMap, !Ref Environment, LogGroupRetentionInDays]
+      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
+      Tags:
+        - Key: Product
+          Value: !Ref ProductTagValue
+        - Key: System
+          Value: !Ref SystemTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref OwnerTagValue
+        - Key: Source
+          Value: !Ref SourceTagValue
+        - Key: Name
+          Value: !Sub "/aws/lambda/${AWS::StackName}-AppHandler"
+
+  AppHandlerApiPermission:
+    Type: AWS::Lambda::Permission
+    Condition: IsNotProduction
+    Properties:
+      FunctionName: !Ref AppHandler.Alias
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PublicApi}/*/*/*"
 
   GetCallbackHandler:
     Type: AWS::Serverless::Function

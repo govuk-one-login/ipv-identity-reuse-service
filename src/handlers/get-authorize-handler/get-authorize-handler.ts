@@ -2,7 +2,6 @@ import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-l
 import logger from "../../utilities/logger.js";
 import { callSessionApi } from "../../api/oauth-internal-api.js";
 import { redirectToConfirmDetails, redirectToErrorPage, redirectToBadRequest } from "../../api/sis-api.js";
-import { getRequiredEnvironment } from "../../configuration/get-required-environment.js";
 import { isStringWithLength } from "../../utilities/string-utilities.js";
 
 export type AuthorizationQueryStringParameters = {
@@ -13,11 +12,9 @@ export type AuthorizationQueryStringParameters = {
 export async function handler(event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> {
   logger.addContext(context);
 
-  const domainName = getRequiredEnvironment("DOMAIN_NAME");
-
   if (!isValidQueryParameters(event.queryStringParameters)) {
     logger.error("Parameters are invalid");
-    return redirectToBadRequest(domainName);
+    return redirectToBadRequest();
   }
 
   try {
@@ -25,10 +22,10 @@ export async function handler(event: APIGatewayProxyEvent, context: Context): Pr
     const response = await callSessionApi(clientId, request);
     const cookie = buildSessionCookie(response.session_id);
 
-    return redirectToConfirmDetails(domainName, cookie);
+    return redirectToConfirmDetails(cookie);
   } catch (error) {
     logger.error(`Error calling session handler: ${error}`);
-    return redirectToErrorPage(domainName);
+    return redirectToErrorPage();
   }
 }
 

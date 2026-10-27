@@ -1,7 +1,10 @@
 import { describe, it, expect, vitest } from "vitest";
 import { extractUserDetails, formatAddress } from "../user-details-content.js";
-import { StoredIdentityRecord, StoredIdentityClaims } from "../../../domain/stored-identity/stored-identity-types.js";
-import { StoredIdentityValidationError } from "../../../utilities/errors.js";
+import {
+  StoredIdentityRecord,
+  StoredIdentityClaims,
+} from "../../../../domain/stored-identity/stored-identity-types.js";
+import { StoredIdentityValidationError } from "../../../../utilities/errors.js";
 
 vitest.mock("../../../utilities/logger");
 

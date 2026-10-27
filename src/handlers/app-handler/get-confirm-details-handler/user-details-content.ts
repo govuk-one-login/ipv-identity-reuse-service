@@ -1,7 +1,7 @@
 import { BirthDateClass, NameClass, PostalAddressClass } from "@govuk-one-login/data-vocab/credentials.js";
-import { StoredIdentityRecord } from "../../domain/stored-identity/stored-identity-types.js";
-import { StoredIdentityValidationError } from "../../utilities/errors.js";
-import logger from "../../utilities/logger.js";
+import { StoredIdentityRecord } from "../../../domain/stored-identity/stored-identity-types.js";
+import { StoredIdentityValidationError } from "../../../utilities/errors.js";
+import logger from "../../../utilities/logger.js";
 
 export interface UserDetailsContent {
   name: string;

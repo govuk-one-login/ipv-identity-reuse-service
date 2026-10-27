@@ -8,14 +8,13 @@ import logger from "../../utilities/logger.js";
 export const lambdaHandler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
   const eventValues = new URLSearchParams(event.body || "");
   const action = eventValues.get("action");
-  const domainName = process.env.DOMAIN_NAME || "";
 
   logger.addContext(context);
 
   const sessionId = getCookieValues(event)?.get("identity_reuse_service_session");
   if (!sessionId) {
     logger.error("Session ID parameter is missing");
-    return redirectToSessionExpiredPage(domainName);
+    return redirectToSessionExpiredPage();
   }
 
   try {
@@ -36,8 +35,8 @@ export const lambdaHandler = async (event: APIGatewayProxyEvent, context: Contex
   } catch (error) {
     logger.error(`Error in lambdaHandler event`, { error });
     if (error instanceof SessionInvalidError) {
-      return redirectToSessionExpiredPage(domainName);
+      return redirectToSessionExpiredPage();
     }
-    return redirectToErrorPage(domainName);
+    return redirectToErrorPage();
   }
 };
