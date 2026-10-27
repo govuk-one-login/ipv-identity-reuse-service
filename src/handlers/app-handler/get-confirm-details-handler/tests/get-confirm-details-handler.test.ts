@@ -6,13 +6,11 @@ import translations from "../../../../../locales/en/translation.json" with { typ
 import { EVCSIdentityResponse } from "../../../../api/evcs-api.js";
 import { getSessionDetails, updateSessionData } from "../../../../api/oauth-internal-api.js";
 import { getConfiguration } from "../../../../configuration/configuration.js";
-import { calculateVot } from "../../../../domain/stored-identity/calculate-vot.js";
 import type { StoredIdentityValidationResult } from "../../../../domain/stored-identity/stored-identity-types.js";
 import {
   getIdentityFromCredentialStore,
   validateStoredIdentity,
 } from "../../../../domain/stored-identity/stored-identity-validator.js";
-import { hasIdentityExpired } from "../../../../domain/verifiable-credential/identity-expiry-service.js";
 import { HttpCodesEnum } from "../../../../utilities/constants.js";
 import {
   EVCSError,
@@ -20,7 +18,6 @@ import {
   SessionInvalidError,
   StoredIdentityValidationError,
 } from "../../../../utilities/errors.js";
-import { getJwtBody } from "../../../../utilities/jwt-utilities.js";
 import logger from "../../../../utilities/logger.js";
 import { handler } from "../get-confirm-details-handler.js";
 import { extractUserDetails } from "../user-details-content.js";
@@ -60,6 +57,7 @@ vi.mock("../../../../configuration/configuration.js");
 vi.mock("../../../../domain/verifiable-credential/identity-expiry-service.js");
 vi.mock("../../../../domain/stored-identity/calculate-vot.js");
 vi.mock("../../../../utilities/jwt-utilities.js");
+vi.mock("../../../../domain/reuse/reuse-decision.js");
 
 const INDEX_PATH_REGEX = /index.njk$/;
 
@@ -395,58 +393,6 @@ describe("reuse decision", () => {
     expect(redirectToErrorPageExpress).toHaveBeenCalledWith(response);
   });
 
-  it("should redirect to client when only fraud check is expired but VoT is sufficient", async () => {
-    vi.mocked(hasIdentityExpired).mockReturnValue({
-      fraudExpired: true,
-      drivingLicenceExpired: false,
-      expired: true,
-    });
-    vi.mocked(calculateVot).mockReturnValue("P2");
-
-    const { request, response, next } = createExpressRequest();
-    await handler(request, response, next);
-
-    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_unavailable" });
-    expect(redirectToOauthCallBackExpress).toHaveBeenCalledWith(response);
-  });
-
-  it("should redirect to client when only driving licence is expired but VoT is sufficient", async () => {
-    vi.mocked(hasIdentityExpired).mockReturnValue({
-      fraudExpired: false,
-      drivingLicenceExpired: true,
-      expired: true,
-    });
-    vi.mocked(calculateVot).mockReturnValue("P2");
-
-    const { request, response, next } = createExpressRequest();
-    await handler(request, response, next);
-
-    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_unavailable" });
-    expect(redirectToOauthCallBackExpress).toHaveBeenCalledWith(response);
-  });
-
-  it("should redirect to client when only VoT is insufficient but identity is not expired", async () => {
-    vi.mocked(hasIdentityExpired).mockReturnValue({
-      fraudExpired: false,
-      drivingLicenceExpired: false,
-      expired: false,
-    });
-    vi.mocked(calculateVot).mockReturnValue("P0");
-
-    const { request, response, next } = createExpressRequest();
-    await handler(request, response, next);
-
-    expect(updateSessionData).toHaveBeenCalledWith("test-session-id", { errorDescription: "record_unavailable" });
-    expect(redirectToOauthCallBackExpress).toHaveBeenCalledWith(response);
-  });
-
-  it("should render confirm details page when neither check fails", async () => {
-    vi.mocked(hasIdentityExpired).mockReturnValue({
-      fraudExpired: false,
-      drivingLicenceExpired: false,
-      expired: false,
-    });
-    vi.mocked(calculateVot).mockReturnValue("P2");
   it("should render confirm details page when reuse decision is true", async () => {
     vi.mocked(getReuseDecision).mockReturnValue({
       isReusable: true,
@@ -476,21 +422,4 @@ describe("reuse decision", () => {
       translations,
     });
   });
-
-  it("should always execute both checks before failing", async () => {
-    vi.mocked(hasIdentityExpired).mockReturnValue({
-      fraudExpired: true,
-      drivingLicenceExpired: true,
-      expired: true,
-    });
-    vi.mocked(calculateVot).mockReturnValue("P0");
-
-    const { request, response, next } = createExpressRequest();
-    await handler(request, response, next);
-
-    expect(hasIdentityExpired).toHaveBeenCalled();
-    expect(calculateVot).toHaveBeenCalled();
-    expect(redirectToOauthCallBackExpress).toHaveBeenCalledWith(response);
-  });
-})
 });
