@@ -12,9 +12,6 @@ import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.j
 import { UserIdentityError } from "../../utilities/errors.js";
 import { APIGatewayAuthorizerResultContext } from "aws-lambda/common/api-gateway.js";
 import { getConfiguration } from "../../configuration/configuration.js";
-import { ReturnCode, VerifiableCredentialJWT } from "../../domain/verifiable-credential/verifiable-credential-types.js";
-import { getReturnCodes } from "../../domain/verifiable-credential/security-check.js";
-import { parseVerifiableCredentials } from "../../domain/verifiable-credential/credential-decoder.js";
 
 export const handler = async (
   event: APIGatewayProxyEventBase<APIGatewayAuthorizerResultContext>,
@@ -32,17 +29,15 @@ export const handler = async (
       };
     }
 
-    const { storedIdentityRecord, calculatedVot, signedCredentials, unsignedCredentials } =
-      await getStoredIdentity(sessionId);
-    const configuration = await getConfiguration();
-    const returnCodes: ReturnCode[] = getReturnCodes(unsignedCredentials, configuration);
+    const { storedIdentityRecord, calculatedVot, signedCredentials } = await getStoredIdentity(sessionId);
+    const { vtm } = await getConfiguration();
 
     const responseBody: GetUserIdentityResponse = {
       sub: storedIdentityRecord.sub,
       vot: calculatedVot,
-      vtm: configuration.vtm,
+      vtm,
       "https://vocab.account.gov.uk/v1/credentialJWT": signedCredentials,
-      "https://vocab.account.gov.uk/v1/returnCode": returnCodes,
+      "https://vocab.account.gov.uk/v1/returnCode": [],
       ...storedIdentityRecord.claims,
     };
 
@@ -88,18 +83,11 @@ const getStoredIdentity = async (sessionId: string): Promise<StoredIdentity> => 
   const storedIdentityRecord: StoredIdentityRecord = getStoredIdentityRecordBody(
     signedStoredIdentity.signedStoredIdentityRecord
   );
-
-  return {
-    storedIdentityRecord,
-    calculatedVot: sessionVot,
-    signedCredentials: signedStoredIdentity.signedCredentials,
-    unsignedCredentials: parseVerifiableCredentials(signedStoredIdentity.signedCredentials),
-  };
+  return { storedIdentityRecord, calculatedVot: sessionVot, signedCredentials: signedStoredIdentity.signedCredentials };
 };
 
 interface StoredIdentity {
   storedIdentityRecord: StoredIdentityRecord;
   calculatedVot: IdentityVectorOfTrust;
   signedCredentials: string[];
-  unsignedCredentials: VerifiableCredentialJWT[];
 }

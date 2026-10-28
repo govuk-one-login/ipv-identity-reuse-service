@@ -5,7 +5,6 @@ import {
   FraudCheckType,
   NameClass,
   PostalAddressClass,
-  SecurityCheckCredentialJWTClass,
 } from "@govuk-one-login/data-vocab/credentials.js";
 import { evcsPostCredentials } from "../utils/evcs-api.js";
 import assert from "node:assert";
@@ -275,32 +274,4 @@ export const createAndPostDcmawPassportCredentialWithUserDetails = async (
   assert.equal(result.status, 202);
 
   return dcmawJwt;
-};
-
-export const createAndPostSecurityCheckCredential = async (
-  userId: string,
-  vcNbfDate: Date,
-  contraIndicatorCodes: string[]
-): Promise<string> => {
-  const header: JWTHeaderParameters = getDefaultJwtHeader();
-
-  const credentialPayload: SecurityCheckCredentialJWTClass = {
-    sub: userId,
-    iss: "did:web:identity.dev.account.gov.uk:cimit",
-    nbf: Math.floor(vcNbfDate.getTime() / 1000),
-    vc: {
-      type: ["VerifiableCredential", "SecurityCheckCredential"],
-      evidence: [
-        {
-          contraIndicator: contraIndicatorCodes.map((code) => ({ code })),
-        },
-      ],
-    },
-  };
-
-  const jwt = await sign(header, credentialPayload);
-  const result = await evcsPostCredentials(userId, [{ vc: jwt, state: "CURRENT" }]);
-  assert.equal(result.status, 202);
-
-  return jwt;
 };

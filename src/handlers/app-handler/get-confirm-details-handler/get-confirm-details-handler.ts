@@ -1,3 +1,5 @@
+import { Metrics } from "@aws-lambda-powertools/metrics";
+import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
 import translations from "../../../../locales/en/translation.json" with { type: "json" };
 import {
   redirectToErrorPageExpress,
@@ -6,10 +8,14 @@ import {
 } from "../../../api/sis-api.js";
 import { SessionInvalidError, StoredIdentityValidationError } from "../../../utilities/errors.js";
 import { getSessionDetails, updateSessionData } from "../../../api/oauth-internal-api.js";
+import { getJwtBody } from "../../../utilities/jwt-utilities.js";
 import logger from "../../../utilities/logger.js";
+import { MetricDimension, MetricName } from "../../../utilities/metric-enum.js";
+import { calculateVot } from "../../../domain/stored-identity/calculate-vot.js";
 import { createStoredIdentityHash } from "../../../domain/stored-identity/stored-identity-hashing.js";
-import { getConfiguration } from "../../../configuration/configuration.js";
+import { getConfiguration, type Configuration } from "../../../configuration/configuration.js";
 import type {
+  StoredIdentityRecord,
   CalculatedVectorOfTrust,
   StoredIdentityValidationResult,
 } from "../../../domain/stored-identity/stored-identity-types.js";
@@ -17,17 +23,12 @@ import {
   getIdentityFromCredentialStore,
   validateStoredIdentity,
 } from "../../../domain/stored-identity/stored-identity-validator.js";
+import { hasIdentityExpired } from "../../../domain/verifiable-credential/identity-expiry-service.js";
 import mainPageTemplate from "./index.njk";
 import { extractUserDetails } from "./user-details-content.js";
 import { RequestHandler } from "express";
-import { getReuseDecision, ReuseDecision } from "../../../domain/reuse/reuse-decision.js";
 
-const isStoredIdentityValid = ({
-  kidValid,
-  signatureValid,
-  isValid,
-  storedIdentityRecord,
-}: StoredIdentityValidationResult) => kidValid && signatureValid && isValid && storedIdentityRecord;
+const metrics = new Metrics();
 
 export const handler: RequestHandler = async (request, response) => {
   const sessionId = request.cookies?.["identity_reuse_service_session"];
@@ -51,8 +52,8 @@ export const handler: RequestHandler = async (request, response) => {
 
     const identityResponse = await getIdentityFromCredentialStore(`Bearer ${storageAccessToken}`);
     if (!identityResponse) {
-      logger.error("Record validation failed for existing user");
-      await updateSessionData(sessionId, { errorDescription: "record_unavailable" });
+      logger.error("No identity record found in EVCS");
+      await updateSessionData(sessionId!, { errorDescription: "record_unavailable" });
       return redirectToOauthCallBackExpress(response);
     }
 
@@ -68,28 +69,20 @@ export const handler: RequestHandler = async (request, response) => {
       return redirectToOauthCallBackExpress(response);
     }
 
+    const configuration = await getConfiguration();
     const storedIdentityJwt = identityResponse.si.vc;
+    const content = getJwtBody<StoredIdentityRecord>(storedIdentityJwt);
+    const unsignedVot: IdentityVectorOfTrust = identityResponse.si.unsignedVot;
     const storedIdentityVcJwts: string[] = identityResponse.vcs.map((vcObject) => vcObject.vc);
+    const vot = calculateVot(content, unsignedVot, vtr);
 
-    const reuseDecision: ReuseDecision = getReuseDecision(
-      storedIdentityJwt,
-      storedIdentityVcJwts,
-      identityResponse.si.unsignedVot,
-      vtr,
-      await getConfiguration()
-    );
-
-    if (!reuseDecision.isReusable) {
+    const identityReuseValid = validateUserIdentity(vot, storedIdentityVcJwts, vtr, configuration);
+    if (!identityReuseValid) {
       await updateSessionData(sessionId, { errorDescription: "record_unavailable" });
       return redirectToOauthCallBackExpress(response);
     }
 
-    await sessionStoreHashedStoredIdentity(
-      sessionId,
-      storedIdentityJwt,
-      reuseDecision.rawData.vot,
-      storedIdentityVcJwts
-    );
+    await sessionStoreHashedStoredIdentity(sessionId, storedIdentityJwt, vot, storedIdentityVcJwts);
 
     const userDetails = extractUserDetails(validationResult.storedIdentityRecord);
 
@@ -115,6 +108,33 @@ export const handler: RequestHandler = async (request, response) => {
   }
 };
 
+const validateUserIdentity = (
+  vot: CalculatedVectorOfTrust,
+  storedIdentityVcJwts: string[],
+  vtr: IdentityVectorOfTrust[],
+  configuration: Configuration
+): boolean => {
+  const { expired, fraudExpired, drivingLicenceExpired } = hasIdentityExpired(storedIdentityVcJwts, configuration);
+  const votSufficient = vot !== "P0";
+
+  metrics.addDimensions({
+    [MetricDimension.FraudCheckExpired]: fraudExpired ? "fail" : "pass",
+    [MetricDimension.DrivingLicenceExpired]: drivingLicenceExpired ? "fail" : "pass",
+    [MetricDimension.VotSufficient]: votSufficient ? "pass" : "fail",
+  });
+  metrics.addMetric(MetricName.IdentityReuseValidation, "Count", 1);
+  metrics.publishStoredMetrics();
+
+  if (expired) {
+    logger.error("User identity expired");
+  }
+  if (!votSufficient) {
+    logger.error("Identity does not meet required level of confidence", { vtr });
+  }
+
+  return !expired && votSufficient;
+};
+
 const sessionStoreHashedStoredIdentity = async (
   sessionId: string,
   storedIdentityJwt: string,
@@ -124,3 +144,10 @@ const sessionStoreHashedStoredIdentity = async (
   const hash = createStoredIdentityHash(storedIdentityJwt, vot, vcJwts);
   await updateSessionData(sessionId, { vot: vot, storedIdentitySha256: hash });
 };
+
+const isStoredIdentityValid = ({
+  kidValid,
+  signatureValid,
+  isValid,
+  storedIdentityRecord,
+}: StoredIdentityValidationResult) => kidValid && signatureValid && isValid && storedIdentityRecord;

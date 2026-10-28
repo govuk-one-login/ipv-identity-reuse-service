@@ -9,7 +9,6 @@ import { getDidControllerName, getSigningKeyId } from "../shared/utils/ssm-utili
 import {
   createAndPostDcmawPassportCredential,
   createAndPostFraudCheckCredential,
-  createAndPostSecurityCheckCredential,
 } from "../shared/helpers/credential-helpers.js";
 import { sisBaseUrl, sisPrivateApiUrl } from "./support/environment.js";
 import { StoredIdentityClaims } from "../../../src/domain/stored-identity/stored-identity-types.js";
@@ -79,7 +78,6 @@ test.describe("Authorization workflow", () => {
     const credentialJwts = [
       await createAndPostDcmawPassportCredential(userId, new Date()),
       await createAndPostFraudCheckCredential(userId, new Date()),
-      await createAndPostSecurityCheckCredential(userId, new Date(), ["A01"]),
     ];
     const claims: StoredIdentityClaims = {
       "https://vocab.account.gov.uk/v1/coreIdentity": {
@@ -126,7 +124,7 @@ test.describe("Authorization workflow", () => {
       vot: "P3",
       vtm: expect.stringMatching(/https:\/\/oidc.\w*.account.gov.uk\/trustmark/),
       "https://vocab.account.gov.uk/v1/credentialJWT": expect.arrayContaining(credentialJwts),
-      "https://vocab.account.gov.uk/v1/returnCode": [{ code: "A" }],
+      "https://vocab.account.gov.uk/v1/returnCode": [],
       ...claims,
     });
   });
@@ -142,7 +140,6 @@ test.describe("Authorization workflow", () => {
     const credentialJwts = [
       await createAndPostDcmawPassportCredential(userId, new Date()),
       await createAndPostFraudCheckCredential(userId, new Date()),
-      await createAndPostSecurityCheckCredential(userId, new Date(), ["A01"]),
     ];
     const claims: StoredIdentityClaims = {
       "https://vocab.account.gov.uk/v1/coreIdentity": {
@@ -189,7 +186,7 @@ test.describe("Authorization workflow", () => {
       vot: "P3",
       vtm: expect.stringMatching(/https:\/\/oidc.\w*.account.gov.uk\/trustmark/),
       "https://vocab.account.gov.uk/v1/credentialJWT": expect.arrayContaining(credentialJwts),
-      "https://vocab.account.gov.uk/v1/returnCode": [{ code: "A" }],
+      "https://vocab.account.gov.uk/v1/returnCode": [],
       ...claims,
     });
 
@@ -250,7 +247,6 @@ test.describe("Authorization workflow", () => {
     const credentialJwts = [
       await createAndPostDcmawPassportCredential(userId, new Date()),
       await createAndPostFraudCheckCredential(userId, new Date()),
-      await createAndPostSecurityCheckCredential(userId, new Date(), ["A01"]),
     ];
     await createStoredIdentityWithVot(
       userId,

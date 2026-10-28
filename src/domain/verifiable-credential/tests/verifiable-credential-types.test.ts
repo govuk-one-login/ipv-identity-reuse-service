@@ -1,8 +1,5 @@
-import { isIdentityCheckCredential, isSecurityCheckCredential } from "../verifiable-credential-types.js";
-import {
-  IdentityCheckCredentialJWTClass,
-  SecurityCheckCredentialJWTClass,
-} from "@govuk-one-login/data-vocab/credentials.js";
+import { isIdentityCheckCredential } from "../verifiable-credential-types.js";
+import { IdentityCheckCredentialJWTClass } from "@govuk-one-login/data-vocab/credentials.js";
 import { describe, it, expect } from "vitest";
 
 describe("isIdentityCheckCredential", () => {
@@ -45,57 +42,6 @@ describe("isIdentityCheckCredential", () => {
         evidence: [],
       },
     } as unknown as IdentityCheckCredentialJWTClass;
-
-    expect(isIdentityCheckCredential(vc)).toBe(false);
-  });
-
-  it("should return false when vc is undefined", () => {
-    const vc = {} as unknown as IdentityCheckCredentialJWTClass;
-
-    expect(isIdentityCheckCredential(vc)).toBe(false);
-  });
-});
-
-describe("isSecurityCheckCredential", () => {
-  it("should return true when vc.type includes SecurityCheckCredential", () => {
-    const vc = {
-      vc: {
-        type: ["VerifiableCredential", "SecurityCheckCredential"],
-        evidence: [],
-      },
-    } as unknown as SecurityCheckCredentialJWTClass;
-
-    expect(isSecurityCheckCredential(vc)).toBe(true);
-  });
-
-  it("should return false when vc.type does not include SecurityCheckCredential", () => {
-    const vc = {
-      vc: {
-        type: ["VerifiableCredential", "SomeOtherCredential"],
-        evidence: [],
-      },
-    } as unknown as SecurityCheckCredentialJWTClass;
-
-    expect(isIdentityCheckCredential(vc)).toBe(false);
-  });
-
-  it("should return false when vc.type is not an array", () => {
-    const vc = {
-      vc: {
-        type: "SecurityCheckCredential",
-        evidence: [],
-      },
-    } as unknown as SecurityCheckCredentialJWTClass;
-
-    expect(isIdentityCheckCredential(vc)).toBe(false);
-  });
-
-  it("should return false when vc.type is undefined", () => {
-    const vc = {
-      vc: {
-        evidence: [],
-      },
-    } as unknown as SecurityCheckCredentialJWTClass;
 
     expect(isIdentityCheckCredential(vc)).toBe(false);
   });

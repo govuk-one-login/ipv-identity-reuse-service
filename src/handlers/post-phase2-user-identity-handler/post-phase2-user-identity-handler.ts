@@ -5,8 +5,10 @@ import { HttpCodesEnum } from "../../utilities/constants.js";
 import { getJwtBody } from "../../utilities/jwt-utilities.js";
 import logger from "../../utilities/logger.js";
 import { EVCSIdentityResponse } from "../../api/evcs-api.js";
+import { calculateVot } from "../../domain/stored-identity/calculate-vot.js";
+import { hasIdentityExpired } from "../../domain/verifiable-credential/identity-expiry-service.js";
 import { UserIdentityRequest, UserIdentityResponse } from "./post-phase2-user-identity-types.js";
-import { StoredIdentityRecord } from "../../domain/stored-identity/stored-identity-types.js";
+import { StoredIdentityRecord, CalculatedVectorOfTrust } from "../../domain/stored-identity/stored-identity-types.js";
 import { getProperty } from "../../utilities/case-insensitive-header-utilities.js";
 import {
   getUserIdFromJwt,
@@ -19,7 +21,6 @@ import { EVCSError } from "../../utilities/errors.js";
 import { VotEnum } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_READ.js";
 import { ResponseBody } from "@govuk-one-login/event-catalogue/SIS_STORED_IDENTITY_RETURNED.js";
 import { getConfiguration } from "../../configuration/configuration.js";
-import { getReuseDecision, ReuseDecision } from "../../domain/reuse/reuse-decision.js";
 
 export const handler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
   const request = event.body ? (JSON.parse(event.body) as UserIdentityRequest) : undefined;
@@ -81,14 +82,11 @@ const createSuccessResponse = async (
 ): Promise<UserIdentityResponse> => {
   const content = getJwtBody<StoredIdentityRecord>(identityResponse.si.vc);
   const { kidValid, signatureValid, isValid } = await validateStoredIdentity(identityResponse);
+  const vot: CalculatedVectorOfTrust = calculateVot(content, identityResponse.si.unsignedVot, vtr);
   const configuration = await getConfiguration();
   const maxVot = (content.max_vot || identityResponse.si.unsignedVot) as VotEnum;
-
-  const reuseDecision: ReuseDecision = getReuseDecision(
-    identityResponse.si.vc,
+  const { expired, fraudVc } = hasIdentityExpired(
     identityResponse.vcs.map((vcObject) => vcObject.vc),
-    identityResponse.si.unsignedVot,
-    vtr,
     configuration
   );
 
@@ -96,7 +94,7 @@ const createSuccessResponse = async (
     {
       retrieval_outcome: "success",
       max_vot: maxVot,
-      ...(reuseDecision.rawData.fraudVc ? { timestamp_fraud_check_nbf: reuseDecision.rawData.fraudVc?.nbf } : {}),
+      ...(fraudVc ? { timestamp_fraud_check_nbf: fraudVc?.nbf } : {}),
     },
     {
       stored_identity_jwt: identityResponse.si.vc,
@@ -108,10 +106,10 @@ const createSuccessResponse = async (
   delete content.max_vot;
 
   const successResponse: UserIdentityResponse = {
-    content: { ...content, vot: reuseDecision.rawData.vot, vtm: configuration.vtm },
+    content: { ...content, vot, vtm: configuration.vtm },
     vot: maxVot,
     isValid: isValid,
-    expired: reuseDecision.reason.expired,
+    expired,
     kidValid,
     signatureValid,
   };

@@ -17,16 +17,6 @@ export const isIdentityCheckCredential = (vc: VerifiableCredentialJWT): vc is Id
   return vcTypes.includes("IdentityCheckCredential");
 };
 
-export const isSecurityCheckCredential = (vc: VerifiableCredentialJWT): vc is SecurityCheckCredentialJWTClass => {
-  const vcTypes = vc.vc?.type;
-
-  if (!Array.isArray(vcTypes)) {
-    return false;
-  }
-
-  return vcTypes.includes("SecurityCheckCredential");
-};
-
 export interface ReturnCode {
   code: string;
 }

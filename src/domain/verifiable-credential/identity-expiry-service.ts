@@ -2,6 +2,7 @@ import type { Configuration } from "../../configuration/configuration.js";
 import { hasDrivingLicenceExpired } from "./driving-licence-expiry-service.js";
 import { hasFraudCheckExpired, getFraudVc } from "./fraud-check-service.js";
 import { VerifiableCredentialJWT } from "./verifiable-credential-types.js";
+import { getJwtBody } from "../../utilities/jwt-utilities.js";
 
 export type IdentityExpiryResult = {
   fraudExpired: boolean;
@@ -11,20 +12,17 @@ export type IdentityExpiryResult = {
 };
 
 export const hasIdentityExpired = (
-  credentialBundle: VerifiableCredentialJWT[],
+  storedIdentityVcJwts: string[],
   configuration: Configuration
 ): IdentityExpiryResult => {
-  const fraudVc = getFraudVc(credentialBundle, configuration.fraudIssuer);
+  const vcs = parseVerifiableCredentials(storedIdentityVcJwts);
+  const fraudVc = getFraudVc(vcs, configuration.fraudIssuer);
   const fraudExpired = hasFraudCheckExpired(fraudVc, configuration.fraudValidityPeriod);
 
   let drivingLicenceExpired = false;
   if (configuration.dcmawIssuer !== undefined && configuration.drivingLicenceValidityPeriod !== undefined) {
     drivingLicenceExpired =
-      hasDrivingLicenceExpired(
-        credentialBundle,
-        configuration.dcmawIssuer,
-        configuration.drivingLicenceValidityPeriod
-      ) === true;
+      hasDrivingLicenceExpired(vcs, configuration.dcmawIssuer, configuration.drivingLicenceValidityPeriod) === true;
   }
 
   return {
@@ -33,4 +31,8 @@ export const hasIdentityExpired = (
     expired: fraudExpired || drivingLicenceExpired,
     fraudVc,
   };
+};
+
+const parseVerifiableCredentials = (vcJwts: string[]): VerifiableCredentialJWT[] => {
+  return vcJwts.map((vcJwt) => getJwtBody<VerifiableCredentialJWT>(vcJwt));
 };
