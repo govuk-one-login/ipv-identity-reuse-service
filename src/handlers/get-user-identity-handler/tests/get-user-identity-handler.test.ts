@@ -28,15 +28,21 @@ import {
 import { APIGatewayAuthorizerResultContext } from "aws-lambda/common/api-gateway.js";
 import logger from "../../../utilities/logger.js";
 import { getConfiguration } from "../../../configuration/configuration.js";
+import { parseVerifiableCredentials } from "../../../domain/verifiable-credential/credential-decoder.js";
+import { getReturnCodes } from "../../../domain/verifiable-credential/security-check.js";
 
 vi.mock("../../../api/oauth-internal-api.js");
 vi.mock("../../../domain/stored-identity/stored-identity-validator.js");
 vi.mock("../../../domain/stored-identity/stored-identity-hashing.js");
 vi.mock("../../../utilities/logger.js");
 vi.mock("../../../configuration/configuration.js");
+vi.mock("../../../domain/verifiable-credential/credential-decoder.js");
+vi.mock("../../../domain/verifiable-credential/security-check.js");
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.mocked(parseVerifiableCredentials).mockReturnValue([]);
+  vi.mocked(getReturnCodes).mockReturnValue([]);
   vi.mocked(getConfiguration).mockResolvedValue({
     evcsApiUrl: "https://api.example.com",
     interventionCodesToInvalidate: ["05", "06"],
@@ -84,6 +90,30 @@ describe("Successful user-identity response", () => {
         ...storedIdentityRecord.claims,
       }),
     });
+  });
+
+  it("should include return codes in the response", async () => {
+    mockSessionData("P2", "hash123", "evcsAccessToken");
+    const signedIdentityData = {
+      signedStoredIdentityRecord: "header1.payload1.signature1",
+      signedCredentials: ["header2.payload2.signature2", "header3.payload3.signature3"],
+    };
+    mockSignedIdentityData(signedIdentityData);
+    mockStoredIdentityRecord(createStoredIdentityRecord());
+
+    vi.mocked(getReturnCodes).mockReturnValue([{ code: "A" }, { code: "P" }]);
+
+    const request = createMockAPIGatewayProxyEvent({
+      requestContext: { authorizer: { sessionId: "session123" } },
+    } as Partial<APIGatewayProxyEventBase<AuthorizerContext>>);
+    const response = await handler(request, {} as Context);
+
+    const body = JSON.parse(response.body) as Record<string, unknown>;
+    expect(body["https://vocab.account.gov.uk/v1/returnCode"]).toStrictEqual([{ code: "A" }, { code: "P" }]);
+    expect(getReturnCodes).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({ ciReturnCodes: [{ ci: "G97", returnCode: "L" }] })
+    );
   });
 
   it.each([

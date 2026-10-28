@@ -8,9 +8,10 @@ export enum MetricName {
 }
 
 export enum MetricDimension {
+  DrivingLicenceExpired = "DrivingLicenceExpired",
+  FraudCheckExpired = "FraudCheckExpired",
   InterventionCode = "InterventionCode",
   Reason = "Reason",
-  FraudCheckExpired = "FraudCheckExpired",
-  DrivingLicenceExpired = "DrivingLicenceExpired",
+  SecurityCheckPresent = "SecurityCheckPresent",
   VotSufficient = "VotSufficient",
 }
