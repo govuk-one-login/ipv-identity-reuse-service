@@ -8,6 +8,7 @@ import {
   createAndPostDcmawDrivingPermitCredential,
   createAndPostDcmawPassportCredential,
   createAndPostFraudCheckCredential,
+  createAndPostSecurityCheckCredential,
 } from "../shared/helpers/credential-helpers.js";
 import { sisBaseUrl, sisPrivateApiUrl } from "./support/environment.js";
 
@@ -73,6 +74,7 @@ test.describe("Identity rejection scenarios", () => {
     const originalCredentialJwts = [
       await createAndPostDcmawPassportCredential(userId, new Date()),
       await createAndPostFraudCheckCredential(userId, new Date()),
+      await createAndPostSecurityCheckCredential(userId, new Date(), []),
     ];
 
     await createStoredIdentityWithVot(
@@ -87,6 +89,7 @@ test.describe("Identity rejection scenarios", () => {
 
     await createAndPostDcmawPassportCredential(userId, new Date());
     await createAndPostFraudCheckCredential(userId, new Date());
+    await createAndPostSecurityCheckCredential(userId, new Date(), []);
 
     await startJourney(orchestrationStub, userId);
     await expect(page).toHaveURL((url) => {
@@ -105,6 +108,7 @@ test.describe("Identity rejection scenarios", () => {
     const credentialJwts = [
       await createAndPostDcmawDrivingPermitCredential(userId, SEVEN_MONTHS_AGO, EXPIRED_LICENCE_DATE),
       await createAndPostFraudCheckCredential(userId, new Date()),
+      await createAndPostSecurityCheckCredential(userId, new Date(), []),
     ];
     await createStoredIdentityWithVot(
       userId,
@@ -133,6 +137,7 @@ test.describe("Identity rejection scenarios", () => {
     const credentialJwts = [
       await createAndPostDcmawPassportCredential(userId, new Date()),
       await createAndPostFraudCheckCredential(userId, SEVEN_MONTHS_AGO),
+      await createAndPostSecurityCheckCredential(userId, new Date(), []),
     ];
     await createStoredIdentityWithVot(
       userId,
@@ -161,6 +166,7 @@ test.describe("Identity rejection scenarios", () => {
     const credentialJwts = [
       await createAndPostDcmawPassportCredential(userId, new Date()),
       await createAndPostFraudCheckCredential(userId, new Date()),
+      await createAndPostSecurityCheckCredential(userId, new Date(), []),
     ];
 
     await createStoredIdentityWithVot(
