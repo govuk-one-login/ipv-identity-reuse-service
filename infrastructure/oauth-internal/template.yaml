@@ -233,7 +233,7 @@ Resources:
     Properties:
       Location:
         ApplicationId: arn:aws:serverlessrepo:eu-west-2:667736788427:applications/di-ipv-cri-oauth-common
-        SemanticVersion: 1.5.1
+        SemanticVersion: 1.6.0
       Parameters:
         AccessTokenIndexWithEventDataIpvIndexName: !Ref AccessTokenIndexWithEventDataIpvIndexName
         AuditEventNamePrefix: !Ref AuditEventNamePrefix
@@ -259,6 +259,7 @@ Resources:
         LambdaDeploymentPreference: !Ref LambdaDeploymentPreference
         LambdaVersionHash: !Ref CommitSha
         LambdaVpcConfiguration: "di-devplatform-deploy"
+        LogRetention: !FindInMap [ EnvironmentMap, !Ref Environment, LogGroupRetentionInDays]
         PermissionsBoundaryArn: !Ref PermissionsBoundary
         VpcStackNameOverride: !Ref VpcStackName
 
