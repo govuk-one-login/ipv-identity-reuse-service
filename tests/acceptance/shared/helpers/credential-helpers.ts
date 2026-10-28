@@ -3,8 +3,6 @@ import { getDefaultJwtHeader, sign } from "../../../../shared-test/jwt-utilities
 import {
   IdentityCheckCredentialJWTClass,
   FraudCheckType,
-  NameClass,
-  PostalAddressClass,
   SecurityCheckCredentialJWTClass,
 } from "@govuk-one-login/data-vocab/credentials.js";
 import { evcsPostCredentials } from "../utils/evcs-api.js";
@@ -14,8 +12,7 @@ import { KENNETH_DECERQUEIRA_BIRTH_DATE } from "@govuk-one-login/ipv-trust-and-r
 import { KENNETH_DECERQUEIRA_PASSPORT } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/passports";
 import { KENNETH_DECERQUERIA_ADDRESS } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/addresses";
 import { KENNETH_DECERQUEIRA_DVLA_DRIVING_PERMIT } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/drivinglicenses";
-
-const DCMAW_ISSUER = "https://www.review-b.dev.account.gov.uk";
+import { getCloudFormationParameter } from "../utils/cloudformation.js";
 
 export const createAndPostCredentials = async (credentials: number, userId: string): Promise<string[]> => {
   const credentialJwts = [];
@@ -79,7 +76,7 @@ export const createAndPostFraudCheckCredential = async (
 
   const credentialPayload: IdentityCheckCredentialJWTClass = {
     sub: userId,
-    iss: "https://review-f.dev.account.gov.uk",
+    iss: await getFraudIssuer(),
     nbf: Math.floor(nbfDate.getTime() / 1000),
     vc: {
       type: ["VerifiableCredential", "IdentityCheckCredential"],
@@ -108,7 +105,7 @@ export const createAndPostDcmawDrivingPermitCredential = async (
 
   const credentialPayload: IdentityCheckCredentialJWTClass = {
     sub: userId,
-    iss: DCMAW_ISSUER,
+    iss: await getDcmawIssuer(),
     nbf: Math.floor(vcNbfDate.getTime() / 1000),
     vc: {
       type: ["VerifiableCredential", "IdentityCheckCredential"],
@@ -154,7 +151,7 @@ export const createAndPostFailedDcmawDrivingPermitCredential = async (
 
   const credentialPayload: IdentityCheckCredentialJWTClass = {
     sub: userId,
-    iss: DCMAW_ISSUER,
+    iss: await getDcmawIssuer(),
     nbf: Math.floor(vcNbfDate.getTime() / 1000),
     vc: {
       type: ["VerifiableCredential", "IdentityCheckCredential"],
@@ -193,7 +190,7 @@ export const createAndPostDcmawPassportCredential = async (userId: string, vcNbf
 
   const credentialPayload: IdentityCheckCredentialJWTClass = {
     sub: userId,
-    iss: DCMAW_ISSUER,
+    iss: await getDcmawIssuer(),
     nbf: Math.floor(vcNbfDate.getTime() / 1000),
     vc: {
       type: ["VerifiableCredential", "IdentityCheckCredential"],
@@ -225,58 +222,6 @@ export const createAndPostDcmawPassportCredential = async (userId: string, vcNbf
   return dcmawJwt;
 };
 
-export const createAndPostDcmawPassportCredentialWithUserDetails = async (
-  userId: string,
-  vcNbfDate: Date,
-  userDetails: {
-    name: NameClass[];
-    birthDate: { value: string }[];
-    address: PostalAddressClass[];
-  }
-): Promise<string> => {
-  const header: JWTHeaderParameters = getDefaultJwtHeader();
-
-  const credentialPayload: IdentityCheckCredentialJWTClass = {
-    sub: userId,
-    iss: DCMAW_ISSUER,
-    nbf: Math.floor(vcNbfDate.getTime() / 1000),
-    vc: {
-      type: ["VerifiableCredential", "IdentityCheckCredential"],
-      evidence: [
-        {
-          strengthScore: 4,
-          validityScore: 2,
-          checkDetails: [
-            { checkMethod: "vcrypt" as const },
-            {
-              checkMethod: "bvr" as const,
-              biometricVerificationProcessLevel: 2,
-            },
-          ],
-        },
-      ],
-      credentialSubject: {
-        passport: [
-          {
-            documentNumber: "123456789",
-            expiryDate: "2030-01-01",
-            icaoIssuerCode: "GBR",
-          },
-        ],
-        name: userDetails.name,
-        birthDate: userDetails.birthDate,
-        address: userDetails.address,
-      },
-    },
-  };
-
-  const dcmawJwt = await sign(header, credentialPayload);
-  const result = await evcsPostCredentials(userId, [{ vc: dcmawJwt, state: "CURRENT" }]);
-  assert.equal(result.status, 202);
-
-  return dcmawJwt;
-};
-
 export const createAndPostSecurityCheckCredential = async (
   userId: string,
   vcNbfDate: Date,
@@ -286,7 +231,7 @@ export const createAndPostSecurityCheckCredential = async (
 
   const credentialPayload: SecurityCheckCredentialJWTClass = {
     sub: userId,
-    iss: "did:web:identity.dev.account.gov.uk:cimit",
+    iss: await getSecurityIssuer(),
     nbf: Math.floor(vcNbfDate.getTime() / 1000),
     vc: {
       type: ["VerifiableCredential", "SecurityCheckCredential"],
@@ -303,4 +248,19 @@ export const createAndPostSecurityCheckCredential = async (
   assert.equal(result.status, 202);
 
   return jwt;
+};
+
+const getDcmawIssuer = async () => {
+  const environment = await getCloudFormationParameter("Environment");
+  return `https://www.review-b.${environment}.account.gov.uk`;
+};
+
+const getFraudIssuer = async () => {
+  const environment = await getCloudFormationParameter("Environment");
+  return `https://review-f.${environment}.account.gov.uk`;
+};
+
+const getSecurityIssuer = async () => {
+  const environment = await getCloudFormationParameter("Environment");
+  return `did:web:identity.${environment}.account.gov.uk:cimit`;
 };

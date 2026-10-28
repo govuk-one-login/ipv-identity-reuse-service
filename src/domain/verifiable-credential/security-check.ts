@@ -7,6 +7,7 @@ export const getSecurityCheckCredential = (
   credentialBundle: VerifiableCredentialJWT[],
   configuration: Configuration
 ): SecurityCheckCredentialJWTClass | undefined => {
+  logger.info("getSecurityCheckCredential", { credentialBundle, configuration });
   return (
     credentialBundle
       .filter(
