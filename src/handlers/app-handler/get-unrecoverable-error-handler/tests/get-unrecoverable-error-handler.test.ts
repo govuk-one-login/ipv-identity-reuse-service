@@ -12,13 +12,13 @@ it.each(["/error/bad-request", "/error/unrecoverable"])("should render the error
     cookies: {},
   });
 
-  await handler(request, response, next);
+  handler(request, response, next);
 
   expect(response.header).toHaveBeenCalledWith("content-type", "text/html");
   expect(response.status).toHaveBeenCalledWith(500);
   expect(response.render).toHaveBeenCalledWith(expect.stringMatching(INDEX_PATH_REGEX), {
     assetPath: "./assets",
-    baseUrl: url,
+    baseUrl: "/",
     rootPath: "",
     govukRebrand: true,
     translations,
