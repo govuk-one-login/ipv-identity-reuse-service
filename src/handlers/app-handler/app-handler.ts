@@ -2,6 +2,7 @@ import { configure } from "@codegenie/serverless-express";
 import express from "express";
 import { loggerMiddleware } from "./logger-middleware.js";
 import { handler as getConfirmDetailsHandler } from "./get-confirm-details-handler/get-confirm-details-handler.js";
+import { handler as postConfirmDetailsHandler } from "./post-confirm-details-handler/post-confirm-details-handler.js";
 import logger from "../../utilities/logger.js";
 import cookieParser from "cookie-parser";
 import path from "node:path";
@@ -12,8 +13,10 @@ const app = express()
   .disable("x-powered-by")
   .set("view engine", "njk")
   .use(cookieParser())
+  .use(express.urlencoded({ extended: true }))
   .use(loggerMiddleware)
-  .get("/confirm-details", getConfirmDetailsHandler);
+  .get("/confirm-details", getConfirmDetailsHandler)
+  .post("/confirm-details", postConfirmDetailsHandler);
 
 // Configure nunjucks
 const govukFrontendDistribution = path.join(path.dirname(require.resolve("govuk-frontend/package.json")), "dist");
