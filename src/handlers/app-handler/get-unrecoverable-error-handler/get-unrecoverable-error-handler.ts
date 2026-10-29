@@ -3,10 +3,10 @@ import translations from "../../../../locales/en/translation.json" with { type: 
 
 import { RequestHandler } from "express";
 
-export const handler: RequestHandler = async (request, response) =>
+export const handler: RequestHandler = (request, response) =>
   response.header("content-type", "text/html").status(500).render(mainPageTemplate, {
     assetPath: "./assets",
-    baseUrl: request.path,
+    baseUrl: "/",
     rootPath: "",
     govukRebrand: true,
     translations,

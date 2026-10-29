@@ -12,7 +12,7 @@ it.each(["/error/bad-request", "/error/unrecoverable"])("should render the error
     cookies: {},
   });
 
-  await handler(request, response, next);
+  handler(request, response, next);
 
   expect(response.header).toHaveBeenCalledWith("content-type", "text/html");
   expect(response.status).toHaveBeenCalledWith(500);
