@@ -47,11 +47,6 @@ Parameters:
     Type: String
     Default: ""
 
-  CSLSSubscriptionEndpointArn:
-    Description: CSLS Subscription endpoint
-    Type: String
-    Default: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
-
   LambdaDeploymentPreference:
     Description: "Specifies the configuration to enable gradual Lambda deployments."
     Type: String
@@ -239,7 +234,7 @@ Resources:
         AuditEventNamePrefix: !Ref AuditEventNamePrefix
         AuthorizationRequestType: "IPV"
         AuditTxmaStackName: !Ref SharedStackName # TXMA infrastructure lives in the reuse-identity-shared stack
-        CSLSDestinationArn: !Ref CSLSSubscriptionEndpointArn
+        CSLSDestinationArn: "none"
         CriIdentifier: !Ref MainCloudWatchMetricNamespace # Used for the metrics namespace and metrics service names only
         CriAudience: !FindInMap [ EnvironmentMap, !Ref Environment, SISAudience ] # Sets the Audience value for the SIS OAuth 2.0 server
         CriVcIssuer: !Ref AuditComponentId # Used for the component ID in audit events only
@@ -669,16 +664,6 @@ Resources:
           Value: !Ref SourceTagValue
         - Key: Name
           Value: !Sub "/aws/lambda/${ProtectedResourceAuthorizerFunction}"
-
-  ProtectedResourceAuthorizerFunctionLogsSubscriptionFilterCSLS:
-    Condition: IsNotProduction
-    Type: AWS::Logs::SubscriptionFilter
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
-    Properties:
-      DestinationArn: !Ref CSLSSubscriptionEndpointArn
-      LogGroupName: !Ref ProtectedResourceAuthorizerFunctionLogGroup
-      FilterPattern: "{$.message != \"LambdaSensor*\" }"
 
   ProtectedResourceAuthorizerFunctionLambdaErrorAlarm:
     Type: AWS::CloudWatch::Alarm
