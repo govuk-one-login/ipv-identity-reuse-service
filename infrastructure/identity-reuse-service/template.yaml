@@ -34,11 +34,6 @@ Parameters:
     Type: String
     Default: ""
 
-  CSLSSubscriptionEndpointArn:
-    Type: String
-    Description: CSLS Subscription endpoint
-    Default: "arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2"
-
   ApplicationName:
     Description: The name of the application
     Type: String
@@ -292,8 +287,6 @@ Conditions:
           - Fn::Equals: [!Ref AWS::StackName, "preview-main"]
 
   IsNotDev: !Not [!Condition IsDev]
-
-  IsNotDevOrBuild: !Not [!Condition IsDevOrBuild]
 
   CanariesEnabled: !Equals
     - !FindInMap [EnvironmentMap, !Ref Environment, UseCanary]
@@ -1954,14 +1947,6 @@ Resources:
         - Key: Name
           Value: !Sub "/aws/apigateway/${PrivateRestApi}/${ApiStageName}"
 
-  PrivateAPIAccessLogGroupCSLS:
-    Condition: IsNotDevOrBuild
-    Type: AWS::Logs::SubscriptionFilter
-    Properties:
-      DestinationArn: !Ref CSLSSubscriptionEndpointArn
-      LogGroupName: !Ref PrivateAPIGatewayAccessLogGroup
-      FilterPattern: ""
-
   PrivateAPIAccessLogGroupNameSSM:
     Type: AWS::SSM::Parameter
     Properties:
@@ -2115,14 +2100,6 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-InboundTxmaQueueMessageHandler"
       RetentionInDays: !FindInMap [EnvironmentMap, !Ref Environment, LogGroupRetentionInDays]
       KmsKeyId: !GetAtt LoggingKmsKey.Arn
-
-  InboundTxmaQueueMessageHandlerLogGroupSubscriptionFilter:
-    Type: AWS::Logs::SubscriptionFilter
-    Condition: IsNotDevOrBuild
-    Properties:
-      DestinationArn: !Ref CSLSSubscriptionEndpointArn
-      FilterPattern: "{$._aws.CloudWatchMetrics NOT EXISTS}"
-      LogGroupName: !Ref InboundTxmaQueueMessageHandlerLogGroup
 
   InboundTxmaQueueMessageHandlerErrorMetric:
     Type: AWS::Logs::MetricFilter
