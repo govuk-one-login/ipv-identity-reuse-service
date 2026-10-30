@@ -400,136 +400,7 @@ Globals:
           - - !Ref "AWS::NoValue"
 
 Resources:
-  ################################
-  # GET AUTHORIZE HANDLER        #
-  ################################
-
-  GetAuthorizeHandler:
-    Type: AWS::Serverless::Function
-    Condition: IsNotProduction
-    Properties:
-      FunctionName: !Sub "${AWS::StackName}-GetAuthorizeHandler"
-      Description: "A lambda function that handles a request to the OAuth 2.0 authorization server's authorization endpoint"
-      Handler: get-authorize-handler.handler
-      Role: !GetAtt GetAuthorizeHandlerRole.Arn
-      KmsKeyArn: !GetAtt LambdaEnvironmentVariableEncryptionKey.Arn
-      AutoPublishCodeSha256: !Ref CommitSha
-      VpcConfig: !If
-        - UseVpc
-        - SecurityGroupIds:
-            - Fn::ImportValue: !Sub "${VpcStackName}-AWSServicesEndpointSecurityGroupId"
-          SubnetIds:
-            - Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdA"
-            - Fn::ImportValue: !Sub "${VpcStackName}-ProtectedSubnetIdB"
-        - !Ref "AWS::NoValue"
-      Environment:
-        Variables:
-          METRIC_SERVICE_NAME: "GetAuthorizeHandler"
-          POWERTOOLS_SERVICE_NAME: "GetAuthorizeHandler"
-          ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
-          APP_CONFIG_NAME: !Ref ApplicationConfigName
-          APP_CONFIG_APPLICATION: !Ref ApplicationName
-          SQS_AUDIT_EVENT_QUEUE_URL:
-            Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueUrl"
-          COMPONENT_ID: !Ref ComponentId
-          DOMAIN_NAME: !Ref ReuseIdentityCustomDomain
-          OAUTH_INTERNAL_API_URL:
-            Fn::ImportValue: !Sub "${OauthInternalStackName}-PrivateApi"
-          SESSION_TIMEOUT_MS: !Ref ApiTimeoutMilliseconds
-      CodeSigningConfigArn: !If
-        - UseCodeSigning
-        - !Ref CodeSigningConfigArn
-        - !Ref AWS::NoValue
-      Tags:
-        Product: !Ref ProductTagValue
-        System: !Ref SystemTagValue
-        Environment: !Ref Environment
-        Owner: !Ref OwnerTagValue
-        Source: !Ref SourceTagValue
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        UseNpmCi: True
-        Minify: true
-        Target: es2022
-        Sourcemap: true
-        SourcesContent: false
-        EntryPoints:
-          - handlers/get-authorize-handler/get-authorize-handler.ts
-        Format: esm
-        Platform: node
-        OutExtension:
-          - .js=.mjs
-        Banner:
-          - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
-
-  GetAuthorizeHandlerRole:
-    Type: AWS::IAM::Role
-    Condition: IsNotProduction
-    Properties:
-      RoleName: !Sub "${AWS::StackName}-GetAuthorizeHandlerRole"
-      Description: !Sub "The role assumed by ${AWS::StackName}-GetAuthorizeHandler"
-      PermissionsBoundary: !If
-        - UsePermissionsBoundary
-        - !Ref PermissionsBoundary
-        - !Ref AWS::NoValue
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action:
-              - "sts:AssumeRole"
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
-        - Fn::ImportValue: !Sub "${AppConfigStackName}-AppConfigClientPolicyArn"
-        - Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueSendMessagePolicy"
-        - Fn::ImportValue: !Sub "${SharedStackName}-EvcsApiKeySecretsManagerPolicy"
-      Tags:
-        - Key: Product
-          Value: !Ref ProductTagValue
-        - Key: System
-          Value: !Ref SystemTagValue
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Owner
-          Value: !Ref OwnerTagValue
-        - Key: Source
-          Value: !Ref SourceTagValue
-
-  GetAuthorizeHandlerLogGroup:
-    Type: AWS::Logs::LogGroup
-    Condition: IsNotProduction
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-GetAuthorizeHandler"
-      RetentionInDays: !FindInMap [EnvironmentMap, !Ref Environment, LogGroupRetentionInDays]
-      KmsKeyId: !GetAtt CloudWatchEncryptionKey.Arn
-      Tags:
-        - Key: Product
-          Value: !Ref ProductTagValue
-        - Key: System
-          Value: !Ref SystemTagValue
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Owner
-          Value: !Ref OwnerTagValue
-        - Key: Source
-          Value: !Ref SourceTagValue
-        - Key: Name
-          Value: !Sub "/aws/lambda/${AWS::StackName}-GetAuthorizeHandler"
-
-  PublicApiGetAuthorizeHandlerResourcePolicy:
-    Condition: IsNotProduction
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref GetAuthorizeHandler.Alias
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceAccount: !Ref AWS::AccountId
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PublicApi}/${ApiStageName}/GET/oauth2/authorize"
-
+  
   ################################
   # GET USER IDENTITY HANDLER    #
   ################################
@@ -915,19 +786,23 @@ Resources:
       AutoPublishCodeSha256: !Ref CommitSha
       Environment:
         Variables:
-          APP_CONFIG_NAME: !Ref ApplicationConfigName
           APP_CONFIG_APPLICATION: !Ref ApplicationName
+          APP_CONFIG_NAME: !Ref ApplicationConfigName
+          COMPONENT_ID: !Ref ComponentId
           DOMAIN_NAME: !Ref ReuseIdentityCustomDomain
           ENVIRONMENT: !If [IsDev, "dev", !Ref Environment]
-          POWERTOOLS_SERVICE_NAME: AppHandler
           EVCS_API_KEY_SECRET_ARN:
             Fn::ImportValue: !Sub "${SharedStackName}-EVCSApiKeySecret"
+          METRIC_SERVICE_NAME: "AppHandler"
           NODE_OPTIONS: "--enable-source-maps"
           POWERTOOLS_LOG_LEVEL: info
+          POWERTOOLS_SERVICE_NAME: AppHandler
           PUBLIC_API: !GetAtt ReuseIdentityDomain.Value
           OAUTH_INTERNAL_API_URL:
             Fn::ImportValue: !Sub "${OauthInternalStackName}-PrivateApi"
           SESSION_TIMEOUT_MS: !Ref ApiTimeoutMilliseconds
+          SQS_AUDIT_EVENT_QUEUE_URL:
+            Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueUrl"
       VpcConfig: !If
         - UseVpc
         - SecurityGroupIds:

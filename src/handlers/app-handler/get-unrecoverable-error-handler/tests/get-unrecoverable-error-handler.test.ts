@@ -18,7 +18,7 @@ it.each(["/error/bad-request", "/error/unrecoverable"])("should render the error
   expect(response.status).toHaveBeenCalledWith(500);
   expect(response.render).toHaveBeenCalledWith(expect.stringMatching(INDEX_PATH_REGEX), {
     assetPath: "./assets",
-    baseUrl: url,
+    baseUrl: "/",
     rootPath: "",
     govukRebrand: true,
     translations,

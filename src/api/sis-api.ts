@@ -18,20 +18,6 @@ export function redirectToSessionExpiredPage() {
   return redirect({ location: `https://${domainName}/error/session-expired`, body: "" });
 }
 
-export function redirectToBadRequest() {
-  const domainName = getRequiredEnvironment("DOMAIN_NAME");
-  return redirect({ location: `https://${domainName}/error/bad-request`, body: "" });
-}
-
-export function redirectToConfirmDetails(cookie?: string) {
-  const domainName = getRequiredEnvironment("DOMAIN_NAME");
-  return redirect({ location: `https://${domainName}/confirm-details`, body: "", cookie: cookie });
-}
-
-export function redirectToOauthCallBack() {
-  return redirect({ location: `https://${process.env.PUBLIC_API}/oauth2/callback`, body: "" });
-}
-
 export function redirectToErrorPageExpress(response: Response) {
   const domainName = getRequiredEnvironment("DOMAIN_NAME");
   response.redirect(`https://${domainName}/error/unrecoverable`);

@@ -1,9 +1,7 @@
 import { it, expect, vi, beforeEach } from "vitest";
 import {
   redirectToClient,
-  redirectToConfirmDetails,
   redirectToErrorPage,
-  redirectToOauthCallBack,
   redirectToSessionExpiredPage,
   redirectToErrorPageExpress,
   redirectToBadRequestExpress,
@@ -42,31 +40,6 @@ it("should redirect to session expired page", async () => {
   });
 });
 
-it("should redirect to confirm details page with cookie", async () => {
-  const result = redirectToConfirmDetails(
-    "identity_reuse_service_session=test-session-id; Path=/; Secure; HttpOnly; SameSite=Lax"
-  );
-  expect(result).toEqual({
-    statusCode: 302,
-    headers: {
-      Location: "https://test.com/confirm-details",
-      "Set-Cookie": "identity_reuse_service_session=test-session-id; Path=/; Secure; HttpOnly; SameSite=Lax",
-    },
-    body: "",
-  });
-});
-
-it("should redirect to confirm details page", async () => {
-  const result = redirectToConfirmDetails();
-  expect(result).toEqual({
-    statusCode: 302,
-    headers: {
-      Location: "https://test.com/confirm-details",
-    },
-    body: "",
-  });
-});
-
 it("should redirect to the client page", async () => {
   const result = redirectToClient("https://api.example.com", "test-state", "test-auth-code");
   expect(result).toEqual({
@@ -90,18 +63,6 @@ it("should redirect to the client page with an error", async () => {
     statusCode: 302,
     headers: {
       Location: "https://api.example.com/?error=access_denied&error_description=record_unavailable&state=test-state",
-    },
-    body: "",
-  });
-});
-
-it("should redirect to oauth callback with query params", async () => {
-  process.env.PUBLIC_API = "api.example.com";
-  const result = redirectToOauthCallBack();
-  expect(result).toEqual({
-    statusCode: 302,
-    headers: {
-      Location: "https://api.example.com/oauth2/callback",
     },
     body: "",
   });
