@@ -7,7 +7,7 @@ export const loggerMiddleware: RequestHandler = (request, response, next) => {
 
   logger.addContext(context);
 
-  logger.info(`Incoming request: ${request.method} ${request.path}`, {
+  logger.info(`Incoming request 2: ${request.method} ${request.path}`, {
     method: request.method,
     path: request.path,
     query: request.query,

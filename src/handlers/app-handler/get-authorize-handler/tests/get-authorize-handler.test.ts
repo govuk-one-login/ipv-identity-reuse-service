@@ -1,9 +1,15 @@
-import { APIGatewayEventRequestContextWithAuthorizer, APIGatewayProxyEvent, Context } from "aws-lambda";
 import { beforeEach, describe, expect, it, vi, vitest } from "vitest";
 import { handler, AuthorizationQueryStringParameters, isValidQueryParameters } from "../get-authorize-handler.js";
-import { callSessionApi } from "../../../api/oauth-internal-api.js";
+import { callSessionApi } from "../../../../api/oauth-internal-api.js";
+import { createExpressRequest } from "../../tests/test-utilities.js";
+import {
+  redirectToBadRequestExpress,
+  redirectToConfirmDetailsExpress,
+  redirectToErrorPageExpress,
+} from "../../../../api/sis-api.js";
 
-vitest.mock("../../../api/oauth-internal-api.js");
+vitest.mock("../../../../api/oauth-internal-api.js");
+vitest.mock("../../../../api/sis-api.js");
 
 describe("authorize-handler", () => {
   beforeEach(() => {
@@ -13,21 +19,27 @@ describe("authorize-handler", () => {
     vitest.stubEnv("SESSION_TIMEOUT_MS", "5000");
   });
 
-  describe("when client_id param is absent", () => {
+  describe("Parameter is absent", () => {
     it("should return error if the client_id is absent", async () => {
-      const event = createMockEvent({
-        queryStringParameters: {} as AuthorizationQueryStringParameters,
-      });
-
-      const response = await handler(event, {} as Context);
-
-      expect(response).toEqual({
-        statusCode: 302,
-        headers: {
-          Location: "https://test-domain/error/bad-request",
+      const { request, response, next } = createExpressRequest({
+        query: {
+          request: "sample-request",
         },
-        body: "",
       });
+      await handler(request, response, next);
+
+      expect(redirectToBadRequestExpress).toHaveBeenCalledWith(response);
+    });
+
+    it("should return error if the request is absent", async () => {
+      const { request, response, next } = createExpressRequest({
+        query: {
+          client_id: "client-id",
+        },
+      });
+      await handler(request, response, next);
+
+      expect(redirectToBadRequestExpress).toHaveBeenCalledWith(response);
     });
   });
 
@@ -39,28 +51,16 @@ describe("authorize-handler", () => {
         redirect_uri: "https://some.redirect.com",
       });
 
-      const event = createMockEvent({
-        queryStringParameters: {
+      const { request, response, next } = createExpressRequest({
+        query: {
           client_id: "orchestrator",
           request: "foo.bar.123",
-        } satisfies AuthorizationQueryStringParameters,
+        } as AuthorizationQueryStringParameters,
       });
-
-      const response = await handler(event, {} as Context);
+      await handler(request, response, next);
 
       expect(callSessionApi).toHaveBeenCalledWith("orchestrator", "foo.bar.123");
-      expect(response.statusCode).toBe(302);
-      expect(response.headers?.Location).toBe("https://test-domain/confirm-details");
-
-      const expectedCookie = [
-        "identity_reuse_service_session=session-abc-123",
-        "Path=/",
-        "Secure",
-        "HttpOnly",
-        "SameSite=Lax",
-      ].join("; ");
-
-      expect(response.headers?.["Set-Cookie"]).toBe(expectedCookie);
+      expect(redirectToConfirmDetailsExpress).toHaveBeenCalledWith(response, "session-abc-123");
     });
 
     it("should redirect to error page when session handler returns an error", async () => {
@@ -68,37 +68,29 @@ describe("authorize-handler", () => {
         throw new Error("Session endpoint returned an error response");
       });
 
-      const event = createMockEvent({
-        queryStringParameters: {
+      const { request, response, next } = createExpressRequest({
+        query: {
           client_id: "orchestrator",
-          request: "invalid.jar.content",
-        } satisfies AuthorizationQueryStringParameters,
+          request: "foo.bar.123",
+        } as AuthorizationQueryStringParameters,
       });
+      await handler(request, response, next);
 
-      const response = await handler(event, {} as Context);
-
-      expect(response.statusCode).toBe(302);
-
-      expect(response.headers?.Location).toBe("https://test-domain/error/unrecoverable");
-
-      expect(response.headers?.["Set-Cookie"]).toBeUndefined();
+      expect(redirectToErrorPageExpress).toHaveBeenCalledWith(response);
     });
 
     it("should redirect to error page when fetch throws", async () => {
       vitest.mocked(callSessionApi).mockRejectedValueOnce(new Error("ECONNREFUSED"));
 
-      const event = createMockEvent({
-        queryStringParameters: {
+      const { request, response, next } = createExpressRequest({
+        query: {
           client_id: "orchestrator",
-          request: "some.jar.value",
-        } satisfies AuthorizationQueryStringParameters,
+          request: "foo.bar.123",
+        } as AuthorizationQueryStringParameters,
       });
+      await handler(request, response, next);
 
-      const response = await handler(event, {} as Context);
-
-      expect(response.statusCode).toBe(302);
-
-      expect(response.headers?.Location).toBe("https://test-domain/error/unrecoverable");
+      expect(redirectToErrorPageExpress).toHaveBeenCalledWith(response);
     });
   });
 });
@@ -134,26 +126,3 @@ describe("isValidQueryParameters", () => {
     expect(isValidQueryParameters({ client_id: "client-id", request: "     " })).toBeFalsy();
   });
 });
-
-function createMockEvent(overrides: Partial<APIGatewayProxyEvent>): APIGatewayProxyEvent {
-  return {
-    // eslint-disable-next-line unicorn/no-null
-    body: null,
-    headers: {},
-    multiValueHeaders: {},
-    httpMethod: "GET",
-    isBase64Encoded: false,
-    path: "/",
-    // eslint-disable-next-line unicorn/no-null
-    pathParameters: null,
-    // eslint-disable-next-line unicorn/no-null
-    queryStringParameters: null,
-    // eslint-disable-next-line unicorn/no-null
-    multiValueQueryStringParameters: null,
-    // eslint-disable-next-line unicorn/no-null
-    stageVariables: null,
-    requestContext: {} as APIGatewayEventRequestContextWithAuthorizer<never>,
-    resource: "/",
-    ...overrides,
-  };
-}
