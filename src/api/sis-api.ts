@@ -2,22 +2,6 @@ import { URL } from "node:url";
 import { Response } from "express";
 import { getRequiredEnvironment } from "../configuration/get-required-environment.js";
 
-type RedirectOptions = {
-  location: string;
-  body: string;
-  cookie?: string;
-};
-
-export function redirectToErrorPage() {
-  const domainName = getRequiredEnvironment("DOMAIN_NAME");
-  return redirect({ location: `https://${domainName}/error/unrecoverable`, body: "" });
-}
-
-export function redirectToSessionExpiredPage() {
-  const domainName = getRequiredEnvironment("DOMAIN_NAME");
-  return redirect({ location: `https://${domainName}/error/session-expired`, body: "" });
-}
-
 export function redirectToErrorPageExpress(response: Response) {
   const domainName = getRequiredEnvironment("DOMAIN_NAME");
   response.redirect(`https://${domainName}/error/unrecoverable`);
@@ -47,7 +31,8 @@ export function redirectToConfirmDetailsExpress<ResourceBody, Locals extends Rec
     .redirect(`https://${domainName}/confirm-details`);
 }
 
-export function redirectToClient(
+export function redirectToClientExpress(
+  response: Response,
   redirectUri: string,
   state: string,
   authorizationCode?: string,
@@ -64,16 +49,5 @@ export function redirectToClient(
   }
   orchestrationRedirectUrl.searchParams.append("state", state);
 
-  return redirect({ location: orchestrationRedirectUrl.href, body: "" });
-}
-
-export function redirect({ location, body, cookie }: RedirectOptions) {
-  return {
-    statusCode: 302,
-    headers: {
-      Location: location,
-      ...(cookie && { "Set-Cookie": cookie }),
-    },
-    body: body,
-  };
+  response.redirect(orchestrationRedirectUrl.href);
 }
