@@ -22,7 +22,7 @@ import logger from "../../../../utilities/logger.js";
 import { handler } from "../get-confirm-details-handler.js";
 import { extractUserDetails } from "../user-details-content.js";
 import { getReuseDecision } from "../../../../domain/reuse/reuse-decision.js";
-import { NextFunction, Request, Response } from "express";
+import { createExpressRequest } from "../../tests/test-utilities.js";
 import {
   redirectToSessionExpiredPageExpress,
   redirectToOauthCallBackExpress,
@@ -68,43 +68,6 @@ const mockIdentityResponse: EVCSIdentityResponse = {
     unsignedVot: "P2",
   },
   vcs: [{ state: "CURRENT", vc: "vc-jwt", metadata: undefined }],
-};
-
-const createExpressRequest = (
-  requestOverrides?: Partial<Request>
-): { request: Request; response: Response; next: NextFunction } => {
-  const request: Request = {
-    cookies: {
-      identity_reuse_service_session: "test-session-id",
-    },
-    ...requestOverrides,
-  } as unknown as Request;
-  const response = {} as Record<string, ReturnType<typeof vi.fn>>;
-  const chainable = [
-    "append",
-    "attachment",
-    "clearCookie",
-    "contentType",
-    "cookie",
-    "format",
-    "header",
-    "links",
-    "location",
-    "render",
-    "sendStatus",
-    "set",
-    "status",
-    "type",
-    "vary",
-  ];
-
-  for (const method of chainable) {
-    response[method] = vi.fn(() => response);
-  }
-
-  const next = vi.fn();
-
-  return { request, response: response as unknown as Response, next };
 };
 
 beforeEach(() => {
