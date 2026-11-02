@@ -5,6 +5,7 @@ import { handler as getConfirmDetailsHandler } from "./get-confirm-details-handl
 import { handler as postConfirmDetailsHandler } from "./post-confirm-details-handler/post-confirm-details-handler.js";
 import { handler as getUnrecoverableHandler } from "./get-unrecoverable-error-handler/get-unrecoverable-error-handler.js";
 import { handler as getSessionExpiredHandler } from "./get-session-expired-handler/get-session-expired-handler.js";
+import { handler as getAuthorizeHandler } from "./get-authorize-handler/get-authorize-handler.js";
 import logger from "../../utilities/logger.js";
 import cookieParser from "cookie-parser";
 import path from "node:path";
@@ -20,7 +21,8 @@ const app = express()
   .get("/confirm-details", getConfirmDetailsHandler)
   .post("/confirm-details", postConfirmDetailsHandler)
   .get("/error/session-expired", getSessionExpiredHandler)
-  .get("/error/:error", getUnrecoverableHandler);
+  .get("/error/:error", getUnrecoverableHandler)
+  .get("/oauth2/authorize", getAuthorizeHandler);
 
 // Configure nunjucks
 const govukFrontendDistribution = path.join(path.dirname(require.resolve("govuk-frontend/package.json")), "dist");
