@@ -15,7 +15,7 @@ updates:
         versions: ["v16.4.0", "v16.3.1", "v16.3.0"]
       - dependency-name: "typescript"
         versions: ["7.0.x"]
-      - dependency-name: "@govuk-one-login/frontend-ui"
+      - dependency-name: "govuk-frontend"
         versions: ["6.x.x"]
     open-pull-requests-limit: 5
     pull-request-branch-name:
