@@ -23,7 +23,6 @@ import {
   GetSessionError,
   StoredIdentityHashMismatchError,
   StoredIdentityValidationError,
-  UserIdentityError,
 } from "../../../utilities/errors.js";
 import { APIGatewayAuthorizerResultContext } from "aws-lambda/common/api-gateway.js";
 import logger from "../../../utilities/logger.js";
@@ -173,7 +172,7 @@ describe("User-identity errors", () => {
     const response = await handler(request, {} as Context);
     expect(response).toStrictEqual({
       statusCode: 500,
-      body: JSON.stringify({ message: "No sessionId found in authorizer context" }),
+      body: JSON.stringify({ error: "bad_request", error_description: "No sessionId found in authorizer context" }),
     });
     expect(logger.error).toHaveBeenCalledWith("No sessionId found in authorizer context");
     expect(deleteSession).not.toHaveBeenCalled();
@@ -187,7 +186,10 @@ describe("User-identity errors", () => {
     const response = await handler(request, {} as Context);
     expect(response).toStrictEqual({
       statusCode: 500,
-      body: JSON.stringify({ message: "No sessionId found in authorizer context" }),
+      body: JSON.stringify({
+        error: "bad_request",
+        error_description: "No sessionId found in authorizer context",
+      }),
     });
     expect(logger.error).toHaveBeenCalledWith("No sessionId found in authorizer context");
     expect(deleteSession).not.toHaveBeenCalled();
@@ -202,8 +204,15 @@ describe("User-identity errors", () => {
     } as Partial<APIGatewayProxyEventBase<AuthorizerContext>>);
 
     const response = await handler(request, {} as Context);
-    expect(response).toStrictEqual({ statusCode: 500, body: JSON.stringify({ message: "I am an error" }) });
-    expect(logger.error).toHaveBeenCalledWith("Error met when creating user identity", { cause: error });
+    expect(response).toStrictEqual({
+      statusCode: 500,
+      body: JSON.stringify({ error: "get_session_error", error_description: "I am an error" }),
+    });
+    expect(logger.error).toHaveBeenCalledWith("Service error creating user identity", {
+      errorCode: "get_session_error",
+      message: "I am an error",
+      name: "GetSessionError",
+    });
     expect(deleteSession).not.toHaveBeenCalled();
   });
 
@@ -228,10 +237,15 @@ describe("User-identity errors", () => {
       const response = await handler(request, {} as Context);
       expect(response).toStrictEqual({
         statusCode: 500,
-        body: JSON.stringify({ message: errorMessage }),
+        body: JSON.stringify({
+          error: "service_error",
+          error_description: errorMessage,
+        }),
       });
-      expect(logger.error).toHaveBeenCalledWith("Error met when creating user identity", {
-        cause: new UserIdentityError(errorMessage),
+      expect(logger.error).toHaveBeenCalledWith("Service error creating user identity", {
+        errorCode: "service_error",
+        message: errorMessage,
+        name: "UserIdentityError",
       });
       expect(deleteSession).not.toHaveBeenCalled();
     }
@@ -249,10 +263,12 @@ describe("User-identity errors", () => {
     const response = await handler(request, {} as Context);
     expect(response).toStrictEqual({
       statusCode: 500,
-      body: JSON.stringify({ message: "Stored identity not found in EVCS" }),
+      body: JSON.stringify({ error: "service_error", error_description: "Stored identity not found in EVCS" }),
     });
-    expect(logger.error).toHaveBeenCalledWith("Error met when creating user identity", {
-      cause: new UserIdentityError("Stored identity not found in EVCS"),
+    expect(logger.error).toHaveBeenCalledWith("Service error creating user identity", {
+      errorCode: "service_error",
+      message: "Stored identity not found in EVCS",
+      name: "UserIdentityError",
     });
     expect(deleteSession).not.toHaveBeenCalled();
   });
@@ -276,10 +292,12 @@ describe("User-identity errors", () => {
     const response = await handler(request, {} as Context);
     expect(response).toStrictEqual({
       statusCode: 500,
-      body: JSON.stringify({ message: "I am an error" }),
+      body: JSON.stringify({ error: "service_error", error_description: "I am an error" }),
     });
-    expect(logger.error).toHaveBeenCalledWith("Error met when creating user identity", {
-      cause: error,
+    expect(logger.error).toHaveBeenCalledWith("Service error creating user identity", {
+      errorCode: "service_error",
+      message: "I am an error",
+      name: "StoredIdentityHashMismatchError",
     });
     expect(deleteSession).not.toHaveBeenCalled();
   });
@@ -303,10 +321,12 @@ describe("User-identity errors", () => {
     const response = await handler(request, {} as Context);
     expect(response).toStrictEqual({
       statusCode: 500,
-      body: JSON.stringify({ message: "I am an error" }),
+      body: JSON.stringify({ error: "service_error", error_description: "I am an error" }),
     });
-    expect(logger.error).toHaveBeenCalledWith("Error met when creating user identity", {
-      cause: error,
+    expect(logger.error).toHaveBeenCalledWith("Service error creating user identity", {
+      errorCode: "service_error",
+      message: "I am an error",
+      name: "StoredIdentityValidationError",
     });
     expect(deleteSession).not.toHaveBeenCalled();
   });

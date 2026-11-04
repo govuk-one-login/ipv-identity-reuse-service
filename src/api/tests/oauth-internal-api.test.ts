@@ -380,13 +380,19 @@ describe("getSessionDetails", () => {
   });
 
   it("should throw a SessionInvalidError if GET /api/session returns a 400 status code", async () => {
-    const mockResponse = Response.json({}, { status: 400 });
+    const mockResponse = Response.json(
+      {
+        message: "RetrieveSession Lambda error occurred",
+        errorSummary: "RetrieveSession Lambda error occurred",
+      },
+      { status: 400 }
+    );
     vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
 
     await expect(getSessionDetails("test-session-id")).rejects.toThrow(
       expect.objectContaining({
         name: "SessionInvalidError",
-        message: "No session found for the given sessionId",
+        message: "RetrieveSession Lambda error occurred",
       })
     );
   });
