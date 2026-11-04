@@ -1,8 +1,16 @@
-import { URL } from "node:url";
-import logger from "../utilities/logger.js";
-import { getOauthInternalApiUrl, getSessionTimeout } from "../configuration/configuration.js";
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
-import { DeleteSessionError, GetSessionError, SessionInvalidError } from "../utilities/errors.js";
+import { URL } from "node:url";
+import { getOauthInternalApiUrl, getSessionTimeout } from "../configuration/configuration.js";
+import {
+  DeleteSessionError,
+  GetSessionError,
+  InvalidRequest,
+  ServerError,
+  SessionInvalidError,
+  isClientError,
+  isSuccessResponse,
+} from "../utilities/errors.js";
+import logger from "../utilities/logger.js";
 
 export type SessionResult = {
   session_id: string;
@@ -45,6 +53,12 @@ export type GetSessionSuccessResponse = {
   subject: string;
   context?: string;
   sessionData?: SessionData;
+};
+
+export type GetSessionErrorResponse = {
+  message: string;
+  code?: string | number;
+  errorSummary?: string;
 };
 
 export type SessionData = {
@@ -154,6 +168,11 @@ export async function getAuthorizationCode(sessionId: string): Promise<Authoriza
   }
 }
 
+/**
+ * @throws InvalidRequest
+ * @throws AccessDenied
+ * @throws ServerError
+ */
 export async function getSessionDetails(sessionId: string): Promise<GetSessionSuccessResponse> {
   const oauthInternalApiUrl = getOauthInternalApiUrl();
   const url = `${oauthInternalApiUrl}/api/session`;
@@ -166,20 +185,32 @@ export async function getSessionDetails(sessionId: string): Promise<GetSessionSu
     signal: AbortSignal.timeout(getSessionTimeout()),
   });
 
-  if (responseFromSessionEndpoint.status === 200) {
-    const sessionData = await responseFromSessionEndpoint.json();
-    if (!isValidGetSessionSuccessResponse(sessionData)) {
-      throw new GetSessionError("Invalid response properties received from GET session endpoint");
+  const response = await responseFromSessionEndpoint.json();
+
+  if (isSuccessResponse(responseFromSessionEndpoint.status)) {
+    if (isValidGetSessionSuccessResponse(response)) {
+      return response;
     }
-    return sessionData;
-  } else if (responseFromSessionEndpoint.status === 400) {
-    throw new SessionInvalidError("No session found for the given sessionId");
-  } else {
-    logger.error(`GET session handler returned non-200 status: ${responseFromSessionEndpoint.status}`);
-    throw new GetSessionError("GET session endpoint returned an error response");
+    throw new ServerError("Invalid response properties received from GET session endpoint");
   }
+
+  const errorResponse: GetSessionErrorResponse = response;
+  if (isClientError(responseFromSessionEndpoint.status)) {
+    if (responseFromSessionEndpoint.status === 403) {
+      throw new InvalidRequest(errorResponse.message);
+    }
+    if (responseFromSessionEndpoint.status === 404) {
+      throw new GetSessionError(errorResponse.message);
+    }
+    throw new SessionInvalidError(errorResponse.message);
+  }
+
+  throw new ServerError(errorResponse.message);
 }
 
+/**
+ * @throws DeleteSessionError
+ */
 export async function deleteSession(sessionId: string): Promise<void> {
   const oauthInternalApiUrl = getOauthInternalApiUrl();
   const url = `${oauthInternalApiUrl}/api/session`;
@@ -197,6 +228,10 @@ export async function deleteSession(sessionId: string): Promise<void> {
   }
 }
 
+/**
+ * @throws SessionInvalidError
+ * @throws Error
+ */
 export async function updateSessionData(sessionId: string, data: Record<string, string | null>): Promise<void> {
   const oauthInternalApiUrl = getOauthInternalApiUrl();
   const url = `${oauthInternalApiUrl}/api/session/data`;
