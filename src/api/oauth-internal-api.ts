@@ -50,6 +50,7 @@ export type GetSessionSuccessResponse = {
 export type SessionData = {
   vot: IdentityVectorOfTrust;
   storedIdentitySha256: string;
+  csrfToken?: string;
 };
 
 export const CreateSessionError = createErrorClass("CreateSessionError");

@@ -93,11 +93,19 @@ export const handler: RequestHandler = async (request, response) => {
 
     const userDetails = extractUserDetails(validationResult.storedIdentityRecord);
 
+    const csrfToken = request.csrfToken?.(true);
+    logger.info("CSRF Token", { csrfToken });
+    if (csrfToken) {
+      logger.info("Updated with CSRF", { csrfToken });
+      await updateSessionData(sessionId, { csrfToken });
+    }
+
     return response.header("content-type", "text/html").render(mainPageTemplate, {
       assetPath: "./assets",
       rootPath: ".",
       userDetails,
       translations,
+      csrfToken,
       govukRebrand: true,
     });
   } catch (error) {
