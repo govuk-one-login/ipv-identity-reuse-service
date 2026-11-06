@@ -11,6 +11,8 @@ import logger from "../../utilities/logger.js";
 import cookieParser from "cookie-parser";
 import path from "node:path";
 import nunjucks from "nunjucks";
+import { csrfSynchronisedProtection } from "./csrf.js";
+import { sessionMiddleware } from "./session-middleware.js";
 
 // Configure Express.js
 const app = express()
@@ -19,10 +21,11 @@ const app = express()
   .use(cookieParser())
   .use(express.urlencoded({ extended: true }))
   .use(loggerMiddleware)
-  .get("/confirm-details", getConfirmDetailsHandler)
-  .post("/confirm-details", postConfirmDetailsHandler)
-  .get("/error/session-expired", getSessionExpiredHandler)
-  .get("/error/:error", getUnrecoverableHandler)
+  .use(sessionMiddleware)
+  .get("/confirm-details", csrfSynchronisedProtection, getConfirmDetailsHandler)
+  .post("/confirm-details", csrfSynchronisedProtection, postConfirmDetailsHandler)
+  .get("/error/session-expired", csrfSynchronisedProtection, getSessionExpiredHandler)
+  .get("/error/:error", csrfSynchronisedProtection, getUnrecoverableHandler)
   .get("/oauth2/authorize", getAuthorizeHandler)
   .get("/oauth2/callback", getCallbackHandler);
 

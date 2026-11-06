@@ -99,6 +99,7 @@
             }) }}
 
             <form id="submitForm" action="/confirm-details" method="post">
+                <input type="hidden" name="_csrf" value="{{csrfToken}}">
                 {{ frontendUiProgressButton({
                     id: "submitButton",
                     name: "action",
