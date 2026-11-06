@@ -4,7 +4,7 @@ import { RequestHandler } from "express";
 import logger from "../../utilities/logger.js";
 
 export const sessionMiddleware: RequestHandler = async (request, response, next) => {
-  request.session = {};
+  request.session = request.session ?? {};
 
   const sessionId = request.cookies?.["identity_reuse_service_session"];
   if (sessionId) {
@@ -12,7 +12,10 @@ export const sessionMiddleware: RequestHandler = async (request, response, next)
 
     try {
       const sessionData = await getSessionDetails(sessionId);
-      storeTokenInState(request, sessionData?.sessionData?.csrfToken);
+      const csrfToken = sessionData?.sessionData?.csrfToken;
+      if (csrfToken) {
+        storeTokenInState(request, csrfToken);
+      }
     } catch (error) {
       logger.error("Error", { e: error });
     }
