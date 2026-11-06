@@ -11,7 +11,6 @@ export const loggerMiddleware: RequestHandler = (request, response, next) => {
   logger.info(`Incoming request: ${request.method} ${request.path}`, {
     method: request.method,
     path: request.path,
-    query: request.query,
   });
 
   response.on("finish", () => {
