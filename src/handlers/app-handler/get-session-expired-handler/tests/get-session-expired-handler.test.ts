@@ -14,7 +14,7 @@ it("should render the session expired screen", async () => {
   handler(request, response, next);
 
   expect(response.header).toHaveBeenCalledWith("content-type", "text/html");
-  expect(response.status).toHaveBeenCalledWith(500);
+  expect(response.status).toHaveBeenCalledWith(401);
   expect(response.render).toHaveBeenCalledWith(expect.stringMatching(INDEX_PATH_REGEX), {
     assetPath: "./assets",
     rootPath: "",

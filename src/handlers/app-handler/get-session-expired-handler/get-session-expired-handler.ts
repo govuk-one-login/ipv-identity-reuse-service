@@ -4,7 +4,7 @@ import translations from "../../../../locales/en/translation.json" with { type: 
 import { RequestHandler } from "express";
 
 export const handler: RequestHandler = (request, response) =>
-  response.header("content-type", "text/html").status(500).render(mainPageTemplate, {
+  response.header("content-type", "text/html").status(401).render(mainPageTemplate, {
     assetPath: "./assets",
     baseUrl: request.path,
     rootPath: "",

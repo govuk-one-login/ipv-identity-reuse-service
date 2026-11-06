@@ -1,8 +1,10 @@
+import type { Page } from "@playwright/test";
 import { expect, test } from "./fixtures.js";
 import { ConfirmDetailsPage } from "./pages/confirm-details.page.js";
-import type { AuthorizationRequestField } from "./pages/orchestration-stub.page.js";
+import type { AuthorizationRequestField, OrchestrationStubPage } from "./pages/orchestration-stub.page.js";
 import { UnrecoverableErrorPage } from "./pages/unrecoverable-error.page.js";
 import { SessionExpiredErrorPage } from "./pages/session-expired-error.page.js";
+import { CallbackPage } from "./pages/callback.page.js";
 import { generateRandomTestUserId } from "../shared/utils/user-subject-id.js";
 import { createStoredIdentityWithVot } from "../shared/helpers/identity-helper.js";
 import { getDidControllerName, getSigningKeyId } from "../shared/utils/ssm-utilities.js";
@@ -60,6 +62,67 @@ const rejectedRequests: ReadonlyArray<RejectedRequest> = [
   },
 ];
 
+const claims: StoredIdentityClaims = {
+  "https://vocab.account.gov.uk/v1/coreIdentity": {
+    name: [KENNETH_DECERQUEIRA],
+    birthDate: [KENNETH_DECERQUEIRA_BIRTH_DATE],
+  },
+  "https://vocab.account.gov.uk/v1/address": [KENNETH_DECERQUERIA_ADDRESS],
+};
+
+const createTestIdentity = async (claims?: StoredIdentityClaims) => {
+  const userId = generateRandomTestUserId();
+  const credentialJwts = [
+    await createAndPostDcmawPassportCredential(userId, new Date()),
+    await createAndPostFraudCheckCredential(userId, new Date()),
+    await createAndPostSecurityCheckCredential(userId, new Date(), ["A01"]),
+  ];
+  await createStoredIdentityWithVot(
+    userId,
+    credentialJwts,
+    "P2",
+    await getDidControllerName(),
+    await getSigningKeyId(),
+    undefined,
+    "P3",
+    claims
+  );
+  return { userId, credentialJwts };
+};
+
+const navigateToConfirmDetails = async (
+  page: Page,
+  orchestrationStub: OrchestrationStubPage,
+  confirmDetails: ConfirmDetailsPage,
+  sisPublicUrl: string,
+  sisPrivateUrl: string,
+  userId: string
+) => {
+  await orchestrationStub.goto();
+  await expect(orchestrationStub.heading).toBeVisible();
+
+  await orchestrationStub.setPublicUrl(sisPublicUrl);
+  await orchestrationStub.setPrivateUrl(sisPrivateUrl);
+  await orchestrationStub.setUserId(userId);
+  await orchestrationStub.uncheckCreateIdentity();
+  await orchestrationStub.continue();
+
+  await expect(confirmDetails.heading).toBeVisible();
+  await expect(page).toHaveURL((url) => {
+    return url.pathname === ConfirmDetailsPage.path;
+  });
+};
+
+const trackSessionExpiredStatus = (page: Page): (() => number | undefined) => {
+  let statusCode: number | undefined;
+  page.on("response", (response) => {
+    if (new URL(response.url()).pathname === SessionExpiredErrorPage.path) {
+      statusCode = response.status();
+    }
+  });
+  return () => statusCode;
+};
+
 test.describe("Authorization workflow", () => {
   let sisPublicUrl: string;
   let sisPrivateUrl: string;
@@ -75,43 +138,10 @@ test.describe("Authorization workflow", () => {
     confirmDetails,
     identityResponse,
   }) => {
-    const userId = generateRandomTestUserId();
-    const credentialJwts = [
-      await createAndPostDcmawPassportCredential(userId, new Date()),
-      await createAndPostFraudCheckCredential(userId, new Date()),
-      await createAndPostSecurityCheckCredential(userId, new Date(), ["A01"]),
-    ];
-    const claims: StoredIdentityClaims = {
-      "https://vocab.account.gov.uk/v1/coreIdentity": {
-        name: [KENNETH_DECERQUEIRA],
-        birthDate: [KENNETH_DECERQUEIRA_BIRTH_DATE],
-      },
-      "https://vocab.account.gov.uk/v1/address": [KENNETH_DECERQUERIA_ADDRESS],
-    };
-    await createStoredIdentityWithVot(
-      userId,
-      credentialJwts,
-      "P2",
-      await getDidControllerName(),
-      await getSigningKeyId(),
-      undefined,
-      "P3",
-      claims
-    );
+    const { userId, credentialJwts } = await createTestIdentity(claims);
 
-    await orchestrationStub.goto();
-    await expect(orchestrationStub.heading).toBeVisible();
+    await navigateToConfirmDetails(page, orchestrationStub, confirmDetails, sisPublicUrl, sisPrivateUrl, userId);
 
-    await orchestrationStub.setPublicUrl(sisPublicUrl);
-    await orchestrationStub.setPrivateUrl(sisPrivateUrl);
-    await orchestrationStub.setUserId(userId);
-    await orchestrationStub.uncheckCreateIdentity();
-    await orchestrationStub.continue();
-
-    await expect(confirmDetails.heading).toBeVisible();
-    await expect(page).toHaveURL((url) => {
-      return url.pathname === ConfirmDetailsPage.path;
-    });
     await expect(confirmDetails.fullNameValue).toHaveText("KENNETH DECERQUEIRA");
     await expect(confirmDetails.dateOfBirthValue).toHaveText("8 July 1965");
     await expect(confirmDetails.addressValue).toContainText("8, HADLEY ROAD");
@@ -138,43 +168,10 @@ test.describe("Authorization workflow", () => {
     identityResponse,
     sessionExpiredError,
   }) => {
-    const userId = generateRandomTestUserId();
-    const credentialJwts = [
-      await createAndPostDcmawPassportCredential(userId, new Date()),
-      await createAndPostFraudCheckCredential(userId, new Date()),
-      await createAndPostSecurityCheckCredential(userId, new Date(), ["A01"]),
-    ];
-    const claims: StoredIdentityClaims = {
-      "https://vocab.account.gov.uk/v1/coreIdentity": {
-        name: [KENNETH_DECERQUEIRA],
-        birthDate: [KENNETH_DECERQUEIRA_BIRTH_DATE],
-      },
-      "https://vocab.account.gov.uk/v1/address": [KENNETH_DECERQUERIA_ADDRESS],
-    };
-    await createStoredIdentityWithVot(
-      userId,
-      credentialJwts,
-      "P2",
-      await getDidControllerName(),
-      await getSigningKeyId(),
-      undefined,
-      "P3",
-      claims
-    );
+    const { userId, credentialJwts } = await createTestIdentity(claims);
 
-    await orchestrationStub.goto();
-    await expect(orchestrationStub.heading).toBeVisible();
+    await navigateToConfirmDetails(page, orchestrationStub, confirmDetails, sisPublicUrl, sisPrivateUrl, userId);
 
-    await orchestrationStub.setPublicUrl(sisPublicUrl);
-    await orchestrationStub.setPrivateUrl(sisPrivateUrl);
-    await orchestrationStub.setUserId(userId);
-    await orchestrationStub.uncheckCreateIdentity();
-    await orchestrationStub.continue();
-
-    await expect(confirmDetails.heading).toBeVisible();
-    await expect(page).toHaveURL((url) => {
-      return url.pathname === ConfirmDetailsPage.path;
-    });
     await expect(confirmDetails.fullNameValue).toHaveText("KENNETH DECERQUEIRA");
     await expect(confirmDetails.dateOfBirthValue).toHaveText("8 July 1965");
     await expect(confirmDetails.addressValue).toContainText("8, HADLEY ROAD");
@@ -200,6 +197,88 @@ test.describe("Authorization workflow", () => {
     await expect(page).toHaveURL((url) => {
       return url.pathname === SessionExpiredErrorPage.path;
     });
+  });
+
+  test("rejects a request to confirm-details with no session cookie", async ({
+    page,
+    context,
+    sessionExpiredError,
+  }) => {
+    await context.clearCookies();
+    const getSessionExpiredStatus = trackSessionExpiredStatus(page);
+
+    await page.goto(sisPublicUrl + ConfirmDetailsPage.path);
+
+    await expect(sessionExpiredError.heading).toBeVisible();
+    await expect(sessionExpiredError.message).toBeVisible();
+    await expect(page).toHaveURL((url) => {
+      return url.pathname === SessionExpiredErrorPage.path;
+    });
+    expect(getSessionExpiredStatus()).toBe(401);
+  });
+
+  test("rejects a request to /oauth2/callback with no session cookie", async ({
+    page,
+    context,
+    sessionExpiredError,
+  }) => {
+    await context.clearCookies();
+    const getSessionExpiredStatus = trackSessionExpiredStatus(page);
+
+    await page.goto(sisPublicUrl + CallbackPage.path);
+
+    await expect(sessionExpiredError.heading).toBeVisible();
+    await expect(sessionExpiredError.message).toBeVisible();
+    await expect(page).toHaveURL((url) => {
+      return url.pathname === SessionExpiredErrorPage.path;
+    });
+    expect(getSessionExpiredStatus()).toBe(401);
+  });
+
+  test("redirects user from confirm-details to session-expired page when session cookie is deleted and continue is pressed", async ({
+    page,
+    context,
+    orchestrationStub,
+    confirmDetails,
+    sessionExpiredError,
+  }) => {
+    const { userId } = await createTestIdentity();
+    const getSessionExpiredStatus = trackSessionExpiredStatus(page);
+
+    await navigateToConfirmDetails(page, orchestrationStub, confirmDetails, sisPublicUrl, sisPrivateUrl, userId);
+
+    await context.clearCookies();
+
+    await confirmDetails.continue();
+    await expect(sessionExpiredError.heading).toBeVisible();
+    await expect(sessionExpiredError.message).toBeVisible();
+    await expect(page).toHaveURL((url) => {
+      return url.pathname === SessionExpiredErrorPage.path;
+    });
+    expect(getSessionExpiredStatus()).toBe(401);
+  });
+
+  test("redirects user from confirm-details to session-expired page when session cookie is deleted and update your details is pressed", async ({
+    page,
+    context,
+    orchestrationStub,
+    confirmDetails,
+    sessionExpiredError,
+  }) => {
+    const { userId } = await createTestIdentity();
+    const getSessionExpiredStatus = trackSessionExpiredStatus(page);
+
+    await navigateToConfirmDetails(page, orchestrationStub, confirmDetails, sisPublicUrl, sisPrivateUrl, userId);
+
+    await context.clearCookies();
+
+    await confirmDetails.updateDetails();
+    await expect(sessionExpiredError.heading).toBeVisible();
+    await expect(sessionExpiredError.message).toBeVisible();
+    await expect(page).toHaveURL((url) => {
+      return url.pathname === SessionExpiredErrorPage.path;
+    });
+    expect(getSessionExpiredStatus()).toBe(401);
   });
 
   test.describe("rejects an untrustworthy authorization request", () => {
@@ -246,35 +325,10 @@ test.describe("Authorization workflow", () => {
     orchestrationStub,
     confirmDetails,
   }) => {
-    const userId = generateRandomTestUserId();
-    const credentialJwts = [
-      await createAndPostDcmawPassportCredential(userId, new Date()),
-      await createAndPostFraudCheckCredential(userId, new Date()),
-      await createAndPostSecurityCheckCredential(userId, new Date(), ["A01"]),
-    ];
-    await createStoredIdentityWithVot(
-      userId,
-      credentialJwts,
-      "P2",
-      await getDidControllerName(),
-      await getSigningKeyId(),
-      undefined,
-      "P3"
-    );
+    const { userId } = await createTestIdentity();
 
-    await orchestrationStub.goto();
-    await expect(orchestrationStub.heading).toBeVisible();
+    await navigateToConfirmDetails(page, orchestrationStub, confirmDetails, sisPublicUrl, sisPrivateUrl, userId);
 
-    await orchestrationStub.setPublicUrl(sisPublicUrl);
-    await orchestrationStub.setPrivateUrl(sisPrivateUrl);
-    await orchestrationStub.setUserId(userId);
-    await orchestrationStub.uncheckCreateIdentity();
-    await orchestrationStub.continue();
-
-    await expect(confirmDetails.heading).toBeVisible();
-    await expect(page).toHaveURL((url) => {
-      return url.pathname === ConfirmDetailsPage.path;
-    });
     await expect(confirmDetails.fullNameValue).toHaveText("KENNETH DECERQUEIRA");
 
     const updateSubmit = page.waitForRequest(
