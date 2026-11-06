@@ -9,12 +9,24 @@ import { getSessionDetails, GetSessionSuccessResponse, deleteSession } from "../
 import { StoredIdentityRecord } from "../../domain/stored-identity/stored-identity-types.js";
 import { validateStoredIdentityAndVotByHash } from "../../domain/stored-identity/stored-identity-hashing.js";
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
-import { UserIdentityError } from "../../utilities/errors.js";
+import { BaseServiceError, UserIdentityError } from "../../utilities/errors.js";
 import { APIGatewayAuthorizerResultContext } from "aws-lambda/common/api-gateway.js";
 import { getConfiguration } from "../../configuration/configuration.js";
-import { ReturnCode, VerifiableCredentialJWT } from "../../domain/verifiable-credential/verifiable-credential-types.js";
+import { VerifiableCredentialJWT } from "../../domain/verifiable-credential/verifiable-credential-types.js";
 import { getReturnCodes } from "../../domain/verifiable-credential/security-check.js";
 import { parseVerifiableCredentials } from "../../domain/verifiable-credential/credential-decoder.js";
+
+type ErrorResponse = {
+  error: string;
+  error_description: string;
+};
+
+type StoredIdentity = {
+  storedIdentityRecord: StoredIdentityRecord;
+  calculatedVot: IdentityVectorOfTrust;
+  signedCredentials: string[];
+  unsignedCredentials: VerifiableCredentialJWT[];
+};
 
 export const handler = async (
   event: APIGatewayProxyEventBase<APIGatewayAuthorizerResultContext>,
@@ -26,16 +38,13 @@ export const handler = async (
     const sessionId = event.requestContext.authorizer.sessionId;
     if (!sessionId || typeof sessionId !== "string") {
       logger.error("No sessionId found in authorizer context");
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ message: "No sessionId found in authorizer context" }),
-      };
+      return createErrorResponse("bad_request", "No sessionId found in authorizer context");
     }
 
     const { storedIdentityRecord, calculatedVot, signedCredentials, unsignedCredentials } =
       await getStoredIdentity(sessionId);
     const configuration = await getConfiguration();
-    const returnCodes: ReturnCode[] = getReturnCodes(unsignedCredentials, configuration);
+    const returnCodes = getReturnCodes(unsignedCredentials, configuration);
 
     const responseBody: GetUserIdentityResponse = {
       sub: storedIdentityRecord.sub,
@@ -53,13 +62,7 @@ export const handler = async (
       body: JSON.stringify(responseBody),
     };
   } catch (error) {
-    logger.error("Error met when creating user identity", { cause: error });
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        message: error instanceof Error ? error.message : "Error met when creating user identity",
-      }),
-    };
+    return createErrorResponseFromError(error);
   }
 };
 
@@ -78,7 +81,6 @@ const getStoredIdentity = async (sessionId: string): Promise<StoredIdentity> => 
   }
 
   const signedStoredIdentity = await getSignedStoredIdentity(`Bearer ${evcsAccessToken}`);
-
   if (!signedStoredIdentity) {
     throw new UserIdentityError("Stored identity not found in EVCS");
   }
@@ -97,9 +99,29 @@ const getStoredIdentity = async (sessionId: string): Promise<StoredIdentity> => 
   };
 };
 
-interface StoredIdentity {
-  storedIdentityRecord: StoredIdentityRecord;
-  calculatedVot: IdentityVectorOfTrust;
-  signedCredentials: string[];
-  unsignedCredentials: VerifiableCredentialJWT[];
-}
+const createErrorResponseFromError = (error: unknown) => {
+  let errorCode = "service_error";
+  let message = `${error}`;
+  let errorName = "Unknown";
+
+  if (error instanceof Error) {
+    message = error.message;
+    errorName = error.name;
+  }
+
+  if (error instanceof BaseServiceError) {
+    errorCode = error.errorCode;
+  }
+
+  logger.error("Service error creating user identity", {
+    errorCode,
+    message,
+    name: errorName,
+  });
+  return createErrorResponse(errorCode, message);
+};
+
+const createErrorResponse = (error: string, error_description: string, statusCode: number = 500) => ({
+  statusCode,
+  body: JSON.stringify({ error, error_description } as ErrorResponse),
+});
