@@ -3,11 +3,7 @@ import { handler } from "../get-callback-handler.js";
 import { getAuthorizationCode, getSessionDetails, deleteSession } from "../../../../api/oauth-internal-api.js";
 import logger from "../../../../utilities/logger.js";
 import { createExpressRequest } from "../../tests/test-utilities.js";
-import {
-  redirectToClientExpress,
-  redirectToSessionExpiredPageExpress,
-  redirectToErrorPageExpress,
-} from "../../../../api/sis-api.js";
+import { redirectToClientExpress, redirectToErrorPageExpress } from "../../../../api/sis-api.js";
 
 vitest.mock("../../../../utilities/logger.js");
 vitest.mock("../../../../api/oauth-internal-api");
@@ -107,13 +103,6 @@ it("should return a 302 status code and redirect with an access_denied error, re
 
   expect(deleteSession).toHaveBeenCalledTimes(1);
   expect(deleteSession).toHaveBeenCalledWith("abc123");
-});
-
-it("should return a 302 status code and redirect to session-expired page when the cookie is not set in the header", async () => {
-  const { request, response, next } = createExpressRequest({ cookies: {} });
-  await handler(request, response, next);
-
-  expect(redirectToSessionExpiredPageExpress).toHaveBeenCalledWith(response);
 });
 
 it("should log an error and redirect to the SIS error page if the authorization endpoint returns an error for a missing response property", async () => {

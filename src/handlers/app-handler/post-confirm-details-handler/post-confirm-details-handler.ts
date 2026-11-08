@@ -10,8 +10,8 @@ import { RequestHandler } from "express";
 
 export const handler: RequestHandler = async (request, response) => {
   const action = request.body?.action;
+  const { sessionId } = response.locals;
 
-  const sessionId = request.cookies?.["identity_reuse_service_session"];
   if (!sessionId) {
     logger.error("Session ID parameter is missing");
     return redirectToSessionExpiredPageExpress(response);

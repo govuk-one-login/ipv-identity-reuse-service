@@ -52,6 +52,16 @@ export const getServiceApiKey = async (): Promise<string> => {
   }
 };
 
+export const getSessionCookieSecret = async (): Promise<string> => {
+  logger.info("Retrieving session cookie secret");
+  try {
+    return getString(await getSecret(getRequiredEnvironment("SESSION_COOKIE_SECRET_ARN"), { throwOnMissing: true }));
+  } catch (error) {
+    logger.error("Error reading session cookie secret from Secrets Manager");
+    throw new ConfigurationError("Error reading session cookie secret from Secrets Manager", { cause: error });
+  }
+};
+
 export const getOauthInternalApiUrl = (): string => {
   return getRequiredEnvironment("OAUTH_INTERNAL_API_URL");
 };

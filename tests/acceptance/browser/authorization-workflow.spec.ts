@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { BrowserContext, Page } from "@playwright/test";
 import { expect, test } from "./fixtures.js";
 import { ConfirmDetailsPage } from "./pages/confirm-details.page.js";
 import type { AuthorizationRequestField, OrchestrationStubPage } from "./pages/orchestration-stub.page.js";
@@ -121,6 +121,17 @@ const trackSessionExpiredStatus = (page: Page): (() => number | undefined) => {
     }
   });
   return () => statusCode;
+};
+
+const tamperSessionCookie = async (context: BrowserContext): Promise<void> => {
+  const cookies = await context.cookies();
+  const sessionCookie = cookies.find((cookie) => cookie.name === "identity_reuse_service_session");
+  await context.addCookies([
+    {
+      ...sessionCookie!,
+      value: "tampered-session-id-value",
+    },
+  ]);
 };
 
 test.describe("Authorization workflow", () => {
@@ -290,6 +301,64 @@ test.describe("Authorization workflow", () => {
     await expect(page).toHaveURL((url) => url.pathname === BadRequestErrorPage.path);
     await expect(badRequestError.heading).toBeVisible();
     await expect(badRequestError.message).toBeVisible();
+  });
+
+  test("redirects user from confirm-details to bad-request page when session cookie is manipulated and continue is pressed", async ({
+    page,
+    context,
+    orchestrationStub,
+    confirmDetails,
+    badRequestError,
+  }) => {
+    const { userId } = await createTestIdentity();
+
+    await navigateToConfirmDetails(page, orchestrationStub, confirmDetails, sisPublicUrl, sisPrivateUrl, userId);
+
+    await tamperSessionCookie(context);
+
+    await confirmDetails.continue();
+    await expect(badRequestError.heading).toBeVisible();
+    await expect(badRequestError.message).toBeVisible();
+    await expect(page).toHaveURL((url) => url.pathname === BadRequestErrorPage.path);
+  });
+
+  test("redirects user from confirm-details to bad-request page when session cookie is manipulated and page is refreshed", async ({
+    page,
+    context,
+    orchestrationStub,
+    confirmDetails,
+    badRequestError,
+  }) => {
+    const { userId } = await createTestIdentity();
+
+    await navigateToConfirmDetails(page, orchestrationStub, confirmDetails, sisPublicUrl, sisPrivateUrl, userId);
+
+    await tamperSessionCookie(context);
+
+    await page.reload();
+    await expect(badRequestError.heading).toBeVisible();
+    await expect(badRequestError.message).toBeVisible();
+    await expect(page).toHaveURL((url) => url.pathname === BadRequestErrorPage.path);
+  });
+
+  test("rejects a request to /oauth2/callback when session cookie is manipulated", async ({
+    page,
+    context,
+    orchestrationStub,
+    confirmDetails,
+    badRequestError,
+  }) => {
+    const { userId } = await createTestIdentity();
+
+    await navigateToConfirmDetails(page, orchestrationStub, confirmDetails, sisPublicUrl, sisPrivateUrl, userId);
+
+    await tamperSessionCookie(context);
+
+    await page.goto(sisPublicUrl + CallbackPage.path);
+
+    await expect(badRequestError.heading).toBeVisible();
+    await expect(badRequestError.message).toBeVisible();
+    await expect(page).toHaveURL((url) => url.pathname === BadRequestErrorPage.path);
   });
 
   test.describe("rejects an untrustworthy authorization request", () => {

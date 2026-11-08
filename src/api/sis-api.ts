@@ -27,7 +27,13 @@ export function redirectToConfirmDetailsExpress<ResourceBody, Locals extends Rec
 ) {
   const domainName = getRequiredEnvironment("DOMAIN_NAME");
   response
-    .cookie("identity_reuse_service_session", sessionId, { secure: true, httpOnly: true, sameSite: "lax", path: "/" })
+    .cookie("identity_reuse_service_session", sessionId, {
+      secure: true,
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      signed: true,
+    })
     .redirect(`https://${domainName}/confirm-details`);
 }
 

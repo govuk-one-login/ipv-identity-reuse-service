@@ -3,11 +3,7 @@ import { handler } from "../post-confirm-details-handler.js";
 import { randomUUID } from "node:crypto";
 import { getSessionDetails, updateSessionData, createAuthCode } from "../../../../api/oauth-internal-api.js";
 import { createExpressRequest } from "../../tests/test-utilities.js";
-import {
-  redirectToSessionExpiredPageExpress,
-  redirectToOauthCallBackExpress,
-  redirectToErrorPageExpress,
-} from "../../../../api/sis-api.js";
+import { redirectToOauthCallBackExpress, redirectToErrorPageExpress } from "../../../../api/sis-api.js";
 
 const TEST_SESSION_ID = randomUUID().toString();
 
@@ -28,17 +24,6 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.resetAllMocks();
-});
-
-it("should redirect to the session-expired page if the session is not provided", async () => {
-  const { request, response, next } = createExpressRequest({
-    body: {},
-    cookies: {},
-  });
-
-  await handler(request, response, next);
-
-  expect(redirectToSessionExpiredPageExpress).toHaveBeenCalledExactlyOnceWith(response);
 });
 
 it("should return a 302 status code on a successful request", async () => {

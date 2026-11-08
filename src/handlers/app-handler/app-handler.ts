@@ -11,11 +11,15 @@ import { handler as getCallbackHandler } from "./get-callback-handler/get-callba
 import { handler as getConfirmDetailsHandler } from "./get-confirm-details-handler/get-confirm-details-handler.js";
 import { handler as getSessionExpiredHandler } from "./get-session-expired-handler/get-session-expired-handler.js";
 import { handler as getUnrecoverableHandler } from "./get-unrecoverable-error-handler/get-unrecoverable-error-handler.js";
+import { handler as postConfirmDetailsHandler } from "./post-confirm-details-handler/post-confirm-details-handler.js";
 import { helmetConfiguration } from "./helmet.js";
 import { setLocalVariablesMiddleware } from "./local-variables-middleware.js";
 import { loggerMiddleware } from "./logger-middleware.js";
-import { handler as postConfirmDetailsHandler } from "./post-confirm-details-handler/post-confirm-details-handler.js";
 import { sessionMiddleware } from "./session-middleware.js";
+import { requireSecureSessionCookie } from "./session-cookie-middleware.js";
+import { getSessionCookieSecret } from "../../configuration/configuration.js";
+
+const sessionCookieSecret = await getSessionCookieSecret();
 
 // Configure Express.js
 const app = express()
@@ -23,16 +27,16 @@ const app = express()
   .set("view engine", "njk")
   .use(setLocalVariablesMiddleware)
   .use(helmet(helmetConfiguration))
-  .use(cookieParser())
+  .use(cookieParser(sessionCookieSecret))
   .use(express.urlencoded({ extended: true }))
   .use(loggerMiddleware)
   .use(sessionMiddleware)
-  .get("/confirm-details", csrfSynchronisedProtection, getConfirmDetailsHandler)
-  .post("/confirm-details", csrfSynchronisedProtection, postConfirmDetailsHandler)
+  .get("/confirm-details", csrfSynchronisedProtection, requireSecureSessionCookie, getConfirmDetailsHandler)
+  .post("/confirm-details", csrfSynchronisedProtection, requireSecureSessionCookie, postConfirmDetailsHandler)
   .get("/error/session-expired", csrfSynchronisedProtection, getSessionExpiredHandler)
   .get("/error/:error", csrfSynchronisedProtection, getUnrecoverableHandler)
   .get("/oauth2/authorize", getAuthorizeHandler)
-  .get("/oauth2/callback", getCallbackHandler);
+  .get("/oauth2/callback", requireSecureSessionCookie, getCallbackHandler);
 
 // Configure nunjucks
 const govukFrontendDistribution = path.join(path.dirname(require.resolve("govuk-frontend/package.json")), "dist");

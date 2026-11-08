@@ -31,14 +31,14 @@ const isStoredIdentityValid = ({
 }: StoredIdentityValidationResult) => kidValid && signatureValid && isValid && storedIdentityRecord;
 
 export const handler: RequestHandler = async (request, response) => {
-  const sessionId = request.cookies?.["identity_reuse_service_session"];
+  const { sessionId } = response.locals;
+
+  if (!sessionId) {
+    logger.error("Session ID parameter is missing");
+    return redirectToSessionExpiredPageExpress(response);
+  }
 
   try {
-    if (!sessionId) {
-      logger.error("Session cookie not found");
-      return redirectToSessionExpiredPageExpress(response);
-    }
-
     const { storageAccessToken, vtr } = await getSessionDetails(sessionId);
     if (!storageAccessToken) {
       logger.error("No storageAccessToken returned from session endpoint");
@@ -112,7 +112,7 @@ export const handler: RequestHandler = async (request, response) => {
       return redirectToSessionExpiredPageExpress(response);
     } else if (error instanceof StoredIdentityValidationError) {
       logger.error("Stored identity record is missing required user details");
-      await updateSessionData(sessionId!, { errorDescription: "record_unavailable" });
+      await updateSessionData(sessionId, { errorDescription: "record_unavailable" });
 
       return redirectToOauthCallBackExpress(response);
     } else {
