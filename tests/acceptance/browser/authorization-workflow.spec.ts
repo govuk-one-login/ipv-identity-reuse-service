@@ -235,50 +235,61 @@ test.describe("Authorization workflow", () => {
     expect(getSessionExpiredStatus()).toBe(401);
   });
 
-  test("redirects user from confirm-details to session-expired page when session cookie is deleted and continue is pressed", async ({
+  test("rejects an invalid CSRS value", async ({ page, orchestrationStub, confirmDetails, badRequestError }) => {
+    const { userId } = await createTestIdentity(claims);
+
+    await navigateToConfirmDetails(page, orchestrationStub, confirmDetails, sisPublicUrl, sisPrivateUrl, userId);
+
+    await expect(confirmDetails.fullNameValue).toHaveText("KENNETH DECERQUEIRA");
+    await expect(confirmDetails.dateOfBirthValue).toHaveText("8 July 1965");
+    await expect(confirmDetails.addressValue).toContainText("8, HADLEY ROAD");
+
+    await confirmDetails.setCsrs("INVALID CRSR VALUE");
+    await confirmDetails.continue();
+
+    await expect(page).toHaveURL((url) => url.origin === sisPublicUrl && url.pathname === BadRequestErrorPage.path);
+    await expect(badRequestError.heading).toBeVisible();
+    await expect(badRequestError.message).toBeVisible();
+  });
+
+  test("redirects user from confirm-details to bad-request page when session cookie is deleted and continue is pressed", async ({
     page,
     context,
     orchestrationStub,
     confirmDetails,
-    sessionExpiredError,
+    badRequestError,
   }) => {
     const { userId } = await createTestIdentity();
-    const getSessionExpiredStatus = trackSessionExpiredStatus(page);
 
     await navigateToConfirmDetails(page, orchestrationStub, confirmDetails, sisPublicUrl, sisPrivateUrl, userId);
 
     await context.clearCookies();
 
     await confirmDetails.continue();
-    await expect(sessionExpiredError.heading).toBeVisible();
-    await expect(sessionExpiredError.message).toBeVisible();
-    await expect(page).toHaveURL((url) => {
-      return url.pathname === SessionExpiredErrorPage.path;
-    });
-    expect(getSessionExpiredStatus()).toBe(401);
+
+    await expect(page).toHaveURL((url) => url.pathname === BadRequestErrorPage.path);
+    await expect(badRequestError.heading).toBeVisible();
+    await expect(badRequestError.message).toBeVisible();
   });
 
-  test("redirects user from confirm-details to session-expired page when session cookie is deleted and update your details is pressed", async ({
+  test("redirects user from confirm-details to bad-request page when session cookie is deleted and update your details is pressed", async ({
     page,
     context,
     orchestrationStub,
     confirmDetails,
-    sessionExpiredError,
+    badRequestError,
   }) => {
     const { userId } = await createTestIdentity();
-    const getSessionExpiredStatus = trackSessionExpiredStatus(page);
 
     await navigateToConfirmDetails(page, orchestrationStub, confirmDetails, sisPublicUrl, sisPrivateUrl, userId);
 
     await context.clearCookies();
 
     await confirmDetails.updateDetails();
-    await expect(sessionExpiredError.heading).toBeVisible();
-    await expect(sessionExpiredError.message).toBeVisible();
-    await expect(page).toHaveURL((url) => {
-      return url.pathname === SessionExpiredErrorPage.path;
-    });
-    expect(getSessionExpiredStatus()).toBe(401);
+
+    await expect(page).toHaveURL((url) => url.pathname === BadRequestErrorPage.path);
+    await expect(badRequestError.heading).toBeVisible();
+    await expect(badRequestError.message).toBeVisible();
   });
 
   test.describe("rejects an untrustworthy authorization request", () => {
