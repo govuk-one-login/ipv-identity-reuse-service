@@ -1,12 +1,6 @@
 import { HttpCodesEnum } from "./constants.js";
 
-export type ErrorCodes =
-  | "access_denied"
-  | "delete_session_error"
-  | "get_session_error"
-  | "invalid_request"
-  | "invalid_session"
-  | "service_error";
+export type ErrorCodes = "bad_request" | "forbidden" | "service_error";
 
 export class BaseServiceError extends Error {
   constructor(
@@ -40,15 +34,15 @@ export class UserIdentityError extends BaseServiceError {
   }
 }
 
-export const AccessDenied = createError("AccessDenied", "access_denied");
+export const AccessDenied = createError("AccessDenied", "forbidden");
 export const ConfigurationError = createError("ConfigurationError", "service_error");
-export const DeleteSessionError = createError("DeleteSessionError", "delete_session_error");
-export const GetSessionError = createError("GetSessionError", "get_session_error");
-export const InvalidRequest = createError("InvalidRequest", "invalid_request");
+export const DeleteSessionError = createError("DeleteSessionError", "service_error");
+export const GetSessionError = createError("GetSessionError", "service_error");
+export const InvalidRequest = createError("InvalidRequest", "bad_request");
 export const JsonParseError = createError("JsonParseError", "service_error");
 export const PolicyGenerationError = createError("PolicyGenerationError", "service_error");
 export const ServerError = createError("ServerError", "service_error");
-export const SessionInvalidError = createError("SessionInvalidError", "invalid_session");
+export const SessionInvalidError = createError("SessionInvalidError", "bad_request");
 export const StoredIdentityHashMismatchError = createError("StoredIdentityHashMismatchError", "service_error");
 export const StoredIdentityValidationError = createError("StoredIdentityValidationError", "service_error");
 

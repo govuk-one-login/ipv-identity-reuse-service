@@ -206,10 +206,10 @@ describe("User-identity errors", () => {
     const response = await handler(request, {} as Context);
     expect(response).toStrictEqual({
       statusCode: 500,
-      body: JSON.stringify({ error: "get_session_error", error_description: "I am an error" }),
+      body: JSON.stringify({ error: "service_error", error_description: "I am an error" }),
     });
     expect(logger.error).toHaveBeenCalledWith("Service error creating user identity", {
-      errorCode: "get_session_error",
+      errorCode: "service_error",
       message: "I am an error",
       name: "GetSessionError",
     });
