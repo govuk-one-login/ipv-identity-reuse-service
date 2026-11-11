@@ -1,23 +1,28 @@
 import { configure } from "@codegenie/serverless-express";
-import express from "express";
-import { loggerMiddleware } from "./logger-middleware.js";
-import { handler as getConfirmDetailsHandler } from "./get-confirm-details-handler/get-confirm-details-handler.js";
-import { handler as postConfirmDetailsHandler } from "./post-confirm-details-handler/post-confirm-details-handler.js";
-import { handler as getUnrecoverableHandler } from "./get-unrecoverable-error-handler/get-unrecoverable-error-handler.js";
-import { handler as getSessionExpiredHandler } from "./get-session-expired-handler/get-session-expired-handler.js";
-import { handler as getAuthorizeHandler } from "./get-authorize-handler/get-authorize-handler.js";
-import { handler as getCallbackHandler } from "./get-callback-handler/get-callback-handler.js";
-import logger from "../../utilities/logger.js";
 import cookieParser from "cookie-parser";
+import express from "express";
+import helmet from "helmet";
 import path from "node:path";
 import nunjucks from "nunjucks";
+import logger from "../../utilities/logger.js";
 import { csrfSynchronisedProtection } from "./csrf.js";
+import { handler as getAuthorizeHandler } from "./get-authorize-handler/get-authorize-handler.js";
+import { handler as getCallbackHandler } from "./get-callback-handler/get-callback-handler.js";
+import { handler as getConfirmDetailsHandler } from "./get-confirm-details-handler/get-confirm-details-handler.js";
+import { handler as getSessionExpiredHandler } from "./get-session-expired-handler/get-session-expired-handler.js";
+import { handler as getUnrecoverableHandler } from "./get-unrecoverable-error-handler/get-unrecoverable-error-handler.js";
+import { helmetConfiguration } from "./helmet.js";
+import { setLocalVariablesMiddleware } from "./local-variables-middleware.js";
+import { loggerMiddleware } from "./logger-middleware.js";
+import { handler as postConfirmDetailsHandler } from "./post-confirm-details-handler/post-confirm-details-handler.js";
 import { sessionMiddleware } from "./session-middleware.js";
 
 // Configure Express.js
 const app = express()
   .disable("x-powered-by")
   .set("view engine", "njk")
+  .use(setLocalVariablesMiddleware)
+  .use(helmet(helmetConfiguration))
   .use(cookieParser())
   .use(express.urlencoded({ extended: true }))
   .use(loggerMiddleware)
