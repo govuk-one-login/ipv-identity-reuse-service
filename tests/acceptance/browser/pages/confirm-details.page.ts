@@ -1,4 +1,5 @@
 import type { Locator, Page } from "@playwright/test";
+import { ElementNotFoundError } from "../support/element-not-found-error.js";
 
 export class ConfirmDetailsPage {
   static readonly path = "/confirm-details";
@@ -10,6 +11,7 @@ export class ConfirmDetailsPage {
   readonly addressValue: Locator;
   readonly updateDetailsSummary: Locator;
   readonly updateDetailsButton: Locator;
+  readonly csrsInputValue: Locator;
 
   constructor(page: Page) {
     this.heading = page.getByRole("heading", { name: "Confirm your details", level: 1 });
@@ -32,10 +34,23 @@ export class ConfirmDetailsPage {
         hasText: "Current home address",
       })
       .locator(".govuk-summary-list__value");
+    this.csrsInputValue = page.locator('input[name="_csrf"]');
   }
 
   async continue(): Promise<void> {
     await this.continueButton.click();
+  }
+
+  async setCsrs(csrs: string): Promise<void> {
+    if ((await this.csrsInputValue.count()) === 0) {
+      throw new ElementNotFoundError('input[name="_csrf"]');
+    }
+
+    await this.csrsInputValue.evaluate((element, newValue) => {
+      if (element instanceof HTMLInputElement) {
+        element.value = newValue;
+      }
+    }, csrs);
   }
 
   async updateDetails(): Promise<void> {

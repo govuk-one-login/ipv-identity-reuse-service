@@ -6,18 +6,21 @@ export const loggerMiddleware: RequestHandler = (request, response, next) => {
   const { context } = getCurrentInvoke();
 
   logger.addContext(context);
+  logger.appendKeys({ method: request.method, path: request.path });
 
   logger.info(`Incoming request: ${request.method} ${request.path}`, {
     method: request.method,
     path: request.path,
-    query: request.query,
-    req: request,
   });
 
   response.on("finish", () => {
     logger.info(`Request processed: ${request.method} ${request.path}`, {
       statusCode: response.statusCode,
     });
+  });
+
+  response.on("error", (error) => {
+    logger.error(`Error occurred: ${error.message}`, { error });
   });
 
   next();

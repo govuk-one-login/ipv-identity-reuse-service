@@ -21,6 +21,7 @@ import mainPageTemplate from "./index.njk";
 import { extractUserDetails } from "./user-details-content.js";
 import { RequestHandler } from "express";
 import { getReuseDecision, ReuseDecision } from "../../../domain/reuse/reuse-decision.js";
+import "csrf-sync";
 
 const isStoredIdentityValid = ({
   kidValid,
@@ -93,11 +94,17 @@ export const handler: RequestHandler = async (request, response) => {
 
     const userDetails = extractUserDetails(validationResult.storedIdentityRecord);
 
+    const csrfToken = request.csrfToken?.(true);
+    if (csrfToken) {
+      await updateSessionData(sessionId, { csrfToken });
+    }
+
     return response.header("content-type", "text/html").render(mainPageTemplate, {
       assetPath: "./assets",
       rootPath: ".",
       userDetails,
       translations,
+      csrfToken,
       govukRebrand: true,
     });
   } catch (error) {

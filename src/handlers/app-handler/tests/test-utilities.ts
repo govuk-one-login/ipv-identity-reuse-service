@@ -29,6 +29,7 @@ export const createExpressRequest = (
     "status",
     "type",
     "vary",
+    "on",
   ];
 
   for (const method of chainable) {
