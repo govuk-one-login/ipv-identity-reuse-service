@@ -47,7 +47,7 @@ it("should return a 302 status code on a successful request", async () => {
   // eslint-disable-next-line unicorn/no-useless-undefined -- Parameter required
   vi.mocked(createAuthCode).mockResolvedValue(undefined);
 
-  const { request, response, next } = createExpressRequest({}, TEST_SESSION_ID);
+  const { request, response, next } = createExpressRequest({}, {}, TEST_SESSION_ID);
 
   await handler(request, response, next);
 
@@ -60,7 +60,7 @@ it("should redirect to the error page when createAuthCode throws an error", asyn
   vi.stubEnv("OAUTH_INTERNAL_API_URL", "https://test.com");
   vi.mocked(createAuthCode).mockRejectedValue(new Error("API call failure"));
 
-  const { request, response, next } = createExpressRequest({}, TEST_SESSION_ID);
+  const { request, response, next } = createExpressRequest({}, {}, TEST_SESSION_ID);
 
   await handler(request, response, next);
 
@@ -79,6 +79,7 @@ it("should set record_update_requested if update-details action received", async
         action: "update-details",
       },
     },
+    {},
     TEST_SESSION_ID
   );
 

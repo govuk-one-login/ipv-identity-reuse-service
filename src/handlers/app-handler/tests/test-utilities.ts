@@ -3,6 +3,7 @@ import { vi } from "vitest";
 
 export const createExpressRequest = (
   requestOverrides?: Partial<Request>,
+  responseOverrides?: Partial<Response>,
   sessionId?: string
 ): { request: Request; response: Response; next: NextFunction } => {
   const request: Request = {
@@ -35,6 +36,8 @@ export const createExpressRequest = (
   for (const method of chainable) {
     response[method] = vi.fn(() => response);
   }
+
+  Object.assign(response, responseOverrides);
 
   const next = vi.fn();
 

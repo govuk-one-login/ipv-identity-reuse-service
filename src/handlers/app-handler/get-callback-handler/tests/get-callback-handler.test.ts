@@ -38,7 +38,7 @@ it("should return a 302 status code and redirect with an auth code and state on 
     subject: "test-subject",
   });
 
-  const { request, response, next } = createExpressRequest({}, "abc123");
+  const { request, response, next } = createExpressRequest({}, {}, "abc123");
   await handler(request, response, next);
 
   expect(redirectToClientExpress).toHaveBeenCalledWith(
@@ -65,7 +65,7 @@ it("should return a 302 status code and redirect with an access_denied error, re
     subject: "test-subject",
   });
 
-  const { request, response, next } = createExpressRequest({}, "abc123");
+  const { request, response, next } = createExpressRequest({}, {}, "abc123");
   await handler(request, response, next);
 
   expect(redirectToClientExpress).toHaveBeenCalledWith(
@@ -93,7 +93,7 @@ it("should return a 302 status code and redirect with an access_denied error, re
     subject: "test-subject",
   });
 
-  const { request, response, next } = createExpressRequest({}, "abc123");
+  const { request, response, next } = createExpressRequest({}, {}, "abc123");
   await handler(request, response, next);
 
   expect(redirectToClientExpress).toHaveBeenCalledWith(
@@ -121,7 +121,7 @@ it("should log an error and redirect to the SIS error page if the authorization 
     .mocked(getAuthorizationCode)
     .mockThrowOnce(new Error("Invalid response properties received from authorization endpoint"));
 
-  const { request, response, next } = createExpressRequest({}, "abc123");
+  const { request, response, next } = createExpressRequest({}, {}, "abc123");
   await handler(request, response, next);
 
   expect(redirectToErrorPageExpress).toHaveBeenCalledWith(response);
@@ -133,7 +133,7 @@ it("should log an error and redirect to the SIS error page if the authorization 
 it("should log an error and redirect to the SIS error page if the fetch throws", async () => {
   vitest.mocked(getAuthorizationCode).mockRejectedValueOnce(new Error("TypeError: API call failed"));
 
-  const { request, response, next } = createExpressRequest({}, "abc123");
+  const { request, response, next } = createExpressRequest({}, {}, "abc123");
   await handler(request, response, next);
 
   expect(redirectToErrorPageExpress).toHaveBeenCalledWith(response);
@@ -151,7 +151,7 @@ it("should log an error and redirect to the callback if deleteSession throws aft
     .mocked(deleteSession)
     .mockRejectedValueOnce(new Error("DELETE session/data endpoint returned an error response"));
 
-  const { request, response, next } = createExpressRequest({}, "abc123");
+  const { request, response, next } = createExpressRequest({}, {}, "abc123");
   await handler(request, response, next);
 
   expect(redirectToClientExpress).toHaveBeenCalledWith(
