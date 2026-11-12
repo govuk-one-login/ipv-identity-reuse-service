@@ -1,15 +1,7 @@
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
 import { URL } from "node:url";
 import { getOauthInternalApiUrl, getSessionTimeout } from "../configuration/configuration.js";
-import {
-  DeleteSessionError,
-  GetSessionError,
-  InvalidRequest,
-  ServerError,
-  SessionInvalidError,
-  isClientError,
-  isSuccessResponse,
-} from "../utilities/errors.js";
+import { DeleteSessionError, GetSessionError, isClientError, SessionInvalidError } from "../utilities/errors.js";
 import logger from "../utilities/logger.js";
 
 export type SessionResult = {
@@ -169,8 +161,6 @@ export async function getAuthorizationCode(sessionId: string): Promise<Authoriza
 }
 
 /**
- * @throws InvalidRequest
- * @throws AccessDenied
  * @throws ServerError
  */
 export async function getSessionDetails(sessionId: string): Promise<GetSessionSuccessResponse> {
@@ -185,27 +175,18 @@ export async function getSessionDetails(sessionId: string): Promise<GetSessionSu
     signal: AbortSignal.timeout(getSessionTimeout()),
   });
 
-  const response = await responseFromSessionEndpoint.json();
-
-  if (isSuccessResponse(responseFromSessionEndpoint.status)) {
-    if (isValidGetSessionSuccessResponse(response)) {
-      return response;
+  if (responseFromSessionEndpoint.status === 200) {
+    const sessionData = await responseFromSessionEndpoint.json();
+    if (!isValidGetSessionSuccessResponse(sessionData)) {
+      throw new GetSessionError("Invalid response properties received from GET session endpoint");
     }
-    throw new ServerError("Invalid response properties received from GET session endpoint");
+    return sessionData;
+  } else if (isClientError(responseFromSessionEndpoint.status)) {
+    throw new SessionInvalidError("No session found for the given sessionId");
   }
 
-  const errorResponse: GetSessionErrorResponse = response;
-  if (isClientError(responseFromSessionEndpoint.status)) {
-    if (responseFromSessionEndpoint.status === 403) {
-      throw new InvalidRequest(errorResponse.message);
-    }
-    if (responseFromSessionEndpoint.status === 404) {
-      throw new GetSessionError(errorResponse.message);
-    }
-    throw new SessionInvalidError(errorResponse.message);
-  }
-
-  throw new ServerError(errorResponse.message);
+  logger.error(`GET session handler returned non-200 status: ${responseFromSessionEndpoint.status}`);
+  throw new GetSessionError("GET session endpoint returned an error response");
 }
 
 /**

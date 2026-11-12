@@ -172,7 +172,7 @@ describe("User-identity errors", () => {
     const response = await handler(request, {} as Context);
     expect(response).toStrictEqual({
       statusCode: 500,
-      body: JSON.stringify({ error: "bad_request", error_description: "No sessionId found in authorizer context" }),
+      body: JSON.stringify({ error: "service_error", error_description: "No sessionId found in authorizer context" }),
     });
     expect(logger.error).toHaveBeenCalledWith("No sessionId found in authorizer context");
     expect(deleteSession).not.toHaveBeenCalled();
@@ -187,7 +187,7 @@ describe("User-identity errors", () => {
     expect(response).toStrictEqual({
       statusCode: 500,
       body: JSON.stringify({
-        error: "bad_request",
+        error: "service_error",
         error_description: "No sessionId found in authorizer context",
       }),
     });

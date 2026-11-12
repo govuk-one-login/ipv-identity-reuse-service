@@ -3,11 +3,7 @@ import { HttpCodesEnum } from "./constants.js";
 export type ErrorCodes = "bad_request" | "forbidden" | "service_error";
 
 export class BaseServiceError extends Error {
-  constructor(
-    public errorCode: ErrorCodes,
-    errorDescription?: string,
-    options?: ErrorOptions
-  ) {
+  constructor(errorDescription?: string, options?: ErrorOptions) {
     super(errorDescription, options);
     this.name = "BaseError";
   }
@@ -15,41 +11,39 @@ export class BaseServiceError extends Error {
 
 export class TokenValidationError extends BaseServiceError {
   constructor(public readonly statusCode: HttpCodesEnum) {
-    super("service_error", "Token validation failed");
+    super("Token validation failed");
     this.name = "TokenValidationError";
   }
 }
 
 export class EVCSError extends BaseServiceError {
   constructor(public readonly statusCode: HttpCodesEnum) {
-    super("service_error", "EVCS request failed");
+    super("EVCS request failed");
     this.name = "EVCSError";
   }
 }
 
 export class UserIdentityError extends BaseServiceError {
   constructor(message?: string) {
-    super("service_error", message);
+    super(message);
     this.name = "UserIdentityError";
   }
 }
 
-export const AccessDenied = createError("AccessDenied", "forbidden");
-export const ConfigurationError = createError("ConfigurationError", "service_error");
-export const DeleteSessionError = createError("DeleteSessionError", "service_error");
-export const GetSessionError = createError("GetSessionError", "service_error");
-export const InvalidRequest = createError("InvalidRequest", "bad_request");
-export const JsonParseError = createError("JsonParseError", "service_error");
-export const PolicyGenerationError = createError("PolicyGenerationError", "service_error");
-export const ServerError = createError("ServerError", "service_error");
-export const SessionInvalidError = createError("SessionInvalidError", "bad_request");
-export const StoredIdentityHashMismatchError = createError("StoredIdentityHashMismatchError", "service_error");
-export const StoredIdentityValidationError = createError("StoredIdentityValidationError", "service_error");
+export const ConfigurationError = createError("ConfigurationError");
+export const DeleteSessionError = createError("DeleteSessionError");
+export const GetSessionError = createError("GetSessionError");
+export const JsonParseError = createError("JsonParseError");
+export const PolicyGenerationError = createError("PolicyGenerationError");
+export const ServerError = createError("ServerError");
+export const SessionInvalidError = createError("SessionInvalidError");
+export const StoredIdentityHashMismatchError = createError("StoredIdentityHashMismatchError");
+export const StoredIdentityValidationError = createError("StoredIdentityValidationError");
 
-function createError(className: string, code: ErrorCodes = "service_error") {
+function createError(className: string) {
   const CustomError = class extends BaseServiceError {
     constructor(message?: string, options?: ErrorOptions) {
-      super(code, message, options);
+      super(message, options);
       this.name = className;
     }
   };

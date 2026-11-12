@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vitest } from "vitest";
-import { DeleteSessionError, GetSessionError, SessionInvalidError } from "../../utilities/errors.js";
+import { DeleteSessionError, SessionInvalidError } from "../../utilities/errors.js";
 import {
   callSessionApi,
   createAuthCode,
@@ -392,16 +392,16 @@ describe("getSessionDetails", () => {
     await expect(getSessionDetails("test-session-id")).rejects.toThrow(
       expect.objectContaining({
         name: "SessionInvalidError",
-        message: "RetrieveSession Lambda error occurred",
+        message: "No session found for the given sessionId",
       })
     );
   });
 
-  it("should throw a GetSessionError if GET /api/session returns a 404", async () => {
+  it("should throw a ServiceError if GET /api/session returns a 404", async () => {
     const mockResponse = Response.json({}, { status: 404 });
     vitest.stubGlobal("fetch", vitest.fn().mockResolvedValueOnce(mockResponse));
 
-    await expect(getSessionDetails("test-session-id")).rejects.toBeInstanceOf(GetSessionError);
+    await expect(getSessionDetails("test-session-id")).rejects.toBeInstanceOf(SessionInvalidError);
   });
 
   it("should throw an error if GET /api/session response is missing subject", async () => {

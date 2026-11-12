@@ -9,7 +9,7 @@ import { getSessionDetails, GetSessionSuccessResponse, deleteSession } from "../
 import { StoredIdentityRecord } from "../../domain/stored-identity/stored-identity-types.js";
 import { validateStoredIdentityAndVotByHash } from "../../domain/stored-identity/stored-identity-hashing.js";
 import { IdentityVectorOfTrust } from "@govuk-one-login/data-vocab/credentials.js";
-import { BaseServiceError, UserIdentityError } from "../../utilities/errors.js";
+import { ErrorCodes, UserIdentityError } from "../../utilities/errors.js";
 import { APIGatewayAuthorizerResultContext } from "aws-lambda/common/api-gateway.js";
 import { getConfiguration } from "../../configuration/configuration.js";
 import { VerifiableCredentialJWT } from "../../domain/verifiable-credential/verifiable-credential-types.js";
@@ -38,7 +38,7 @@ export const handler = async (
     const sessionId = event.requestContext.authorizer.sessionId;
     if (!sessionId || typeof sessionId !== "string") {
       logger.error("No sessionId found in authorizer context");
-      return createErrorResponse("bad_request", "No sessionId found in authorizer context");
+      return createServiceErrorResponse("No sessionId found in authorizer context");
     }
 
     const { storedIdentityRecord, calculatedVot, signedCredentials, unsignedCredentials } =
@@ -100,7 +100,7 @@ const getStoredIdentity = async (sessionId: string): Promise<StoredIdentity> => 
 };
 
 const createErrorResponseFromError = (error: unknown) => {
-  let errorCode = "service_error";
+  const errorCode: ErrorCodes = "service_error";
   let message = `${error}`;
   let errorName = "Unknown";
 
@@ -109,19 +109,15 @@ const createErrorResponseFromError = (error: unknown) => {
     errorName = error.name;
   }
 
-  if (error instanceof BaseServiceError) {
-    errorCode = error.errorCode;
-  }
-
   logger.error("Service error creating user identity", {
     errorCode,
     message,
     name: errorName,
   });
-  return createErrorResponse(errorCode, message);
+  return createServiceErrorResponse(message);
 };
 
-const createErrorResponse = (error: string, error_description: string, statusCode: number = 500) => ({
-  statusCode,
-  body: JSON.stringify({ error, error_description } as ErrorResponse),
+const createServiceErrorResponse = (error_description: string) => ({
+  statusCode: 500,
+  body: JSON.stringify({ error: "service_error", error_description } as ErrorResponse),
 });
