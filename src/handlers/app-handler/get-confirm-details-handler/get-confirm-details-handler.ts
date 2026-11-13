@@ -106,6 +106,7 @@ export const handler: RequestHandler = async (request, response) => {
       translations,
       csrfToken,
       govukRebrand: true,
+      currentUrl: new URL(`${request.protocol}://${request.get("host")}${request.originalUrl}`),
     });
   } catch (error) {
     if (error instanceof SessionInvalidError) {
