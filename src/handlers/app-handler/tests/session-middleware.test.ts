@@ -9,7 +9,7 @@ vi.mock("../../../utilities/logger.js");
 
 describe("sessionMiddleware", () => {
   it("should add the session to the request if session is not present", async () => {
-    const { request, response, next } = createExpressRequest({ cookies: {} });
+    const { request, response, next } = createExpressRequest({ cookies: {}, signedCookies: {} });
 
     await sessionMiddleware(request, response, next);
 
@@ -21,7 +21,7 @@ describe("sessionMiddleware", () => {
   it("should add the session to the request if session present", async () => {
     const { request, response, next } = createExpressRequest();
 
-    expect(request.cookies).toEqual({
+    expect(request.signedCookies).toEqual({
       identity_reuse_service_session: "test-session-id",
     });
 
@@ -42,7 +42,7 @@ describe("sessionMiddleware", () => {
   it("should store the token in the session if it exists", async () => {
     const { request, response, next } = createExpressRequest();
 
-    expect(request.cookies).toEqual({
+    expect(request.signedCookies).toEqual({
       identity_reuse_service_session: "test-session-id",
     });
 
@@ -69,7 +69,7 @@ describe("sessionMiddleware", () => {
   it("should not store the token in the session if it does not exist", async () => {
     const { request, response, next } = createExpressRequest();
 
-    expect(request.cookies).toEqual({
+    expect(request.signedCookies).toEqual({
       identity_reuse_service_session: "test-session-id",
     });
 
@@ -94,7 +94,7 @@ describe("sessionMiddleware", () => {
   it("should catch errors and log them", async () => {
     const { request, response, next } = createExpressRequest();
 
-    expect(request.cookies).toEqual({
+    expect(request.signedCookies).toEqual({
       identity_reuse_service_session: "test-session-id",
     });
 

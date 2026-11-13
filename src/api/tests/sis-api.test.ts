@@ -66,6 +66,7 @@ it("should set session cookie and redirect to confirm details (express)", () => 
     httpOnly: true,
     sameSite: "lax",
     path: "/",
+    signed: true,
   });
   expect(response.redirect).toHaveBeenCalledTimes(1);
 });

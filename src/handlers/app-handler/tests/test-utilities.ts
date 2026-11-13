@@ -8,12 +8,14 @@ export const createExpressRequest = (
 ): { request: Request; response: Response; next: NextFunction } => {
   const request: Request = {
     body: {},
-    cookies: {
+    signedCookies: {
       identity_reuse_service_session: sessionId || "test-session-id",
     },
     ...requestOverrides,
   } as unknown as Request;
-  const response = {} as Record<string, ReturnType<typeof vi.fn>>;
+  const response = {
+    locals: { sessionId: sessionId || "test-session-id" },
+  } as Record<string, unknown>;
   const chainable = [
     "append",
     "attachment",

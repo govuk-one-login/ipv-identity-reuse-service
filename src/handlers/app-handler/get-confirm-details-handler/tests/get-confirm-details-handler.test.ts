@@ -217,15 +217,6 @@ describe("handler record validation", () => {
     expect(redirectToOauthCallBackExpress).toHaveBeenCalledWith(response);
   });
 
-  it("returns an error when session cookie is missing", async () => {
-    const { request, response, next } = createExpressRequest({ cookies: {} });
-    await handler(request, response, next);
-    expect(getSessionDetails).not.toHaveBeenCalled();
-    expect(getIdentityFromCredentialStore).not.toHaveBeenCalled();
-    expect(mockRender).not.toHaveBeenCalled();
-    expect(redirectToSessionExpiredPageExpress).toHaveBeenCalledWith(response);
-  });
-
   it("returns a failure response with a 500 status code when storageAccessToken is not returned from the session", async () => {
     vitest.mocked(getSessionDetails).mockResolvedValueOnce({
       subject: "user-sub",
