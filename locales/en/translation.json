@@ -1,8 +1,4 @@
 {
-  "betaBanner": {
-    "content": "This is a new service. Help us improve it and <a class=\"govuk-link\" href=\"https://home.account.gov.uk/contact-gov-uk-one-login?fromURL=https%3A%2F%2Fsignin.account.gov.uk%2Fsupport\" target=\"_blank\">give your feedback (opens in a new tab)</a>.",
-    "tag": "beta"
-  },
   "pages": {
     "confirmDetails": {
       "content": {
@@ -44,6 +40,11 @@
       "header": "Session expired",
       "title": "Session expired"
     }
+  },
+  "phaseBanner": {
+    "link": "give your feedback (opens in a new tab)",
+    "tag": "BETA",
+    "text": "This is a new service. Help us improve it and "
   },
   "progressButton": {
     "longWaitingText": "Keep waiting",
