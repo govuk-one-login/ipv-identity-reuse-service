@@ -28,6 +28,7 @@ import {
   redirectToOauthCallBackExpress,
   redirectToErrorPageExpress,
 } from "../../../../api/sis-api.js";
+import { Request } from "express";
 
 const mockRender = vi.hoisted(() => vi.fn().mockReturnValue("Rendered Confirm Details Screen"));
 
@@ -126,7 +127,10 @@ afterEach(() => {
 });
 
 it("should store the calculated vot and identity hash in the session and render the confirm details screen", async () => {
-  const { request, response, next } = createExpressRequest();
+  const { request, response, next } = createExpressRequest({
+    get: () => "example.com",
+    originalUrl: "/info",
+  } as unknown as Partial<Request>);
 
   vi.mocked(validateStoredIdentity).mockResolvedValue({
     kidValid: true,
@@ -166,6 +170,7 @@ it("should store the calculated vot and identity hash in the session and render 
       dateOfBirth: "1990-01-15",
       addressDetailHtml: "10 Downing Street<br>London<br>SW1A 2AA",
     },
+    currentUrl: new URL("https://example.com/info"),
     translations,
   });
 });
@@ -189,7 +194,10 @@ describe("handler record validation", () => {
         },
       },
     });
-    const { request, response, next } = createExpressRequest();
+    const { request, response, next } = createExpressRequest({
+      get: () => "example.com",
+      originalUrl: "/info",
+    } as unknown as Partial<Request>);
     await handler(request, response, next);
     expect(response.header).toHaveBeenCalledWith("content-type", "text/html");
     expect(response.render).toHaveBeenCalledWith(expect.stringMatching(INDEX_PATH_REGEX), {
@@ -202,6 +210,8 @@ describe("handler record validation", () => {
         addressDetailHtml: "10 Downing Street<br>London<br>SW1A 2AA",
       },
       translations,
+      csrfToken: undefined,
+      currentUrl: new URL("https://example.com/info"),
     });
   });
 
@@ -360,7 +370,10 @@ describe("reuse decision", () => {
       rawData: { vot: "P2" },
     });
 
-    const { request, response, next } = createExpressRequest();
+    const { request, response, next } = createExpressRequest({
+      get: () => "example.com",
+      originalUrl: "/info",
+    } as unknown as Partial<Request>);
     await handler(request, response, next);
 
     expect(response.header).toHaveBeenCalledWith("content-type", "text/html");
@@ -374,6 +387,7 @@ describe("reuse decision", () => {
         addressDetailHtml: "10 Downing Street<br>London<br>SW1A 2AA",
       },
       translations,
+      currentUrl: new URL("https://example.com/info"),
     });
   });
 });

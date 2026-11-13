@@ -18,6 +18,7 @@ import { loggerMiddleware } from "./logger-middleware.js";
 import { sessionMiddleware } from "./session-middleware.js";
 import { requireSecureSessionCookie } from "./session-cookie-middleware.js";
 import { getSessionCookieSecret } from "../../configuration/configuration.js";
+import * as frontendUi from "@govuk-one-login/frontend-ui";
 
 const sessionCookieSecret = await getSessionCookieSecret();
 
@@ -45,6 +46,7 @@ nunjucks
     [process.env.LAMBDA_TASK_ROOT || "", govukFrontendDistribution, path.join(govukFrontendDistribution, "../..")],
     { express: app }
   )
+  .addGlobal("contactUsUrl", frontendUi.contactUsUrl)
   .addFilter("GDSDate", (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-GB", {
       day: "numeric",
