@@ -49,7 +49,35 @@ paths:
                 Fn::ImportValue:
                   Fn::Sub: "${OauthInternalStackName}-AccessTokenFunctionName"
         passthroughBehavior: never
-        type: AWS_PROXY
+        type: aws
+        requestTemplates:
+          application/x-www-form-urlencoded: |
+            {
+              "body": "$util.escapeJavaScript($input.body)"
+            }
+        responses:
+          default:
+            statusCode: "200"
+            responseTemplates:
+              application/json: |
+                #set($inputRoot = $input.path('$'))
+                #set($upstreamStatusCode = $inputRoot.statusCode)
+                #set($upstreamBody = $util.parseJson($inputRoot.body))
+                #if($upstreamStatusCode == 200)
+                  #set($context.responseOverride.status = 200)
+                  $inputRoot.body
+                #else
+                  #if($upstreamStatusCode == 403)
+                    #set($oauthError = "invalid_grant")
+                  #else
+                    #set($oauthError = "invalid_request")
+                  #end
+                  #set($context.responseOverride.status = $upstreamStatusCode)
+                  {
+                    "error": "$oauthError",
+                    "error_description": "$util.escapeJavaScript($upstreamBody.message)"
+                  }
+                #end
   /user-identity:
     get:
       summary: "Retrieve the user’s stored identity record"
