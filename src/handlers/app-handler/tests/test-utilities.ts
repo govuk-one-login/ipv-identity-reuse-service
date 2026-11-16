@@ -11,6 +11,7 @@ export const createExpressRequest = (
     signedCookies: {
       identity_reuse_service_session: sessionId || "test-session-id",
     },
+    protocol: "https",
     ...requestOverrides,
   } as unknown as Request;
   const response = {
