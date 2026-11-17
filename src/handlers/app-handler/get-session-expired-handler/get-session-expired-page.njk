@@ -1,21 +1,14 @@
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/phase-banner/macro.njk" import govukPhaseBanner %}
 
-{% extends "govuk/template.njk" %}
+{% extends basePageTemplate %}
+
 {% block head %}
     <link rel="stylesheet" href="{{ rootPath | default("", true) }}/govuk-frontend.min.css">
     <base href="./error/session-expired" />
 {% endblock %}
 
 {% block pageTitle %}{{ translations.pages.sessionExpired.title }}{% endblock %}
-{% block beforeContent %}
-    {{ govukPhaseBanner({
-        tag: {
-            text: translations.betaBanner.tag
-        },
-        html: translations.betaBanner.content
-    }) }}
-{% endblock %}
 
 {% block content %}
   <div class="govuk-grid-row">

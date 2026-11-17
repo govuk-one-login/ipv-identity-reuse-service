@@ -2,11 +2,13 @@
 {% from "govuk/components/input/macro.njk" import govukInput %}
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 
-{% extends "govuk/template.njk" %}
+{% extends basePageTemplate %}
+
 {% block head %}
     <link rel="stylesheet" href="{{ rootPath | default("", true) }}/govuk-frontend.min.css">
     <base href="{{baseUrl}}" />
 {% endblock %}
+
 {% block content %}
     {% if errors and errors.length > 0 %}
         {{ govukErrorSummary({
@@ -33,10 +35,10 @@
 {% endblock %}
 
 {% block bodyEnd %}
-{# Run JavaScript at end of the <body>, to avoid blocking the initial render. #}
-<script type="module" src="{{ rootPath | default("", true) }}/govuk-frontend.min.js"></script>
-<script type="module" {% if cspNonce %}nonce="{{ cspNonce }}"{%  endif %}>
-    import { initAll } from '{{ rootPath | default("", true) }}/govuk-frontend.min.js'
-    initAll()
-</script>
+    {# Run JavaScript at end of the <body>, to avoid blocking the initial render. #}
+    <script type="module" src="{{ rootPath | default("", true) }}/govuk-frontend.min.js"></script>
+    <script type="module" {% if cspNonce %}nonce="{{ cspNonce }}"{%  endif %}>
+        import { initAll } from '{{ rootPath | default("", true) }}/govuk-frontend.min.js'
+        initAll()
+    </script>
 {% endblock %}

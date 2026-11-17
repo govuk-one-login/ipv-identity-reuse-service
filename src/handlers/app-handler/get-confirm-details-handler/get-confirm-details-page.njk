@@ -1,10 +1,10 @@
 {% from "govuk/components/input/macro.njk" import govukInput %}
 {% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
 {% from "govuk/components/details/macro.njk" import govukDetails %}
-{% from "@govuk-one-login/frontend-ui/build/components/phase-banner/macro.njk" import frontendUiPhaseBanner %}
 {% from "@govuk-one-login/frontend-ui/build/components/progress-button/macro.njk" import frontendUiProgressButton %}
 
-{% extends "govuk/template.njk" %}
+{% extends basePageTemplate %}
+
 {% block head %}
     <link rel="stylesheet" href="{{ rootPath | default("", true) }}/govuk-frontend.min.css">
     <base href="./confirm-details" />
@@ -30,15 +30,7 @@
 {% endblock %}
 
 {% block pageTitle %}{{ translations.pages.confirmDetails.title }}{% endblock %}
-{% block beforeContent %}
-    {{ frontendUiPhaseBanner({
-        translations: translations.phaseBanner,
-        url: currentUrl,
-        contactUrl: 'https://signin.account.gov.uk/contact-us',
-        noAppend: false
-    }) }}
 
-{% endblock %}
 {% block content %}
     <div class="govuk-grid-row">
         <div class="govuk-grid-column-two-thirds">
@@ -121,15 +113,15 @@
 {% endblock %}
 
 {% block bodyEnd %}
-{# Run JavaScript at end of the <body>, to avoid blocking the initial render. #}
-<script type="module" src="{{ rootPath | default("", true) }}/govuk-frontend.min.js"></script>
-<script type="module" {% if cspNonce %}nonce="{{ cspNonce }}"{%  endif %}>
-    import { initAll } from '{{ rootPath | default("", true) }}/govuk-frontend.min.js'
-    initAll()
-</script>
-<script type="module" src="{{ rootPath | default("", true) }}/frontend-ui.js"></script>
-<script type="module" {% if cspNonce %}nonce="{{ cspNonce }}"{%  endif %}>
-    import { useSpinner } from '{{ rootPath | default("", true) }}/frontend-ui.js'
-    useSpinner()
-</script>
+    {# Run JavaScript at end of the <body>, to avoid blocking the initial render. #}
+    <script type="module" src="{{ rootPath | default("", true) }}/govuk-frontend.min.js"></script>
+    <script type="module" {% if cspNonce %}nonce="{{ cspNonce }}"{%  endif %}>
+        import { initAll } from '{{ rootPath | default("", true) }}/govuk-frontend.min.js'
+        initAll()
+    </script>
+    <script type="module" src="{{ rootPath | default("", true) }}/frontend-ui.js"></script>
+    <script type="module" {% if cspNonce %}nonce="{{ cspNonce }}"{%  endif %}>
+        import { useSpinner } from '{{ rootPath | default("", true) }}/frontend-ui.js'
+        useSpinner()
+    </script>
 {% endblock %}

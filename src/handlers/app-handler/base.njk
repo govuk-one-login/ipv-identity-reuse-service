@@ -1,0 +1,19 @@
+{% from "@govuk-one-login/frontend-ui/build/components/phase-banner/macro.njk" import frontendUiPhaseBanner %}
+{% from "@govuk-one-login/frontend-ui/build/components/cookie-banner/macro.njk" import frontendUiCookieBanner %}
+
+{% extends "govuk/template.njk" %}
+
+{% block bodyStart %}
+  {{ frontendUiCookieBanner({
+    translations: translations.cookieBanner 
+  }) }}
+{% endblock %}
+
+{% block beforeContent %}
+    {{ frontendUiPhaseBanner({
+        translations: translations.phaseBanner,
+        url: currentUrl,
+        contactUrl: 'https://signin.account.gov.uk/contact-us',
+        noAppend: false
+    }) }}
+{% endblock %}
