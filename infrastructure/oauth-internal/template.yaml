@@ -127,6 +127,9 @@ Mappings:
       OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: "https://orch.reuse.dev.stubs.account.gov.uk/.well-known/jwks.json"
       OrchestrationRedirectURI: "https://orch.reuse.dev.stubs.account.gov.uk"
+      OrchestrationStubIssuer: "orchestrator-stub"
+      OrchestrationStubJwksEndpoint: "https://orch.reuse.dev.stubs.account.gov.uk/.well-known/jwks.json"
+      OrchestrationStubRedirectURI: "https://orch.reuse.dev.stubs.account.gov.uk"
       SISAudience: "https://reuse-identity.dev.account.gov.uk"
     "dev":
       DynatraceLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
@@ -135,6 +138,9 @@ Mappings:
       OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: "https://orch.reuse.dev.stubs.account.gov.uk/.well-known/jwks.json"
       OrchestrationRedirectURI: "https://orch.reuse.dev.stubs.account.gov.uk"
+      OrchestrationStubIssuer: "orchestrator-stub"
+      OrchestrationStubJwksEndpoint: "https://orch.reuse.dev.stubs.account.gov.uk/.well-known/jwks.json"
+      OrchestrationStubRedirectURI: "https://orch.reuse.dev.stubs.account.gov.uk"
       SISAudience: "https://reuse-identity.dev.account.gov.uk"
     "build":
       DynatraceLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
@@ -143,6 +149,9 @@ Mappings:
       OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: "https://orch.reuse.stubs.account.gov.uk/.well-known/jwks.json"
       OrchestrationRedirectURI: "https://orch.reuse.stubs.account.gov.uk"
+      OrchestrationStubIssuer: "orchestrator-stub"
+      OrchestrationStubJwksEndpoint: "https://orch.reuse.stubs.account.gov.uk/.well-known/jwks.json"
+      OrchestrationStubRedirectURI: "https://orch.reuse.stubs.account.gov.uk"
       SISAudience: "https://reuse-identity.build.account.gov.uk"
     "staging":
       DynatraceLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
@@ -151,6 +160,9 @@ Mappings:
       OrchestrationIssuer: "orchestrator"
       OrchestrationJwksEndpoint: "https://orch.reuse.stubs.account.gov.uk/.well-known/jwks.json"
       OrchestrationRedirectURI: "https://orch.reuse.stubs.account.gov.uk"
+      OrchestrationStubIssuer: "orchestrator-stub"
+      OrchestrationStubJwksEndpoint: "https://orch.reuse.stubs.account.gov.uk/.well-known/jwks.json"
+      OrchestrationStubRedirectURI: "https://orch.reuse.stubs.account.gov.uk"
       SISAudience: "https://reuse-identity.staging.account.gov.uk"
     "integration":
       DynatraceLayerArn: "arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_329_73_20260123-140641_with_collector_nodejs_arm:1"
@@ -394,7 +406,7 @@ Resources:
       Type: String
       Value: !Ref AccessTokenIndexWithEventDataIpvIndexName
 
-  OrchestrationStubAuthenticationAlgParameter:
+  IPVCoreAuthenticationAlgParameter:
     Type: AWS::SSM::Parameter
     Condition: IsNotProduction
     Properties:
@@ -402,7 +414,15 @@ Resources:
       Type: String
       Value: ES256
 
-  OrchestrationStubAudienceParameter:
+  OrchestrationStubAuthenticationAlgParameter:
+    Type: AWS::SSM::Parameter
+    Condition: IsNotProduction
+    Properties:
+      Name: !Sub "/${OAuthCommon.Outputs.StackName}/clients/orchestrator-stub/jwtAuthentication/authenticationAlg"
+      Type: String
+      Value: ES256
+
+  IPVCoreAudienceParameter:
     Type: AWS::SSM::Parameter
     Condition: IsNotProduction
     Properties:
@@ -410,15 +430,31 @@ Resources:
       Type: String
       Value: !FindInMap [ EnvironmentMap, !Ref Environment, SISAudience ]
 
-  OrchestrationStubIssuerParameter:
+  OrchestrationStubAudienceParameter:
+    Type: AWS::SSM::Parameter
+    Condition: IsNotProduction
+    Properties:
+      Name: !Sub "/${OAuthCommon.Outputs.StackName}/clients/orchestrator-stub/jwtAuthentication/audience"
+      Type: String
+      Value: !FindInMap [ EnvironmentMap, !Ref Environment, SISAudience ]
+
+  IPVCoreIssuerParameter:
     Type: AWS::SSM::Parameter
     Condition: IsNotProduction
     Properties:
       Name: !Sub "/${OAuthCommon.Outputs.StackName}/clients/${OAuthClientId}/jwtAuthentication/issuer"
       Type: String
-      Value: !FindInMap [EnvironmentMap, !Ref "Environment", OrchestrationIssuer]
+      Value: !FindInMap [ EnvironmentMap, !Ref "Environment", OrchestrationIssuer ]
 
-  OrchestrationStubRedirectURIParameter:
+  OrchestrationStubIssuerParameter:
+    Type: AWS::SSM::Parameter
+    Condition: IsNotProduction
+    Properties:
+      Name: !Sub "/${OAuthCommon.Outputs.StackName}/clients/orchestrator-stub/jwtAuthentication/issuer"
+      Type: String
+      Value: !FindInMap [ EnvironmentMap, !Ref "Environment", OrchestrationStubIssuer ]
+
+  IPVCoreRedirectURIParameter:
     Type: AWS::SSM::Parameter
     Condition: IsNotProduction
     Properties:
@@ -429,7 +465,18 @@ Resources:
         - !Ref OrchestrationRedirectURIOverride
         - !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationRedirectURI ]
 
-  OrchestrationStubJwksEndpointParameter:
+  OrchestrationStubRedirectURIParameter:
+    Type: AWS::SSM::Parameter
+    Condition: IsNotProduction
+    Properties:
+      Name: !Sub "/${OAuthCommon.Outputs.StackName}/clients/orchestrator-stub/jwtAuthentication/redirectUri"
+      Type: String
+      Value: !If
+        - IsOrchestrationRedirectURIOverridden
+        - !Ref OrchestrationRedirectURIOverride
+        - !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationStubRedirectURI ]
+
+  IPVCoreJwksEndpointParameter:
     Type: AWS::SSM::Parameter
     Condition: IsNotProduction
     Properties:
@@ -439,6 +486,17 @@ Resources:
         - IsOrchestrationJwksEndpointOverridden
         - !Ref OrchestrationJwksEndpointOverride
         - !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationJwksEndpoint ]
+
+  OrchestrationStubJwksEndpointParameter:
+    Type: AWS::SSM::Parameter
+    Condition: IsNotProduction
+    Properties:
+      Name: !Sub "/${OAuthCommon.Outputs.StackName}/clients/orchestrator-stub/jwtAuthentication/jwksEndpoint"
+      Type: String
+      Value: !If
+        - IsOrchestrationJwksEndpointOverridden
+        - !Ref OrchestrationJwksEndpointOverride
+        - !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationStubJwksEndpoint ]
 
   ##################################
   # API GATEWAY AUTHORIZER HANDLER #
