@@ -80,12 +80,16 @@ export const validateCryptography = async (
   identityResponse: EVCSIdentityResponse
 ): Promise<{ kidValid: boolean; signatureValid: boolean }> => {
   const configuration = await getConfiguration();
+  logger.info("Verifying the signature of the stored identity with kid: ", { kid });
   const controller = didResolutionService.getDidWebController(kid);
   const kidValid = didResolutionService.isValidDidWeb(kid) && configuration.controllerAllowList.includes(controller);
   let signatureValid = false;
   if (kidValid) {
     signatureValid = await verifySignature(kid, identityResponse.si.vc);
+  } else {
+    logger.error("Invalid Key Id");
   }
+  logger.info("Signature valid: ", { signatureValid });
   return { kidValid, signatureValid };
 };
 
