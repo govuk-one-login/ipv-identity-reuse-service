@@ -38,41 +38,47 @@ const getContentType = (key: string): string | undefined => {
 };
 
 const uploadResources = async (bucket: string) => {
+  const client = new S3Client({});
+
+  // Upload govuk-frontend
   const baseDirectory = require.resolve("govuk-frontend").replace(/\/dist\/govuk.*/, "/dist/govuk");
   const fileList = ["govuk-frontend*.{js,css}?(.map)", "assets/**"]
     .flatMap((pattern) => fs.globSync(pattern, { cwd: baseDirectory }))
     .filter((key) => fs.statSync(path.join(baseDirectory, key)).isFile());
 
-  const client = new S3Client({});
-
-  for (const key of fileList) {
-    const stream = fs.createReadStream(`${baseDirectory}/${key}`);
-    const putCommand = new PutObjectCommand({
-      Bucket: bucket,
-      Key: key,
-      Body: stream,
-      ContentType: getContentType(key),
-    });
-
-    await client.send(putCommand);
-
-    logger.info("Updating file", { Bucket: bucket, Key: key, ContentType: getContentType(key) });
-  }
+  const promises = fileList.map((key) =>
+    uploadResource(client, bucket, key, `${baseDirectory}/${key}`, getContentType(key) || "text/plain")
+  );
 
   // Upload frontend-ui ESM bundle
   const frontendUiCjsPath = require.resolve("@govuk-one-login/frontend-ui/frontend");
   const frontendUiBundlePath = frontendUiCjsPath.replace("/cjs/", "/esm/").replace(".cjs", ".js");
-  const frontendUiKey = "frontend-ui.js";
-  const frontendUiStream = fs.createReadStream(frontendUiBundlePath);
+  promises.push(uploadResource(client, bucket, "frontend-ui.js", frontendUiBundlePath, "text/javascript"));
+
+  // Upload analytics
+  const frontendUiAnalyticsPath = require.resolve("@govuk-one-login/frontend-analytics");
+  promises.push(uploadResource(client, bucket, "frontend-analytics.js", frontendUiAnalyticsPath, "text/javascript"));
+
+  await Promise.all(promises);
+};
+
+const uploadResource = async (
+  client: S3Client,
+  bucket: string,
+  key: string,
+  sourcePath: string,
+  contentType: string
+) => {
+  const frontendUiStream = fs.createReadStream(sourcePath);
   const frontendUiPutCommand = new PutObjectCommand({
     Bucket: bucket,
-    Key: frontendUiKey,
+    Key: key,
     Body: frontendUiStream,
-    ContentType: "text/javascript",
+    ContentType: contentType,
   });
 
-  await client.send(frontendUiPutCommand);
-  logger.info("Updating file", { Bucket: bucket, Key: frontendUiKey, ContentType: "text/javascript" });
+  logger.info("Updating file", { Bucket: bucket, Key: key, ContentType: contentType });
+  return await client.send(frontendUiPutCommand);
 };
 
 const deleteResources = async (bucket: string) => {

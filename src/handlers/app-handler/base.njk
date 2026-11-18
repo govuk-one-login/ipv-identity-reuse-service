@@ -1,7 +1,36 @@
 {% from "@govuk-one-login/frontend-ui/build/components/phase-banner/macro.njk" import frontendUiPhaseBanner %}
 {% from "@govuk-one-login/frontend-ui/build/components/cookie-banner/macro.njk" import frontendUiCookieBanner %}
 
+{% set assetPath = assetPath | default('./assets', true) %}
+{% set baseRoot = baseRoot | default('.', true) %}
+{% set rootPath = rootPath | default("", true) %}
+{% set govukRebrand = true %}
+
 {% extends "govuk/template.njk" %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ rootPath  }}/govuk-frontend.min.css">
+    <base href="{{baseUrl | default('/', true) }}" />
+    <style {% if cspNonce %} nonce="{{ cspNonce }}"{%  endif %}>
+        .govuk-button-as-link {
+            background: none;
+            border: none;
+            padding: 0;
+            margin: 0;
+            font: inherit;
+            cursor: pointer;
+            vertical-align: baseline;
+        }
+
+        .govuk-button-as-link:focus {
+                    outline: 3px solid transparent;
+                    color: #0b0c0c;
+                    background-color: #fd0;
+                    box-shadow: 0 -2px #fd0, 0 4px #0b0c0c;
+                    text-decoration: none;
+        }
+    </style>
+{% endblock %}
 
 {% block bodyStart %}
   {{ frontendUiCookieBanner({
@@ -16,4 +45,27 @@
         contactUrl: 'https://signin.account.gov.uk/contact-us',
         noAppend: false
     }) }}
+{% endblock %}
+
+{% block bodyEnd %}
+    {# Run JavaScript at end of the <body>, to avoid blocking the initial render. #}
+    <script type="module" src="{{ rootPath }}/govuk-frontend.min.js"></script>
+    <script type="module" {% if cspNonce %}nonce="{{ cspNonce }}"{%  endif %}>
+        import { initAll } from '{{ rootPath }}/govuk-frontend.min.js'
+        initAll()
+    </script>
+    <script type="module" src="{{ rootPath }}/frontend-ui.js"></script>
+    <script type="module" {% if cspNonce %}nonce="{{ cspNonce }}"{%  endif %}>
+        import { useSpinner } from '{{ rootPath }}/frontend-ui.js'
+        useSpinner();
+    </script>
+    <script type="module" src="{{ rootPath }}/frontend-analytics.js"></script>
+    <script type="module" {% if cspNonce %}nonce="{{ cspNonce }}"{%  endif %}>
+        if (window && window.DI && window.DI.appInit) {
+          window.DI.appInit({
+              ga4ContainerId: "{{ga4ContainerId}}",
+              uaContainerId: "not used" // We don't use UA anymore, but it's a required param
+          });
+        }
+    </script>
 {% endblock %}

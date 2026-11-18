@@ -303,6 +303,11 @@ Conditions:
       - !Ref Environment
       - "build"
 
+  IsProduction:
+    Fn::Or:
+      - Fn::Equals: [!Ref Environment, "integration"]
+      - Fn::Equals: [!Ref Environment, "production"]
+
   IsNotProduction:
     Fn::Or:
       - Fn::Equals: [!Ref Environment, "local"]
@@ -797,6 +802,7 @@ Resources:
           SESSION_TIMEOUT_MS: !Ref ApiTimeoutMilliseconds
           SQS_AUDIT_EVENT_QUEUE_URL:
             Fn::ImportValue: !Sub "${SharedStackName}-AuditEventQueueUrl"
+          GOOGLE_ANALYTICS_4_GTM_CONTAINER_ID: !GetAtt GoogleAnalyticsContainerIdParameter.Value
       VpcConfig: !If
         - UseVpc
         - SecurityGroupIds:
@@ -829,6 +835,13 @@ Resources:
           - .js=.mjs
         Banner:
           - js=import { createRequire } from 'module'; const require = createRequire(import.meta.url);
+
+  GoogleAnalyticsContainerIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/GoogleAnalyticsContainerId"
+      Type: String
+      Value: !If [IsProduction, "GTM-K4PBJH3", "GTM-KD86CMZ"]
 
   AppHandlerRole:
     # checkov:skip=CKV_AWS_111: Ensure IAM policies does not allow write access without constraints
