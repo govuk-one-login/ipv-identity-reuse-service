@@ -9,14 +9,14 @@ export class ConfirmDetailsPage {
   readonly fullNameValue: Locator;
   readonly dateOfBirthValue: Locator;
   readonly addressValue: Locator;
-  readonly updateDetailsSummary: Locator;
+  readonly detailsChangedSummary: Locator;
   readonly updateDetailsButton: Locator;
   readonly csrsInputValue: Locator;
 
   constructor(page: Page) {
     this.heading = page.getByRole("heading", { name: "Confirm your details", level: 1 });
     this.continueButton = page.getByRole("button", { name: "Confirm and continue" });
-    this.updateDetailsSummary = page.getByRole("group").getByText("If your details are wrong");
+    this.detailsChangedSummary = page.getByRole("group").getByText("If your details have changed", { exact: true });
     this.updateDetailsButton = page.getByRole("button", { name: "update your details" });
     const summaryList = page.locator(".govuk-summary-list");
     this.fullNameValue = summaryList
@@ -55,7 +55,7 @@ export class ConfirmDetailsPage {
 
   async updateDetails(): Promise<void> {
     if (!(await this.updateDetailsButton.isVisible())) {
-      await this.updateDetailsSummary.click();
+      await this.detailsChangedSummary.click();
     }
     await this.updateDetailsButton.click();
   }

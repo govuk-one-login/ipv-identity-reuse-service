@@ -81,23 +81,28 @@
                 rows: rows
             }) }}
 
-            <p class="govuk-body">{{ translations.pages.confirmDetails.content.paragraph2 }}</p>
-
-            {% set detailsHtml %}
-                <p class="govuk-body"><strong>{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.detailsChangedHeading }}</strong></p>
+            {% set detailsChangedHtml %}
                 <p class="govuk-body">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.detailsChangedParagraph1 }}</p>
                 <p class="govuk-body">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.detailsChangedParagraph2 }}</p>
                 <p class="govuk-body">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.detailsChangedParagraph3 }}</p>
                 <p class="govuk-body">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.detailsChangedText }} <button type="submit" form="submitForm" name="action" value="update-details" class="govuk-link govuk-button-as-link">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.detailsChangedLinkText }}</button>.</p>
-                <p class="govuk-body govuk-!-margin-top-6"><strong>{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.nameMistakeHeading }}</strong></p>
-                <p class="govuk-body"><a class="govuk-link" href="{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.oneLoginSupportLinkUrl }}" target="_blank">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.nameMistakeParagraph1LinkText }}</a> {{ translations.pages.confirmDetails.content.updateUserDetailsInformation.nameMistakeParagraph1 }}</p>
-                <p class="govuk-body">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.nameMistakeParagraph2 }}</p>
             {% endset %}
 
             {{ govukDetails({
-                summaryText: translations.pages.confirmDetails.content.updateUserDetailsInformation.updateDetailsLabel,
-                html: detailsHtml
+                summaryText: translations.pages.confirmDetails.content.updateUserDetailsInformation.detailsChangedLabel,
+                html: detailsChangedHtml
             }) }}
+
+            {% set mistakeInNameHtml %}
+                <p class="govuk-body"><a class="govuk-link" href="{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.oneLoginSupportLinkUrl }}" target="_blank">{{ translations.pages.confirmDetails.content.updateUserDetailsInformation.nameMistakeParagraph1LinkText }}</a> {{ translations.pages.confirmDetails.content.updateUserDetailsInformation.nameMistakeParagraph1 }}</p>
+            {% endset %}
+
+            {{ govukDetails({
+                summaryText: translations.pages.confirmDetails.content.updateUserDetailsInformation.nameMistakeHeading,
+                html: mistakeInNameHtml
+            }) }}
+
+            <p class="govuk-body">{{ translations.pages.confirmDetails.content.paragraph2 }}</p>
 
             <form id="submitForm" action="/confirm-details" method="post">
                 <input type="hidden" name="_csrf" value="{{csrfToken}}">
