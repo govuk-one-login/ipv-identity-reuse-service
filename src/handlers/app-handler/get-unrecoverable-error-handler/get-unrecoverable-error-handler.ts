@@ -5,16 +5,30 @@ import basePageTemplate from "../base.njk";
 import { RequestHandler, Request } from "express";
 import { ContentIds } from "../analytics.js";
 
-export const handler: RequestHandler = (request, response) =>
-  response
+type PageInformation = {
+  status: number;
+  translationIndex: string;
+};
+
+const PageInformationMap = new Map<string, PageInformation>([
+  ["/error/bad-request", { status: 500, translationIndex: "badRequest" }],
+  ["/error/not-found", { status: 404, translationIndex: "badRequest" }],
+  ["/error/session-expired", { status: 500, translationIndex: "badRequest" }],
+  ["/error/unrecoverable:", { status: 500, translationIndex: "badRequest" }],
+]);
+
+export const handler: RequestHandler = (request, response) => {
+  const pageInformation = PageInformationMap.get(request.path);
+  return response
     .header("content-type", "text/html")
-    .status(500)
+    .status(pageInformation?.status || 500)
     .render(mainPageTemplate, {
       translations,
       basePageTemplate,
       ga4ContainerId: process.env.GOOGLE_ANALYTICS_4_GTM_CONTAINER_ID ?? "",
       contentId: getContentId(request),
     });
+};
 
 const getContentId = (request: Request) => {
   switch (request.path) {
