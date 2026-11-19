@@ -9,7 +9,7 @@ import {
 import { DIDDocument, DIDResolutionResult, JsonWebKey as DidJsonWebKey } from "did-resolver";
 import { vi, describe, it, beforeEach, expect } from "vitest";
 
-vi.mock("../../utilities/logger");
+vi.mock("../../utilities/logger.js");
 
 describe("isValidDidWeb", () => {
   it.each([

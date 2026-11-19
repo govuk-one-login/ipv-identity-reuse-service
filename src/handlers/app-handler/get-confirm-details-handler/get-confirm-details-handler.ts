@@ -23,6 +23,7 @@ import { RequestHandler } from "express";
 import { getReuseDecision, ReuseDecision } from "../../../domain/reuse/reuse-decision.js";
 import "csrf-sync";
 import basePageTemplate from "../base.njk";
+import { ContentIds } from "../analytics.js";
 
 const isStoredIdentityValid = ({
   kidValid,
@@ -102,11 +103,12 @@ export const handler: RequestHandler = async (request, response) => {
 
     return response.header("content-type", "text/html").render(mainPageTemplate, {
       basePageTemplate,
-      userDetails,
-      translations,
+      contentId: ContentIds.GetConfirmDetails,
       csrfToken,
       currentUrl: new URL(`${request.protocol}://${request.get("host")}${request.originalUrl}`),
       ga4ContainerId: process.env.GOOGLE_ANALYTICS_4_GTM_CONTAINER_ID ?? "",
+      translations,
+      userDetails,
     });
   } catch (error) {
     if (error instanceof SessionInvalidError) {

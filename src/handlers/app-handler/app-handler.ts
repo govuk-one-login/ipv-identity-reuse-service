@@ -47,6 +47,7 @@ nunjucks
     { express: app }
   )
   .addGlobal("contactUsUrl", frontendUi.contactUsUrl)
+  .addGlobal("environment", process.env.ENVIRONMENT)
   .addFilter("GDSDate", (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-GB", {
       day: "numeric",

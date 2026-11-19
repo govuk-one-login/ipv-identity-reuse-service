@@ -29,6 +29,7 @@ import {
   redirectToErrorPageExpress,
 } from "../../../../api/sis-api.js";
 import { Request } from "express";
+import { ContentIds } from "../../analytics.js";
 
 const mockRender = vi.hoisted(() => vi.fn().mockReturnValue("Rendered Confirm Details Screen"));
 
@@ -165,6 +166,7 @@ it("should store the calculated vot and identity hash in the session and render 
   expect(response.header).toHaveBeenCalledWith("content-type", "text/html");
   expect(response.render).toHaveBeenCalledWith(expect.stringMatching(INDEX_PATH_REGEX), {
     basePageTemplate: expect.stringMatching(BASE_PATH_REGEX),
+    contentId: ContentIds.GetConfirmDetails,
     ga4ContainerId: "1234",
     userDetails: {
       name: "Jane Doe",
@@ -203,6 +205,7 @@ describe("handler record validation", () => {
     expect(response.header).toHaveBeenCalledWith("content-type", "text/html");
     expect(response.render).toHaveBeenCalledWith(expect.stringMatching(INDEX_PATH_REGEX), {
       basePageTemplate: expect.stringMatching(BASE_PATH_REGEX),
+      contentId: ContentIds.GetConfirmDetails,
       ga4ContainerId: "1234",
       userDetails: {
         name: "Jane Doe",
@@ -379,6 +382,7 @@ describe("reuse decision", () => {
     expect(response.header).toHaveBeenCalledWith("content-type", "text/html");
     expect(response.render).toHaveBeenCalledWith(expect.stringMatching(INDEX_PATH_REGEX), {
       basePageTemplate: expect.stringMatching(BASE_PATH_REGEX),
+      contentId: ContentIds.GetConfirmDetails,
       csrfToken: undefined,
       currentUrl: new URL("https://example.com/info"),
       ga4ContainerId: "1234",

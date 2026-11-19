@@ -2,11 +2,15 @@ import { expect, it, vi } from "vitest";
 import { handler } from "../get-unrecoverable-error-handler.js";
 import { createExpressRequest } from "../../tests/test-utilities.js";
 import translations from "../../../../../locales/en/translation.json" with { type: "json" };
+import { ContentIds } from "../../analytics.js";
 
 const INDEX_PATH_REGEX = /get-unrecoverable-error-page.njk$/;
 const BASE_PATH_REGEX = /base.njk$/;
 
-it.each(["/error/bad-request", "/error/unrecoverable"])("should render the error screen %s", async (url) => {
+it.each([
+  ["/error/bad-request", ContentIds.ErrorBadRequest],
+  ["/error/unrecoverable", ContentIds.ErrorUnrecoverable],
+])("should render the error screen %s", async (url, contentId) => {
   const { request, response, next } = createExpressRequest({
     path: url,
     body: {},
@@ -21,6 +25,7 @@ it.each(["/error/bad-request", "/error/unrecoverable"])("should render the error
   expect(response.status).toHaveBeenCalledWith(500);
   expect(response.render).toHaveBeenCalledWith(expect.stringMatching(INDEX_PATH_REGEX), {
     basePageTemplate: expect.stringMatching(BASE_PATH_REGEX),
+    contentId,
     ga4ContainerId: "1234",
     translations,
   });

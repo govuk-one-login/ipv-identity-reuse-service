@@ -4,7 +4,9 @@
 {% set assetPath = assetPath | default('./assets', true) %}
 {% set baseRoot = baseRoot | default('.', true) %}
 {% set rootPath = rootPath | default("", true) %}
+{% set contentId = contentId | default("", true) %}
 {% set govukRebrand = true %}
+{% set environment = environment | default("dev", true) %}
 
 {% extends "govuk/template.njk" %}
 
@@ -65,7 +67,33 @@
           window.DI.appInit({
               ga4ContainerId: "{{ga4ContainerId}}",
               uaContainerId: "not used" // We don't use UA anymore, but it's a required param
+          }, {
+            isDataSensitive: false,
+            isPageDataSensitive: false,
+            enableGa4Tracking: true,
+            cookieDomain: "{{environment}}.account.gov.uk"
           });
         }
+
+        function trackOnPageLoad() {
+            window
+            .DI
+            .analyticsGa4
+            .pageViewTracker
+            .trackOnPageLoad({
+                statusCode: window.DI.httpStatusCode || 200,
+                taxonomy_level1: 'web cri', // Access taxonomy level 1
+                taxonomy_level2: 'pre cri', // Access taxonomy level 2
+                taxonomy_level3: 'SIS', // Access taxonomy level 3
+                taxonomy_level4: '', // Access taxonomy level 4
+                taxonomy_level5: '', // Access taxonomy level 5
+                content_id: "{{contentId}}",
+                dynamic: 'undefined',
+                logged_in_status: 'undefined',
+            });
+        }
+
+        window.addEventListener('load', trackOnPageLoad);
+        window.addEventListener('cookie-consent', trackOnPageLoad);
     </script>
 {% endblock %}
