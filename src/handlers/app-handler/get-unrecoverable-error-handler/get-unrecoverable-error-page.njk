@@ -3,8 +3,9 @@
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 
 {% extends basePageTemplate %}
+{% set page = page | default("unrecoverable", true) %}
 
-{% block pageTitle %}{{ translations.pages.unrecoverable.title }}{% endblock %}
+{% block pageTitle %}{{ translations.pages[page].title }}{% endblock %}
 
 {% block content %}
   <div class="govuk-grid-row">
@@ -16,19 +17,29 @@
         }) }}
       {% endif %}
 
-      <h1 class="govuk-heading-l">{{ translations.pages.unrecoverable.header }}</h1>
-      <p class="govuk-body">{{ translations.pages.unrecoverable.content.paragraph1 }}</p>
-      <h2 class="govuk-heading-m">{{ translations.pages.unrecoverable.content.subHeading }}</h2>
-      <p class="govuk-body">{{ translations.pages.unrecoverable.content.paragraph2 }}</p>
+      <h1 class="govuk-heading-l">{{ translations.pages[page].header }}</h1>
+      {% if translations.pages[page] and translations.pages[page].content.paragraph1 %}
+        <p class="govuk-body">{{ translations.pages[page].content.paragraph1 }}</p>
+      {% endif %}
+      <h2 class="govuk-heading-m">{{ translations.pages[page].content.subHeading }}</h2>
+      {% if translations.pages[page] and translations.pages[page].content.paragraph2 %}
+        <p class="govuk-body">{{ translations.pages[page].content.paragraph2 }}</p>
+      {% endif %}
+      {% if translations.pages[page] and translations.pages[page].content.paragraph3 %}
+        <p class="govuk-body">{{ translations.pages[page].content.paragraph3 }}</p>
+      {% endif %}
+      {% if translations.pages[page] and translations.pages[page].content.paragraph4 %}
+        <p class="govuk-body">{{ translations.pages[page].content.paragraph4 }}</p>
+      {% endif %}
 
       {{ govukButton({
-        "text": translations.pages.unrecoverable.content.govUkHomepageButtonText,
+        "text": translations.pages[page].content.govUkHomepageButtonText,
         "type": "Submit",
-        "href": translations.pages.unrecoverable.content.govUkHomepageButtonLink
+        "href": translations.pages[page].content.govUkHomepageButtonLink
       }) }}
 
       <p class="govuk-body">
-        <a class="govuk-link" href="{{ translations.pages.unrecoverable.content.oneLoginContactLink }}" target="_blank">{{ translations.pages.unrecoverable.content.oneLoginContactLinkText }}</a>
+        <a class="govuk-link" href="{{ translations.pages[page].content.oneLoginContactLink }}" target="_blank">{{ translations.pages[page].content.oneLoginContactLinkText }}</a>
       </p>
     </div>
   </div>
