@@ -406,14 +406,6 @@ Resources:
       Type: String
       Value: !Ref AccessTokenIndexWithEventDataIpvIndexName
 
-  IPVCoreAuthenticationAlgParameter:
-    Type: AWS::SSM::Parameter
-    Condition: IsNotProduction
-    Properties:
-      Name: !Sub "/${OAuthCommon.Outputs.StackName}/clients/${OAuthClientId}/jwtAuthentication/authenticationAlg"
-      Type: String
-      Value: ES256
-
   OrchestrationStubAuthenticationAlgParameter:
     Type: AWS::SSM::Parameter
     Condition: IsNotProduction
@@ -421,14 +413,6 @@ Resources:
       Name: !Sub "/${OAuthCommon.Outputs.StackName}/clients/orchestrator-stub/jwtAuthentication/authenticationAlg"
       Type: String
       Value: ES256
-
-  IPVCoreAudienceParameter:
-    Type: AWS::SSM::Parameter
-    Condition: IsNotProduction
-    Properties:
-      Name: !Sub "/${OAuthCommon.Outputs.StackName}/clients/${OAuthClientId}/jwtAuthentication/audience"
-      Type: String
-      Value: !FindInMap [ EnvironmentMap, !Ref Environment, SISAudience ]
 
   OrchestrationStubAudienceParameter:
     Type: AWS::SSM::Parameter
@@ -438,14 +422,6 @@ Resources:
       Type: String
       Value: !FindInMap [ EnvironmentMap, !Ref Environment, SISAudience ]
 
-  IPVCoreIssuerParameter:
-    Type: AWS::SSM::Parameter
-    Condition: IsNotProduction
-    Properties:
-      Name: !Sub "/${OAuthCommon.Outputs.StackName}/clients/${OAuthClientId}/jwtAuthentication/issuer"
-      Type: String
-      Value: !FindInMap [ EnvironmentMap, !Ref "Environment", OrchestrationIssuer ]
-
   OrchestrationStubIssuerParameter:
     Type: AWS::SSM::Parameter
     Condition: IsNotProduction
@@ -453,17 +429,6 @@ Resources:
       Name: !Sub "/${OAuthCommon.Outputs.StackName}/clients/orchestrator-stub/jwtAuthentication/issuer"
       Type: String
       Value: !FindInMap [ EnvironmentMap, !Ref "Environment", OrchestrationStubIssuer ]
-
-  IPVCoreRedirectURIParameter:
-    Type: AWS::SSM::Parameter
-    Condition: IsNotProduction
-    Properties:
-      Name: !Sub "/${OAuthCommon.Outputs.StackName}/clients/${OAuthClientId}/jwtAuthentication/redirectUri"
-      Type: String
-      Value: !If
-        - IsOrchestrationRedirectURIOverridden
-        - !Ref OrchestrationRedirectURIOverride
-        - !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationRedirectURI ]
 
   OrchestrationStubRedirectURIParameter:
     Type: AWS::SSM::Parameter
@@ -475,17 +440,6 @@ Resources:
         - IsOrchestrationRedirectURIOverridden
         - !Ref OrchestrationRedirectURIOverride
         - !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationStubRedirectURI ]
-
-  IPVCoreJwksEndpointParameter:
-    Type: AWS::SSM::Parameter
-    Condition: IsNotProduction
-    Properties:
-      Name: !Sub "/${OAuthCommon.Outputs.StackName}/clients/${OAuthClientId}/jwtAuthentication/jwksEndpoint"
-      Type: String
-      Value: !If
-        - IsOrchestrationJwksEndpointOverridden
-        - !Ref OrchestrationJwksEndpointOverride
-        - !FindInMap [ EnvironmentMap, !Ref Environment, OrchestrationJwksEndpoint ]
 
   OrchestrationStubJwksEndpointParameter:
     Type: AWS::SSM::Parameter
