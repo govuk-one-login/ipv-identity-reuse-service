@@ -107,6 +107,7 @@ export const handler: RequestHandler = async (request, response) => {
       csrfToken,
       currentUrl: new URL(`${request.protocol}://${request.get("host")}${request.originalUrl}`),
       ga4ContainerId: process.env.GOOGLE_ANALYTICS_4_GTM_CONTAINER_ID ?? "",
+      isPageDataSensitive: true,
       translations,
       userDetails,
     });

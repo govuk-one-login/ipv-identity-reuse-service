@@ -7,6 +7,13 @@
 {% set contentId = contentId | default("", true) %}
 {% set govukRebrand = true %}
 {% set environment = environment | default("dev", true) %}
+{% set isDataSensitive = isDataSensitive | default(false) %}
+{% set isPageDataSensitive = isPageDataSensitive | default(false) %}
+{% set taxonomy_level1 = taxonomy_level1 | default('web cri', true) %}
+{% set taxonomy_level2 = taxonomy_level2 | default('pre cri', true) %}
+{% set taxonomy_level3 = taxonomy_level3 | default('SIS', true) %}
+{% set taxonomy_level4 = taxonomy_level4 | default('', true) %}
+{% set taxonomy_level5 = taxonomy_level5 | default('', true) %}
 
 {% extends "govuk/template.njk" %}
 
@@ -25,19 +32,19 @@
         }
 
         .govuk-button-as-link:focus {
-                    outline: 3px solid transparent;
-                    color: #0b0c0c;
-                    background-color: #fd0;
-                    box-shadow: 0 -2px #fd0, 0 4px #0b0c0c;
-                    text-decoration: none;
+            outline: 3px solid transparent;
+            color: #0b0c0c;
+            background-color: #fd0;
+            box-shadow: 0 -2px #fd0, 0 4px #0b0c0c;
+            text-decoration: none;
         }
     </style>
 {% endblock %}
 
 {% block bodyStart %}
-  {{ frontendUiCookieBanner({
-    translations: translations.cookieBanner 
-  }) }}
+    {{ frontendUiCookieBanner({
+        translations: translations.cookieBanner 
+    }) }}
 {% endblock %}
 
 {% block beforeContent %}
@@ -68,8 +75,8 @@
               ga4ContainerId: "{{ga4ContainerId}}",
               uaContainerId: "not used" // We don't use UA anymore, but it's a required param
           }, {
-            isDataSensitive: false,
-            isPageDataSensitive: false,
+            isDataSensitive: {{isDataSensitive}},
+            isPageDataSensitive: {{isPageDataSensitive}},
             enableGa4Tracking: true,
             cookieDomain: "{{environment}}.account.gov.uk"
           });
@@ -82,11 +89,11 @@
             .pageViewTracker
             .trackOnPageLoad({
                 statusCode: window.DI.httpStatusCode || 200,
-                taxonomy_level1: 'web cri', // Access taxonomy level 1
-                taxonomy_level2: 'pre cri', // Access taxonomy level 2
-                taxonomy_level3: 'SIS', // Access taxonomy level 3
-                taxonomy_level4: '', // Access taxonomy level 4
-                taxonomy_level5: '', // Access taxonomy level 5
+                taxonomy_level1: "{{taxonomy_level1}}",
+                taxonomy_level2: "{{taxonomy_level2}}",
+                taxonomy_level3: "{{taxonomy_level3}}",
+                taxonomy_level4: "{{taxonomy_level4}}",
+                taxonomy_level5: "{{taxonomy_level5}}",
                 content_id: "{{contentId}}",
                 dynamic: 'undefined',
                 logged_in_status: 'undefined',

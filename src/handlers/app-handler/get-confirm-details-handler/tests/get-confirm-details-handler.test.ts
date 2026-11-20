@@ -168,6 +168,7 @@ it("should store the calculated vot and identity hash in the session and render 
     basePageTemplate: expect.stringMatching(BASE_PATH_REGEX),
     contentId: ContentIds.GetConfirmDetails,
     ga4ContainerId: "1234",
+    isPageDataSensitive: true,
     userDetails: {
       name: "Jane Doe",
       dateOfBirth: "1990-01-15",
@@ -207,6 +208,7 @@ describe("handler record validation", () => {
       basePageTemplate: expect.stringMatching(BASE_PATH_REGEX),
       contentId: ContentIds.GetConfirmDetails,
       ga4ContainerId: "1234",
+      isPageDataSensitive: true,
       userDetails: {
         name: "Jane Doe",
         dateOfBirth: "1990-01-15",
@@ -386,6 +388,7 @@ describe("reuse decision", () => {
       csrfToken: undefined,
       currentUrl: new URL("https://example.com/info"),
       ga4ContainerId: "1234",
+      isPageDataSensitive: true,
       translations,
       userDetails: {
         name: "Jane Doe",
