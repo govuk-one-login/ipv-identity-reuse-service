@@ -29,6 +29,7 @@ import {
   redirectToErrorPageExpress,
 } from "../../../../api/sis-api.js";
 import { Request } from "express";
+import { ContentIds } from "../../analytics.js";
 
 const mockRender = vi.hoisted(() => vi.fn().mockReturnValue("Rendered Confirm Details Screen"));
 
@@ -60,7 +61,8 @@ vi.mock("../../../../domain/stored-identity/calculate-vot.js");
 vi.mock("../../../../utilities/jwt-utilities.js");
 vi.mock("../../../../domain/reuse/reuse-decision.js");
 
-const INDEX_PATH_REGEX = /index.njk$/;
+const INDEX_PATH_REGEX = /get-confirm-details-page.njk$/;
+const BASE_PATH_REGEX = /base.njk$/;
 
 const mockIdentityResponse: EVCSIdentityResponse = {
   si: {
@@ -74,6 +76,7 @@ const mockIdentityResponse: EVCSIdentityResponse = {
 beforeEach(() => {
   vi.stubEnv("DOMAIN_NAME", "test-domain");
   vi.stubEnv("PUBLIC_API", "example-api.com");
+  vi.stubEnv("GOOGLE_ANALYTICS_4_GTM_CONTAINER_ID", "1234");
   vi.mocked(extractUserDetails).mockReturnValue({
     name: "Jane Doe",
     dateOfBirth: "1990-01-15",
@@ -162,9 +165,10 @@ it("should store the calculated vot and identity hash in the session and render 
 
   expect(response.header).toHaveBeenCalledWith("content-type", "text/html");
   expect(response.render).toHaveBeenCalledWith(expect.stringMatching(INDEX_PATH_REGEX), {
-    assetPath: "./assets",
-    rootPath: ".",
-    govukRebrand: true,
+    basePageTemplate: expect.stringMatching(BASE_PATH_REGEX),
+    contentId: ContentIds.GetConfirmDetails,
+    ga4ContainerId: "1234",
+    isPageDataSensitive: true,
     userDetails: {
       name: "Jane Doe",
       dateOfBirth: "1990-01-15",
@@ -201,9 +205,10 @@ describe("handler record validation", () => {
     await handler(request, response, next);
     expect(response.header).toHaveBeenCalledWith("content-type", "text/html");
     expect(response.render).toHaveBeenCalledWith(expect.stringMatching(INDEX_PATH_REGEX), {
-      assetPath: "./assets",
-      rootPath: ".",
-      govukRebrand: true,
+      basePageTemplate: expect.stringMatching(BASE_PATH_REGEX),
+      contentId: ContentIds.GetConfirmDetails,
+      ga4ContainerId: "1234",
+      isPageDataSensitive: true,
       userDetails: {
         name: "Jane Doe",
         dateOfBirth: "1990-01-15",
@@ -378,16 +383,18 @@ describe("reuse decision", () => {
 
     expect(response.header).toHaveBeenCalledWith("content-type", "text/html");
     expect(response.render).toHaveBeenCalledWith(expect.stringMatching(INDEX_PATH_REGEX), {
-      assetPath: "./assets",
-      rootPath: ".",
-      govukRebrand: true,
+      basePageTemplate: expect.stringMatching(BASE_PATH_REGEX),
+      contentId: ContentIds.GetConfirmDetails,
+      csrfToken: undefined,
+      currentUrl: new URL("https://example.com/info"),
+      ga4ContainerId: "1234",
+      isPageDataSensitive: true,
+      translations,
       userDetails: {
         name: "Jane Doe",
         dateOfBirth: "1990-01-15",
         addressDetailHtml: "10 Downing Street<br>London<br>SW1A 2AA",
       },
-      translations,
-      currentUrl: new URL("https://example.com/info"),
     });
   });
 });

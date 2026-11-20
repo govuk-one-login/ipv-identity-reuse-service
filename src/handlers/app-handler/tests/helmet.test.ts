@@ -1,7 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { helmetConfiguration } from "../helmet.js";
 import { createExpressRequest } from "./test-utilities.js";
 import { randomBytes } from "node:crypto";
+
+vi.mock("../../../utilities/logger.js");
 
 describe("helmetConfiguration", () => {
   it.each(["styleSrc", "scriptSrc"])("should correctly return nonce-... from %s", (source) => {

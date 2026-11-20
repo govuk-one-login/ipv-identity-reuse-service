@@ -1,11 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
 import { sessionMiddleware } from "../session-middleware.js";
-import { createExpressRequest } from "./test-utilities.js";
-import { getSessionDetails } from "../../../api/oauth-internal-api.js";
-import logger from "../../../utilities/logger.js";
+import { createExpressRequest } from "../../tests/test-utilities.js";
+import { getSessionDetails } from "../../../../api/oauth-internal-api.js";
+import logger from "../../../../utilities/logger.js";
 
-vi.mock("../../../api/oauth-internal-api.js");
-vi.mock("../../../utilities/logger.js");
+vi.mock("../../../../api/oauth-internal-api.js");
+vi.mock("../../../../utilities/logger.js");
 
 describe("sessionMiddleware", () => {
   it("should add the session to the request if session is not present", async () => {

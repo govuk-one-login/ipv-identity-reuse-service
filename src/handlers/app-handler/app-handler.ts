@@ -13,10 +13,10 @@ import { handler as getSessionExpiredHandler } from "./get-session-expired-handl
 import { handler as getUnrecoverableHandler } from "./get-unrecoverable-error-handler/get-unrecoverable-error-handler.js";
 import { handler as postConfirmDetailsHandler } from "./post-confirm-details-handler/post-confirm-details-handler.js";
 import { helmetConfiguration } from "./helmet.js";
-import { setLocalVariablesMiddleware } from "./local-variables-middleware.js";
-import { loggerMiddleware } from "./logger-middleware.js";
-import { sessionMiddleware } from "./session-middleware.js";
-import { requireSecureSessionCookie } from "./session-cookie-middleware.js";
+import { setLocalVariablesMiddleware } from "./middlewares/local-variables-middleware.js";
+import { loggerMiddleware } from "./middlewares/logger-middleware.js";
+import { sessionMiddleware } from "./middlewares/session-middleware.js";
+import { requireSecureSessionCookie } from "./middlewares/session-cookie-middleware.js";
 import { getSessionCookieSecret } from "../../configuration/configuration.js";
 import * as frontendUi from "@govuk-one-login/frontend-ui";
 
@@ -47,6 +47,7 @@ nunjucks
     { express: app }
   )
   .addGlobal("contactUsUrl", frontendUi.contactUsUrl)
+  .addGlobal("environment", process.env.ENVIRONMENT)
   .addFilter("GDSDate", (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-GB", {
       day: "numeric",

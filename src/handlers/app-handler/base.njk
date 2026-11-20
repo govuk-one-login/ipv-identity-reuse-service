@@ -1,0 +1,106 @@
+{% from "@govuk-one-login/frontend-ui/build/components/phase-banner/macro.njk" import frontendUiPhaseBanner %}
+{% from "@govuk-one-login/frontend-ui/build/components/cookie-banner/macro.njk" import frontendUiCookieBanner %}
+
+{% set assetPath = assetPath | default('./assets', true) %}
+{% set baseRoot = baseRoot | default('.', true) %}
+{% set rootPath = rootPath | default("", true) %}
+{% set contentId = contentId | default("", true) %}
+{% set govukRebrand = true %}
+{% set environment = environment | default("dev", true) %}
+{% set isDataSensitive = isDataSensitive | default(false) %}
+{% set isPageDataSensitive = isPageDataSensitive | default(false) %}
+{% set taxonomy_level1 = taxonomy_level1 | default('web cri', true) %}
+{% set taxonomy_level2 = taxonomy_level2 | default('pre cri', true) %}
+{% set taxonomy_level3 = taxonomy_level3 | default('SIS', true) %}
+{% set taxonomy_level4 = taxonomy_level4 | default('', true) %}
+{% set taxonomy_level5 = taxonomy_level5 | default('', true) %}
+
+{% extends "govuk/template.njk" %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ rootPath  }}/govuk-frontend.min.css">
+    <base href="{{baseUrl | default('/', true) }}" />
+    <style {% if cspNonce %} nonce="{{ cspNonce }}"{%  endif %}>
+        .govuk-button-as-link {
+            background: none;
+            border: none;
+            padding: 0;
+            margin: 0;
+            font: inherit;
+            cursor: pointer;
+            vertical-align: baseline;
+        }
+
+        .govuk-button-as-link:focus {
+            outline: 3px solid transparent;
+            color: #0b0c0c;
+            background-color: #fd0;
+            box-shadow: 0 -2px #fd0, 0 4px #0b0c0c;
+            text-decoration: none;
+        }
+    </style>
+{% endblock %}
+
+{% block bodyStart %}
+    {{ frontendUiCookieBanner({
+        translations: translations.cookieBanner 
+    }) }}
+{% endblock %}
+
+{% block beforeContent %}
+    {{ frontendUiPhaseBanner({
+        translations: translations.phaseBanner,
+        url: currentUrl,
+        contactUrl: 'https://signin.account.gov.uk/contact-us',
+        noAppend: false
+    }) }}
+{% endblock %}
+
+{% block bodyEnd %}
+    {# Run JavaScript at end of the <body>, to avoid blocking the initial render. #}
+    <script type="module" src="{{ rootPath }}/govuk-frontend.min.js"></script>
+    <script type="module" {% if cspNonce %}nonce="{{ cspNonce }}"{%  endif %}>
+        import { initAll } from '{{ rootPath }}/govuk-frontend.min.js'
+        initAll()
+    </script>
+    <script type="module" src="{{ rootPath }}/frontend-ui.js"></script>
+    <script type="module" {% if cspNonce %}nonce="{{ cspNonce }}"{%  endif %}>
+        import { useSpinner } from '{{ rootPath }}/frontend-ui.js'
+        useSpinner();
+    </script>
+    <script type="module" src="{{ rootPath }}/frontend-analytics.js"></script>
+    <script type="module" {% if cspNonce %}nonce="{{ cspNonce }}"{%  endif %}>
+        if (window && window.DI && window.DI.appInit) {
+          window.DI.appInit({
+              ga4ContainerId: "{{ga4ContainerId}}",
+              uaContainerId: "not used" // We don't use UA anymore, but it's a required param
+          }, {
+            isDataSensitive: {{isDataSensitive}},
+            isPageDataSensitive: {{isPageDataSensitive}},
+            enableGa4Tracking: true,
+            cookieDomain: "{{environment}}.account.gov.uk"
+          });
+        }
+
+        function trackOnPageLoad() {
+            window
+            .DI
+            .analyticsGa4
+            .pageViewTracker
+            .trackOnPageLoad({
+                statusCode: window.DI.httpStatusCode || 200,
+                taxonomy_level1: "{{taxonomy_level1}}",
+                taxonomy_level2: "{{taxonomy_level2}}",
+                taxonomy_level3: "{{taxonomy_level3}}",
+                taxonomy_level4: "{{taxonomy_level4}}",
+                taxonomy_level5: "{{taxonomy_level5}}",
+                content_id: "{{contentId}}",
+                dynamic: 'undefined',
+                logged_in_status: 'undefined',
+            });
+        }
+
+        window.addEventListener('load', trackOnPageLoad);
+        window.addEventListener('cookie-consent', trackOnPageLoad);
+    </script>
+{% endblock %}

@@ -17,6 +17,7 @@ vi.mock("../fraud-check-service.js", async (importOriginal) => {
     hasFraudCheckExpired: vi.fn(),
   };
 });
+vi.mock("../../../utilities/logger.js");
 
 const BASE_CONFIGURATION: Configuration = {
   evcsApiUrl: "https://evcs.gov.uk",

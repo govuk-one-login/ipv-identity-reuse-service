@@ -20,6 +20,8 @@ const EXAMPLE_USER_ID = "bob.smith";
 const sqsClientMock = mockClient(SQSClient);
 sqsClientMock.on(SendMessageCommand).resolves({});
 
+vi.mock("../logger.js");
+
 beforeAll(() => {
   vi.useFakeTimers({
     now: 1_753_094_598_807,

@@ -17,11 +17,13 @@ import {
   getIdentityFromCredentialStore,
   validateStoredIdentity,
 } from "../../../domain/stored-identity/stored-identity-validator.js";
-import mainPageTemplate from "./index.njk";
+import mainPageTemplate from "./get-confirm-details-page.njk";
 import { extractUserDetails } from "./user-details-content.js";
 import { RequestHandler } from "express";
 import { getReuseDecision, ReuseDecision } from "../../../domain/reuse/reuse-decision.js";
 import "csrf-sync";
+import basePageTemplate from "../base.njk";
+import { ContentIds } from "../analytics.js";
 
 const isStoredIdentityValid = ({
   kidValid,
@@ -100,13 +102,14 @@ export const handler: RequestHandler = async (request, response) => {
     }
 
     return response.header("content-type", "text/html").render(mainPageTemplate, {
-      assetPath: "./assets",
-      rootPath: ".",
-      userDetails,
-      translations,
+      basePageTemplate,
+      contentId: ContentIds.GetConfirmDetails,
       csrfToken,
-      govukRebrand: true,
       currentUrl: new URL(`${request.protocol}://${request.get("host")}${request.originalUrl}`),
+      ga4ContainerId: process.env.GOOGLE_ANALYTICS_4_GTM_CONTAINER_ID ?? "",
+      isPageDataSensitive: true,
+      translations,
+      userDetails,
     });
   } catch (error) {
     if (error instanceof SessionInvalidError) {

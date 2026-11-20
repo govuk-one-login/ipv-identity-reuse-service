@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import logger from "../../utilities/logger.js";
+import logger from "../../../utilities/logger.js";
 import { getCurrentInvoke } from "@codegenie/serverless-express";
 
 export const loggerMiddleware: RequestHandler = (request, response, next) => {

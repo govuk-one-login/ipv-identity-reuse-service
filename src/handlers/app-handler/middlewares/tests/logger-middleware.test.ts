@@ -1,11 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
 import { loggerMiddleware } from "../logger-middleware.js";
-import { createExpressRequest } from "../tests/test-utilities.js";
+import { createExpressRequest } from "../../tests/test-utilities.js";
 import { getCurrentInvoke } from "@codegenie/serverless-express";
-import logger from "../../../utilities/logger.js";
+import logger from "../../../../utilities/logger.js";
 
 vi.mock("@codegenie/serverless-express");
-vi.mock("../../../utilities/logger.js");
+vi.mock("../../../../utilities/logger.js");
 
 describe("loggerMiddleware", () => {
   it("should include correct information and register callbacks", () => {

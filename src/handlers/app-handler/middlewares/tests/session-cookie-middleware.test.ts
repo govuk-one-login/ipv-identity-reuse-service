@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vitest } from "vitest";
 import { requireSecureSessionCookie } from "../session-cookie-middleware.js";
-import { redirectToBadRequestExpress, redirectToSessionExpiredPageExpress } from "../../../api/sis-api.js";
-import { createExpressRequest } from "./test-utilities.js";
+import { redirectToBadRequestExpress, redirectToSessionExpiredPageExpress } from "../../../../api/sis-api.js";
+import { createExpressRequest } from "../../tests/test-utilities.js";
 
-vitest.mock("../../../api/sis-api.js");
-vitest.mock("../../../utilities/logger.js");
+vitest.mock("../../../../api/sis-api.js");
+vitest.mock("../../../../utilities/logger.js");
 
 afterEach(() => {
   vitest.clearAllMocks();

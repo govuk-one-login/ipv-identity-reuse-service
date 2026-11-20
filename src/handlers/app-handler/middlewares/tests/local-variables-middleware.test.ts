@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { setLocalVariablesMiddleware } from "../local-variables-middleware.js";
-import { createExpressRequest } from "./test-utilities.js";
+import { createExpressRequest } from "../../tests/test-utilities.js";
 
 describe("setLocalVariablesMiddleware", () => {
   it("should set the variables", () => {
