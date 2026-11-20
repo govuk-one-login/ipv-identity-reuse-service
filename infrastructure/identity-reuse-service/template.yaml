@@ -189,7 +189,7 @@ Mappings:
       InboundTxmaQueueKeyArn: "arn:aws:kms:eu-west-2:178023842775:key/325458a5-de28-4c28-aaf0-678ebefb35ac"
       ApiRateLimit: 5 # allowed requests per second
       ApiBurstLimit: 5 # requests the API can handle concurrently
-      DevOrchestrationVPCID: none
+      DevOrchestrationVPCID: vpc-00e8a85efc283fe6f
       PerformanceTestApiRateLimit: 0 # not used in this environment
       PerformanceTestApiBurstLimit: 0 # not used in this environment
       IPVCoreVPCID: vpc-039e664a2b3abb03e # ID Reuse Service Staging VPC ID
@@ -941,7 +941,7 @@ Resources:
               - Fn::ImportValue: !Sub "${VpcStackName}-VpcId"
               - !Ref AWS::NoValue
             - !If
-              - IsDevOrBuild
+              - IsNotProduction
               - !FindInMap [EnvironmentMap, !Ref Environment, DevOrchestrationVPCID]
               - !Ref AWS::NoValue
             - !FindInMap [EnvironmentMap, !Ref Environment, IPVCoreVPCID]
