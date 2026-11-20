@@ -9,7 +9,6 @@ import { csrfSynchronisedProtection } from "./csrf.js";
 import { handler as getAuthorizeHandler } from "./get-authorize-handler/get-authorize-handler.js";
 import { handler as getCallbackHandler } from "./get-callback-handler/get-callback-handler.js";
 import { handler as getConfirmDetailsHandler } from "./get-confirm-details-handler/get-confirm-details-handler.js";
-import { handler as getSessionExpiredHandler } from "./get-session-expired-handler/get-session-expired-handler.js";
 import { handler as getUnrecoverableHandler } from "./get-unrecoverable-error-handler/get-unrecoverable-error-handler.js";
 import { handler as postConfirmDetailsHandler } from "./post-confirm-details-handler/post-confirm-details-handler.js";
 import { helmetConfiguration } from "./helmet.js";
@@ -34,7 +33,6 @@ const app = express()
   .use(sessionMiddleware)
   .get("/confirm-details", csrfSynchronisedProtection, requireSecureSessionCookie, getConfirmDetailsHandler)
   .post("/confirm-details", csrfSynchronisedProtection, requireSecureSessionCookie, postConfirmDetailsHandler)
-  .get("/error/session-expired", csrfSynchronisedProtection, getSessionExpiredHandler)
   .get("/error/:error", csrfSynchronisedProtection, getUnrecoverableHandler)
   .get("/oauth2/authorize", getAuthorizeHandler)
   .get("/oauth2/callback", requireSecureSessionCookie, getCallbackHandler);

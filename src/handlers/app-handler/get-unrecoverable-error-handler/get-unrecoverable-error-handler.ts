@@ -2,28 +2,38 @@ import mainPageTemplate from "./get-unrecoverable-error-page.njk";
 import translations from "../../../../locales/en/translation.json" with { type: "json" };
 import basePageTemplate from "../base.njk";
 
-import { RequestHandler, Request } from "express";
+import { RequestHandler } from "express";
 import { ContentIds } from "../analytics.js";
 
-export const handler: RequestHandler = (request, response) =>
-  response
+type PageInformation = {
+  contentId: (typeof ContentIds)[keyof typeof ContentIds];
+  status: number;
+  translationIndex: keyof typeof translations.pages;
+};
+
+const PageInformationMap = new Map<string, PageInformation>([
+  ["/error/bad-request", { status: 400, translationIndex: "unrecoverable", contentId: ContentIds.ErrorBadRequest }],
+  ["/error/not-found", { status: 404, translationIndex: "notFound", contentId: ContentIds.ErrorNotFound }],
+  [
+    "/error/session-expired",
+    { status: 401, translationIndex: "sessionExpired", contentId: ContentIds.ErrorSessionExpired },
+  ],
+  [
+    "/error/unrecoverable",
+    { status: 500, translationIndex: "unrecoverable", contentId: ContentIds.ErrorUnrecoverable },
+  ],
+]);
+
+export const handler: RequestHandler = (request, response) => {
+  const pageInformation = PageInformationMap.get(request.path);
+  return response
     .header("content-type", "text/html")
-    .status(500)
+    .status(pageInformation?.status || 500)
     .render(mainPageTemplate, {
-      translations,
+      contentId: pageInformation?.contentId ?? ContentIds.ErrorUnrecoverable,
+      translations: translations,
       basePageTemplate,
       ga4ContainerId: process.env.GOOGLE_ANALYTICS_4_GTM_CONTAINER_ID ?? "",
-      contentId: getContentId(request),
+      page: pageInformation?.translationIndex ?? "unrecoverable",
     });
-
-const getContentId = (request: Request) => {
-  switch (request.path) {
-    case "/error/unrecoverable": {
-      return ContentIds.ErrorUnrecoverable;
-    }
-    case "/error/bad-request": {
-      return ContentIds.ErrorBadRequest;
-    }
-  }
-  return "";
 };
