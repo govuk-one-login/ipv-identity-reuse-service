@@ -46,13 +46,28 @@
       "header": "Confirm your details",
       "title": "Confirm your details"
     },
+    "notFound": {
+      "content": {
+        "govUkHomepageButtonLink": "https://www.gov.uk/",
+        "govUkHomepageButtonText": "Go to the GOV.UK homepage",
+        "oneLoginContactLink": "https://home.account.gov.uk/contact-gov-uk-one-login?fromURL=https%3A%2F%2Fsignin.account.gov.uk%2Fsupport",
+        "oneLoginContactLinkText": "Contact the GOV.UK One Login team (opens in a new tab)",
+        "paragraph1": "We cannot find the page you\u2019re looking for.",
+        "paragraph2": "If you typed the web address, check it is correct.",
+        "paragraph3": "If you pasted the web address, check you copied the entire address.",
+        "paragraph4": "You can also go back to the service you were trying to use and start again. You can look for the service using your search engine or find it from the GOV.UK homepage.",
+        "subHeading": "What you can do"
+      },
+      "header": "Page not found",
+      "title": "Page not found"
+    },
     "sessionExpired": {
       "content": {
         "govUkHomepageButtonLink": "https://www.gov.uk/",
         "govUkHomepageButtonText": "Go to the GOV.UK homepage",
         "oneLoginContactLink": "https://home.account.gov.uk/contact-gov-uk-one-login?fromURL=https%3A%2F%2Fsignin.account.gov.uk%2Fsupport",
         "oneLoginContactLinkText": "Contact the GOV.UK One Login team (opens in a new tab)",
-        "paragraph1": "Go back to the service you were trying to use and start again. You can look for the service using your search engine or find it from the GOV.UK homepage.",
+        "paragraph2": "Go back to the service you were trying to use and start again. You can look for the service using your search engine or find it from the GOV.UK homepage.",
         "subHeading": "What you can do"
       },
       "header": "Session expired",

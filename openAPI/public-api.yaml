@@ -102,7 +102,21 @@ paths:
     get:
       responses:
         "400":
-          description: Internal Server Error
+          description: Bad request
+          content:
+            text/html:
+              schema:
+                type: string
+      x-amazon-apigateway-integration:
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AppHandler.Arn}:live/invocations
+        type: aws_proxy
+  /error/not-found:
+    get:
+      responses:
+        "404":
+          description: Not found
           content:
             text/html:
               schema:
@@ -132,6 +146,13 @@ paths:
               type: string
             Content-Type:
               type: string
+        "302":
+          description: Not found, redirect to the not found page
+          headers:
+            Location:
+              type: string
+        "404":
+          description: Not found
       x-amazon-apigateway-integration:
         credentials:
           Fn::GetAtt: AssetsResourceS3Role.Arn
@@ -139,6 +160,11 @@ paths:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:s3:path/${GovUKAssetsBucket}/{item}
         responses:
+          "404":
+            statusCode: "302"
+            selectionPattern: "404"
+            responseParameters:
+              method.response.header.Location: "'/error/not-found'"
           default:
             statusCode: "200"
             responseParameters:

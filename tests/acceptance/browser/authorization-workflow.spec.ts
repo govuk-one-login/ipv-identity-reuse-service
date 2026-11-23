@@ -19,6 +19,8 @@ import { KENNETH_DECERQUEIRA } from "@govuk-one-login/ipv-trust-and-reuse-test-c
 import { KENNETH_DECERQUEIRA_BIRTH_DATE } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/birthdates";
 import { KENNETH_DECERQUERIA_ADDRESS } from "@govuk-one-login/ipv-trust-and-reuse-test-credentials/addresses";
 import { BadRequestErrorPage } from "./pages/bad-request-error.page.js";
+import { NotFoundErrorPage } from "./pages/not-found.page.js";
+import { randomBytes } from "node:crypto";
 
 const AN_HOUR = 60 * 60;
 const TEN_MINUTES = 10 * 60;
@@ -429,6 +431,28 @@ test.describe("Authorization workflow", () => {
         parameters.get("state") === "sample-state" &&
         !parameters.has("code")
       );
+    });
+  });
+
+  test("not found page is displayed if we navigate to the not found page", async ({ page, notFoundError }) => {
+    await page.goto(`${sisPublicUrl}/${NotFoundErrorPage.path}`, { waitUntil: "load" });
+    await expect(notFoundError.heading).toBeVisible();
+    await expect(notFoundError.message).toBeVisible();
+
+    await expect(page).toHaveURL((url) => {
+      return url.pathname === NotFoundErrorPage.path;
+    });
+  });
+
+  test("not found page is displayed if the resource is not found", async ({ page, notFoundError }) => {
+    const randomResourceName = randomBytes(16).toString("hex");
+
+    await page.goto(`${sisPublicUrl}/${randomResourceName}`, { waitUntil: "load" });
+    await expect(notFoundError.heading).toBeVisible();
+    await expect(notFoundError.message).toBeVisible();
+
+    await expect(page).toHaveURL((url) => {
+      return url.pathname === NotFoundErrorPage.path;
     });
   });
 });
